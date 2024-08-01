@@ -81,7 +81,7 @@ def require_authorization(exceptions, redirect=False, exceptions_handler=None):
         # check for DEV_MODE
         if os.getenv("DEV_MODE") == "true":
             request.state.userinfo = {
-                "id": "devuser4-496a-4004-950a-ef00d89c4cb7",
+                "sub": "devuser4-496a-4004-950a-ef00d89c4cb7",
                 "email": "dev@mail.com",
                 "preferred_username": "developer",
                 "name": "Developer"

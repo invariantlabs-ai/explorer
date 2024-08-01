@@ -1,12 +1,8 @@
 import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFill, BsFillTerminalFill, BsSpeedometer2, BsThreeDots, BsListColumns, BsRobot } from 'react-icons/bs'
 
 import Home from './Home.tsx'
-
-function Layout(props: { children: React.ReactNode }) {
-  return <div className='layout'>
-    {props.children}
-  </div>
-}
+import Layout from './Layout.tsx'
+import './App.scss'
 
 export const routes = [
   {
