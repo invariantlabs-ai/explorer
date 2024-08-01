@@ -2,7 +2,9 @@ import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFi
 
 import Home from './Home.tsx'
 import Layout from './Layout.tsx'
+import Traces from './Traces.tsx'
 import './App.scss'
+import Dataset from './Dataset.tsx'
 
 export const routes = [
   {
@@ -11,5 +13,24 @@ export const routes = [
     icon: <BsSpeedometer2/>,
     element: <Layout><Home/></Layout>,
     category: 'home'
-  }
+  },
+  {
+    path: '/dataset/:datasetId',
+    label: 'Dataset',
+    element: <Layout><Dataset/></Layout>,
+    loader: async (task: any) => {
+      return {"datasetId": task.params.datasetId}
+    }
+  },
+  {
+    path: '/dataset/:datasetId/:bucketId',
+    label: 'Dataset',
+    element: <Layout fullscreen><Traces/></Layout>,
+    loader: async (task: any) => {
+      return {
+        "datasetId": task.params.datasetId,
+        "bucketId": task.params.bucketId
+      }
+    }
+  },
 ]

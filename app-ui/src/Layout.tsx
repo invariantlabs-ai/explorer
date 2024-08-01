@@ -3,7 +3,7 @@ import logo from './assets/invariant.svg';
 import { useUserInfo } from './UserInfo';
 
 
-function Layout(props: {children: React.ReactNode}) {
+function Layout(props: {children: React.ReactNode, fullscreen?: boolean}) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
 
@@ -23,7 +23,7 @@ function Layout(props: {children: React.ReactNode}) {
                 </div>
             </div>
         </header>
-        <div className='content'>
+        <div className={'content ' + (props.fullscreen ? 'fullscreen' : '')}>
         {props.children}
         </div>
     </>;

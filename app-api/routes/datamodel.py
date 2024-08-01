@@ -127,3 +127,22 @@ def delete_dataset(request: Request, id: str):
         session.delete(dataset)
         session.commit()
         return {"message": "Deleted"}
+    
+@dataset.get("/{id}")
+def get_dataset(request: Request, id: str):
+    userid = request.state.userinfo["sub"]
+    if userid is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    
+    with Session(db()) as session:
+        dataset = session.query(Dataset).filter(Dataset.id == id).first()
+        if dataset is None:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        if dataset.user_id != userid:
+            raise HTTPException(status_code=401, detail="Unauthorized get")
+        
+        return {
+            "id": dataset.id, 
+            "name": dataset.name, 
+            "extra_metadata": dataset.extra_metadata
+        }

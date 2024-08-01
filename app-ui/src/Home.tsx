@@ -1,9 +1,10 @@
 import React from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload } from 'react-icons/bs'
+import { Link } from 'react-router-dom'
 
 function EntityList(props) {
-  return <div className="entity-list">
+  return <div className="panel entity-list">
     <header>
       <h1>{props.title}</h1>
       <div className="spacer"/>
@@ -35,10 +36,6 @@ function Modal(props) {
 }
 
 function uploadDataset(name: string, file: File) {
-  // send this to /api/v1/dataset/upload
-  // server-side this is
-  // def upload_file(request: Request, file: UploadFile = File(...)):
-
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData()
     formData.append('name', name)
@@ -137,9 +134,7 @@ function useDatasetList(): [any[], () => void] {
     })
   }
 
-  React.useEffect(() => {
-    refresh()
-  }, [])
+  React.useEffect(() => refresh(), [])
 
   return [
     datasets,
@@ -170,7 +165,7 @@ function DeleteDatasetModalContent(props) {
     Note that this action is irreversible. All associated data will be lost.</h2>
     <br/>
     <button className='danger' disabled={loading} onClick={onDelete}>
-      {loading ? 'Deleting...' : 'Delete'}
+    {loading ? 'Deleting...' : 'Delete'}
     </button>
   </div>
 }
@@ -195,7 +190,7 @@ function Home() {
         Upload New Dataset
       </button>
     </>}>
-      {(datasets || []).map((dataset, i) => <li key={i}>
+      {(datasets || []).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
         <h3>{dataset.name}</h3>
         <span className='description'>
           {dataset.extra_metadata}
@@ -205,10 +200,13 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
-          <button className='danger' onClick={() => setSelectedDatasetForDelete(dataset)}><BsTrash/></button>
+          <button className='danger' onClick={(e) => {
+            e.preventDefault()
+            setSelectedDatasetForDelete(dataset)
+          }}><BsTrash/></button>
           <button className='primary'>View</button>
         </div>
-      </li>)}
+      </li></Link>)}
     </EntityList>
   </>
 }

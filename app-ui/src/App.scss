@@ -101,8 +101,9 @@ header.top {
       padding: 5pt;
       display: none;
       z-index: 1000;
-      z-index: 1;
+      z-index: 9999;
       min-width: 100pt;
+      box-shadow: 0pt 0pt 4pt 0pt rgba(0, 0, 0, 0.1);
 
       &.active {
         display: block;
@@ -187,7 +188,13 @@ div.content {
   }
 }
 
-div.entity-list {
+div.content.fullscreen {
+  max-width: 100%;
+  margin: 0pt;
+  padding: 0pt 0pt;
+}
+
+div.panel {
   header {
     width: 100%;
     text-align: left;
@@ -197,8 +204,25 @@ div.entity-list {
     justify-content: flex-start;
 
     h1 {
-      font-size: 34pt;
+      font-size: 24pt;
+      line-height: 30pt;
+
+      a {
+        text-decoration: none;
+        color: $text-color;
+        opacity: 0.8;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
     }
+  }
+
+  h4 {
+    font-size: 14pt;
+    margin-top: 10pt;
+    margin-bottom: -5pt;
   }
 
   ul {
@@ -497,6 +521,121 @@ button.danger {
     em {
       color: grey;
       text-decoration: underline;
+    }
+  }
+}
+
+a.item {
+  text-decoration: none !important;
+  color: $text-color !important;
+}
+
+div.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+
+  h3 {
+    font-size: 14pt;
+    margin-bottom: 10pt;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 16pt;
+    opacity: 0.5;
+  }
+}
+
+.metadata-items {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1pt solid #e1e4e890;
+  padding-bottom: 5pt;
+  padding-top: 10pt;
+
+  .metadata {
+    display: flex;
+    flex-direction: row;
+    font-size: 12pt;
+    margin-right: 10pt;
+  
+    label {
+      margin-right: 5pt;
+      font-size: 12pt;
+    }
+  }
+}
+
+.bucket-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-top: 10pt;
+  margin-left: -5pt;
+  margin-right: -5pt;
+
+  >a {
+    text-decoration: none;
+    color: $text-color;
+  }
+
+  .bucket {
+    width: 100pt;
+    min-height: 40pt;
+    background-color: white;
+    margin: 5pt;
+    border-radius: 10pt;
+    padding: 10pt;
+    transition: background-color 0.1s;
+
+    .name {
+      font-weight: 700;
+    }
+
+    .count {
+      float: right;
+    }
+    
+    .icon {
+      min-height: 30pt;
+    }
+
+    &:hover {
+      cursor: pointer;
+      background-color: #d1d1d157;
+    }
+
+    &.active {
+      background-color: #efeeff;
+      box-shadow: 0pt 0pt 1pt 0pt $color-primary;
+
+      .name {
+        font-weight: 1000;
+        text-decoration: underline;
+        font-family: NeueMontreal;
+      }
+    }
+  }
+}
+
+div.panel.explorer {
+  header {
+    height: 30pt;
+
+    h1 {
+      font-size: 12pt;
+      line-height: 20pt;
+    }
+  }
+
+  header.toolbar {
+    height: 40pt;
+
+    button.inline {
+      height: 30pt;
     }
   }
 }
