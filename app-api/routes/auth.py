@@ -13,8 +13,8 @@ client_id = "invariant-" + os.getenv("APP_NAME")
 keycloak_openid = KeycloakOpenID(
     server_url="https://auth.invariantlabs.ai/",
     client_id=client_id,
-    realm_name="invariant",
-    client_secret_key="QtrX2vBndciid6OU3VriJDho5PVC6HJp"
+    realm_name="invariant-public",
+    client_secret_key="GDq4AqlO9jWiZJ5HgIIdfhgxHyhVZnTG"
 )
 
 AUTHORIZATION_URL = "https://auth.invariantlabs.ai/realms/invariant/protocol/openid-connect/auth",
