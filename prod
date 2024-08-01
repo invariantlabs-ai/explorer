@@ -1,0 +1,5 @@
+#/bin/bash
+# stop on error
+set -e
+export APP_NAME=explorer
+APP_NAME=$APP_NAME DEV_MODE=false BASE_URL=invariantlabs.ai docker compose --env-file .env.prod -f docker-compose.prod.yml $@

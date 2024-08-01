@@ -1,0 +1,60 @@
+version: '3'
+services:    
+  app-api:
+    extends:
+      file: docker-compose.yml
+      service: app-api
+    depends_on:
+      - database
+    environment:
+      - APP_NAME=${APP_NAME}
+    volumes:
+      - type: bind
+        source: ./platform-auth/auth.py
+        target: /srv/app/routes/auth.py
+    networks:
+      - web
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-api.rule=Host(`${APP_NAME}.${BASE_URL}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.$APP_NAME-api.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.$APP_NAME-api.tls=true"
+      - "traefik.http.routers.$APP_NAME-api.tls.certresolver=le"
+  
+  database:
+    extends:
+      file: docker-compose.yml
+      service: database
+
+  app-ui:
+    build:
+      context: ./app-ui
+      dockerfile: Dockerfile.prod
+    depends_on:
+      - app-api
+    networks:
+      - web
+    environment:
+      - APP_NAME=${APP_NAME}
+    volumes:
+      - type: bind
+        source: ./platform-auth/auth.py
+        target: /app/app-ui/server/auth.py
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=8000"
+      - "traefik.http.routers.$APP_NAME-ui.tls.certresolver=le"
+      - "traefik.http.routers.$APP_NAME-ui.tls=true"
+      - "traefik.docker.network=web"
+
+networks:
+  local-keycloak:
+  web:
+    external: true
+  internal:
+    external: false

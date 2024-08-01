@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy[postgresql]
+pyyaml
+python-jose
+passlib[bcrypt]
+python-multipart
+fastapi-keycloak-middleware

@@ -1,0 +1,4 @@
+#!/bin/bash
+source .env
+export APP_NAME=explorer
+PLATFORM_URL=localhost DEV_MODE=true APP_NAME=$APP_NAME BASE_URL=localhost docker compose $@

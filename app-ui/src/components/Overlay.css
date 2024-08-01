@@ -1,0 +1,49 @@
+.graph-overlay {
+    position: absolute;
+    background: none;
+    z-index: 1;
+    width: 5pt;
+    height: 5pt;
+}
+
+.graph-overlay .box {
+    position: absolute;
+    top: 0pt;
+    left: 0pt;
+    border-radius: 2pt;
+}
+
+.graph-overlay .box.faded {
+    visibility: hidden;
+}
+
+.graph-overlay .box {
+    color: black;
+    overflow-y: scroll;
+}
+
+.graph-overlay .box .content {
+    margin: 0pt;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+.graph-overlay .box code {
+    font-size: 12pt;
+    flex: 1;
+    background-color: rgba(255, 255, 255, 0.599);
+    color: var(--color-primary-text);
+    display: block;
+    padding: 10pt;
+    overflow-x: auto;
+    overflow-y: scroll;
+    max-height: 200pt;
+    border-radius: 2pt;
+    white-space: pre-wrap;
+}
+
+body.dark .graph-overlay .box code {
+    background-color: rgba(0, 0, 0, 0.725);
+}

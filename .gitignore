@@ -1,0 +1,5 @@
+.env.local
+**/__pycache__/
+acme.json
+data/database
+data/pgadmin

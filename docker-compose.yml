@@ -1,0 +1,125 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:v2.0
+    container_name: "${APP_NAME}-local-traefik"
+    command:
+      - --providers.docker=true
+      # Enable the API handler in insecure mode,
+      # which means that the Traefik API will be available directly
+      # on the entry point named traefik.
+      - --api.insecure=true
+      # Defines the path to the configuration file with the certificates list.
+      - --providers.file.filename=/root/.config/ssl.toml
+      # Define Traefik entry points to port [80] for http and port [443] for https.
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    networks:
+      # Define the network on which traefik is going to operate.
+      - web
+    ports:
+      # Open traefik http [80] and https [443] ports.
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount the configuration file with the certificates list.
+      - ./certs/traefik-ssl.toml:/root/.config/ssl.toml
+      # Mount the folder containing the certificates for https.
+      - ./certs/:/certs/
+    labels:
+      - "traefik.enable=true"
+      # Enable Traefik API handler entrypoint on http.
+      - "traefik.http.routers.traefik-http.entrypoints=web"
+      # Enable Traefik API handler entrypoint on https.
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      # # Instructs Traefik that the current router is dedicated to HTTPS requests only.
+      - "traefik.http.routers.traefik.tls=true"
+      # # redirect http to https
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.traefik-http.middlewares=redirect-to-https"
+  app-api:
+    build:
+      context: ./app-api
+      dockerfile: ../app-api/Dockerfile.api
+    working_dir: /srv/app
+    env_file:
+      - .env
+    depends_on:
+      - database
+    environment:
+      - PROJECTS_DIR=/srv/projects
+      - TZ=Europe/Berlin
+      - DEV_MODE=${DEV_MODE}
+      - APP_NAME=${APP_NAME}
+    networks:
+      - web
+      - internal
+    ports:
+      - '8000:8000'
+    volumes:
+      - type: bind
+        source: ./app-api
+        target: /srv/app
+      - type: bind
+        source: ./platform-auth/auth.py
+        target: /srv/app/routes/auth.py
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-api.rule=Host(`${PLATFORM_URL}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.$APP_NAME-api.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.$APP_NAME-api.tls=true"
+  
+  database:
+    image: postgres:16
+    env_file:
+      - .env
+    networks:
+      - internal
+    volumes:
+      - type: bind
+        source: ./data/database
+        target: /var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    env_file:
+      - .env
+    depends_on:
+      - database
+    networks:
+      - internal
+    volumes:
+      - type: bind
+        source: ./data/pgadmin
+        target: /var/lib/pgadmin
+    ports:
+      - '5050:80'
+
+  app-ui:
+    image: node:alpine
+    entrypoint: "sh -c 'yarn && yarn run dev --host 0.0.0.0 --port 5173'"
+    working_dir: /srv/app
+    depends_on:
+      - app-api
+    networks:
+      - web
+    volumes:
+      - type: bind
+        source: ./app-ui
+        target: /srv/app
+    environment:
+      - APP_NAME=${APP_NAME}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${PLATFORM_URL}`)"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
+      - "traefik.http.routers.$APP_NAME-ui.tls=true"
+
+networks:
+  web:
+    external: true
+  internal:
