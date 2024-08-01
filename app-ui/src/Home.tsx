@@ -124,7 +124,7 @@ function FileUploadMask(props) {
   </div>
 }
 
-function useDatasetList() {
+function useDatasetList(): [any[], () => void] {
   const [datasets, setDatasets] = React.useState<any[]>([])
 
   const refresh = () => {
@@ -195,7 +195,7 @@ function Home() {
         Upload New Dataset
       </button>
     </>}>
-      {datasets.map((dataset, i) => <li key={i}>
+      {(datasets || []).map((dataset, i) => <li key={i}>
         <h3>{dataset.name}</h3>
         <span className='description'>
           {dataset.extra_metadata}
