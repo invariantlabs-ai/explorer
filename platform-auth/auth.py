@@ -13,8 +13,8 @@ client_id = "invariant-" + os.getenv("APP_NAME")
 keycloak_openid = KeycloakOpenID(
     server_url="https://auth.invariantlabs.ai/",
     client_id=client_id,
-    realm_name="invariant-public",
-    client_secret_key="GDq4AqlO9jWiZJ5HgIIdfhgxHyhVZnTG"
+    realm_name="invariant",
+    client_secret_key="QtrX2vBndciid6OU3VriJDho5PVC6HJp"
 )
 
 AUTHORIZATION_URL = "https://auth.invariantlabs.ai/realms/invariant/protocol/openid-connect/auth",
@@ -81,6 +81,7 @@ def require_authorization(exceptions, redirect=False, exceptions_handler=None):
         # check for DEV_MODE
         if os.getenv("DEV_MODE") == "true":
             request.state.userinfo = {
+                "id": "devuser4-496a-4004-950a-ef00d89c4cb7",
                 "email": "dev@mail.com",
                 "preferred_username": "developer",
                 "name": "Developer"

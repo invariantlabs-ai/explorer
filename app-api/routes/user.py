@@ -10,8 +10,8 @@ user = fastapi.FastAPI()
 @user.get("/info")
 def get_user(request: fastapi.Request):
     userinfo = request.state.userinfo
-    print("userinfo", userinfo, flush=True)
     return {
+        "id": userinfo['sub'],
         "username": userinfo['preferred_username'],
         "email": userinfo['email'],
         "name": userinfo['name']
