@@ -19,7 +19,6 @@ app.mount("/api/v1", v1)
 
 def allow_traces_with_link_sharing(request: fastapi.Request): 
     if not re.match(r"^/api/v1/trace/[a-z0-9-]+$", request.url.path) and not re.match(r"^/api/v1/trace/[a-z0-9-]+/annotations$", request.url.path):
-        print("not an path exemption", request.url.path)
         return False
     
     path = request.url.path
@@ -28,6 +27,8 @@ def allow_traces_with_link_sharing(request: fastapi.Request):
     else:
         trace_id = path.split("/")[-1]
  
+    print("check for link sharing of trace", trace_id)
+
     result = has_link_sharing(trace_id)
     request.state.userinfo = {
         "sub": "anonymous"
