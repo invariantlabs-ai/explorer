@@ -9,6 +9,26 @@ import { routes } from './Routes'
 
 const router = createBrowserRouter(routes);
 
+window.alert = (message: string) => {
+  // get #alert-error-list element
+  const alertErrorList = document.getElementById('alert-error-list');
+  // create a li element
+  const li = document.createElement('li');
+
+  // set the text of the li element to the message
+  li.textContent = message;
+
+  // append the li element to the alertErrorList
+  alertErrorList?.appendChild(li);
+  // add appearance animation
+  li.classList.add('appear');
+
+  // after 5 seconds remove the li element
+  setTimeout(() => {
+    alertErrorList?.removeChild(li);
+  }, 5000);
+}
+
 ReactDOM.createRoot(document.getElementById('app-root')!).render(
   <React.StrictMode>
     <RouterProvider router={router}/>

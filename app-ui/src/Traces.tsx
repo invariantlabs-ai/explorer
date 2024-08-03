@@ -8,6 +8,7 @@ import { Explorer } from './TraceView'
 import { sharedFetch } from './SharedFetch';
 
 import { ViewportList } from 'react-viewport-list';
+import { Modal } from './Modal';
 
 interface DatasetData {
   id: string
@@ -31,6 +32,7 @@ function useDataset(datasetId: string): DatasetData | null {
 interface Trace {   
   id: string;
   index: number;
+  dataset: string;
   messages: any[];
   extra_metadata: string;
 }
@@ -97,13 +99,75 @@ function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
   });
 }
 
-function Traces() {
-  const props: {datasetId: string, bucketId: string, traceId: string|null} = useLoaderData() as any
-  const dataset = useDataset(props.datasetId)
-  // for link navigation with router
-  const navigate = useNavigate()
+function ShareModalContent(props) {
+  const [justCopied, setJustCopied] = React.useState(false)
 
+  useEffect(() => {
+    if (justCopied) {
+      let timeout = setTimeout(() => setJustCopied(false), 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [justCopied])
+  
+  const onClick = (e) => {
+    e.currentTarget.select()
+    navigator.clipboard.writeText(e.currentTarget.value)
+    setJustCopied(true)
+  }
+
+  const link = window.location.origin + "/trace/" + props.traceId
+
+  return <div className='form' style={{maxWidth: '500pt'}}>
+    <h2>By sharing a trace you can allow others to view it and add annotations. Anyone with the generated link will be able to view the trace.</h2>
+    <h2>Only the selected trace <span className='traceid'>#{props.traceId}</span> will be shared with others.</h2>
+    <label>Link Sharing</label>
+    <input type='text' value={props.sharingEnabled ? link : 'Not Enabled'} className='link' onClick={onClick} disabled={!props.sharingEnabled}/>
+    <span className='description' style={{color: justCopied ? 'inherit' : 'transparent'}}>{justCopied ? 'Link Copied!' : 'no'}</span>
+    <button className={'share inline ' + (!props.sharingEnabled ? 'primary' : '')} onClick={() => props.setSharingEnabled(!props.sharingEnabled)}>{props.sharingEnabled ? 'Disable' : 'Enable'} Sharing</button>
+  </div>
+}
+
+function useTraceShared(traceId: string | null): [boolean, (shared: boolean) => void] {
+  const [shared, setShared] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!traceId) { return }
+    sharedFetch(`/api/v1/trace/${traceId}/shared`).then(data => {
+      setShared(data.shared)
+    }).catch(e => alert("Error checking sharing status"))
+  }, [traceId])
+
+  const setRemoteShared = useCallback((shared: boolean) => {
+    if (!traceId) { return }
+
+    // PUT to share, DELETE to unshare
+    if (shared) {
+      fetch(`/api/v1/trace/${traceId}/shared`, {
+        method: 'PUT'
+      }).then(() => setShared(true)).catch(e => alert("Error sharing trace"))
+    } else {
+      fetch(`/api/v1/trace/${traceId}/shared`, {
+        method: 'DELETE'
+      }).then(() => setShared(false)).catch(e => alert("Error unsharing trace"))
+    }
+  }, [traceId])
+
+  if (!traceId) {
+    return [false, () => {}]
+  }
+
+  return [shared, setRemoteShared]
+}
+
+
+export function Traces() {
+  const props: {datasetId: string, bucketId: string, traceId: string|null} = useLoaderData() as any
+  const navigate = useNavigate()
+  
+  const dataset = useDataset(props.datasetId)
   const [traces, setTraces] = useTraces(props.datasetId, props.bucketId)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
+  const [showShareModal, setShowShareModal] = React.useState(false)
   
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
@@ -142,9 +206,9 @@ function Traces() {
   }
 
   return <div className="panel fullscreen app">
-    <header>
-      <h1><Link to='/'>Datasets</Link> / <Link to={`/dataset/${props.datasetId}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
-    </header>
+    {showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
+      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
+    </Modal>}
     <div className='sidebyside'>
     <Sidebar 
       traces={traces} 
@@ -157,9 +221,14 @@ function Traces() {
       activeTrace={activeTrace}
       loadTrace={loadTrace} 
       loading={!traces}
+      header={
+        <h1><Link to='/'>Datasets</Link> / <Link to={`/dataset/${props.datasetId}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+      }
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
       hasFocusButton={false}
+      onShare={() => setShowShareModal(true)}
+      sharingEnabled={sharingEnabled}
     />
     </div>
   </div>
@@ -204,4 +273,55 @@ function Sidebar(props) {
   </div>
 }
 
-export default Traces
+export function SingleTrace() {
+  const props: {traceId: string} = useLoaderData() as any
+  const [trace, setTrace] = React.useState(null as Trace | null)
+  const [dataset, setDataset] = React.useState(null as DatasetData | null)
+
+  // fetch trace
+  React.useEffect(() => {
+    if (!props.traceId) {
+      return
+    }
+    sharedFetch(`/api/v1/trace/${props.traceId}`).then(data => {
+      setTrace(data)
+    }).catch(e => {
+      if (e.status === 401) {
+        alert("You do not have permission to view this trace")
+        return
+      }
+      alert("Error loading trace")
+    })
+  }, [props.traceId])
+
+  // fetch dataset
+  React.useEffect(() => {
+    if (!trace) {
+      return
+    }
+    // depending on permissions, this may not be available
+    sharedFetch(`/api/v1/dataset/${trace?.dataset}`).then(data => {
+      setDataset(data)
+    }).catch(e => {})
+  }, [trace])
+
+
+  return <div className="panel fullscreen app">
+    <div className='sidebyside'>
+    <Explorer
+      // {...(transformedTraces || {})}
+      activeTrace={trace}
+      loadTrace={() => {}}
+      loading={!trace}
+      header={
+        <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h1> 
+      }
+      queryId={"<queryId>"}
+      selectedTraceId={props.traceId}
+      hasFocusButton={false}
+      onShare={null}
+      sharingEnabled={false}
+    />
+    </div>
+  </div>
+}

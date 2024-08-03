@@ -1,10 +1,11 @@
-import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFill, BsFillTerminalFill, BsSpeedometer2, BsThreeDots, BsListColumns, BsRobot } from 'react-icons/bs'
+import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFill, BsFillTerminalFill, BsSpeedometer2, BsThreeDots, BsListColumns, BsRobot, BsSearch } from 'react-icons/bs'
 
 import Home from './Home.tsx'
 import Layout from './Layout.tsx'
-import Traces from './Traces.tsx'
+import {Traces, SingleTrace} from './Traces.tsx'
 import './App.scss'
 import Dataset from './Dataset.tsx'
+import { Link } from 'react-router-dom'
 
 export const routes = [
   {
@@ -58,4 +59,23 @@ export const routes = [
       }
     }
   },
+  {
+    path: '/trace/:traceId',
+    label: 'Dataset',
+    element: <Layout fullscreen><SingleTrace/></Layout>,
+    loader: async (task: any) => {
+      return {
+        "traceId": task.params.traceId
+      }
+    }
+  },
+  // 404
+  {
+    path: '*',
+    label: 'Not Found',
+    element: <Layout><div className='empty'>
+      Not Found
+    </div></Layout>,
+    category: 'hidden'
+  }
 ]

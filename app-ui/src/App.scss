@@ -54,6 +54,11 @@ header.top {
     margin-top: 1pt;
   }
 
+  button.inline {
+    margin-right: -15pt;
+    height: 32pt;
+  }
+
   .user-info {
     display: flex;
     flex-direction: row;
@@ -357,7 +362,7 @@ button {
     top: 50%;
     left: 50%;
     max-width: 700pt;
-    min-width: 600pt;
+    min-width: 300pt;
     transform: translate(-50%, -50%);
     background-color: white;
     padding: 20pt;
@@ -457,6 +462,22 @@ label {
     border-radius: 5pt;
     border: none;
     margin-bottom: 5pt;
+  }
+
+  input.link {
+    background-color: #ebebeb;
+    display: block;
+    padding: 5pt;
+    font-size: 16pt;
+    border-radius: 5pt;
+    border: none;
+    color: $text-color;
+    margin-bottom: 5pt;
+
+    &:disabled {
+      background-color: #f1f1f1;
+      color: #a0a0a0;
+    }
   }
 
   label {
@@ -659,10 +680,19 @@ div.panel.explorer {
 div.panel {
   header.toolbar {
     position: absolute;
-    top: 40pt;
+    top: 41pt;
     right: 0pt;
     z-index: 1;
-    width: auto;
+    background: transparent;
+    background-color: transparent;
+    width: calc(100vw - 0pt);
+    
+    h1 {
+      white-space: pre;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      margin-left: 10pt;
+    }
   }
 }
 
@@ -708,8 +738,8 @@ button.primary .shortcut {
   .sidebar {
     border: $border-color 1pt solid;
     margin: 2pt;
-    margin-left: 0pt;
-    margin-top: 4pt;
+    margin-left: 10pt;
+    margin-top: 56pt;
     border-radius: 5pt;
     width: 250pt;
     
@@ -717,9 +747,8 @@ button.primary .shortcut {
     flex-direction: column;
     overflow-y: auto;
     position: relative;
-    margin-left: 0pt;
     transition: margin-left 0.2s;
-    height: calc(100vh - 92pt);
+    height: calc(100vh - 120pt);
     
     ul {
       overflow-y: auto;
@@ -829,14 +858,20 @@ button.primary .shortcut {
   } 
 
   .explorer {
-    height: calc(100vh - 90pt);
+    margin-top: 40pt;
+    height: calc(100vh - 85pt);
   }
 }
 
 .traceid {
-  font-size: 12pt;
   opacity: 0.5;
   margin-top: 5pt;
   margin-bottom: 5pt;
   font-family: monospace;
+}
+
+button.share {
+  width: auto;
+  height: 40pt !important;
+  margin-left: auto;
 }

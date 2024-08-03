@@ -615,7 +615,7 @@ code {
     position: relative;
 }
 
-.app button.inline {
+button.inline {
     top: 5pt;
     right: 5pt;
     padding: 5pt 12pt;
@@ -1261,7 +1261,7 @@ label.mono {
         width: calc(100%);
         margin-left: -10pt;
         height: auto;
-        z-index: 1000;
+        z-index: 800;
 
         display: flex;
         flex-direction: column;
@@ -1369,7 +1369,6 @@ button.inline.primary {
 
 button.inline.icon {
     svg {
-        opacity: 0.6;
         color: $text-color;
         width: 10pt;
         height: 10pt;

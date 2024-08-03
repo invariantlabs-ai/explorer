@@ -13,3 +13,33 @@
   height: auto;
   display: block;
 }
+
+#alert-error-list {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 1000;
+
+  li {
+    background-color: #f8d7da;
+    list-style-type: none;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 0.75rem 1.25rem;
+    margin: 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  li.appear {
+    animation: slideIn 0.5s forwards;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0.0;
+  }
+  to {
+    opacity: 1.0;
+  }
+}

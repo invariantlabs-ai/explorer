@@ -71,6 +71,15 @@ class Tag(Base):
     # tag name
     name = mapped_column(String, nullable=False)
 
+# simple table to capture all shared trace IDs
+class SharedLinks(Base):
+    __tablename__ = "shared_links"
+
+    # key is uuid that auto creates
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # foreign user id that this shared link belongs to
+    trace_id = mapped_column(UUID(as_uuid=True), ForeignKey("traces.id"), nullable=False)
+
 def db():
     client = create_engine("postgresql://{}:{}@database:5432/{}".format(
         os.environ["POSTGRES_USER"], os.environ["POSTGRES_PASSWORD"], os.environ["POSTGRES_DB"]
@@ -208,6 +217,30 @@ def delete_dataset(request: Request, id: str):
         session.commit()
         return {"message": "Deleted"}
 
+def get_buckets(dataset: Dataset, num_traces: int):
+    # get number of traces with at least one annotation
+    with Session(db()) as session:
+        num_annotated = session.query(Trace).filter(Trace.dataset_id == dataset.id)\
+            .join(Annotation, Trace.id == Annotation.trace_id).count()
+    
+    return [
+        {
+            "id": "all",
+            "name": "All",
+            "count": num_traces
+        },
+        {
+            "id": "annotated",
+            "name": "Annotated",
+            "count": num_annotated
+        },
+        {
+            "id": "unannotated",
+            "name": "Unannotated",
+            "count": num_traces - num_annotated
+        }
+    ]
+
 @dataset.get("/{id}")
 def get_dataset(request: Request, id: str):
     userid = request.state.userinfo["sub"]
@@ -229,7 +262,8 @@ def get_dataset(request: Request, id: str):
             "id": dataset.id, 
             "name": dataset.name, 
             "extra_metadata": dataset.extra_metadata,
-            "num_traces": num_traces
+            "num_traces": num_traces,
+            "buckets": get_buckets(dataset, num_traces)
         }
 
 def safe_load(content):
@@ -241,51 +275,66 @@ def safe_load(content):
 
 @dataset.get("/{id}/{bucket}")
 def get_traces(request: Request, id: str, bucket: str):
-    # extra query parameter to filter by index
-    limit = request.query_params.get("limit")
-    offset = request.query_params.get("offset")
-    
-    userid = request.state.userinfo["sub"]
-    if userid is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
-    
-    with Session(db()) as session:
-        dataset = session.query(Dataset).filter(Dataset.id == id).first()
-        
-        if dataset is None:
-            raise HTTPException(status_code=404, detail="Dataset not found")
-        if dataset.user_id != userid:
-            raise HTTPException(status_code=401, detail="Unauthorized get")
-        
-        if bucket == "all":
-            traces = session.query(Trace).filter(Trace.dataset_id == id)
-        else:
-            raise HTTPException(status_code=404, detail="Bucket not found")
-        
-        # with join, count number of annotations per trace
-        traces = traces\
-            .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
-            .group_by(Trace.id)\
-            .add_columns(Trace.id, Trace.index, Trace.content, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
+    try:
+        # extra query parameter to filter by index
+        limit = request.query_params.get("limit")
+        offset = request.query_params.get("offset")
 
+        userid = request.state.userinfo["sub"]
+        if userid is None:
+            raise HTTPException(status_code=401, detail="Unauthorized request")
         
-        if limit is not None:
-            traces = traces.limit(int(limit))
-        if offset is not None:
-            traces = traces.offset(int(offset))
+        with Session(db()) as session:
+            dataset = session.query(Dataset).filter(Dataset.id == id).first()
+            
+            if dataset is None:
+                raise HTTPException(status_code=404, detail="Dataset not found")
+            if dataset.user_id != userid:
+                raise HTTPException(status_code=401, detail="Unauthorized get")
+            
+            if bucket == "all":
+                traces = session.query(Trace).filter(Trace.dataset_id == id)
+            elif bucket == "annotated" or bucket == "unannotated":
+                # same as above
+                traces = session.query(Trace).filter(Trace.dataset_id == id)
+            else:
+                raise HTTPException(status_code=404, detail="Bucket not found")
+            
+            print("traces is", traces)
 
-        # order by index
-        traces = traces.order_by(Trace.index)
-        
-        traces = traces.all()
+            # with join, count number of annotations per trace
+            traces = traces\
+                .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
+                .group_by(Trace.id)\
+                .add_columns(Trace.id, Trace.index, Trace.content, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
 
-        return [{
-            "id": trace.id,
-            "index": trace.index,
-            "messages": [],
-            "num_annotations": trace.num_annotations,
-            "extra_metadata": trace.extra_metadata
-        } for trace in traces]
+            # 
+            if bucket == "annotated":
+                traces = traces.having(func.count(Annotation.id) > 0)
+            elif bucket == "unannotated":
+                traces = traces.having(func.count(Annotation.id) == 0)
+            
+            if limit is not None:
+                traces = traces.limit(int(limit))
+            if offset is not None:
+                traces = traces.offset(int(offset))
+
+            # order by index
+            traces = traces.order_by(Trace.index)
+            
+            traces = traces.all()
+
+            return [{
+                "id": trace.id,
+                "index": trace.index,
+                "messages": [],
+                "num_annotations": trace.num_annotations,
+                "extra_metadata": trace.extra_metadata
+            } for trace in traces]
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to get annotated traces")
 
 trace = FastAPI()
 
@@ -303,16 +352,90 @@ def get_trace(request: Request, id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid:
+        if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
             raise HTTPException(status_code=401, detail="Unauthorized get")
         
         return {
             "id": trace.id,
             "index": trace.index,
             "messages": message_load(trace.content),
+            "dataset": trace.dataset_id,
             "extra_metadata": trace.extra_metadata
         }
+
+@trace.get("/{id}/shared")
+def get_trace_sharing(request: Request, id: str):
+    userid = request.state.userinfo["sub"]
+    if userid is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
     
+    return {"shared": has_link_sharing(id)}
+
+def has_link_sharing(trace_id):
+    try:
+        with Session(db()) as session:
+            trace = session.query(SharedLinks).filter(SharedLinks.trace_id == trace_id).first()
+            return trace is not None
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print("failed to check if trace is shared", e)
+        return False
+
+@trace.put("/{id}/shared")
+def share_trace(request: Request, id: str):
+    userid = request.state.userinfo["sub"]
+    if userid is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    
+    with Session(db()) as session:
+        trace = session.query(Trace).filter(Trace.id == id).first()
+        
+        if trace is None:
+            raise HTTPException(status_code=404, detail="Trace not found")
+        
+        dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
+        
+        if dataset.user_id != userid:
+            raise HTTPException(status_code=401, detail="Unauthorized share")
+        
+        shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
+        
+        if shared_link is None:
+            shared_link = SharedLinks(
+                id=uuid.uuid4(),
+                trace_id=id
+            )
+            session.add(shared_link)
+            session.commit()
+        
+        return {"shared": True}
+
+@trace.delete("/{id}/shared")
+def unshare_trace(request: Request, id: str):
+    userid = request.state.userinfo["sub"]
+    if userid is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    
+    with Session(db()) as session:
+        trace = session.query(Trace).filter(Trace.id == id).first()
+        
+        if trace is None:
+            raise HTTPException(status_code=404, detail="Trace not found")
+        
+        dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
+        
+        if dataset.user_id != userid:
+            raise HTTPException(status_code=401, detail="Unauthorized unshare")
+        
+        shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
+        
+        if shared_link is not None:
+            session.delete(shared_link)
+            session.commit()
+        
+        return {"shared": False}
+
 def message_load(content):
     try:
         messages = json.loads(content)
@@ -415,7 +538,7 @@ def get_annotations(request: Request, id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid:
+        if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
             raise HTTPException(status_code=401, detail="Unauthorized get")
         
         annotations = session.query(Annotation).filter(Annotation.trace_id == id).all()

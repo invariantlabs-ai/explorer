@@ -6,9 +6,10 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import Select from 'react-select'
 import Editor from '@monaco-editor/react';
 import { useStreamingEndpoint, StreamingFetch } from './streaming';
+import {useUserInfo} from './UserInfo';
+import { useNavigate } from 'react-router-dom';
 
-
-import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsSignpost2Fill, BsTools, BsTrash, BsViewList, BsWindows } from "react-icons/bs";
+import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsWindows } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -118,7 +119,13 @@ class RemoteResource {
 
       fetch(endpoint(this.fetchUrl), {
         method: 'GET'
-      }).then(response => response.json())
+      })
+        .then(response => {
+          if (response.status != 200) {
+            throw new Error('Server responded with status ' + response.status)
+          }
+          return response.json()
+        })
         .then(data => {
           data = this.transform(data)
           this.data = data
@@ -152,7 +159,12 @@ class RemoteResource {
         },
         body: JSON.stringify(object)
       })
-        .then(response => response.json())
+        .then(response => {
+          if (response.status != 200) {
+            throw new Error('Server responded with status ' + response.status)
+          }
+          return response.json
+        })
         .then(data => {
           resolve(data)
         })
@@ -790,9 +802,13 @@ export function Explorer(props) {
       {props.hasFocusButton && <button className="inline" onClick={() => onFocus(autoexpand)} disabled={!canFocus}>
         <BsViewList /> Scroll To Match (S)</button>}
       <div className='vr' />
-      <button className="inline" onClick={onCollapseAll}><BsArrowsCollapse /> Collapse All (W)</button>
-      <button className="inline" onClick={onExpandAll}><BsArrowsExpand /> Expand All (E)</button>
+      <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
+      <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
       <CopyToClipboard object={(activeTrace || {})["messages"]} appearance='toolbar' disabled={activeTrace === undefined} />
+      <div className='vr' />
+      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
+        {!props.sharingEnabled ? <><BsShare/> Share</> : <><BsCheck/> Shared</>}
+      </button>}
     </header>
     <div className='explorer panel'>
       {/* hierarchical selector of traces and then messages within traces */}
@@ -911,7 +927,7 @@ function CopyToClipboard(props) {
     // like a regular button.inline
     return <button className='inline' onClick={onCopy} disabled={props.disabled || false}>
       {recentlyCopied ? <BsClipboard2CheckFill /> : <BsClipboard2Fill />}
-      {recentlyCopied ? 'Copied!' : 'Copy as JSON'}
+      {recentlyCopied ? 'Copied!' : 'JSON'}
     </button>
   }
 }
@@ -937,6 +953,8 @@ function HighlightedValueTable(props) {
 function CommentComposer(props) {
   const [editorFocus, setEditorFocus] = useAppStatePath('editorFocus.isFocused')
   const textarea = useRef(null)
+  const userInfo = useUserInfo()
+  const navigate = useNavigate()
   let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
   annotations = annotations || {}
 
@@ -979,6 +997,8 @@ function CommentComposer(props) {
   }, [textarea, annotations[props.address]])
 
   const onSubmit = useCallback((event) => {
+    if (!userInfo?.loggedIn) return
+
     event.preventDefault()
     event.stopPropagation()
     setSubmitting(true)
@@ -1019,6 +1039,8 @@ function CommentComposer(props) {
   }
 
   const onDelete = (event) => {
+    if (!userInfo?.loggedIn) return
+    
     const annotation = annotations[address]
     if (annotation) {
       annotator.delete(annotation.id).then(() => {
@@ -1037,13 +1059,19 @@ function CommentComposer(props) {
       <span className='comment-embed-address'>{address}</span>
       <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} />
       <footer>
-        <span className='description'>Use <code>[BUCKET]</code> to categorize this trace in a given bucket.</span>
+        {/* <span className='description'>Use <code>[BUCKET]</code> to categorize this trace in a given bucket.</span> */}
         <div className='spacer' />
+        {!userInfo?.loggedIn && <>
+          <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
+          <button className="inline primary" onClick={(e) => navigate('/login')}>Sign In To Annote</button>
+        </>}
+        {userInfo?.loggedIn && <>
         {alreadyExists && <button className='inline icon danger' onClick={(e) => onDelete(e)}><BsTrash /></button>}
         <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
         <button className="inline primary" onClick={(e) => onSubmit(e)} disabled={submitting || !edited}>
           {!submitting ? <>Save <span className='shortcut'><BsMeta /> + <BsArrowReturnRight /></span></> : 'Saving...'}
         </button>
+        </>}
       </footer>
     </div>
   </div>

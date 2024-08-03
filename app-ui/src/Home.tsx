@@ -2,6 +2,7 @@ import React from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
+import { Modal } from './Modal'
 
 function EntityList(props) {
   return <div className="panel entity-list">
@@ -15,23 +16,6 @@ function EntityList(props) {
     <ul>
       {props.children}
     </ul>
-  </div>
-}
-
-function Modal(props) {
-  return <div className="app-modal">
-    <div className="modal-background" onClick={props.onClose}/>
-    <div className="modal-content">
-      {props.hasWindowControls && <header className='window-controls'>
-        <button onClick={props.onClose}>Cancel</button>
-      </header>}
-      <h1>{props.title}</h1>
-      {props.children}
-
-      {props.hasFooter && <footer>
-        <button onClick={props.onClose}>Close</button>
-      </footer>}
-    </div>
   </div>
 }
 

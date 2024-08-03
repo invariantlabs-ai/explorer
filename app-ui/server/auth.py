@@ -79,6 +79,7 @@ def require_authorization(exceptions, redirect=False, exceptions_handler=None):
     # same but for JWT
     async def check_jwt(request: Request, call_next):
         # check for DEV_MODE
+        print(request)
         if os.getenv("DEV_MODE") == "true":
             request.state.userinfo = {
                 "sub": "devuser4-496a-4004-950a-ef00d89c4cb7",

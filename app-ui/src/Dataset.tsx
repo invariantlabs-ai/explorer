@@ -5,10 +5,17 @@ import { Link, useLoaderData } from 'react-router-dom'
 import { BiSolidCommentDetail } from 'react-icons/bi'
 import { sharedFetch } from './SharedFetch'
 
+interface Bucket {
+  id: string
+  name: string
+  count: number
+}
+
 interface DatasetData {
   id: string
   name: string
   extra_metadata: string
+  buckets: Bucket[]
 }
 
 function useDataset(datasetId: string): DatasetData | null {
@@ -42,9 +49,15 @@ function metadata(dataset: DatasetData | null) {
 }
 
 function Bucket({datasetId, id, name, count, active, icon, onSelect}: {datasetId: string, id: string, name: string, count: number, active?: boolean, icon?: React.ReactNode, onSelect?: () => void}) {
+  const iconMap: {[key: string]: React.ReactNode} = {
+    'all': <BsCheckCircleFill/>,
+    'annotated': <BsPencilFill style={{color: 'green'}}/>,
+    'unannotated': <BsQuestionCircleFill style={{color: 'gold'}}/>,
+  }
+
   return <Link to={`/dataset/${datasetId}/${id}`}>
     <div className={'bucket ' + (active ? 'active' : '')}>
-      <div className='icon'>{icon}</div>
+      <div className='icon'>{icon || iconMap[id] || null}</div>
       <div className='count'>{count}</div>
       <div className='name'>{name}</div>
     </div>
@@ -61,32 +74,6 @@ function Dataset() {
       <h3>Loading...</h3>
     </div>
   }
-
-  const buckets = [
-    {
-      id: "all",
-      name: "All",
-      count: 0
-    },
-    // {
-    //   id: "uncategorized",
-    //   name: "Uncategorized",
-    //   icon: <BsQuestionCircleFill style={{color: 'grey'}}/>,
-    //   count: 0
-    // },
-    // {
-    //   id: "success",
-    //   name: "Success",
-    //   icon: <BsCheckCircleFill style={{color: 'green'}}/>,
-    //   count: 0
-    // },
-    // {
-    //   id: "hallucinations",
-    //   name: "Hallucinations",
-    //   icon: <BsMoonStarsFill/>,
-    //   count: 0
-    // }
-  ]
 
   return <div className="panel entity-list">
     <header>
@@ -108,9 +95,9 @@ function Dataset() {
       </div>
     })}
     </div>
-    <h4>Buckets</h4>
+    <h4>Collections</h4>
     <div className='bucket-list'>
-      {buckets.map(bucket => {
+      {dataset.buckets.map(bucket => {
         return <Bucket datasetId={dataset.id} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
       })}
     </div>
