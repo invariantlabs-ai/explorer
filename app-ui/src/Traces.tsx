@@ -118,7 +118,8 @@ function ShareModalContent(props) {
   const link = window.location.origin + "/trace/" + props.traceId
 
   return <div className='form' style={{maxWidth: '500pt'}}>
-    <h2>By sharing a trace you can allow others to view it and add annotations. Anyone with the generated link will be able to view the trace.</h2>
+    {/* <h2>By sharing a trace you can allow others to view the trace and its annotations. Anyone with the generated link will be able to view the trace.</h2> */}
+    <h2>Share this trace with others, so they can view the trace and its annotations.</h2>
     <h2>Only the selected trace <span className='traceid'>#{props.traceId}</span> will be shared with others.</h2>
     <label>Link Sharing</label>
     <input type='text' value={props.sharingEnabled ? link : 'Not Enabled'} className='link' onClick={onClick} disabled={!props.sharingEnabled}/>
