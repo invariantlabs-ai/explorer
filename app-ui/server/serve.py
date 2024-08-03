@@ -7,7 +7,8 @@ from auth import install_authorization_endpoints, require_authorization
 app = fastapi.FastAPI()
 
 install_authorization_endpoints(app)
-# app.middleware("http")(require_authorization(exceptions = ["/login"], redirect=True, exception_handlers=[lambda r: r.url.path.startswith("/trace/") or r.url.path.startswith("/assets/")]))
+app.middleware("http")(require_authorization(exceptions = ["/login"], redirect=True, 
+    exception_handlers=[lambda r: r.url.path.startswith("/trace/") or r.url.path.startswith("/assets/")]))
 
 static_files_cache = {}
 def is_static_file(path):
