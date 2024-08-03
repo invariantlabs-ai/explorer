@@ -96,7 +96,7 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
             userinfo = keycloak_openid.userinfo(token["access_token"])
             request.state.userinfo = userinfo
         except Exception as e:
-            print("authentication failed", e)
+            print("authentication failed", e, "for", request.url.path)
             if redirect:
                 return RedirectResponse(url="/login")
             else:
