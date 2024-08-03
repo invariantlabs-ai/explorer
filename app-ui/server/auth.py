@@ -69,7 +69,7 @@ def install_authorization_endpoints(app):
         return response
 
 # middleware that ensure that a JWT is present in the request
-def require_authorization(exceptions, redirect=False, exceptions_handler=None):
+def require_authorization(exceptions, redirect=False, exception_handlers=None):
     """
     Add this to a fastapi app as a middleware, to ensure that a JWT is present and validated for all requests.
 
@@ -79,7 +79,6 @@ def require_authorization(exceptions, redirect=False, exceptions_handler=None):
     # same but for JWT
     async def check_jwt(request: Request, call_next):
         # check for DEV_MODE
-        print(request)
         if os.getenv("DEV_MODE") == "true":
             request.state.userinfo = {
                 "sub": "devuser4-496a-4004-950a-ef00d89c4cb7",
@@ -89,7 +88,7 @@ def require_authorization(exceptions, redirect=False, exceptions_handler=None):
             }
             return await call_next(request)
 
-        if (request.url.path in exceptions + ["/login"]) or (exceptions_handler is not None and exceptions_handler(request)):
+        if (request.url.path in exceptions + ["/login"]) or any([handler(request) for handler in (exception_handlers or [])]):
             response = await call_next(request)
             return response
         try:
