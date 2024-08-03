@@ -23,13 +23,38 @@ export const routes = [
     }
   },
   {
+    path: '/dataset/:datasetId/:bucketId/:traceId',
+    label: 'Dataset',
+    element: <Layout fullscreen><Traces/></Layout>,
+    loader: async (task: any) => {
+      return {
+        "datasetId": task.params.datasetId,
+        "bucketId": task.params.bucketId,
+        "traceId": task.params.traceId
+      }
+    }
+  },
+  {
     path: '/dataset/:datasetId/:bucketId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
       return {
         "datasetId": task.params.datasetId,
-        "bucketId": task.params.bucketId
+        "bucketId": task.params.bucketId,
+        "traceId": null
+      }
+    }
+  },
+  {
+    path: '/dataset/:datasetId/:bucketId',
+    label: 'Dataset',
+    element: <Layout fullscreen><Traces/></Layout>,
+    loader: async (task: any) => {
+      return {
+        "datasetId": task.params.datasetId,
+        "bucketId": task.params.bucketId,
+        "traceId": null
       }
     }
   },

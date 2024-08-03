@@ -3,6 +3,7 @@ import {UserInfo, useUserInfo} from './UserInfo'
 import { BsCheckCircleFill, BsFileBinaryFill, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 import { BiSolidCommentDetail } from 'react-icons/bi'
+import { sharedFetch } from './SharedFetch'
 
 interface DatasetData {
   id: string
@@ -14,12 +15,8 @@ function useDataset(datasetId: string): DatasetData | null {
   const [dataset, setDataset] = React.useState(null)
 
   React.useEffect(() => {
-    fetch(`/api/v1/dataset/${datasetId}`).then(response => {
-      if (response.ok) {
-        response.json().then(data => {
-          setDataset(data)
-        })
-      }
+    sharedFetch(`/api/v1/dataset/${datasetId}`).then(data => {
+      setDataset(data)
     })
   }, [datasetId])
 
@@ -71,24 +68,24 @@ function Dataset() {
       name: "All",
       count: 0
     },
-    {
-      id: "uncategorized",
-      name: "Uncategorized",
-      icon: <BsQuestionCircleFill style={{color: 'grey'}}/>,
-      count: 0
-    },
-    {
-      id: "success",
-      name: "Success",
-      icon: <BsCheckCircleFill style={{color: 'green'}}/>,
-      count: 0
-    },
-    {
-      id: "hallucinations",
-      name: "Hallucinations",
-      icon: <BsMoonStarsFill/>,
-      count: 0
-    }
+    // {
+    //   id: "uncategorized",
+    //   name: "Uncategorized",
+    //   icon: <BsQuestionCircleFill style={{color: 'grey'}}/>,
+    //   count: 0
+    // },
+    // {
+    //   id: "success",
+    //   name: "Success",
+    //   icon: <BsCheckCircleFill style={{color: 'green'}}/>,
+    //   count: 0
+    // },
+    // {
+    //   id: "hallucinations",
+    //   name: "Hallucinations",
+    //   icon: <BsMoonStarsFill/>,
+    //   count: 0
+    // }
   ]
 
   return <div className="panel entity-list">

@@ -12,7 +12,7 @@ For local development, you can run the following command:
 ./dev up
 ```
 
-This serves a local traefik instance that routes to the frontend and backend services, both accessible at `localhost` (to resolve the SSL warnings, see below).
+This serves a local traefik instance that routes to the frontend and backend services, both accessible at `https://localhost` (https, to resolve the SSL warnings, see below).
 
 > The local setup always uses an authenticated mock user that is automatically logged in.
 

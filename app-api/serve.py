@@ -2,11 +2,12 @@ import fastapi
 
 from routes.user import user
 from routes.auth import require_authorization
-from routes.datamodel import dataset
+from routes.datamodel import dataset, trace
 
 v1 = fastapi.FastAPI()
 v1.mount("/user", user)
 v1.mount("/dataset", dataset)
+v1.mount("/trace", trace)
 
 @v1.get("/")
 async def home():

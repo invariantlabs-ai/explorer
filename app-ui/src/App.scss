@@ -219,6 +219,20 @@ div.panel {
     }
   }
 
+  &.fullscreen {
+    header {
+      height: 40pt;
+
+      h1 {
+        font-size: 14pt;
+      }
+
+      button.inline {
+        height: 30pt;
+      }
+    }
+  }
+
   h4 {
     font-size: 14pt;
     margin-top: 10pt;
@@ -638,4 +652,39 @@ div.panel.explorer {
       height: 30pt;
     }
   }
+}
+
+.shortcut {
+  svg {
+    width: 0.7em;
+    height: 0.7em;
+    position: relative;
+    top: -2pt;
+    margin-left: 4pt;
+  }
+
+  padding: 4pt;
+  border-radius: 20pt;
+  padding-top: 3pt;
+  padding-bottom: 5pt;
+  background-color: rgba(0, 0, 0, 0.118);
+  opacity: 0.8;
+  font-weight: 300;
+  position: relative;
+  top: -0.5pt;
+  display: inline-block;
+  transform: scale(0.9);
+  margin-left: 2pt;
+  margin-right: -6pt;
+  margin-bottom: -1pt;
+}
+
+button.primary .shortcut {
+  background-color: rgba(255, 255, 255, 0.118);
+}
+
+.trace-explorer {
+  width: 200pt;
+  height: 100vh;
+  background-color: red;
 }

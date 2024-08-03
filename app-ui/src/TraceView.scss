@@ -10,24 +10,26 @@ $text-color-highlight: #131124;
 $border-color: #aeadbf51;
 $highlighted-background: rgba(0, 0, 0, 0.05);
 
+$color-button-primary: #3A3E60;
+
 .app {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
-  
+
     color-scheme: light dark;
     color: $text-color;
     // background-color: #1E1E1E;
-  
+
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    
+
     height: calc(100vh - 45pt) !important;
     padding: 0pt 5pt;
     overflow-y: hidden !important;
-  }
+}
 
 div[data-resize-handle] {
     border: 0.5pt solid grey;
@@ -35,7 +37,8 @@ div[data-resize-handle] {
     cursor: ew-resize;
 }
 
-div[data-resize-handle]:hover, div[data-resize-handle][data-resize-handle-state='hover'] {
+div[data-resize-handle]:hover,
+div[data-resize-handle][data-resize-handle-state='hover'] {
     border: 0.5pt solid $color-primary !important;
     box-shadow: 0pt 0pt 0pt $color-primary;
     opacity: 0.8;
@@ -80,7 +83,8 @@ div[data-panel] {
             border-radius: 5pt;
             margin-left: 8pt;
             top: 2pt;
-            height: 28pt;;
+            height: 28pt;
+            ;
         }
 
         input[type='checkbox'] {
@@ -109,7 +113,7 @@ div[data-panel] {
         &.with-arrow {
             background-image: url('/theme/images/arrow-right-dark.svg');
         }
-        
+
     }
 
     button.small {
@@ -120,7 +124,7 @@ div[data-panel] {
         font-weight: 500;
         cursor: pointer;
         position: relative;
-        
+
         background-color: rgba(255, 255, 255, 0.102);
 
         &:hover {
@@ -287,15 +291,30 @@ code.error {
         left: 0;
         width: 100%;
     }
-    
+
     .elements {
         overflow-y: auto;
         overflow-x: hidden;
         min-height: 100%;
+
+        h2 {
+            font-weight: 600;
+            white-space: nowrap;
+            margin: 3pt 0pt;
+            font-size: 12pt;
+            color: $text-color;
+
+            svg {
+                position: relative;
+                margin-right: 5pt;
+                margin-left: 5pt;
+                top: 1pt;
+                opacity: 0.9;
+            }
+        }
     }
 
     .element {
-        // background-color: rgba(255, 255, 255, 0.05);
         padding: 4pt;
         border: 1pt solid rgba(255, 255, 255, 0.0);
         padding-left: 20pt;
@@ -308,7 +327,8 @@ code.error {
         -webkit-user-select: none;
         -moz-user-select: none;
 
-        h3, h4 {
+        h3,
+        h4 {
             padding: 0pt;
             margin: 0pt;
             font-size: 14px;
@@ -360,7 +380,19 @@ code.error {
     padding-bottom: 0pt;
     position: relative;
     background: transparent;
-    padding-top: 20pt;
+    padding: 10pt 20pt;
+
+    // scrollbar background
+    &::-webkit-scrollbar {
+        width: 10px;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    // scrollbar thumb
+    &::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
 
     .message {
         margin: 10pt;
@@ -373,12 +405,13 @@ code.error {
         width: min(1000pt, 100%);
         margin: 5pt auto;
 
-        p {
+        p, div.paragraph {
             padding: 5pt;
             font-family: monospace;
             margin: 5pt;
-            line-height: 2.0;
-            font-size: 14px;
+            line-height: 1.8;
+            font-size: 16px;
+            font-weight: 500;
         }
 
         label {
@@ -417,7 +450,8 @@ code.error {
             display: block;
         }
 
-        code.arguments, code.tool {
+        code.arguments,
+        code.tool {
             padding: 10pt;
             display: block;
             white-space: pre-wrap;
@@ -468,6 +502,7 @@ code.error {
                 line-height: 5pt;
                 text-overflow: none;
                 color: transparent;
+                border: none;
 
                 svg {
                     opacity: 0.6;
@@ -475,7 +510,7 @@ code.error {
                     width: 10pt;
                     height: 10pt;
                     margin: 0pt;
-                    top: -4pt;
+                    top: -5pt;
                 }
             }
         }
@@ -485,6 +520,12 @@ code.error {
             top: 0pt !important;
             width: 8pt;
             height: 8pt;
+        }
+    }
+
+    &:not(.keep-highlight) {
+        .message {
+            background: white !important;
         }
     }
 
@@ -560,7 +601,7 @@ code.error {
             line-height: 20pt;
             height: 30pt;
         }
-    
+
     }
 }
 
@@ -624,6 +665,7 @@ code {
         position: relative;
         top: 1pt;
     }
+
     padding: 10pt;
 }
 
@@ -652,7 +694,7 @@ svg.background rect.highlight-rect {
     from {
         stroke-dashoffset: 0;
     }
-    
+
     to {
         stroke-dashoffset: -10;
     }
@@ -674,15 +716,17 @@ svg.background rect.highlight-rect {
     }
 
 
-    .hover-#{$i} .tool-call.highlight, .hover-#{$i} .message.highlight {
+    .hover-#{$i} .tool-call.highlight,
+    .hover-#{$i} .message.highlight {
         background-color: $highlighted-background;
     }
-    
-    .keep-highlight.hover-#{$i} .tool-call.highlight, .keep-highlight.hover-#{$i} .message.highlight {
+
+    .keep-highlight.hover-#{$i} .tool-call.highlight,
+    .keep-highlight.hover-#{$i} .message.highlight {
         background-color: $highlighted-background !important;
     }
 
-    
+
 }
 
 svg.background path.highlight.hover-1 {
@@ -845,7 +889,6 @@ span.dimmed {
         // border-left: 1pt solid rgba(0, 0, 0, 0.102);
         flex: 1;
         position: relative;
-        overflow: hidden;
         min-height: 30pt;
 
         &:hover {
@@ -1082,7 +1125,7 @@ h2.tabs {
         }
     }
 
-    
+
 }
 
 .examples {
@@ -1186,4 +1229,159 @@ h2.tabs {
 label.mono {
     font-family: monospace;
     font-weight: 500;
+}
+
+.comment-insertion-point {
+    background-color: transparent;
+    display: inline;
+    white-space: pre-wrap;
+    position: relative;
+
+    transition: background-color 0.1s;
+
+    &:hover {
+        background-color: $highlighted-background;
+    }
+
+    &.has-comment {
+        background-color: rgba(195, 201, 81, 0.3);
+    }
+
+    .comment-indicator {
+        width: 5pt;
+        height: 5pt;
+        background-color: rgb(46, 101, 56);
+        position: absolute;
+        top: 5pt;
+        left: -25pt;
+        border-radius: 50%;
+        z-index: 1000;
+    }
+
+    .comment-composer {
+        width: calc(100%);
+        margin-left: -10pt;
+        height: auto;
+        z-index: 1000;
+
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: none;
+        color: $text-color;
+        padding: 5pt;
+        position: relative;
+
+        .comment-embed {
+            flex: 1;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 8pt;
+            border: 1pt solid $border-color;
+            margin-left: 7pt;
+        }
+
+        .comment-embed-address {
+            position: absolute;
+            top: 12pt;
+            right: 20pt;
+            opacity: 0.2;
+        }
+
+        textarea {
+            width: calc(100% - 30pt);
+            font-size: 12pt;
+            font-family: 'Helvetica Neue', sans-serif !important;
+            font-weight: 400;
+
+            background-color: #ebebeb;
+            color: $text-color;
+
+            border: none;
+            background: none;
+            outline: none;
+            -webkit-outline: none;
+            max-width: calc(100% - 30pt);
+            ;
+            min-width: calc(100% - 30pt);
+            ;
+            max-height: auto;
+            flex: 1;
+
+            padding: 10pt;
+
+            // user-scale freely
+            resize: vertical;
+            min-height: 100pt;
+        }
+
+        footer {
+            height: auto;
+            width: calc(100% - 20pt);
+            min-height: auto;
+            max-height: auto;
+            background-color: transparent;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            padding: 10pt;
+            position: relative;
+            right: 15pt;
+            background-color: #ebebeb29;
+            padding-top: 10pt;
+            padding-left: 30pt;
+
+            button.inline {
+                font-size: 10pt;
+                height: 30pt;
+                ;
+            }
+
+            span.description {
+                font-family: NeueMontreal;
+                font-size: 10pt;
+                opacity: 0.7;
+                margin-right: 10pt;
+                margin-top: 5pt;
+            }
+        }
+
+        // transform: translateX(-150%);
+    }
+}
+
+.highlighted-value-table .comment-composer {
+    background: none;
+}
+
+button.inline.primary {
+    background-color: $color-button-primary;
+    color: white;
+    transition: background-color 0.01s;
+
+    &:hover {
+        background-color: darken($color-button-primary, 10%);
+    }
+
+    &:active {
+        background-color: darken($color-button-primary, 20%);
+    }
+}
+
+button.inline.icon {
+    svg {
+        opacity: 0.6;
+        color: $text-color;
+        width: 10pt;
+        height: 10pt;
+        margin: 0pt;
+        top: 0pt;
+        left: 0pt;
+    }
+}
+
+button.inline.danger {
+    svg {
+        color: red !important;
+    }
 }

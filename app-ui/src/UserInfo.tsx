@@ -1,4 +1,5 @@
 import React from 'react'
+import { sharedFetch } from './SharedFetch'
 
 export interface UserInfo {
     id: string
@@ -11,8 +12,7 @@ export function useUserInfo(): UserInfo | null {
     const [userInfo, setUserInfo] = React.useState(null)
   
     React.useEffect(() => {
-      fetch('/api/v1/user/info')
-        .then(response => response.json())
+      sharedFetch('/api/v1/user/info')
         .then(data => setUserInfo(data))
     }, [])
   
