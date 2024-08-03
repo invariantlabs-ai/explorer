@@ -7,7 +7,6 @@ import Select from 'react-select'
 import Editor from '@monaco-editor/react';
 import { useStreamingEndpoint, StreamingFetch } from './streaming';
 import {useUserInfo} from './UserInfo';
-import { useNavigate } from 'react-router-dom';
 
 import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsWindows } from "react-icons/bs";
 
@@ -954,7 +953,6 @@ function CommentComposer(props) {
   const [editorFocus, setEditorFocus] = useAppStatePath('editorFocus.isFocused')
   const textarea = useRef(null)
   const userInfo = useUserInfo()
-  const navigate = useNavigate()
   let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
   annotations = annotations || {}
 
@@ -1063,7 +1061,7 @@ function CommentComposer(props) {
         <div className='spacer' />
         {!userInfo?.loggedIn && <>
           <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
-          <button className="inline primary" onClick={(e) => navigate('/login')}>Sign In To Annote</button>
+          <button className="inline primary" onClick={(e) => window.location.href = '/login'}>Sign In To Annote</button>
         </>}
         {userInfo?.loggedIn && <>
         {alreadyExists && <button className='inline icon danger' onClick={(e) => onDelete(e)}><BsTrash /></button>}

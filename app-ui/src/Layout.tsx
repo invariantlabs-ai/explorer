@@ -14,7 +14,7 @@ function Layout(props: {children: React.ReactNode, fullscreen?: boolean}) {
             <img src={logo} alt='Invariant logo' className='logo' onClick={() => navigate('/')}/>
             <h1 onClick={() => navigate('/')} className='title' title='Invariant Explorer'>Invariant Explorer</h1>
             <div className='spacer'/>
-            {!userInfo?.loggedIn && <button className='inline' onClick={() => navigate('/login')}>Sign In</button>}
+            {!userInfo?.loggedIn && <button className='inline' onClick={() => window.location.href = '/login'}>Sign In</button>}
             <div className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
                 {userInfo?.loggedIn && <>
                 <div className='avatar'/>
