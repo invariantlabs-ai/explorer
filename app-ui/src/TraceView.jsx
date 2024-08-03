@@ -942,7 +942,7 @@ function CommentComposer(props) {
 
   const [submitting, setSubmitting] = useState(false)
   const [comment, setComment] = useState(annotations[props.address] ? annotations[props.address].content : '')
-  const edited = annotations[props.address] ? annotations[props.address].content !== comment : false
+  const edited = annotations[props.address] ? annotations[props.address].content !== comment : comment.length > 0
 
   useEffect(() => {
     setComment(annotations[props.address] ? annotations[props.address].content : '')
