@@ -276,7 +276,6 @@ code.error {
     padding-left: 0pt;
     padding-right: 0pt;
     cursor: default;
-    height: calc(100vh - 90pt);
     width: 100%;
 
     div[data-panel] {
@@ -1248,11 +1247,11 @@ label.mono {
     }
 
     .comment-indicator {
-        width: 5pt;
-        height: 5pt;
+        width: 10pt;
+        height: 10pt;
         background-color: rgb(46, 101, 56);
         position: absolute;
-        top: 5pt;
+        top: 3pt;
         left: -25pt;
         border-radius: 50%;
         z-index: 1000;

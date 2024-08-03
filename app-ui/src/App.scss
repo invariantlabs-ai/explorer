@@ -9,6 +9,8 @@ $color-button: #AEADBF;
 $color-button-primary: #3A3E60;
 $color-button-blue: #948FE4;
 
+$border-color: #aeadbf51;
+
 $color-green: #4AEC9B;
 
 body {
@@ -654,6 +656,16 @@ div.panel.explorer {
   }
 }
 
+div.panel {
+  header.toolbar {
+    position: absolute;
+    top: 40pt;
+    right: 0pt;
+    z-index: 1;
+    width: auto;
+  }
+}
+
 .shortcut {
   svg {
     width: 0.7em;
@@ -687,4 +699,144 @@ button.primary .shortcut {
   width: 200pt;
   height: 100vh;
   background-color: red;
+}
+
+.panel .sidebyside {
+  display: flex;
+  flex-direction: row;
+
+  .sidebar {
+    border: $border-color 1pt solid;
+    margin: 2pt;
+    margin-left: 0pt;
+    margin-top: 4pt;
+    border-radius: 5pt;
+    width: 250pt;
+    
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+    margin-left: 0pt;
+    transition: margin-left 0.2s;
+    height: calc(100vh - 92pt);
+    
+    ul {
+      overflow-y: auto;
+      padding: 0pt;
+      height: 500pt;
+      margin: 0pt;
+      flex: 1;
+      max-height: 100%;
+
+      display: block;
+
+      li {
+        border-radius: 0pt;
+        border-bottom: 1pt solid $border-color;
+        margin: 0pt;
+        padding: 0pt;
+        padding-left: 2pt;
+        border-left: 2pt solid transparent;
+
+        a {
+          display: block;
+          text-decoration: none;
+          color: $text-color;
+          width: 100%;
+          height: 20pt;
+          padding: 4pt;
+
+          .badge {
+            margin-left: 5pt;
+          }
+        }
+      }
+
+      li.empty {
+        padding: 10pt;
+        font-size: 12pt;
+        opacity: 0.5;
+        background: none;
+        text-align: center !important;
+        border: none;
+        margin: auto;
+      }
+
+      li.active {
+        background-color: #f1f1f1;
+        border-left: 2pt solid $color-primary;
+      }
+
+      // scrollbards
+      &::-webkit-scrollbar {
+        background-color: black;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 10pt;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+    }
+
+    button.toggle {
+      width: 35pt;
+      background: none;
+      color: $text-color;
+      border-radius: 4pt;
+      margin: 4pt;
+      text-align: center;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+      }
+    }
+  
+    header {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding-top: 2pt;
+      position: relative;
+      border-bottom: 1pt solid $border-color;
+
+      h1 {
+        font-size: 12pt;
+        font-weight: bold;
+        color: $text-color;
+        opacity: 0.8;
+        margin: 0pt;
+        padding: 0pt;
+        margin-left: 10pt;
+        margin-right: auto;
+        line-height: 40pt;
+      }
+    }
+
+    &.collapsed {
+      // left: -213pt;
+      margin-left: -213pt;
+
+      ul {
+        opacity: 0.0;
+      }
+    }
+  } 
+
+  .explorer {
+    height: calc(100vh - 90pt);
+  }
+}
+
+.traceid {
+  font-size: 12pt;
+  opacity: 0.5;
+  margin-top: 5pt;
+  margin-bottom: 5pt;
+  font-family: monospace;
 }

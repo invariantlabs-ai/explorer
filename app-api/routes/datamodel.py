@@ -4,6 +4,7 @@ import re
 import json
 import datetime
 from sqlalchemy import String, Integer, Column, ForeignKey
+from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
@@ -261,6 +262,13 @@ def get_traces(request: Request, id: str, bucket: str):
         else:
             raise HTTPException(status_code=404, detail="Bucket not found")
         
+        # with join, count number of annotations per trace
+        traces = traces\
+            .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
+            .group_by(Trace.id)\
+            .add_columns(Trace.id, Trace.index, Trace.content, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
+
+        
         if limit is not None:
             traces = traces.limit(int(limit))
         if offset is not None:
@@ -275,6 +283,7 @@ def get_traces(request: Request, id: str, bucket: str):
             "id": trace.id,
             "index": trace.index,
             "messages": [],
+            "num_annotations": trace.num_annotations,
             "extra_metadata": trace.extra_metadata
         } for trace in traces]
 

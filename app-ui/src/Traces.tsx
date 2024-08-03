@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect } from 'react'
 import { useNavigate } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsCheckCircleFill, BsDatabaseFill, BsFileBinaryFill, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
+import { BsCheckCircleFill, BsDatabaseFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 
 import { Explorer } from './TraceView'
 import { sharedFetch } from './SharedFetch';
+
+import { ViewportList } from 'react-viewport-list';
 
 interface DatasetData {
   id: string
@@ -140,8 +142,17 @@ function Traces() {
   }
 
   return <div className="panel fullscreen app">
-    <Explorer 
-      header={<h1><Link to='/'>Datasets</Link> / <Link to={`/dataset/${props.datasetId}`}>{dataset?.name}</Link> / {props.bucketId}</h1>} 
+    <header>
+      <h1><Link to='/'>Datasets</Link> / <Link to={`/dataset/${props.datasetId}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+    </header>
+    <div className='sidebyside'>
+    <Sidebar 
+      traces={traces} 
+      datasetId={props.datasetId} 
+      activeTraceId={props.traceId} 
+      bucketId={props.bucketId}
+    />
+    <Explorer
       // {...(transformedTraces || {})}
       activeTrace={activeTrace}
       loadTrace={loadTrace} 
@@ -150,6 +161,46 @@ function Traces() {
       selectedTraceId={props.traceId}
       hasFocusButton={false}
     />
+    </div>
+  </div>
+}
+
+function Sidebar(props) {
+  const {datasetId, activeTraceId} = props
+  const [visible, setVisible] = React.useState(true)
+  const viewportRef = React.useRef(null)
+
+  return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
+    <header>
+      <h1>{props.traces ? props.traces.indices.length + " Traces" : "Loading..."}</h1>
+      <div className='spacer'></div>
+      <button className='toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
+    </header>
+    <ul ref={viewportRef}>
+      {/* {props.traces ? props.traces.indices.map(id => {
+        const trace = props.traces.elements[id]
+        return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
+          <Link to={'/dataset/' + datasetId + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
+            Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
+          </Link>
+        </li>
+      }) : null} */}
+      <ViewportList
+        items={props.traces ? props.traces.indices : []}
+        viewportRef={viewportRef}
+        overscan={10}
+      >
+        {(id: string) => {
+          const trace = props.traces.elements[id]
+          return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
+            <Link to={'/dataset/' + datasetId + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
+              Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
+            </Link>
+          </li>
+        }}
+      </ViewportList>
+
+    </ul>
   </div>
 }
 
