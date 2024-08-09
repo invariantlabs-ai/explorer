@@ -80,7 +80,7 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
     # same but for JWT
     async def check_jwt(request: Request, call_next):
         # check for DEV_MODE
-        if os.getenv("DEV_MODE") == "true":
+        if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
             request.state.userinfo = {
                 "sub": "devuser4-496a-4004-950a-ef00d89c4cb7",
                 "email": "dev@mail.com",
