@@ -1,9 +1,10 @@
-import fastapi
 import re
+import fastapi
 
 from routes.user import user
 from routes.auth import require_authorization
-from routes.datamodel import dataset, trace, has_link_sharing
+from routes.dataset import dataset
+from routes.trace import trace, has_link_sharing
 
 v1 = fastapi.FastAPI()
 v1.mount("/user", user)
@@ -17,6 +18,8 @@ async def home():
 app = fastapi.FastAPI()
 app.mount("/api/v1", v1)
 
+# implements exception, where a trace and its annotations can be accessed without authorization
+# if the trace has a link sharing enabled
 def allow_traces_with_link_sharing(request: fastapi.Request): 
     if not re.match(r"^/api/v1/trace/[a-z0-9-]+$", request.url.path) and not re.match(r"^/api/v1/trace/[a-z0-9-]+/annotations$", request.url.path):
         return False
@@ -27,14 +30,13 @@ def allow_traces_with_link_sharing(request: fastapi.Request):
     else:
         trace_id = path.split("/")[-1]
  
-    print("check for link sharing of trace", trace_id)
-
     result = has_link_sharing(trace_id)
     request.state.userinfo = {
         "sub": "anonymous"
     }
     return result
 
+# makes sure everything else requires a JWT for authorization, obtained by visiting auth.invariantlabs.ai
 app.middleware("http")(require_authorization(exceptions=[], exception_handlers = [allow_traces_with_link_sharing]))  
 
 if __name__ == "__main__":

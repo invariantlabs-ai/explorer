@@ -69,6 +69,7 @@ def install_authorization_endpoints(app):
         return response
 
 # middleware that ensure that a JWT is present in the request
+# if it is not present, it will redirect to /login
 def require_authorization(exceptions, redirect=False, exception_handlers=None):
     """
     Add this to a fastapi app as a middleware, to ensure that a JWT is present and validated for all requests.

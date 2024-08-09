@@ -1,6 +1,37 @@
-# Invariant App Template
+# Invariant Explorer
 
-Simple template of 3 docker services, that allow to host an authenticated invariant application using auth.invariantlabs.ai as the authentication provider.
+The explorer project consist of 3 main docker compose services: `app-api`, `app-ui` and a Postgres `database`. 
+
+For local development, just run 
+
+```
+./dev up
+```
+
+This will spin up a local deployment of the explorer application at `https://localhost` (note the HTTPS). If you are getting certificate errors, make sure you follow the steps described at the bottom of this README, to use your self-signed certificates for local use or just waive the certificate warnings.
+
+## Project Components
+
+* `app-ui` includes the frontend code that communciates with the API services located at `/api/v1/*`.
+* `app-api` implements the backend API as FastAPI application. It uses SQLAlchemy for database mappings, with the main datamodel in `app-api/models/datasets_and_traces.py`.
+
+## Local Development vs. Production
+
+**Authentication** In local development (via the `./dev` script), authentication is mocked, and the application behaves as if a user was logged in all the time. In production, authentication is implemented via the Keycloak service hosted at `auth.invariantlabs.ai`. For this, all endpoints of the API and the UI require a JWT token to be sent with every request, which enables the API to be authenticated.
+
+**UI Serving** In local development, the UI is hot-reloaded via [Vite](https://vitejs.dev), which allows live editing. The `app-api` is also hot-reloaded via `uvicorn`. In production, the UI is built and served using `app-ui/server/serve.py`. To serve both the UI and the API via the same host, [traefik](https://traefik.io) is used for reverse proxying. 
+
+To better understand the differences between a production and a local deployment, compare `docker-compose.yml` (local) and `docker-compose.prod.yml` (production). 
+
+## Deployment
+
+On the `root@invariant` platform server, go to the `~/www/explorer` directory and run `python3 pull.py` to pull the `main` branch of this repository, re-build the docker images and deploy the latest `explorer` application.
+
+## Invariant App Template
+
+**Template Instance** This project uses the Invariant app template with `APP_NAME` set to `explorer`. Apart from this most configuration still behaves as described below.
+
+The app template is a simple template of 3 docker services that allow to host an authenticated invariant application using auth.invariantlabs.ai as the authentication provider.
 
 To use this template, update `APP_NAME` in the `dev` and `prod` scripts, and update the 3 `auth.py` files as described below for the production authentication with `auth.invariantlabs.ai`.
 

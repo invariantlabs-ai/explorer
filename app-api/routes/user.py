@@ -1,5 +1,4 @@
 import fastapi
-from model import trace_db, TracedAgentStep
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import json
