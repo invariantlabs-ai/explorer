@@ -5,6 +5,11 @@ The explorer project consist of 3 main docker compose services: `app-api`, `app-
 For local development, just run 
 
 ```
+# create data folders
+mkdir data
+mkdir data/database data/datasets data/pgadmin
+
+# launch the dev environment
 ./dev up
 ```
 
