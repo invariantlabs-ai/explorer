@@ -1055,13 +1055,18 @@ function CommentComposer(props) {
   
   
   return <div className='comment-composer'>
+    {annotations[props.address] && <>
+      <div className='comment-user'>
+      <span>{annotations[props.address].user.username}</span>
+      <img src={"https://www.gravatar.com/avatar/"+ annotations[props.address].user.image_url_hash} />
+      </div>
+    </>}
     <div className='comment-embed'>
       <span className='comment-embed-address'>{address}</span>
       <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} />
       <footer>
         {/* <span className='description'>Use <code>[BUCKET]</code> to categorize this trace in a given bucket.</span> */}
         <div className='spacer' />
-        <div>asdf: {(annotations[props.address] || {}).user}</div>
         {!userInfo?.loggedIn && <>
           <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
           <button className="inline primary" onClick={(e) => window.location.href = '/login'}>Sign In To Annote</button>

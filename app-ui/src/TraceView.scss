@@ -1264,15 +1264,29 @@ label.mono {
         z-index: 800;
 
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         overflow: hidden;
         background: none;
         color: $text-color;
         padding: 5pt;
         position: relative;
 
-        .comment-embed {
+        .comment-user {
+            margin-left: 7pt;
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: top;
+            
+            span {
+                font-weight: bold;
+                text-align: center;
+            }
+
+        }
+        
+        .comment-embed {
+            flex: 10;
             flex-direction: column;
             background-color: white;
             border-radius: 8pt;

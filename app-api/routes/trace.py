@@ -8,7 +8,7 @@ import datetime
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, Request, HTTPException
 
-from models.datasets_and_traces import Dataset, db, Trace, Annotation, SharedLinks
+from models.datasets_and_traces import Dataset, db, Trace, Annotation, SharedLinks, User
 
 trace = FastAPI()
 
@@ -222,15 +222,18 @@ def get_annotations(request: Request, id: str):
         if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
             raise HTTPException(status_code=401, detail="Unauthorized get")
         
-        annotations = session.query(Annotation).filter(Annotation.trace_id == id).all()
-        
+        annotations = session.query(Annotation, User).filter(Annotation.trace_id == id).join(User, User.id == Annotation.user_id).all()
+        print(annotations[0])
         return [{
             "id": annotation.id,
             "content": annotation.content,
             "address": annotation.address,
             "extra_metadata": annotation.extra_metadata,
-            "user": annotation.user_id
-        } for annotation in annotations]
+            "user": {
+                "username": user.username,
+                "image_url_hash": user.image_url_hash
+            }
+        } for annotation, user in annotations]
 
 # delete annotation
 @trace.delete("/{id}/annotation/{annotation_id}")
