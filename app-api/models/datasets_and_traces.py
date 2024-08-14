@@ -67,14 +67,14 @@ class SharedLinks(Base):
     # foreign user id that this shared link belongs to
     trace_id = mapped_column(UUID(as_uuid=True), ForeignKey("traces.id"), nullable=False)
 
+def get_db_url():
+    return "postgresql://{}:{}@database:5432/{}".format(os.environ["POSTGRES_USER"],
+                                                        os.environ["POSTGRES_PASSWORD"],
+                                                        os.environ["POSTGRES_DB"])
+
 def db():
     """
     Returns a SQLAlchemy engine object that is connected to the database.
     """
-    client = create_engine("postgresql://{}:{}@database:5432/{}".format(
-        os.environ["POSTGRES_USER"], os.environ["POSTGRES_PASSWORD"], os.environ["POSTGRES_DB"]
-    ))
-
-    Base.metadata.create_all(client)
-
+    client = create_engine(get_db_url())
     return client

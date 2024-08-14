@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 sqlalchemy[postgresql]
+alembic
 pyyaml
 python-jose
 passlib[bcrypt]
