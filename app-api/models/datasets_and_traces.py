@@ -42,6 +42,16 @@ class Trace(Base):
     content = mapped_column(String, nullable=False)
     extra_metadata = mapped_column(String, nullable=False)
 
+class User(Base):
+    __tablename__ = "users"
+    # database of users
+    # this is NOT used for auth (see routes/auth.py), but just to map user_id -> display, image_path
+
+    # key is uuid that must be supplied
+    id = mapped_column(UUID(as_uuid=True), primary_key=True)
+    username = mapped_column(String, nullable=False)
+    image_url_hash = mapped_column(String, nullable=False)
+
 class Annotation(Base):
     __tablename__ = "annotations"
 
@@ -50,7 +60,7 @@ class Annotation(Base):
     # foreign trace id that this annotation belongs to
     trace_id = mapped_column(UUID(as_uuid=True), ForeignKey("traces.id"), nullable=False)
     # foreign user id that this annotation belongs to
-    user_id = mapped_column(String, nullable=False)
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     # JSON object of the annotation
     content = mapped_column(String, nullable=False)
     # address within the trace that this annotation belongs to (e.g. message, offset, etc.)

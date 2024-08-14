@@ -228,7 +228,8 @@ def get_annotations(request: Request, id: str):
             "id": annotation.id,
             "content": annotation.content,
             "address": annotation.address,
-            "extra_metadata": annotation.extra_metadata
+            "extra_metadata": annotation.extra_metadata,
+            "user": annotation.user_id
         } for annotation in annotations]
 
 # delete annotation

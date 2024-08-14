@@ -1052,6 +1052,8 @@ function CommentComposer(props) {
     }
   }
 
+  
+  
   return <div className='comment-composer'>
     <div className='comment-embed'>
       <span className='comment-embed-address'>{address}</span>
@@ -1059,6 +1061,7 @@ function CommentComposer(props) {
       <footer>
         {/* <span className='description'>Use <code>[BUCKET]</code> to categorize this trace in a given bucket.</span> */}
         <div className='spacer' />
+        <div>asdf: {(annotations[props.address] || {}).user}</div>
         {!userInfo?.loggedIn && <>
           <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
           <button className="inline primary" onClick={(e) => window.location.href = '/login'}>Sign In To Annote</button>
