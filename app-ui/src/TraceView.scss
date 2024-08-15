@@ -1256,6 +1256,30 @@ label.mono {
         border-radius: 50%;
         z-index: 1000;
     }
+    
+    .comment-thread {
+        footer {
+
+            height: auto;
+            width: 100%;
+            padding: 10pt;
+            right: 30pt;
+            min-height: auto;
+            max-height: auto;
+            background-color: transparent;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            position: relative;
+            background-color: #ebebeb29;
+
+            button.inline {
+                font-size: 10pt;
+                height: 30pt;
+            }
+
+        }
+    }
 
     .comment-composer {
         width: calc(100%);
@@ -1301,7 +1325,7 @@ label.mono {
             margin-left: 7pt;
         }
 
-        .comment-embed-address {
+        .comment-embed-controls {
             position: absolute;
             top: 12pt;
             right: 20pt;
@@ -1337,7 +1361,7 @@ label.mono {
 
         footer {
             height: auto;
-            width: calc(100% - 20pt);
+            width: calc(100% - 30pt);
             min-height: auto;
             max-height: auto;
             background-color: transparent;
@@ -1346,7 +1370,7 @@ label.mono {
             justify-content: flex-end;
             padding: 10pt;
             position: relative;
-            right: 15pt;
+            right: 10pt;
             background-color: #ebebeb29;
             padding-top: 10pt;
             padding-left: 30pt;

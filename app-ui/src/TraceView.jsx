@@ -1066,7 +1066,7 @@ function CommentComposer(props) {
     }
     <div className='comment-embed'>
     { showEdit && !active &&
-      <span className='comment-embed-address'>
+      <span className='comment-embed-controls'>
         <button onClick={(e) => setActive(true) } ><BsPencilFill/></button>
         <button className='danger' onClick={(e) => onDelete(e)}><BsTrash/></button>
       </span>
@@ -1110,7 +1110,8 @@ function CommentThread(props) {
     <div className='comment-thread'>
     {
       annotations && (annotations[props.address] || []).map((annotation, i) => 
-        <CommentComposer address={props.address}
+        <CommentComposer key={'annotation'+i} 
+                         address={props.address}
                          traceId={props.traceId}
                          position={i}
                          active={false} />)
@@ -1118,6 +1119,9 @@ function CommentThread(props) {
     <CommentComposer address={props.address}
                      traceId={props.traceId}
                      active={true} />
+    <footer>
+      <button className='inline' onClick={(e) => {e.stopPropagation(); props.onClose()}}>Close</button>
+    </footer>
     </div>
   </>
 }
