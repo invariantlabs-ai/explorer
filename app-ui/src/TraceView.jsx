@@ -234,8 +234,15 @@ class Annotations extends RemoteResource {
   transform(data) {
     let annotations = {}
     data.forEach(annotation => {
-      annotations[annotation.address] = annotation
+      if (!(annotation.address in annotations)) {
+        annotations[annotation.address] = []
+      }
+      annotations[annotation.address].push(annotation)
     })
+    // sort by timestamp
+    for (let address in annotations) {
+      annotations[address].sort((a, b) => a.timestamp - b.timestamp)
+    }
     return annotations
   }
 }
@@ -953,20 +960,24 @@ function CommentComposer(props) {
   const [editorFocus, setEditorFocus] = useAppStatePath('editorFocus.isFocused')
   const textarea = useRef(null)
   const userInfo = useUserInfo()
+  const [user, setUser] = useState({})
   let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
   annotations = annotations || {}
-
+  const alreadyExists = props.position !== undefined
   const [submitting, setSubmitting] = useState(false)
-  const [comment, setComment] = useState(annotations[props.address] ? annotations[props.address].content : '')
-  const edited = annotations[props.address] ? annotations[props.address].content !== comment : comment.length > 0
+  const [annotation, setAnnotation] = useState({})
+  const [comment, setComment] = useState(annotation ? annotation.content : '')
+  const edited = !alreadyExists && comment && comment.length > 0;
 
   useEffect(() => {
-    setComment(annotations[props.address] ? annotations[props.address].content : '')
-  }, [annotations, props.address])
-
-  const alreadyExists = annotations[props.address] !== undefined
-
-  const address = props.address
+    if (annotations && annotations[props.address]) {
+      const annotation = annotations[props.address][props.position] || {}
+      setUser(alreadyExists && annotation ? annotation.user : userInfo)
+      setComment(annotation ? annotation.content : '')
+      setAnnotation(annotation)
+    }
+  }, [annotations, props.address, props.position, userInfo])
+ 
 
   const onFocus = () => {
     setEditorFocus(true)
@@ -988,12 +999,13 @@ function CommentComposer(props) {
       window.setTimeout(() => {
         textarea.current.focus()
         // set cursor to end
-        let content = annotations[props.address] ? annotations[props.address].content : ''
+        let content = annotation ? annotation.content : ''
         textarea.current.setSelectionRange(content.length, content.length)
       }, 100)
     }
   }, [textarea, annotations[props.address]])
 
+  const address = props.address
   const onSubmit = useCallback((event) => {
     if (!userInfo?.loggedIn) return
 
@@ -1006,13 +1018,14 @@ function CommentComposer(props) {
         setEditorFocus(false)
         setSubmitting(false)
         annotator.refresh()
-        props.onClose()
+        setComment('')
       }).catch((error) => {
         alert('Failed to save annotation: ' + error)
         setSubmitting(false)
       })
     } else {
-      const trace = annotations[address]
+      alert('TODO: update annotation')
+/*       const trace = annotations[props.address][props.position]
       if (!trace) {
         alert('Failed to find trace for annotation')
         return
@@ -1026,7 +1039,7 @@ function CommentComposer(props) {
       }).catch((error) => {
         alert('Failed to save annotation: ' + error)
         setSubmitting(false)
-      })
+      }) */
     }
   }, [annotations, address, comment, alreadyExists])
 
@@ -1038,7 +1051,8 @@ function CommentComposer(props) {
 
   const onDelete = (event) => {
     if (!userInfo?.loggedIn) return
-    
+    alert('TODO: delete annotation')
+/*     
     const annotation = annotations[address]
     if (annotation) {
       annotator.delete(annotation.id).then(() => {
@@ -1049,23 +1063,20 @@ function CommentComposer(props) {
       }).catch((error) => {
         alert('Failed to delete annotation: ' + error)
       })
-    }
+    } */
   }
-
-  
-  
+   
   return <div className='comment-composer'>
-    {annotations[props.address] && <>
-      <div className='comment-user'>
-      <span>{annotations[props.address].user.username}</span>
-      <img src={"https://www.gravatar.com/avatar/"+ annotations[props.address].user.image_url_hash} />
-      </div>
-    </>}
+    {user && 
+    <div className='comment-user'>
+    <span>{user.username}</span>
+    <img src={"https://www.gravatar.com/avatar/"+ user.image_url_hash} />
+    </div>
+    }
     <div className='comment-embed'>
-      <span className='comment-embed-address'>{address}</span>
-      <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} />
+      <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} readOnly={!props.active}   />
+      { props.active &&
       <footer>
-        {/* <span className='description'>Use <code>[BUCKET]</code> to categorize this trace in a given bucket.</span> */}
         <div className='spacer' />
         {!userInfo?.loggedIn && <>
           <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
@@ -1073,15 +1084,17 @@ function CommentComposer(props) {
         </>}
         {userInfo?.loggedIn && <>
         {alreadyExists && <button className='inline icon danger' onClick={(e) => onDelete(e)}><BsTrash /></button>}
-        <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
+        {/* <button className="inline" onClick={(e) => onClose(e)}>Cancel</button> */}
         <button className="inline primary" onClick={(e) => onSubmit(e)} disabled={submitting || !edited}>
           {!submitting ? <>Save <span className='shortcut'><BsMeta /> + <BsArrowReturnRight /></span></> : 'Saving...'}
         </button>
         </>}
       </footer>
+      }
     </div>
   </div>
 }
+
 
 function BsMeta() {
   return window.navigator.platform.includes('Win') ? <BsWindows /> : <BsCommand />
@@ -1093,6 +1106,25 @@ function useRendered(renderer, dependencies) {
     setRendered(renderer())
   }, dependencies)
   return rendered
+}
+
+function CommentThread(props) {
+  let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
+  //<span className='comment-embed-address'>{address}</span>
+  return <>
+    <div className='comment-thread'>
+    {
+      annotations && (annotations[props.address] || []).map((annotation, i) => 
+        <CommentComposer address={props.address}
+                         traceId={props.traceId}
+                         position={i}
+                         active={false} />)
+    } 
+    <CommentComposer address={props.address}
+                     traceId={props.traceId}
+                     active={true} />
+    </div>
+  </>
 }
 
 function HighlightedCode(props) {
@@ -1138,7 +1170,7 @@ function HighlightedCode(props) {
 
           try {
             let key = words[i].address || ('word-' + elements.length)
-            const hasComment = words[i].address && annotations && annotations[words[i].address] && annotations[words[i].address].content.length > 0
+            const hasComment = words[i].address && annotations && annotations[words[i].address] && annotations[words[i].address].length > 0  && annotations[words[i].address][0].content.length > 0
             elements.push(<span className={'comment-insertion-point ' + (hasComment ? 'has-comment' : '')} key={key} onClick={(event) => {
               if (words[i].address) {
                 setCommentComposerOffset(key)
@@ -1147,7 +1179,7 @@ function HighlightedCode(props) {
             }}>
               {content}
               {hasComment && <div className='comment-indicator' />}
-              {commentComposerOffset === key && <CommentComposer onClose={() => setCommentComposerOffset(null)} address={key} traceId={props.traceId} />}
+              {commentComposerOffset === key && <CommentThread onClose={() => setCommentComposerOffset(null)} address={key} traceId={props.traceId} />}
             </span>)
           } catch (e) {
             elements.push(<span key={elements.length} style={{ opacity: 0.1 }}>{JSON.stringify(content)}</span>)

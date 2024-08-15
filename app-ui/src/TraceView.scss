@@ -1277,10 +1277,15 @@ label.mono {
             display: flex;
             flex-direction: column;
             justify-content: top;
+            align-items: center;
             
             span {
                 font-weight: bold;
                 text-align: center;
+            }
+            
+            img {
+                width: 60%;
             }
 
         }

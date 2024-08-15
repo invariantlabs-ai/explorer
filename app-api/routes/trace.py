@@ -223,7 +223,7 @@ def get_annotations(request: Request, id: str):
             raise HTTPException(status_code=401, detail="Unauthorized get")
         
         annotations = session.query(Annotation, User).filter(Annotation.trace_id == id).join(User, User.id == Annotation.user_id).all()
-        print(annotations[0])
+
         return [{
             "id": annotation.id,
             "content": annotation.content,

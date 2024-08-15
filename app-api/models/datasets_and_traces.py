@@ -5,7 +5,7 @@ import json
 import datetime
 
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String, Integer, Column, ForeignKey
+from sqlalchemy import String, Integer, Column, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
@@ -67,6 +67,8 @@ class Annotation(Base):
     address = mapped_column(String, nullable=False)
     # JSON object of the metadata parsed at ingestion
     extra_metadata = mapped_column(String, nullable=False)
+    # timestamp of the creation of the comment
+    time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
 
 # simple table to capture all shared trace IDs
 class SharedLinks(Base):
