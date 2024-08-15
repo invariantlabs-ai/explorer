@@ -229,7 +229,6 @@ def get_annotations(request: Request, id: str):
         if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
             raise HTTPException(status_code=401, detail="Unauthorized get")
 
-        print('xxx')        
         annotations = session.query(Annotation, User).filter(Annotation.trace_id == id).join(User, User.id == Annotation.user_id).all()
 
         return [{
@@ -238,6 +237,7 @@ def get_annotations(request: Request, id: str):
             "address": annotation.address,
             "user": {
                 "username": user.username,
+                "id": user.id,
                 "image_url_hash": user.image_url_hash
             }
         } for annotation, user in annotations]
@@ -289,7 +289,7 @@ async def update_annotation(request: Request, id: str, annotation_id: str):
             if dataset.user_id != userid:
                 raise HTTPException(status_code=401, detail="Unauthorized update")
             
-            annotation = session.query(Annotation).filter(Annotation.id == annotation_id).first()
+            annotation, user = session.query(Annotation, User).filter(Annotation.id == annotation_id).join(User, Annotation.user_id == User.id).first()
             
             if annotation is None:
                 raise HTTPException(status_code=404, detail="Annotation not found")
@@ -299,12 +299,18 @@ async def update_annotation(request: Request, id: str, annotation_id: str):
             
             annotation.content = content
             session.commit()
-            
+
             return {
                 "id": annotation.id,
-                "content": content,
-                "address": annotation.address
+                "content": annotation.content,
+                "address": annotation.address,
+                "user": {
+                    "username": user.username,
+                    "id": user.id,
+                    "image_url_hash": user.image_url_hash
+                }
             }
+
     except Exception as e:
         import traceback
         traceback.print_exc()

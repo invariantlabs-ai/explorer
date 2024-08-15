@@ -8,7 +8,7 @@ import Editor from '@monaco-editor/react';
 import { useStreamingEndpoint, StreamingFetch } from './streaming';
 import {useUserInfo} from './UserInfo';
 
-import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsWindows } from "react-icons/bs";
+import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsFillPenFill, BsPencilFill, BsWindows } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -967,7 +967,9 @@ function CommentComposer(props) {
   const [submitting, setSubmitting] = useState(false)
   const [annotation, setAnnotation] = useState({})
   const [comment, setComment] = useState(annotation ? annotation.content : '')
-  const edited = !alreadyExists && comment && comment.length > 0;
+  const edited = comment && comment.length > 0;
+  const [active, setActive] = useState(props.active)
+  const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
     if (annotations && annotations[props.address]) {
@@ -975,6 +977,7 @@ function CommentComposer(props) {
       setUser(alreadyExists && annotation ? annotation.user : userInfo)
       setComment(annotation ? annotation.content : '')
       setAnnotation(annotation)
+      setShowEdit(alreadyExists && user && userInfo && user.id == userInfo.id)
     }
   }, [annotations, props.address, props.position, userInfo])
  
@@ -985,12 +988,6 @@ function CommentComposer(props) {
 
   const onBlur = () => {
     setEditorFocus(false)
-  }
-
-  const onClose = (event) => {
-    setEditorFocus(false)
-    event.stopPropagation()
-    props.onClose()
   }
 
   // on first render, try to catch focus
@@ -1024,22 +1021,20 @@ function CommentComposer(props) {
         setSubmitting(false)
       })
     } else {
-      alert('TODO: update annotation')
-/*       const trace = annotations[props.address][props.position]
+      const trace = annotations[props.address]
       if (!trace) {
         alert('Failed to find trace for annotation')
         return
       }
-
-      annotator.update(trace.id, { content: comment }).then(() => {
+      annotator.update(annotation.id, { content: comment }).then(() => {
         setEditorFocus(false)
         setSubmitting(false)
-        annotations[props.address].content = comment
-        props.onClose()
+        annotator.refresh()
+        setActive(false)
       }).catch((error) => {
         alert('Failed to save annotation: ' + error)
         setSubmitting(false)
-      }) */
+      })
     }
   }, [annotations, address, comment, alreadyExists])
 
@@ -1051,40 +1046,40 @@ function CommentComposer(props) {
 
   const onDelete = (event) => {
     if (!userInfo?.loggedIn) return
-    alert('TODO: delete annotation')
-/*     
-    const annotation = annotations[address]
     if (annotation) {
       annotator.delete(annotation.id).then(() => {
         setComment('')
         setEditorFocus(false)
         annotator.refresh()
-        props.onClose()
       }).catch((error) => {
         alert('Failed to delete annotation: ' + error)
       })
-    } */
+    }
   }
    
   return <div className='comment-composer'>
     {user && 
     <div className='comment-user'>
     <span>{user.username}</span>
-    <img src={"https://www.gravatar.com/avatar/"+ user.image_url_hash} />
+    <img src={"https://www.gravatar.com/avatar/" + user.image_url_hash} />
     </div>
     }
     <div className='comment-embed'>
-      <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} readOnly={!props.active}   />
-      { props.active &&
+    { showEdit && !active &&
+      <span className='comment-embed-address'>
+        <button onClick={(e) => setActive(true) } ><BsPencilFill/></button>
+        <button className='danger' onClick={(e) => onDelete(e)}><BsTrash/></button>
+      </span>
+    }
+      <textarea value={comment} onChange={(e) => setComment(e.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder='Add an annotation...' ref={textarea} onKeyDown={onKeyDown} readOnly={!active}   />
+      { active &&
       <footer>
         <div className='spacer' />
         {!userInfo?.loggedIn && <>
-          <button className="inline" onClick={(e) => onClose(e)}>Cancel</button>
           <button className="inline primary" onClick={(e) => window.location.href = '/login'}>Sign In To Annote</button>
         </>}
         {userInfo?.loggedIn && <>
-        {alreadyExists && <button className='inline icon danger' onClick={(e) => onDelete(e)}><BsTrash /></button>}
-        {/* <button className="inline" onClick={(e) => onClose(e)}>Cancel</button> */}
+        {showEdit && active && <button className="inline" onClick={(e) => {setActive(false); setComment(annotation.content)}}>Cancel</button>}
         <button className="inline primary" onClick={(e) => onSubmit(e)} disabled={submitting || !edited}>
           {!submitting ? <>Save <span className='shortcut'><BsMeta /> + <BsArrowReturnRight /></span></> : 'Saving...'}
         </button>
