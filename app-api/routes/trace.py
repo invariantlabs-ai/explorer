@@ -6,9 +6,12 @@ import json
 import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
+
 from fastapi import FastAPI, Request, HTTPException
 
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, SharedLinks, User
+from util.util import get_gravatar_hash
 
 trace = FastAPI()
 
@@ -177,16 +180,20 @@ async def annotate_trace(request: Request, id: str):
             payload = await request.json()
             content = payload.get("content")
             address = payload.get("address")
-            
+
+            user = {'id': userid,
+                    'username': request.state.userinfo['preferred_username'],
+                    'image_url_hash': get_gravatar_hash(request.state.userinfo['email'])}
+            stmt = sqlite_upsert(User).values([user])
+            stmt = stmt.on_conflict_do_update(index_elements=[User.id],
+                                              set_={k:user[k] for k in user if k != 'id'})
+            session.execute(stmt)
+
             annotation = Annotation(
-                id=uuid.uuid4(),
                 trace_id=trace.id,
                 user_id=userid,
                 address=address,
-                content=str(content),
-                extra_metadata=json.dumps({
-                    "created_on": str(datetime.datetime.now())
-                })
+                content=str(content)
             )
             
             session.add(annotation)
@@ -221,14 +228,14 @@ def get_annotations(request: Request, id: str):
         
         if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
             raise HTTPException(status_code=401, detail="Unauthorized get")
-        
+
+        print('xxx')        
         annotations = session.query(Annotation, User).filter(Annotation.trace_id == id).join(User, User.id == Annotation.user_id).all()
 
         return [{
             "id": annotation.id,
             "content": annotation.content,
             "address": annotation.address,
-            "extra_metadata": annotation.extra_metadata,
             "user": {
                 "username": user.username,
                 "image_url_hash": user.image_url_hash

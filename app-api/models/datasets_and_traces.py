@@ -65,8 +65,6 @@ class Annotation(Base):
     content = mapped_column(String, nullable=False)
     # address within the trace that this annotation belongs to (e.g. message, offset, etc.)
     address = mapped_column(String, nullable=False)
-    # JSON object of the metadata parsed at ingestion
-    extra_metadata = mapped_column(String, nullable=False)
     # timestamp of the creation of the comment
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
 
