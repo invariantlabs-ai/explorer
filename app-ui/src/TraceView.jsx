@@ -798,9 +798,19 @@ export function Explorer(props) {
       <div className='empty'>No Trace Selected</div>
     </div>
   }
+ 
+  const getTraceWithAnnotations = (trace) => {
+    if (trace) {
+      const trace = activeTrace.trace;
+      let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId);
+      return {'trace': trace['messages'], 'annotations': annotations}
+    }
+    return null
+  }
+  
+
 
   const trace = activeTrace ? activeTrace.trace : null
-
   return <>
     <header className='toolbar'>
       {props.header}
@@ -811,6 +821,7 @@ export function Explorer(props) {
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
       <CopyToClipboard object={(activeTrace || {})["messages"]} appearance='toolbar' disabled={activeTrace === undefined} />
+      <CopyToClipboard object={getTraceWithAnnotations(activeTrace)} appearance='toolbar' disabled={activeTrace === undefined} title='JSON w/A' />
       <div className='vr' />
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare/> Share</> : <><BsCheck/> Shared</>}
@@ -909,6 +920,7 @@ function guessContentType(content) {
 
 function CopyToClipboard(props) {
   const { value } = props;
+  const title = props.title || 'JSON';
   const appearance = props.appearance || 'compact'
   const [recentlyCopied, setRecentlyCopied] = useState(false)
 
@@ -933,7 +945,7 @@ function CopyToClipboard(props) {
     // like a regular button.inline
     return <button className='inline' onClick={onCopy} disabled={props.disabled || false}>
       {recentlyCopied ? <BsClipboard2CheckFill /> : <BsClipboard2Fill />}
-      {recentlyCopied ? 'Copied!' : 'JSON'}
+      {recentlyCopied ? 'Copied!' : title}
     </button>
   }
 }
