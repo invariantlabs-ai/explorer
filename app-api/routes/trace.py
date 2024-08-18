@@ -15,6 +15,7 @@ from util.util import get_gravatar_hash
 
 trace = FastAPI()
 
+
 @trace.get("/{id}")
 def get_trace(request: Request, id: str):
     userid = request.state.userinfo["sub"]
@@ -29,9 +30,12 @@ def get_trace(request: Request, id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
+        if not (str(dataset.user_id) == userid or # correct user
+                (userid == 'anonymous' and has_link_sharing(id)) or # in sharing mode
+                dataset.is_public # public dataset
+                ):
             raise HTTPException(status_code=401, detail="Unauthorized get")
-        
+       
         return {
             "id": trace.id,
             "index": trace.index,
@@ -73,7 +77,7 @@ def share_trace(request: Request, id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid:
+        if str(dataset.user_id) != userid:
             raise HTTPException(status_code=401, detail="Unauthorized share")
         
         shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
@@ -102,7 +106,7 @@ def unshare_trace(request: Request, id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid:
+        if str(dataset.user_id) != userid:
             raise HTTPException(status_code=401, detail="Unauthorized unshare")
         
         shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
@@ -173,7 +177,7 @@ async def annotate_trace(request: Request, id: str):
             
             dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
             
-            if dataset.user_id != userid:
+            if str(dataset.user_id) != userid:
                 raise HTTPException(status_code=401, detail="Unauthorized annotate")
             
             # get address and content from request
@@ -225,8 +229,11 @@ def get_annotations(request: Request, id: str):
             raise HTTPException(status_code=404, detail="Trace not found")
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
-        
-        if dataset.user_id != userid and not (userid == 'anonymous' and has_link_sharing(id)):
+
+        if not (str(dataset.user_id) == userid or # correct user
+                (userid == 'anonymous' and has_link_sharing(id)) or # in sharing mode
+                dataset.is_public # public dataset
+                ):
             raise HTTPException(status_code=401, detail="Unauthorized get")
 
         annotations = session.query(Annotation, User).filter(Annotation.trace_id == id).join(User, User.id == Annotation.user_id).all()
@@ -257,7 +264,7 @@ def delete_annotation(request: Request, id: str, annotation_id: str):
         
         dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
         
-        if dataset.user_id != userid:
+        if str(dataset.user_id) != userid:
             raise HTTPException(status_code=401, detail="Unauthorized delete")
         
         annotation = session.query(Annotation).filter(Annotation.id == annotation_id).first()
@@ -286,7 +293,7 @@ async def update_annotation(request: Request, id: str, annotation_id: str):
             
             dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
             
-            if dataset.user_id != userid:
+            if str(dataset.user_id) != userid:
                 raise HTTPException(status_code=401, detail="Unauthorized update")
             
             annotation, user = session.query(Annotation, User).filter(Annotation.id == annotation_id).join(User, Annotation.user_id == User.id).first()

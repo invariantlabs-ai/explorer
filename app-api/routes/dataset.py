@@ -3,6 +3,7 @@ import os
 import re
 import json
 import datetime
+import traceback
 
 from sqlalchemy.orm import DeclarativeBase
 
@@ -10,13 +11,13 @@ from sqlalchemy import String, Integer, Column, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, or_
 
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 
-from models.datasets_and_traces import Dataset, db, Trace, Annotation
+from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
 
 # dataset routes
 dataset = FastAPI()
@@ -110,13 +111,19 @@ def list_datasets(request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized list")
     
     with Session(db()) as session:
-        datasets = session.query(Dataset).filter(Dataset.user_id == userid).all()
+        datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(or_(Dataset.user_id == userid, Dataset.is_public)).all()
+        
         return [{
             "id": dataset.id, 
             "name": dataset.name, 
             "path": dataset.path, 
-            "extra_metadata": dataset.extra_metadata
-        } for dataset in datasets]
+            "extra_metadata": dataset.extra_metadata,
+            "is_public": dataset.is_public,
+            "user": {
+                "id": user.id,
+                "username": user.username
+            }
+        } for dataset, user in datasets]
 
 # delete a dataset
 @dataset.delete("/{id}")
@@ -185,8 +192,8 @@ def get_dataset(request: Request, id: str):
         
         if dataset is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        if dataset.user_id != userid:
-            raise HTTPException(status_code=401, detail="Unauthorized get")
+        if str(dataset.user_id) != userid and not dataset.is_public:
+            raise HTTPException(status_code=401, detail="Unauthorized get: Dataset is private")
         
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == id).count()
@@ -216,8 +223,9 @@ def get_traces(request: Request, id: str, bucket: str):
             
             if dataset is None:
                 raise HTTPException(status_code=404, detail="Dataset not found")
-            if dataset.user_id != userid:
-                raise HTTPException(status_code=401, detail="Unauthorized get")
+            if str(dataset.user_id) != userid and not dataset.is_public:
+                raise HTTPException(status_code=401, detail="Unauthorized get: Dataset is private")
+ 
             
             if bucket == "all":
                 traces = session.query(Trace).filter(Trace.dataset_id == id)

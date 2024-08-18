@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
@@ -158,6 +158,14 @@ function Home() {
   const [datasets, refresh] = useDatasetList()
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
+  const userInfo = useUserInfo()
+  
+  useEffect(() => {
+    console.log((datasets || []))
+    console.log((datasets || []).map((dataset) => dataset.user?.id == userInfo?.id))
+
+  }, [userInfo, datasets])
+
 
   return <>
     {/* upload modal */}
@@ -168,13 +176,13 @@ function Home() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
-    <EntityList title="Datasets" actions={<>
+    <EntityList title="My Datasets" actions={<>
       <button className='primary' onClick={() => setShowUploadModal(true)}>
         <BsUpload/>
         Upload New Dataset
       </button>
     </>}>
-      {(datasets || []).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
+      {(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
         <h3>{dataset.name}</h3>
         <span className='description'>
           {dataset.extra_metadata}
@@ -192,6 +200,27 @@ function Home() {
         </div>
       </li></Link>)}
     </EntityList>
+    <EntityList title="Public Datasets">
+      {(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)
+      .map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
+        <h3>{dataset.user.username}/{dataset.name}</h3>
+        <span className='description'>
+          {dataset.extra_metadata}
+        </span>
+        <div className='spacer'/>
+        <div className='actions'>
+          {/* <button>
+            <BsPencilFill/> Edit
+          </button> */}
+          <button className='danger' onClick={(e) => {
+            e.preventDefault()
+            setSelectedDatasetForDelete(dataset)
+          }}><BsTrash/></button>
+          <button className='primary'>View</button>
+        </div>
+      </li></Link>)}
+    </EntityList>
+
   </>
 }
 

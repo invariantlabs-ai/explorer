@@ -800,11 +800,11 @@ export function Explorer(props) {
   }
  
   const getTraceWithAnnotations = (trace) => {
-    if (trace) {
+/*     if (trace) {
       const trace = activeTrace.trace;
       let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId);
       return {'trace': trace['messages'], 'annotations': annotations}
-    }
+    } */
     return null
   }
   

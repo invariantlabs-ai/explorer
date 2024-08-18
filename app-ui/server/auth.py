@@ -82,7 +82,7 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
         # make sure client is localhost
         if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
             request.state.userinfo = {
-                "sub": "devuser4-496a-4004-950a-ef00d89c4cb7",
+                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
                 "email": "dev@mail.com",
                 "preferred_username": "developer",
                 "name": "Developer"

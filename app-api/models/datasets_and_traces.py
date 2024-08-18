@@ -5,7 +5,7 @@ import json
 import datetime
 
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String, Integer, Column, ForeignKey, DateTime
+from sqlalchemy import String, Integer, Column, ForeignKey, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
@@ -20,13 +20,18 @@ class Base(DeclarativeBase):
 
 class Dataset(Base):
     __tablename__ = "datasets"
+    __table_args__ = (UniqueConstraint('user_id', 'name', name='_user_id_name_uc'),)
 
     # key is uuid that auto creates
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = mapped_column(String, nullable=False)
+    # user owning the dataset
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    # name of the dataset
     name = mapped_column(String, nullable=False)
     # path to the dataset relative to the user's directory
     path = mapped_column(String, nullable=False)
+    # is the dataset visible to other users
+    is_public = mapped_column(Boolean, default=False, nullable=False) 
     # JSON object of the metadata parsed at ingestion
     extra_metadata = mapped_column(String, nullable=False)
 
@@ -49,7 +54,7 @@ class User(Base):
 
     # key is uuid that must be supplied
     id = mapped_column(UUID(as_uuid=True), primary_key=True)
-    username = mapped_column(String, nullable=False)
+    username = mapped_column(String, nullable=False, unique=True)
     image_url_hash = mapped_column(String, nullable=False)
 
 class Annotation(Base):
