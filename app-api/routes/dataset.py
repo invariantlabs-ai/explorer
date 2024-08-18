@@ -203,8 +203,44 @@ def get_dataset(request: Request, id: str):
             "name": dataset.name, 
             "extra_metadata": dataset.extra_metadata,
             "num_traces": num_traces,
+            "is_public": dataset.is_public,
             "buckets": get_collections(dataset, num_traces)
         }
+
+# update the dataset, currently only allows to change the visibility
+@dataset.put("/{id}")
+async def update_dataset(request: Request, id: str):
+    userid = request.state.userinfo["sub"]
+    if userid is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+  
+    with Session(db()) as session:
+        dataset = session.query(Dataset).filter(Dataset.id == id).first()
+        print(dataset)
+        
+        if dataset is None:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        if str(dataset.user_id) != userid:
+            raise HTTPException(status_code=401, detail="Unauthorized get")
+
+
+        payload = await request.json()
+        is_public = bool(payload.get("content"))
+        dataset.is_public = is_public        
+        session.commit()
+        # count all traces
+        num_traces = session.query(Trace).filter(Trace.dataset_id == id).count()
+
+        return {
+            "id": dataset.id, 
+            "name": dataset.name, 
+            "extra_metadata": dataset.extra_metadata,
+            "num_traces": num_traces,
+            "is_public": dataset.is_public,
+            "buckets": get_collections(dataset, num_traces)
+        }
+
+
 
 # get all traces of a dataset in the given collection (formerly known as bucket)
 @dataset.get("/{id}/{bucket}")

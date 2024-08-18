@@ -4,7 +4,7 @@ import Home from './Home.tsx'
 import Layout from './Layout.tsx'
 import {Traces, SingleTrace} from './Traces.tsx'
 import './App.scss'
-import Dataset from './Dataset.tsx'
+import DatasetView from './Dataset.tsx'
 import { Link } from 'react-router-dom'
 
 export const routes = [
@@ -18,7 +18,7 @@ export const routes = [
   {
     path: '/dataset/:datasetId',
     label: 'Dataset',
-    element: <Layout><Dataset/></Layout>,
+    element: <Layout><DatasetView/></Layout>,
     loader: async (task: any) => {
       return {"datasetId": task.params.datasetId}
     }

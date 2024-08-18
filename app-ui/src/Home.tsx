@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload } from 'react-icons/bs'
+import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { Modal } from './Modal'
 
@@ -184,6 +184,7 @@ function Home() {
     </>}>
       {(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
         <h3>{dataset.name}</h3>
+        {dataset.is_public && <span className='description'><BsGlobe/></span>}
         <span className='description'>
           {dataset.extra_metadata}
         </span>
