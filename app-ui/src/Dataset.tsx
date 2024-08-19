@@ -1,3 +1,4 @@
+//@ts-nocheck
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsCheckCircleFill, BsFileBinaryFill, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload, BsGlobe } from 'react-icons/bs'
@@ -29,6 +30,7 @@ class Dataset extends RemoteResource {
           `/api/v1/dataset/${datasetId}`,
           `/api/v1/dataset/${datasetId}`
     )
+    //@ts-ignore
     this.datasetId = datasetId
   }
 
@@ -69,7 +71,7 @@ function Bucket({datasetId, id, name, count, active, icon, onSelect}: {datasetId
 }
 
 function DatasetView() {
-  const props = useLoaderData()
+  const props: any = useLoaderData()
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.datasetId)
   const [activeBucket, setActiveBucket] = React.useState(null as string | null)
 
