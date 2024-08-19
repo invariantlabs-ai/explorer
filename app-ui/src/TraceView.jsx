@@ -9,7 +9,7 @@ import { useStreamingEndpoint, StreamingFetch } from './streaming';
 import {useUserInfo} from './UserInfo';
 import { RemoteResource, useRemoteResource } from './RemoteResource';
 
-import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsFillPenFill, BsPencilFill, BsWindows } from "react-icons/bs";
+import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsFillPenFill, BsPencilFill, BsWindows, BsDownload } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -573,17 +573,6 @@ export function Explorer(props) {
     </div>
   }
  
-  const getTraceWithAnnotations = (trace) => {
-/*     if (trace) {
-      const trace = activeTrace.trace;
-      let [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId);
-      return {'trace': trace['messages'], 'annotations': annotations}
-    } */
-    return null
-  }
-  
-
-
   const trace = activeTrace ? activeTrace.trace : null
   return <>
     <header className='toolbar'>
@@ -594,8 +583,14 @@ export function Explorer(props) {
       <div className='vr' />
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
-      <CopyToClipboard object={(activeTrace || {})["messages"]} appearance='toolbar' disabled={activeTrace === undefined} />
-      <CopyToClipboard object={getTraceWithAnnotations(activeTrace)} appearance='toolbar' disabled={activeTrace === undefined} title='JSON w/A' />
+      {/*<CopyToClipboard object={'/api/v1/trace/'+activeTraceId+'?annotated=1'} appearance='toolbar' disabled={activeTrace === undefined}/>*/}
+      <a href={'/api/v1/trace/'+activeTraceId+'?annotated=1'} download={activeTraceId+'.json'}>
+        <button className='inline icon' onClick={(e) => {
+          e.stopPropagation()
+        }}>
+        <BsDownload/>
+        </button>
+      </a>
       <div className='vr' />
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare/> Share</> : <><BsCheck/> Shared</>}

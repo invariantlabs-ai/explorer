@@ -6,7 +6,16 @@ from routes.auth import require_authorization
 from routes.dataset import dataset
 from routes.trace import trace, has_link_sharing
 
+from fastapi.exception_handlers import http_exception_handler
+import traceback
+
 v1 = fastapi.FastAPI()
+
+@v1.exception_handler(Exception)
+async def custom_http_exception_handler(request, exc):
+    traceback.print_exception(exc)
+    return await http_exception_handler(request, exc)
+
 v1.mount("/user", user)
 v1.mount("/dataset", dataset)
 v1.mount("/trace", trace)
