@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.execute('ALTER TABLE datasets ALTER COLUMN is_public SET NOT NULL')
     op.execute('ALTER TABLE datasets ALTER COLUMN user_id TYPE UUID USING user_id::uuid') 
     op.create_unique_constraint('_user_id_name_uc', 'datasets', ['user_id', 'name'])
-    op.execute("INSERT INTO users (id, username, image_url_hash) (select user_id, 'unknown user' || ROW_NUMBER() , '0000' from datasets where user_id not in (select id from users))")
+    op.execute("INSERT INTO users (id, username, image_url_hash) (select user_id, 'unknown user' || ROW_NUMBER() OVER (ORDER BY user_id) , '0000' from datasets where user_id not in (select id from users))")
     op.create_foreign_key(None, 'datasets', 'users', ['user_id'], ['id'])
     op.create_unique_constraint(None, 'users', ['username'])
     # ### end Alembic commands ###
