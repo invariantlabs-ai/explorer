@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload } from 'react-icons/bs'
+import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { Modal } from './Modal'
 
@@ -159,12 +159,43 @@ function Home() {
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
   const userInfo = useUserInfo()
+  const [downloadState, setDownloadState] = React.useState({})
   
   useEffect(() => {
-    console.log((datasets || []))
-    console.log((datasets || []).map((dataset) => dataset.user?.id == userInfo?.id))
-
+    let state = downloadState || {}
+    for (const dataset of datasets) {
+      if (state[dataset.id] === undefined) {
+        state[dataset.id] = 'ready'
+      }
+    }
+    setDownloadState(state)
   }, [userInfo, datasets])
+  
+  const onDownloadDataset = (dataset) => {
+    return (event) => {
+      if (downloadState[dataset.id] ==='ready') {
+        setDownloadState({...downloadState, [dataset.id]: 'waiting'})
+        fetch('/api/v1/dataset/full/'+dataset.id).then(response => {
+          if (!response.ok) {
+            throw new Error('could net fetch dataset')
+          }
+          return response.json()}).then(data => {
+            const link = document.createElement('a')
+            console.log(data)
+            link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data))
+            link.setAttribute('download', dataset.name + '.json')
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            setDownloadState({...downloadState, [dataset.id]: 'ready'})
+        }).catch(err => {
+          setDownloadState({...downloadState, [dataset.id]:'ready'})
+          alert('Could not download the dataset.')
+        })
+      }
+      event.preventDefault()
+    }
+  }
 
 
   return <>
@@ -193,9 +224,10 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
-          <button onClick={(e) => {
-            e.preventDefault()
-          }}><BsDownload/></button>
+          <button onClick={onDownloadDataset(dataset)}>
+            {downloadState[dataset.id] == 'ready' && <BsDownload/>}
+            {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
+          </button>
           <button className='danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)
@@ -216,13 +248,10 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
-          <a href={'/api/v1/dataset/'+dataset.id+'/all'} download={dataset.name+'.jsonl'}>
-            <button onClick={(e) => {
-              e.stopPropagation()
-            }}>
-            <BsDownload/>
-            </button>
-          </a>
+          <button onClick={onDownloadDataset(dataset)}>
+            {downloadState[dataset.id] == 'ready' && <BsDownload/>}
+            {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
+          </button>
           <button className='danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)

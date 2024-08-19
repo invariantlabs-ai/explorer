@@ -23,6 +23,24 @@ from models.queries import *
 # dataset routes
 dataset = FastAPI()
 
+@dataset.get("/full/{id}")
+def get_traces(request: Request, id: str):
+    user_id = request.state.userinfo["sub"]
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    
+    with Session(db()) as session:
+        dataset = load_dataset(session, id, user_id, allow_public=True)
+        
+        out = dataset_to_json(dataset) 
+        out['traces'] = []
+
+        traces = session.query(Trace).filter(Trace.dataset_id == id).all()
+        for trace in traces:
+            annotations = load_annoations(session, trace.id)
+            out['traces'].append(trace_to_json(trace, annotations))
+        return out
+
 # upload a new dataset
 @dataset.post("/upload")
 async def upload_file(request: Request, file: UploadFile = File(...)):
@@ -208,7 +226,7 @@ def get_traces(request: Request, id: str, bucket: str):
         traces = traces.order_by(Trace.index)
         
         traces = traces.all()
-
+        
         return [{
             "id": trace.id,
             "index": trace.index,
