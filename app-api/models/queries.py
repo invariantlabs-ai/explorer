@@ -79,6 +79,16 @@ def get_collections(session, dataset: Dataset, num_traces: int):
         }
     ]
 
+def has_link_sharing(trace_id):
+    try:
+        with Session(db()) as session:
+            trace = session.query(SharedLinks).filter(SharedLinks.trace_id == trace_id).first()
+            return trace is not None
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print("failed to check if trace is shared", e)
+        return False
 
 def save_user(session, userinfo):
     user = {'id': userinfo['sub'],
@@ -130,6 +140,5 @@ def dataset_to_json(dataset, user=None, **kwargs):
     if user:
         out["user"] = user_to_json(user)
     return out
-
-   
+ 
     
