@@ -69,12 +69,8 @@ function Bucket({datasetId, id, name, count, active, icon, onSelect}: {datasetId
 }
 
 function DatasetView() {
-  //const props: {datasetId: string} = useLoaderData() as any
   const props = useLoaderData()
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.datasetId)
-  //const dataset = {'buckets': []}
-  //const dataLoader = null
-  console.log('dataset', dataset)
   const [activeBucket, setActiveBucket] = React.useState(null as string | null)
 
   const onPublicChange = (e) => {
@@ -84,7 +80,6 @@ function DatasetView() {
           }).catch((error) => {
             alert('Failed to save annotation: ' + error)
           })
-
   }
  
   if (!dataset) {
@@ -97,7 +92,7 @@ function DatasetView() {
     <header>
       <h1>
         <Link to='/'>Datasets</Link> / {dataset?.name}
-        {dataset.is_public && <span className='description'><BsGlobe/></span>}
+        {dataset.is_public && <span className='description'> <BsGlobe/></span>}
       </h1>
       <div className="spacer"/>
       <div className="actions">
@@ -117,7 +112,6 @@ function DatasetView() {
     <div>
     <label htmlFor='public'><h4>Public</h4></label>
     <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange}/>
-    TODO: make this a toggle
     </div>
     <h4>Collections</h4>
     <div className='bucket-list'>

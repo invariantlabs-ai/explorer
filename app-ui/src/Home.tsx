@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe } from 'react-icons/bs'
+import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { Modal } from './Modal'
 
@@ -193,6 +193,9 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
+          <button onClick={(e) => {
+            e.preventDefault()
+          }}><BsDownload/></button>
           <button className='danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)
@@ -213,6 +216,13 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
+          <a href={'/api/v1/dataset/'+dataset.id+'/all'} download={dataset.name+'.jsonl'}>
+            <button onClick={(e) => {
+              e.stopPropagation()
+            }}>
+            <BsDownload/>
+            </button>
+          </a>
           <button className='danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)
