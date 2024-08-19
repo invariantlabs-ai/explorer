@@ -1,7 +1,7 @@
 import json
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from fastapi import HTTPException
-from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
+from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks
 from util.util import get_gravatar_hash, split
 
 def message_load(content):
@@ -38,7 +38,7 @@ def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=Fals
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
     
     if not (str(dataset.user_id) == user_id or # correct user
-            (allow_shared and user_id == 'anonymous' and has_link_sharing(trace_id)) or # in sharing mode
+            (allow_shared and user_id == 'anonymous' and has_link_sharing(session, trace_id)) or # in sharing mode
             allow_public and dataset.is_public # public dataset
             ):
         raise HTTPException(status_code=401, detail="Unauthorized get")
@@ -79,15 +79,11 @@ def get_collections(session, dataset: Dataset, num_traces: int):
         }
     ]
 
-def has_link_sharing(trace_id):
+def has_link_sharing(session, trace_id):
     try:
-        with Session(db()) as session:
-            trace = session.query(SharedLinks).filter(SharedLinks.trace_id == trace_id).first()
-            return trace is not None
+        trace = session.query(SharedLinks).filter(SharedLinks.trace_id == trace_id).first()
+        return trace is not None
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print("failed to check if trace is shared", e)
         return False
 
 def save_user(session, userinfo):

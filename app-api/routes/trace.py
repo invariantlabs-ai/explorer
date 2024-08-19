@@ -25,7 +25,8 @@ def get_trace_sharing(request: Request, id: str):
     user_id = request.state.userinfo["sub"]
     if user_id is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
-    return {"shared": has_link_sharing(id)}
+    with Session(db()) as session:
+        return {"shared": has_link_sharing(session, id)}
 
 @trace.put("/{id}/shared")
 def share_trace(request: Request, id: str):
