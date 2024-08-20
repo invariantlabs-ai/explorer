@@ -181,9 +181,12 @@ function Home() {
           }
           return response.json()}).then(data => {
             const link = document.createElement('a')
-            console.log(data)
-            link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data))
-            link.setAttribute('download', dataset.name + '.json')
+            var out = ''
+            data.traces.forEach(trace => {
+              out += JSON.stringify(trace) + '\n'
+            })
+            link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(out)
+            link.setAttribute('download', dataset.name + '.jsonl')
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
