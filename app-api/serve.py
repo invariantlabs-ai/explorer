@@ -4,7 +4,10 @@ import fastapi
 from routes.user import user
 from routes.auth import require_authorization
 from routes.dataset import dataset
-from routes.trace import trace, has_link_sharing
+from routes.trace import trace
+from models.query import has_link_sharing
+from models.datasets_and_traces import db
+from sqlalchemy.orm import Session
 
 from fastapi.exception_handlers import http_exception_handler
 import traceback
@@ -38,8 +41,9 @@ def allow_traces_with_link_sharing(request: fastapi.Request):
         trace_id = path.split("/")[-2]
     else:
         trace_id = path.split("/")[-1]
- 
-    result = has_link_sharing(trace_id)
+
+    with Session(db()) as session:
+        result = has_link_sharing(session, trace_id)
     request.state.userinfo = {
         "sub": "anonymous"
     }
