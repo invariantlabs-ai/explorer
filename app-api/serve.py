@@ -5,7 +5,7 @@ from routes.user import user
 from routes.auth import require_authorization
 from routes.dataset import dataset
 from routes.trace import trace
-from models.query import has_link_sharing
+from models.queries import has_link_sharing
 from models.datasets_and_traces import db
 from sqlalchemy.orm import Session
 
