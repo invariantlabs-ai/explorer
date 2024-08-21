@@ -75,6 +75,25 @@ For production, the authentication is done via the `auth.invariantlabs.ai` [Keyc
 
 TODO
 
+### Database Versioning
+The database is connected via [SQLAlchemy](https://www.sqlalchemy.org) in the API server.
+For the data model see `app-api/models/datasets_and_traces.py`.
+The database is versioned using [Alembic](https://alembic.sqlalchemy.org/en/latest/). This allows forward and backward compatibility.
+
+#### Making changes to the database
+To change the data model and database:
+- Make changes to the data model in `app-api/models/datasets_and_traces.py`.
+- Start a development environment via `./dev up` (if it is not running yet), and attach a bash to the `app-api` container via `docker exec -it <id> bash`.
+- Run `alembic revision --autogenerate -m "message"` to generate a new migration file; the command will print the path to the file.
+- Review the file and mace changes to the generated SQL if necessary.
+- Run `alembic upgrade head` to apply the changes to the database; if you get an error go to the previous step.
+- Add the generated revision file to git and commit.
+- The next time when you deploy to production, the database will automatically update.
+
+The `alemgic revision` command just creates a migration script, but does not run any code. If you run it accidentally, you can just delete the file.
+`alembic upgrade head` will run all the migration scripts that are not yet applied to the database. It is run on every startup of both dev and prod.
+
+
 ## Remove SSL warnings via Self-Signed Certificates
 
 To locally run your own SSL certificates, you can generate a self-signed certificate using `mkcert`. 
