@@ -122,7 +122,8 @@ def annotation_to_json(annotation, user=None):
     out = {
         "id": annotation.id,
         "content": annotation.content,
-        "address": annotation.address
+        "address": annotation.address,
+        "time_created": annotation.time_created
     }
     if user is not None:
         out['user'] = user_to_json(user)

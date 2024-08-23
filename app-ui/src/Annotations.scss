@@ -130,9 +130,11 @@
                     line-height: 10pt;
                     height: 25pt;
 
-                    &:disabled {
-                        opacity: 0.3 !important;
-                        border: 2pt solid red;
+                    .shortcut {
+                        padding-right: 10pt;
+                        svg {
+                            top: 0pt;
+                        }
                     }
                 }
 

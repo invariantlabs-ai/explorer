@@ -340,8 +340,8 @@ export function SingleTrace() {
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
-      <h2>{snippetData.user} / {props.traceId}</h2> :
-      <h2>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h2>
+      <h1>{snippetData.user} / {props.traceId}</h1> :
+      <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
 
   return <div className="panel fullscreen app">

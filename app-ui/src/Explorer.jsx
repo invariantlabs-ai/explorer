@@ -297,7 +297,7 @@ function Annotation(props) {
     </div>
     <div className='bubble'>
       <header className='username'>
-        <b>{props.user.username}</b> annotated
+        <b>{props.user.username}</b> annotated <span class='time'><Time>{props.time_created}</Time></span>
         <div className='spacer'/>
         <div className='actions'>
           {!editing && <button onClick={() => setEditing(!editing)}><BsPencilFill /></button>}
@@ -314,15 +314,55 @@ function Annotation(props) {
   </div>
 }
 
+function Time(props) {
+  const timestamp = props.children.toString()
+  // for anything older than 6m show date, otherwise show time passed
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  const months = Math.floor(days / 30)
+  const years = Math.floor(months / 12)
+
+  let text = null;
+
+  if (years > 0) {
+    text = <span>{years} year{years > 1 ? 's' : ''} ago</span>
+  } else if (months > 0) {
+    text = <span>{months} month{months > 1 ? 's' : ''} ago</span>
+  } else if (days > 0) {
+    text = <span>{days} day{days > 1 ? 's' : ''} ago</span>
+  } else if (hours > 0) {
+    text = <span>{hours} hour{hours > 1 ? 's' : ''} ago</span>
+  } else if (minutes > 0) {
+    text = <span>{minutes} minute{minutes > 1 ? 's' : ''} ago</span>
+  } else {
+    text = <span>Just now</span>
+  }
+
+
+  return <span className='swap-on-hover'>
+    <span>{text}</span>
+    <span>{date.toLocaleString()}</span>
+  </span>
+}
+
 function AnnotationEditor(props) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [annotations, annotationStatus, annotationsError, annotator] = props.annotations
+  const textareaRef = useRef(null) 
   const userInfo = useUserInfo()
 
   const onSave = () => {
     if (!userInfo?.loggedIn) {
       window.location.href = '/login'
+    }
+
+    if (content == '') {
+      return
     }
 
     annotator.create({ address: props.address, content: content }).then(() => {
@@ -333,6 +373,26 @@ function AnnotationEditor(props) {
       alert('Failed to save annotation: ' + error)
       setSubmitting(false)
     })
+  }
+
+  // on mount grab focus
+  useEffect(() => {
+    window.setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+      }
+    }, 100)
+  }, [textareaRef])
+
+  const onKeyDown = (e) => {
+    // on mac cmd+enter, on windows ctrl+enter to save
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      onSave()
+    }
+    // escape closes
+    if (e.key === 'Escape') {
+      props.onClose()
+    }
   }
 
   return <div className='annotation'>
@@ -348,11 +408,13 @@ function AnnotationEditor(props) {
           <pre style={{opacity: 0.4}}>{props.address}</pre>
         </div>
       </header>
-      <textarea value={content} onChange={(e) => setContent(e.target.value)} />
+      <textarea value={content} onChange={(e) => setContent(e.target.value)} ref={textareaRef} onKeyDown={onKeyDown} />
       <div className='actions'>
         <button className='secondary' onClick={props.onClose}>Close</button>
-        <button className='primary' disabled={submitting && content != ''} onClick={onSave}>
-          {!userInfo?.loggedIn ? 'Sign Up To Annotate' : (submitting ? 'Saving...' : 'Save')}
+        <button className='primary' disabled={submitting || content == ''} onClick={onSave}>
+          {!userInfo?.loggedIn ? 'Sign Up To Annotate' : (submitting ? 'Saving...' : <>
+          Save <span className='shortcut'><BsCommand/> + Enter</span>
+          </>)}
         </button>
       </div>
     </div>

@@ -99,6 +99,7 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
                     trace = Trace(
                         id=uuid.uuid4(),
                         index=i,
+                        user_id=user_id,
                         dataset_id=dataset.id,
                         content=line,
                         extra_metadata=json.dumps({

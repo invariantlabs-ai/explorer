@@ -892,3 +892,25 @@ button.share {
 .traceview span.line.highlighted {
   background-color: rgba(18, 90, 18, 0.168);
 }
+
+.swap-on-hover {
+  span:nth-of-type(1) {
+    display: inline;
+  }
+  span:nth-of-type(2) {
+    display: none;
+  }
+
+  &:hover {
+    span:nth-of-type(1) {
+      display: none;
+    }
+    span:nth-of-type(2) {
+      display: inline;
+    }
+  }
+}
+
+span.time {
+  opacity: 0.3;
+}
