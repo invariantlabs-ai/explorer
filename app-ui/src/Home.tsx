@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
 
 function EntityList(props) {
@@ -128,6 +128,7 @@ function useDatasetList(): [any[], () => void] {
 
 function DeleteDatasetModalContent(props) {
   const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState('')
 
   const id = props.dataset.id
 
@@ -140,6 +141,14 @@ function DeleteDatasetModalContent(props) {
         setLoading(false)
         props.onSuccess()
         props.onClose()
+      } else {
+        response.json().then(data => {
+          setLoading(false)
+          setError(data.detail || 'An unknown error occurred, please try again.')
+        }).catch(() => {
+          setLoading(false)
+          setError('An unknown error occurred, please try again.')
+        })
       }
     })
   }
@@ -147,7 +156,7 @@ function DeleteDatasetModalContent(props) {
   return <div className='form'>
     <h2>Are you sure you want to delete {props.dataset.name}?<br/><br/>
     Note that this action is irreversible. All associated data will be lost.</h2>
-    <br/>
+    {error ? <span className='error'>{error}</span> : <br/>}
     <button className='danger' disabled={loading} onClick={onDelete}>
     {loading ? 'Deleting...' : 'Delete'}
     </button>
@@ -160,6 +169,7 @@ function Home() {
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
   const userInfo = useUserInfo()
   const [downloadState, setDownloadState] = React.useState({})
+  const navigate = useNavigate()
   
   useEffect(() => {
     let state = downloadState || {}
@@ -211,10 +221,14 @@ function Home() {
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
     <EntityList title="My Datasets" actions={<>
-      <button className='primary' onClick={() => setShowUploadModal(true)}>
+      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
         <BsUpload/>
         Upload New Dataset
-      </button>
+      </button>}
+      {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
+        <BsUpload/>
+        Upload Trace
+      </button>}
     </>}>
       {(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
         <h3>{dataset.name}</h3>
@@ -227,11 +241,12 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
-          <button onClick={onDownloadDataset(dataset)}>
+          <button className='tool' onClick={onDownloadDataset(dataset)}>
             {downloadState[dataset.id] == 'ready' && <BsDownload/>}
             {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
+            {downloadState[dataset.id] != 'ready' && downloadState[dataset.id] != 'waiting' && <BsDownload/>}
           </button>
-          <button className='danger' onClick={(e) => {
+          <button className='tool danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)
           }}><BsTrash/></button>
@@ -251,14 +266,15 @@ function Home() {
           {/* <button>
             <BsPencilFill/> Edit
           </button> */}
-          <button onClick={onDownloadDataset(dataset)}>
+          <button className='tool' onClick={onDownloadDataset(dataset)}>
             {downloadState[dataset.id] == 'ready' && <BsDownload/>}
             {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
+            {downloadState[dataset.id] != 'ready' && downloadState[dataset.id] != 'waiting' && <BsDownload/>}
           </button>
-          <button className='danger' onClick={(e) => {
+          {dataset.user.username == userInfo?.username && <button className='tool danger' onClick={(e) => {
             e.preventDefault()
             setSelectedDatasetForDelete(dataset)
-          }}><BsTrash/></button>
+          }}><BsTrash/></button>}
           <button className='primary'>View</button>
         </div>
       </li></Link>)}

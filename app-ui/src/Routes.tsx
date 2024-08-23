@@ -6,6 +6,8 @@ import {Traces, SingleTrace} from './Traces.tsx'
 import './App.scss'
 import DatasetView from './Dataset.tsx'
 import { Link } from 'react-router-dom'
+import { New } from './New.tsx'
+import { SignUp } from './SignUp.tsx'
 
 export const routes = [
   {
@@ -68,6 +70,19 @@ export const routes = [
         "traceId": task.params.traceId
       }
     }
+  },
+  {
+    path: '/new',
+    label: 'Upload New Trace',
+    element: <Layout fullscreen><New/></Layout>,
+    loader: async (task: any) => {
+      return {}
+    }
+  },
+  {
+    path: '/signup',
+    label: 'Sign Up',
+    element: <Layout><SignUp/></Layout>
   },
   // 404
   {

@@ -4,6 +4,7 @@ import re
 import json
 import datetime
 import traceback
+from fastapi import Depends
 
 from sqlalchemy.orm import DeclarativeBase
 
@@ -20,17 +21,16 @@ from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
 from models.queries import *
 
+from typing import Annotated
+from routes.auth import UserIdentity, AuthenticatedUserIdentity
+
 # dataset routes
 dataset = FastAPI()
 
 @dataset.get("/full/{id}")
-def get_traces(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
-    
+def get_traces(id: str, user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
-        dataset = load_dataset(session, id, user_id, allow_public=True)
+        dataset = load_dataset(session, id, user['sub'], allow_public=True)
         
         out = dataset_to_json(dataset) 
         out['traces'] = []
@@ -43,14 +43,14 @@ def get_traces(request: Request, id: str):
 
 # upload a new dataset
 @dataset.post("/upload")
-async def upload_file(request: Request, file: UploadFile = File(...)):
+async def upload_file(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)], file: UploadFile = File(...)):
     # get name from the form
     name = (await request.form()).get("name")
     # save the file to the user's directory
     # /srv/datasets
-    user_id = request.state.userinfo["sub"]
+    user_id = userinfo["sub"]
     if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized upload")
+        raise HTTPException(status_code=401, detail="Must be authenticated to upload a dataset")
     uuid_to_ensure_it_is_unique = hashlib.sha256(file.filename.encode()).hexdigest()
     
     # check that there is not a dataset with the same name
@@ -112,10 +112,8 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     
 # list all datasets, but without their traces
 @dataset.get("/list")
-def list_datasets(request: Request):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized list")
+def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]):
+    user_id = user.get("sub")
     
     with Session(db()) as session:
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(or_(Dataset.user_id == user_id, Dataset.is_public)).all()
@@ -124,10 +122,8 @@ def list_datasets(request: Request):
 
 # delete a dataset
 @dataset.delete("/{id}")
-def delete_dataset(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized delete")
+def delete_dataset(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         dataset = load_dataset(session, id, user_id)
@@ -149,10 +145,9 @@ def delete_dataset(request: Request, id: str):
 
 # gets details on a dataset (including collections, but without traces)
 @dataset.get("/{id}")
-def get_dataset(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def get_dataset(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    # may be None in case of anonymous users/public datasets or traces
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         dataset = load_dataset(session, id, user_id, allow_public=True)
@@ -164,10 +159,9 @@ def get_dataset(request: Request, id: str):
 
 # update the dataset, currently only allows to change the visibility
 @dataset.put("/{id}")
-async def update_dataset(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+async def update_dataset(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    # never None, 'userinfo' is authenticated
+    user_id = userinfo["sub"]
   
     with Session(db()) as session:
         dataset = load_dataset(session, id, user_id)
@@ -175,7 +169,7 @@ async def update_dataset(request: Request, id: str):
         is_public = bool(payload.get("content"))
         dataset.is_public = is_public        
         session.commit()
-
+        
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == id).count()
         return dataset_to_json(dataset, num_traces=num_traces, buckets=get_collections(session, dataset, num_traces))
@@ -183,14 +177,13 @@ async def update_dataset(request: Request, id: str):
 
 # get all traces of a dataset in the given collection (formerly known as bucket)
 @dataset.get("/{id}/{bucket}")
-def get_traces(request: Request, id: str, bucket: str):
+def get_traces(request: Request, id: str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
 
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+    # users can be anonymous
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         dataset = load_dataset(session, id, user_id, allow_public=True)

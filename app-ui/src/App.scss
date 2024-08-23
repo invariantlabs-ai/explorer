@@ -400,52 +400,26 @@ label {
   font-size: 10pt;
 }
 
-.entity-list li .actions {
-  display: flex;
-  flex-direction: row;
-  // flex-wrap: wrap;
-  justify-content: flex-end;
-
-  button:not(.primary) {
-    background: none;
-    color: inherit;
-    padding: 0pt 5pt;
-    font-size: 10pt;
-    font-weight: 600;
-    opacity: 0.6;
-    border-radius: 2pt;
-    margin-right: 2pt;
-    margin-left: 2pt;
-
-    &:hover {
-      background-color: rgba(240, 240, 240, 0.882);
-      color: $color-primary;
-      cursor: pointer;
-    }
-
-    &.danger {
-      color: red;
-
-      &:hover {
-        background-color: rgba(240, 240, 240, 0.882);
-        color: red;
-      }
-    }
-
-    &:active {
-      opacity: 0.8;
-    }
-
-    svg {
-      margin-left: 5pt;
-    }
+.entity-list .actions {
+  button:not(:first-of-type) {
+    margin-left: 5pt;
   }
 
-  button.primary {
-    opacity: 0.9;
-    transform: scale(0.8);
-    border-radius: 4pt;
-    margin-right: -10pt;
+  button.tool {
+    background: none;
+    color: $text-color;
+    opacity: 0.8;
+    margin: 0pt;
+    padding: 5pt 10pt;
+
+    &.danger {
+      color: #ED707B;
+    }
+
+    &:hover {
+      opacity: 1;
+      cursor: pointer;
+    }
   }
 }
 
@@ -874,4 +848,29 @@ button.share {
   width: auto;
   height: 40pt !important;
   margin-left: auto;
+}
+
+.app.new {
+  header {
+    border-bottom: none;
+  }
+
+  .traceview {
+    height: calc(100vh - 50pt);
+    padding: 0pt;
+    padding-top: 2pt;
+    border-radius: 6pt;
+    background: transparent;
+    overflow: hidden;
+
+    .sidebyside {
+      max-height: 100%;
+    }
+  }
+}
+
+.signup {
+  background-color: white;
+  padding: 20pt !important;
+  border: 1pt solid #e1e4e8;
 }

@@ -43,7 +43,10 @@ class Trace(Base):
     # int index of trace in dataset
     index = mapped_column(Integer, nullable=False)
     # foreign dataset id that this trace belongs to
-    dataset_id = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), nullable=False)
+    dataset_id = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), nullable=True)
+    # user that uploaded the trace
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    
     content = mapped_column(String, nullable=False)
     extra_metadata = mapped_column(String, nullable=False)
 

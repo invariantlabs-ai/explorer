@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react'
 import { useNavigate } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsCheckCircleFill, BsDatabaseFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
+import { BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 
 import { Explorer } from './TraceView'
@@ -10,26 +10,30 @@ import { sharedFetch } from './SharedFetch';
 import { ViewportList } from 'react-viewport-list';
 import { Modal } from './Modal';
 
-interface DatasetData {
+export interface DatasetData {
   id: string
   name: string
   num_traces: number
   extra_metadata: string
 }
 
-function useDataset(datasetId: string): DatasetData | null {
+function useDataset(datasetId: string): [DatasetData | null, string | null] {
   const [dataset, setDataset] = React.useState(null)
+  const [error, setError] = React.useState(null as string | null);
 
   React.useEffect(() => {
     sharedFetch(`/api/v1/dataset/${datasetId}`)
       .then(data => setDataset(data))
-      .catch(e => alert("Error loading dataset"))
+      .catch(e => {
+        alert("Error loading dataset")
+        setError(e)
+      })
   }, [datasetId])
 
-  return dataset
+  return [dataset, error]
 }
 
-interface Trace {   
+export interface Trace {
   id: string;
   index: number;
   dataset: string;
@@ -128,14 +132,23 @@ function ShareModalContent(props) {
   </div>
 }
 
-function useTraceShared(traceId: string | null): [boolean, (shared: boolean) => void] {
-  const [shared, setShared] = React.useState(false)
+// returns whether the given trace has link sharing enabled (true for shared, false for not shared, null for when
+// the current user does not have permission to view sharing status)
+function useTraceShared(traceId: string | null): [boolean | null, (shared: boolean) => void] {
+  const [shared, setShared] = React.useState(false as boolean | null)
 
   React.useEffect(() => {
     if (!traceId) { return }
     sharedFetch(`/api/v1/trace/${traceId}/shared`).then(data => {
       setShared(data.shared)
-    }).catch(e => alert("Error checking sharing status"))
+    }).catch(e => {
+      if (e.status === 401) {
+        // the current user does not have permission to view sharing status
+        setShared(null)
+      } else {
+        alert("Error checking sharing status")
+      }
+    })
   }, [traceId])
 
   const setRemoteShared = useCallback((shared: boolean) => {
@@ -165,7 +178,7 @@ export function Traces() {
   const props: {datasetId: string, bucketId: string, traceId: string|null} = useLoaderData() as any
   const navigate = useNavigate()
   
-  const dataset = useDataset(props.datasetId)
+  const [dataset, datasetLoadingError] = useDataset(props.datasetId)
   const [traces, setTraces] = useTraces(props.datasetId, props.bucketId)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
@@ -200,14 +213,18 @@ export function Traces() {
 
   const activeTrace = props.traceId ? traces?.elements[props.traceId] : null
 
-  if (!dataset) {
+  if (datasetLoadingError) {
+    return <div className='empty'>
+      <h3>Failed to Load Dataset</h3>
+    </div>
+  } else if (!dataset) {
     return <div className='empty'>
       <h3>Loading...</h3>
     </div>
   }
 
   return <div className="panel fullscreen app">
-    {showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
+    {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
     </Modal>}
     <div className='sidebyside'>
@@ -228,7 +245,7 @@ export function Traces() {
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
       hasFocusButton={false}
-      onShare={() => setShowShareModal(true)}
+      onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
     />
     </div>
@@ -278,6 +295,7 @@ export function SingleTrace() {
   const props: {traceId: string} = useLoaderData() as any
   const [trace, setTrace] = React.useState(null as Trace | null)
   const [dataset, setDataset] = React.useState(null as DatasetData | null)
+  const [error, setError] = React.useState(null as string | null)
 
   // fetch trace
   React.useEffect(() => {
@@ -288,10 +306,11 @@ export function SingleTrace() {
       setTrace(data)
     }).catch(e => {
       if (e.status === 401) {
-        alert("You do not have permission to view this trace")
+        setError("You do not have permission to view this trace")
         return
+      } else {
+        setError("Error loading trace")
       }
-      alert("Error loading trace")
     })
   }, [props.traceId])
 
@@ -308,7 +327,10 @@ export function SingleTrace() {
 
 
   return <div className="panel fullscreen app">
-    <div className='sidebyside'>
+    {error && <div className='empty'>
+      <h3>{error}</h3>
+    </div>}
+    {!error && <div className='sidebyside'>
     <Explorer
       // {...(transformedTraces || {})}
       activeTrace={trace}
@@ -323,6 +345,6 @@ export function SingleTrace() {
       onShare={null}
       sharingEnabled={false}
     />
-    </div>
+    </div>}
   </div>
 }

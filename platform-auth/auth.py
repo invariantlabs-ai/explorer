@@ -1,11 +1,12 @@
-from fastapi import FastAPI,Depends
 import json
+from fastapi import FastAPI, Depends, Request
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse, HTMLResponse
 from urllib.parse import quote
 from fastapi import HTTPException
 from keycloak import KeycloakOpenID # pip require python-keycloak
 import os
+from typing import Annotated
 
 base_url = "https://" + os.getenv("APP_NAME") + ".invariantlabs.ai"
 client_id = "invariant-" + os.getenv("APP_NAME")
@@ -69,6 +70,7 @@ def install_authorization_endpoints(app):
         return response
 
 # middleware that ensure that a JWT is present in the request
+# if it is not present, it will redirect to /login
 def require_authorization(exceptions, redirect=False, exception_handlers=None):
     """
     Add this to a fastapi app as a middleware, to ensure that a JWT is present and validated for all requests.
@@ -79,13 +81,12 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
     # same but for JWT
     async def check_jwt(request: Request, call_next):
         # check for DEV_MODE
-        # make sure client is localhost
         if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
             request.state.userinfo = {
                 "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
                 "email": "dev@mail.com",
                 "preferred_username": "developer",
-                "name": "Developer asdf"
+                "name": "Developer"
             }
             return await call_next(request)
 
@@ -104,3 +105,38 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
                 return Response(status_code=401, content="Unauthorized.")
         return await call_next(request)
     return check_jwt
+
+async def UserIdentity(request: Request):
+    # check for DEV_MODE
+    if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
+        return {
+            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            "email": "dev@mail.com",
+            "preferred_username": "developer",
+            "name": "Developer"
+        }
+
+    try:
+        token = json.loads(request.cookies.get("jwt"))
+        userinfo = keycloak_openid.userinfo(token["access_token"])
+        request.state.userinfo = userinfo
+        
+        return {
+            "sub": userinfo["sub"],
+            "email": userinfo["email"],
+            "preferred_username": userinfo["preferred_username"],
+            "name": userinfo["name"]
+        }
+    except Exception as e:
+        # otherwise, this is an anonymous user
+        return {
+            "sub": None,
+            "email": '',
+            "preferred_username": '',
+            "name": ''
+        }
+
+async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
+    if identity["sub"] is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    return identity

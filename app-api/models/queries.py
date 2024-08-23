@@ -37,23 +37,27 @@ def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=Fals
     
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
     
-    if not (str(dataset.user_id) == user_id or # correct user
-            (allow_shared and user_id == 'anonymous' and has_link_sharing(session, trace_id)) or # in sharing mode
+    if not (str(trace.user_id) == user_id or # correct user
+            (allow_shared and user_id is None and has_link_sharing(session, trace_id)) or # in sharing mode
             allow_public and dataset.is_public # public dataset
             ):
         raise HTTPException(status_code=401, detail="Unauthorized get")
+    
+    # store in session that this is authenticated
+    trace.authenticated = True
+    
     return trace
 
 def load_annoations(session, trace_id):
     return session.query(Annotation, User).filter(Annotation.trace_id == trace_id).join(User, User.id == Annotation.user_id).all()
 
 def load_dataset(session, id, user_id, allow_public=False):
-        dataset = session.query(Dataset).filter(Dataset.id == id).first()
-        if dataset is None:
-            raise HTTPException(status_code=404, detail="Dataset not found")
-        if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
-            raise HTTPException(status_code=401, detail="Unauthorized get")
-        return dataset
+    dataset = session.query(Dataset).filter(Dataset.id == id).first()
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized get")
+    return dataset
 
 # returns the collections of a dataset
 def get_collections(session, dataset: Dataset, num_traces: int):

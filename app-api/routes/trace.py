@@ -3,7 +3,10 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
+
+from typing import Annotated
+from routes.auth import UserIdentity, AuthenticatedUserIdentity
 
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, SharedLinks, User
 from models.queries import *
@@ -11,31 +14,29 @@ from models.queries import *
 trace = FastAPI()
 
 @trace.get("/{id}")
-def get_trace(request: Request, id: str, annotated:bool=False):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def get_trace(request: Request, id: str, annotated:bool=False, userinfo: Annotated[dict, Depends(UserIdentity)] = None):
+    # may be None for anonymous users
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
         return trace_to_json(trace, load_annoations(session, id))
         
 @trace.get("/{id}/shared")
-def get_trace_sharing(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def get_trace_sharing(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    # never None (always authenticated)
+    user_id = userinfo["sub"]
+    
     with Session(db()) as session:
         return {"shared": has_link_sharing(session, id)}
 
 @trace.put("/{id}/shared")
-def share_trace(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def share_trace(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    # never None (always authenticated)
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        trace = load_trace(id, session) # load trace to check for auth
+        trace = load_trace(session, id, user_id) # load trace to check for auth
         shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
         
         if shared_link is None:
@@ -49,13 +50,11 @@ def share_trace(request: Request, id: str):
         return {"shared": True}
 
 @trace.delete("/{id}/shared")
-def unshare_trace(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def unshare_trace(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        trace = load_trace(id, session) # load trace to check for auth
+        trace = load_trace(session, id, user_id) # load trace to check for auth
         shared_link = session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
         
         if shared_link is not None:
@@ -66,10 +65,8 @@ def unshare_trace(request: Request, id: str):
 
 # add a new annotation to a trace
 @trace.post("/{id}/annotate")
-async def annotate_trace(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+async def annotate_trace(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True) # load trace to check for auth
@@ -77,8 +74,6 @@ async def annotate_trace(request: Request, id: str):
         payload = await request.json()
         content = payload.get("content")
         address = payload.get("address")
-
-        save_user(session, request.state.userinfo)
 
         annotation = Annotation(
             trace_id=trace.id,
@@ -92,10 +87,9 @@ async def annotate_trace(request: Request, id: str):
 
 # get all annotations of a trace
 @trace.get("/{id}/annotations")
-def get_annotations(request: Request, id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def get_annotations(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    # may be None for anons
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True) # load trace to check for auth
@@ -103,10 +97,8 @@ def get_annotations(request: Request, id: str):
 
 # delete annotation
 @trace.delete("/{id}/annotation/{annotation_id}")
-def delete_annotation(request: Request, id: str, annotation_id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+def delete_annotation(request: Request, id: str, annotation_id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True) # load trace to check for auth
@@ -125,10 +117,8 @@ def delete_annotation(request: Request, id: str, annotation_id: str):
     
 # update annotation
 @trace.put("/{id}/annotation/{annotation_id}")
-async def update_annotation(request: Request, id: str, annotation_id: str):
-    user_id = request.state.userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Unauthorized request")
+async def update_annotation(request: Request, id: str, annotation_id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True) # load trace to check for auth

@@ -20,12 +20,12 @@ export function sharedFetch(url: string): Promise<any> {
         MULTILISTENER_FETCHES[url] = null
       }
     }).then(body => {
-      MULTILISTENER_FETCHES[url].forEach(({resolve, reject}) => {
+      (MULTILISTENER_FETCHES[url] || []).forEach(({resolve, reject}) => {
         resolve(body)
       })
       MULTILISTENER_FETCHES[url] = null
     }).catch(error => {
-      MULTILISTENER_FETCHES[url].forEach(({resolve, reject}) => {
+      (MULTILISTENER_FETCHES[url] || []).forEach(({resolve, reject}) => {
         reject(error)
       })
       MULTILISTENER_FETCHES[url] = null
