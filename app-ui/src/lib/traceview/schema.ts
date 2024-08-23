@@ -4,7 +4,7 @@ import Ajv from "ajv";
 const tool_call_schema = {
     type: "object",
     properties: {
-        id: { type: "string" },
+        id: { type: ["string", "number"] },
         type: { type: "string", enum: ["function"] },
         function: {
             type: "object",
@@ -25,7 +25,7 @@ const event_schema = {
         role: { type: "string" },
         // content can be string or null
         content: { type: ["string", "null"] },
-        tool_call_id: { type: ["string", "null"] },
+        tool_call_id: { type: ["string", "number", "null"] },
         tool_calls: {
             type: "array",
             items: tool_call_schema,

@@ -7,6 +7,8 @@ import { validate } from "./schema";
 import jsonMap from "json-source-map"
 import React, { useState, useEffect, useRef } from "react";
 
+import { ViewportList } from 'react-viewport-list';
+
 interface TraceViewProps {
     inputData: string;
     handleInputChange: (value: string | undefined) => void;
@@ -19,6 +21,7 @@ interface TraceViewProps {
     annotationView?: React.ComponentType
     header?: React.ReactNode
     title?: string | React.ReactNode
+    editor?: boolean
 }
 
 function useJSONValidation(props: { text: string }) {
@@ -37,7 +40,6 @@ function useJSONValidation(props: { text: string }) {
             result.errors = result.errors.map((error: any) => {
                 let pointer = pointers[error.instancePath]
                 if (pointer) {
-                    console.log(pointer)
                     error.range = {
                         start: pointer.value ? pointer.value : pointer.keyStart,
                         end: pointer.value ? pointer.valueEnd : pointer.keyEnd
@@ -96,13 +98,16 @@ export function TraceView(props: TraceViewProps) {
     const validationResult = useJSONValidation({ text: inputData })
     
     const sideBySide = props.sideBySide
+    const hasEditor = props.editor != false
 
     useEffect(() => {
         setAnnotatedJSON(AnnotatedJSON.from_mappings(annotations))
     }, [annotations])
 
+    let content = null;
+
     return <div className="traceview">
-        <h2>
+        {props.header != false && <h2>
             <div>
             {props.title}
             {!sideBySide && <div className="tab-group">
@@ -113,11 +118,11 @@ export function TraceView(props: TraceViewProps) {
                 <span className="inner">Preview</span>
                 </button>
             </div>}
-            <TraceValidationStatus validation={validationResult} />
+            {hasEditor && <TraceValidationStatus validation={validationResult} />}
             {props.header}
             </div>
-        </h2>
-        {!sideBySide && <div className={"content"}>
+        </h2>}
+        {hasEditor && !sideBySide && <div className={"content"}>
             <div className={"tab" + (mode === "input" ? " active" : "")}>
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
             </div>
@@ -125,11 +130,16 @@ export function TraceView(props: TraceViewProps) {
                 <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
             </div>
         </div>}
-        {sideBySide && <div className="sidebyside">
+        {hasEditor && sideBySide && <div className="sidebyside">
             <div className="side">
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
             </div>
             <div className="traces side">
+                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
+            </div>
+        </div>}
+        {!hasEditor && <div className="fullscreen">
+            <div className={"side traces " + (mode === "trace" ? " active" : "")}>
                 <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
             </div>
         </div>}
@@ -209,16 +219,22 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
 }
 
 interface RenderedTraceProps {
-    trace: string;
+    trace: string | object;
     annotations: AnnotatedJSON;
     annotationView?: React.ComponentType
+    onMount?: (events: Record<string, BroadcastEvent>) => void
 }
 
 interface RenderedTraceState {
     error: Error | null;
     parsed: any | null;
-    traceString: string;
+    traceString: string | object | null;
     selectedAnnotationAddress: string | null;
+
+    events: {
+        collapseAll: BroadcastEvent,
+        expandAll: BroadcastEvent
+    }
 }
 
 interface AnnotationContext {
@@ -227,8 +243,30 @@ interface AnnotationContext {
     annotationView?: React.ComponentType
 }
 
+class BroadcastEvent {
+    listeners: any[]
+
+    constructor() {
+        this.listeners = []
+    }
+
+    on(listener) {
+        this.listeners.push(listener)
+    }
+
+    off(listener) {
+        this.listeners = this.listeners.filter(l => l !== listener)
+    }
+
+    fire(data) {
+        this.listeners.forEach(l => l(data))
+    }
+}
+
 // handles exceptions in the rendering pass, gracefully
 export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedTraceState> {
+    listRef: any
+
     constructor(props: RenderedTraceProps) {
         super(props)
 
@@ -236,9 +274,12 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
         this.state = {
             error: null, 
             parsed: null, 
-            traceString: "",
-            selectedAnnotationAddress: null
+            traceString: null,
+            selectedAnnotationAddress: null,
+            events: {collapseAll: new BroadcastEvent(), expandAll: new BroadcastEvent()}
         }
+
+        this.listRef = React.createRef()
     }
 
     componentDidUpdate(): void {
@@ -247,12 +288,19 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
 
     componentDidMount() {
         this.parse()
+        this.props.onMount?.(this.state.events)
     }
 
     parse() {
         if (this.state.traceString !== this.props.trace) {
             try {
-                const parsed = JSON.parse(this.props.trace)
+                let parsed = {}
+                if (typeof this.props.trace === "object") {
+                    parsed = this.props.trace
+                } else {
+                    parsed = JSON.parse(this.props.trace)
+                }
+
                 this.setState({ 
                     parsed: parsed, 
                     error: null, 
@@ -272,7 +320,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                     <pre>
                         {this.state.error.message + "\n"}
                         <pre>
-                            {this.state.traceString}
+                            {JSON.stringify(this.state.traceString, null, 2)}
                         </pre>
                     </pre>
                 </div>
@@ -290,10 +338,12 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
-            return <div className="traces">
-                {events.map((item: any, index: number) => {
-                    return <MessageView key={index} index={index} message={item} annotations={this.props.annotations.for_path("messages." + index)} annotationContext={annotationContext} address={"messages[" + index + "]"} />
-                })}
+            return <div className="traces" ref={this.listRef}>
+                <ViewportList items={events} viewportRef={this.listRef} overscan={1} axis="y" withCache={true}>
+                    {(item: any, index: number) => {
+                        return <MessageView key={index} index={index} message={item} annotations={this.props.annotations.for_path("messages." + index)} annotationContext={annotationContext} address={"messages[" + index + "]"} events={this.state.events} />
+                    }}
+                </ViewportList>
             </div>
         } catch (e) {
             this.setState({ error: e as Error })
@@ -312,6 +362,7 @@ interface MessageViewProps {
     annotations: AnnotatedJSON;
     annotationContext?: AnnotationContext;
     address: string
+    events: Record<string, BroadcastEvent>
 }
 
 function RoleIcon(props: { role: string }) {
@@ -385,6 +436,9 @@ function CompactView(props: { message: any }) {
 }
 
 class MessageView extends React.Component<MessageViewProps, { error: Error | null, expanded: boolean }> {
+    collapse: () => void
+    expand: () => void
+
     constructor(props: MessageViewProps) {
         super(props)
 
@@ -392,6 +446,19 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
             error: null, 
             expanded: false
         }
+
+        this.collapse = () => this.setState({ expanded: true })
+        this.expand = () => this.setState({ expanded: false })
+    }
+
+    componentDidMount(): void {
+        this.props.events.collapseAll.on(this.collapse)
+        this.props.events.expandAll.on(this.expand)        
+    }
+
+    componentWillUnmount(): void {
+        this.props.events.collapseAll.off(this.collapse)
+        this.props.events.expandAll.off(this.expand)
     }
 
     componentDidCatch(error: Error) {
@@ -531,7 +598,7 @@ function AnnotatedJSONTable(props: { tool_call: any, annotations: any, children:
             {keys.map((key: string, index: number) => {
                 return <tr key={index}>
                     <td className="key">{key}</td>
-                    <td className="value"><AnnotatedStringifiedJSON annotations={annotations.for_path(key)} address={props.address + "." + key} annotationContext={props.annotationContext}>{JSON.stringify(args[key], null, 2)}</AnnotatedStringifiedJSON></td>
+                    <td className="value"><AnnotatedStringifiedJSON annotations={annotations.for_path(key)} address={props.address + "." + key} annotationContext={props.annotationContext}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
                 </tr>
             })}
         </tbody>
@@ -662,19 +729,28 @@ function Line(props: { children: any, annotationContext?: AnnotationContext, add
     
     const expanded = props.address === props.annotationContext?.selectedAnnotationAnchor
     const className = "line " + (props.highlights?.length ? "has-annotations" : "")
+    let extraClass = " "
 
     if (!annotationView) {
         return <span className={className}>{props.children}</span>
     }
 
+    if (annotationView["hasHighlight"]) {
+        extraClass += annotationView["hasHighlight"](props.address) ? "highlighted" : ""
+    }
+
+    if (!expanded) {
+        return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span></span>
+    }
+
     const InlineComponent: any = annotationView
-    const content = InlineComponent({ highlights: props.highlights, address: props.address })
+    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
     
     if (content === null) {
         return <span className={className}>{props.children}</span>
     }
     
-    return <span className={className}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
+    return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
 }

@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
+import { TraceView } from './lib/traceview/traceview';
 
-import { Explorer } from './TraceView'
+import { Explorer } from './Explorer'
 import { sharedFetch } from './SharedFetch';
 
 import { ViewportList } from 'react-viewport-list';
@@ -39,6 +40,8 @@ export interface Trace {
   dataset: string;
   messages: any[];
   extra_metadata: string;
+  // sometimes a trace already comes with the resolved user name
+  user?: string;
 }
 
 function useTraces(datasetId: string, bucket: string): [any | null, any] {
@@ -294,8 +297,10 @@ function Sidebar(props) {
 export function SingleTrace() {
   const props: {traceId: string} = useLoaderData() as any
   const [trace, setTrace] = React.useState(null as Trace | null)
-  const [dataset, setDataset] = React.useState(null as DatasetData | null)
+  const [dataset, setDataset] = React.useState(null as {name: string} | null)
   const [error, setError] = React.useState(null as string | null)
+  // set if we are showing a snippet trace (a trace without dataset)
+  const [snippetData, setSnippetData] = React.useState({isSnippet: false, user: null} as {isSnippet: boolean, user: string | null})
 
   // fetch trace
   React.useEffect(() => {
@@ -319,12 +324,25 @@ export function SingleTrace() {
     if (!trace) {
       return
     }
-    // depending on permissions, this may not be available
-    sharedFetch(`/api/v1/dataset/${trace?.dataset}`).then(data => {
-      setDataset(data)
-    }).catch(e => {})
+    
+    if (trace.dataset) {
+      // depending on permissions, this may not be available
+      sharedFetch(`/api/v1/dataset/${trace?.dataset}`).then(data => {
+        setDataset(data)
+      }).catch(e => {})
+    } else {
+      // otherwise use trace.user, if available and hide index
+      setDataset({name: trace?.user})
+      setSnippetData({isSnippet: true, user: trace?.user})
+    }
   }, [trace])
 
+  let header = <></>
+  if (dataset) {
+    header = snippetData.isSnippet ? 
+      <h2>{snippetData.user} / {props.traceId}</h2> :
+      <h2>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h2>
+  }
 
   return <div className="panel fullscreen app">
     {error && <div className='empty'>
@@ -336,9 +354,7 @@ export function SingleTrace() {
       activeTrace={trace}
       loadTrace={() => {}}
       loading={!trace}
-      header={
-        <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h1> 
-      }
+      header={header}
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
       hasFocusButton={false}
@@ -348,3 +364,29 @@ export function SingleTrace() {
     </div>}
   </div>
 }
+
+
+// interface ExplorerProps {
+//   activeTrace: any
+//   loadTrace: (trace: Trace) => void
+//   loading: boolean
+//   header: any
+//   queryId: string
+//   selectedTraceId: string
+//   hasFocusButton: boolean
+//   onShare: () => void
+//   sharingEnabled: boolean
+// }
+
+// function Explorer(props: ExplorerProps) {
+//   return <div className="panel fullscreen app new" style={{width: "100%"}}>
+//     <TraceView 
+//       sideBySide={true} 
+//       inputData={JSON.stringify(props.activeTrace?.messages, null, 2)} 
+//       handleInputChange={() => {}} 
+//       annotations={{}} 
+//       editor={false}
+//       header={props.header}
+//     />
+//   </div>
+// }

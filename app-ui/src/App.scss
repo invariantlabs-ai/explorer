@@ -874,3 +874,21 @@ button.share {
   padding: 20pt !important;
   border: 1pt solid #e1e4e8;
 }
+
+.traceview span.line.highlighted:before {
+  content: "";
+  // little circle
+  width: 10pt;
+  height: 10pt;
+  border-radius: 50%;
+  background-color: green;
+  position: relative;
+  top: 0.05em;
+  margin-left: 4pt;
+  margin-right: 4pt;
+  display: inline-block;
+}
+
+.traceview span.line.highlighted {
+  background-color: rgba(18, 90, 18, 0.168);
+}

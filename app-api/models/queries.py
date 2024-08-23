@@ -4,14 +4,14 @@ from fastapi import HTTPException
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks
 from util.util import get_gravatar_hash, split
 
-def message_load(content):
+def message_load(content, tokenize=True):
     """
     Loads the messages of a trace and chunks all string leaves into {"token": "string", "address": "address"} objects,
     that can be used as annotation anchors.
     """
     try:
         messages = json.loads(content)
-        messages = [translate_leaves_to_annotation_anchors(message, prefix=f"message[{i}]") for i, message in enumerate(messages)]
+        messages = [translate_leaves_to_annotation_anchors(message, prefix=f"message[{i}]") for i, message in enumerate(messages)] if tokenize else messages
         return messages
     except Exception as e:
         import traceback
@@ -30,11 +30,14 @@ def translate_leaves_to_annotation_anchors(object, prefix=""):
     return object
 
 
-def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=False):
-    trace = session.query(Trace).filter(Trace.id == trace_id).first()
+def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=False, return_user=False):
+    # # join on user_id to get real user name
+    if return_user: trace, user = session.query(Trace, User).filter(Trace.id == trace_id).join(User, User.id == Trace.user_id).first()
+    else: trace = session.query(Trace).filter(Trace.id == trace_id).first()
+    
     if trace is None:
         raise HTTPException(status_code=404, detail="Trace not found")
-    
+
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
     
     if not (str(trace.user_id) == user_id or # correct user
@@ -45,8 +48,11 @@ def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=Fals
     
     # store in session that this is authenticated
     trace.authenticated = True
-    
-    return trace
+
+    if return_user:
+        return trace, user
+    else:
+        return trace
 
 def load_annoations(session, trace_id):
     return session.query(Annotation, User).filter(Annotation.trace_id == trace_id).join(User, User.id == Annotation.user_id).all()
@@ -99,12 +105,13 @@ def save_user(session, userinfo):
                                       set_={k:user[k] for k in user if k != 'id'})
     session.execute(stmt)
 
-def trace_to_json(trace, annotations=None):
+def trace_to_json(trace, annotations=None, tokenize=True, user=None):
     out = {
         "id": trace.id,
         "index": trace.index,
-        "messages": message_load(trace.content),
+        "messages": message_load(trace.content, tokenize=tokenize),
         "dataset": trace.dataset_id,
+        **({"user": user} if user is not None else {}),
         "extra_metadata": trace.extra_metadata
     }
     if annotations is not None:

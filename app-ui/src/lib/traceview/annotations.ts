@@ -88,7 +88,7 @@ export class AnnotatedJSON {
 
     allAnnotations(): Annotation[] {
         let queue = [this.annotationsMap]
-        let annotations = []
+        let annotations: Annotation[] = []
         while (queue.length > 0) {
             let current: any = queue.shift()
             if (current.$annotations) {
@@ -139,7 +139,7 @@ export class AnnotatedJSON {
         try {
             const map = jsonMap.parse(object_string)
 
-            const pointers = []
+            const pointers: { start: number, end: number, content: string }[] = []
             for (const key in map.pointers) {
                 const pointer = map.pointers[key]
                 // in case, we map to a string, we offset the start and end by 1 to exclude the quotes
@@ -368,7 +368,7 @@ function annotationsToMap(annotations: Record<string, any>, prefix = ""): Annota
 
     const map: AnnotationMap = { $annotations: [] }
     const annotationsPerKey: Record<string, Record<string, any>> = {}
-    const directAnnotations = []
+    const directAnnotations: { key: string, start: number | null, end: number | null, content: any }[] = []
     
     for (const key in annotations) {
         // group keys by first segment (if it is not already a range), then recurse late

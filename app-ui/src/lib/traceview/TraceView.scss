@@ -141,7 +141,24 @@ body {
         flex: 1;
         display: flex;
         flex-direction: row;
+        height: auto;
         max-height: calc(100% - 50pt);
+        min-height: auto;
+        margin-top: -2pt;
+
+        .side {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 100%;
+            margin-top: 2pt;
+        }
+    }
+
+    .fullscreen {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        max-height: calc(100%);
         min-height: auto;
         margin-top: -2pt;
 
@@ -175,7 +192,8 @@ body {
     border-radius: 5pt;
     border: 1pt solid var(--border-color);
     background-color: white;
-    margin: 5pt 0pt;
+    margin: 5pt auto;
+    max-width: 800pt;
 
     &.parser-error {
         border: 1pt solid red;
@@ -423,7 +441,6 @@ table.json {
 
 
 div.inline-line-editor {
-    width: calc(100% + 4pt);
     background-color: var(--secondary-background-color);
     border-top: 1pt solid var(--border-color);
     border-bottom: 1pt solid var(--border-color);
@@ -432,7 +449,7 @@ div.inline-line-editor {
     padding-left: 5pt;
     margin-top: 5pt;
     margin-bottom: 10pt;
-    width: calc(100% + 10pt);
+    width: 100%;
     padding: 5pt 5pt;
 }
 

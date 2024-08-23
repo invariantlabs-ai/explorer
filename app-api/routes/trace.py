@@ -13,14 +13,34 @@ from models.queries import *
 
 trace = FastAPI()
 
+@trace.get("/snippets")
+def get_trace_snippets(userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
+    
+    # gets a users trace snippets (traces without a dataset)
+    with Session(db()) as session:
+        traces = session.query(Trace).filter(Trace.user_id == user_id, Trace.dataset_id == None).all()
+        return [trace_to_json(t, tokenize=False) for t in traces]
+
+@trace.delete("/snippets/{id}")
+def delete_trace_snippet(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
+    
+    with Session(db()) as session:
+        trace = load_trace(session, id, user_id)
+        session.delete(trace)
+        session.commit()
+        
+        return {"message": "deleted"}
+
 @trace.get("/{id}")
 def get_trace(request: Request, id: str, annotated:bool=False, userinfo: Annotated[dict, Depends(UserIdentity)] = None):
     # may be None for anonymous users
     user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
-        return trace_to_json(trace, load_annoations(session, id))
+        trace, user = load_trace(session, id, user_id, allow_public=True, allow_shared=True, return_user=True)
+        return trace_to_json(trace, load_annoations(session, id), user=user.username, tokenize=False)
         
 @trace.get("/{id}/shared")
 def get_trace_sharing(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
@@ -136,3 +156,28 @@ async def update_annotation(request: Request, id: str, annotation_id: str, useri
         annotation.content = content
         session.commit()
         return annotation_to_json(annotation, user)
+    
+@trace.post("/new")
+async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
+    print("upload trace for", user_id)
+    
+    with Session(db()) as session:
+        payload = await request.json()
+        content = payload.get("content")
+        extra_metadata = payload.get("extra_metadata")
+        
+        trace = Trace(
+            dataset_id=None,
+            index=0,
+            user_id=user_id,
+            content=content,
+            extra_metadata=str(extra_metadata)
+        )
+        
+        session.add(trace)
+        session.commit()
+        
+        return {
+            "id": str(trace.id)
+        }

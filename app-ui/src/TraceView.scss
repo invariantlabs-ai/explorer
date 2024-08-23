@@ -1378,7 +1378,6 @@ label.mono {
             button.inline {
                 font-size: 10pt;
                 height: 30pt;
-                ;
             }
 
             span.description {
@@ -1427,4 +1426,8 @@ button.inline.danger {
     svg {
         color: red !important;
     }
+}
+
+.line.has-editor {
+    background-color: red;
 }

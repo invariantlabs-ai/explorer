@@ -126,6 +126,30 @@ function useDatasetList(): [any[], () => void] {
   ]
 }
 
+function useSnippetsList(): [any[], () => void] {
+  const [snippets, setSnippets] = React.useState<any[]>([])
+
+  const refresh = () => {
+    fetch('/api/v1/trace/snippets').then(response => {
+      if (response.ok) {
+        response.json().then(data => {
+          setSnippets(data)
+        })
+      } else {
+        setSnippets([])
+        alert('Failed to fetch user snippets')
+      }
+    })
+  }
+
+  React.useEffect(() => refresh(), [])
+
+  return [
+    snippets,
+    refresh
+  ]
+}
+
 function DeleteDatasetModalContent(props) {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -164,11 +188,14 @@ function DeleteDatasetModalContent(props) {
 }
 
 function Home() {
+  const userInfo = useUserInfo()
+  
   const [datasets, refresh] = useDatasetList()
+  const [snippets, refreshSnippets] = useSnippetsList() 
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
-  const userInfo = useUserInfo()
   const [downloadState, setDownloadState] = React.useState({})
+  
   const navigate = useNavigate()
   
   useEffect(() => {
@@ -278,6 +305,16 @@ function Home() {
           <button className='primary'>View</button>
         </div>
       </li></Link>)}
+    </EntityList>
+    <EntityList title="Snippets">
+        {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
+          <h3>{snippet.name}</h3>
+          <span className='description'>Snippet #{i}</span>
+          <div className='spacer'/>
+          <div className='actions'>
+            <button className='primary'>View</button>
+          </div>
+        </li></Link>)}
     </EntityList>
 
   </>
