@@ -18,18 +18,18 @@ export interface DatasetData {
   extra_metadata: string
 }
 
-function useDataset(datasetId: string): [DatasetData | null, string | null] {
+function useDataset(username:string, datasetname: string): [DatasetData | null, string | null] {
   const [dataset, setDataset] = React.useState(null)
   const [error, setError] = React.useState(null as string | null);
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/byid/${datasetId}`)
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
       .then(data => setDataset(data))
       .catch(e => {
         alert("Error loading dataset")
         setError(e)
       })
-  }, [datasetId])
+  }, [username, datasetname])
 
   return [dataset, error]
 }
@@ -44,15 +44,15 @@ export interface Trace {
   user?: string;
 }
 
-function useTraces(datasetId: string, bucket: string): [any | null, any] {
+function useTraces(username: string, datasetname: string, bucket: string): [any | null, any] {
   const [traces, setTraces] = React.useState(null)
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/byid/${datasetId}/${bucket}`).then(data => {
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/${bucket}`).then(data => {
         data = transformTraces(data)
         setTraces(data)
     }).catch(e => alert("Error loading traces"))
-  }, [datasetId, bucket])
+  }, [username, datasetname, bucket])
 
   return [traces, setTraces]
 }
@@ -178,18 +178,18 @@ function useTraceShared(traceId: string | null): [boolean | null, (shared: boole
 
 
 export function Traces() {
-  const props: {datasetId: string, bucketId: string, traceId: string|null} = useLoaderData() as any
+  const props: {username: string, datasetname: string, bucketId: string, traceId: string|null} = useLoaderData() as any
   const navigate = useNavigate()
   
-  const [dataset, datasetLoadingError] = useDataset(props.datasetId)
-  const [traces, setTraces] = useTraces(props.datasetId, props.bucketId)
+  const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
+  const [traces, setTraces] = useTraces(props.username, props.datasetname, props.bucketId)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
   
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
     if (props.traceId === null && traces && traces.indices.length > 0) {
-      navigate(`/dataset/${props.datasetId}/${props.bucketId}/${traces.indices[0]}`)
+      navigate(`/user/${props.username}/dataset/${props.datasetname}/${props.bucketId}/${traces.indices[0]}`)
     }
   }, [props.traceId, traces])
 
@@ -233,7 +233,8 @@ export function Traces() {
     <div className='sidebyside'>
     <Sidebar 
       traces={traces} 
-      datasetId={props.datasetId} 
+      username={props.username}
+      datasetname={props.datasetname} 
       activeTraceId={props.traceId} 
       bucketId={props.bucketId}
     />
@@ -243,7 +244,7 @@ export function Traces() {
       loadTrace={loadTrace} 
       loading={!traces}
       header={
-        <h1><Link to='/'>Datasets</Link> / <Link to={`/dataset/${props.datasetId}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+        <h1><Link to='/'>Datasets</Link> / <Link to={`/user/${props.username}/dataset/${props.datasetname}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
       }
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
@@ -256,7 +257,7 @@ export function Traces() {
 }
 
 function Sidebar(props) {
-  const {datasetId, activeTraceId} = props
+  const {username, datasetname, activeTraceId} = props
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
 
@@ -283,7 +284,7 @@ function Sidebar(props) {
         {(id: string) => {
           const trace = props.traces.elements[id]
           return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-            <Link to={'/dataset/' + datasetId + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
+            <Link to={'/user/' + username + '/dataset/' + datasetname + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
               Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
             </Link>
           </li>

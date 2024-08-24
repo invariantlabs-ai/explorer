@@ -63,7 +63,7 @@ function DatasetList(props) {
 return <>
     <EntityList title={props.title} actions={props.actions}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
-      {datasets.map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
+      {datasets.map((dataset, i) => <Link className='item' to={`/user/${dataset.user.username}/dataset/${dataset.name}`} key={i}><li>
         <h3>{dataset.user.username}/{dataset.name}</h3>
         <span className='description'>
           {dataset.extra_metadata}

@@ -32,8 +32,7 @@ def translate_leaves_to_annotation_anchors(object, prefix=""):
 
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
-    if not isinstance(by, dict): by = {"id": by}
-    query_filter = and_(*[getattr(Trace, k) == v for k, v in by.items()])
+    query_filter = get_query_filter(by, Trace, User)
     if return_user:
         # join on user_id to get real user name
         trace, user = session.query(Trace, User).filter(query_filter).join(User, User.id == Trace.user_id).first()
@@ -60,19 +59,39 @@ def load_trace(session, by, user_id, allow_shared=False, allow_public=False, ret
         return trace
 
 def load_annoations(session, by):
-    if not isinstance(by, dict): by = {"trace_id": by}
-    query_filter = and_(*[getattr(Annotation, k) == v for k, v in by.items()])
+    query_filter = get_query_filter(by, Annotation, User, default_key='trace_id')
     return session.query(Annotation, User).filter(query_filter).join(User, User.id == Annotation.user_id).all()
 
-def load_dataset(session, by, user_id, allow_public=False):
-    if not isinstance(by, dict): by = {"id": by}
-    query_filter = and_(*[getattr(Dataset, k) == v for k, v in by.items()])
-    dataset = session.query(Dataset).filter(query_filter).first()
+def get_query_filter(by, main_object, *other_objects, default_key='id'):
+    if not isinstance(by, dict): by = {default_key: by}
+    objects = {o.__objectname__: o for o in [main_object, *other_objects]}
+    print(objects)
+    query_filter = []
+    for k, v in by.items():
+        if '.' in k:
+            object_name, field = k.split('.')
+            object = objects[object_name]
+        else:
+            field = k
+            object = main_object
+        query_filter.append(getattr(object, field) == v)
+    return and_(*query_filter)
+
+def load_dataset(session, by, user_id, allow_public=False, return_user=False):
+    query_filter = get_query_filter(by, Dataset, User)
+    if return_user:
+        # join on user_id to get real user name
+        dataset, user = session.query(Dataset, User).filter(query_filter).join(User, User.id == Dataset.user_id).first()
+    else:
+        dataset = session.query(Dataset).filter(query_filter).first()
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
         raise HTTPException(status_code=401, detail="Unauthorized get")
-    return dataset
+    if return_user:
+        return dataset, user
+    else:
+        return dataset
 
 # returns the collections of a dataset
 def get_collections(session, dataset: Dataset, num_traces: int):

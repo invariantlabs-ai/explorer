@@ -24,7 +24,7 @@ function useDatasetList(): [any[], () => void] {
   const [datasets, setDatasets] = React.useState<any[]>([])
 
   const refresh = (username) => {
-    fetch('/api/v1/dataset/byuser/' + username).then(response => {
+    fetch('/api/v1/dataset/list/byuser/' + username).then(response => {
       if (response.ok) {
         response.json().then(data => {
           setDatasets(data)

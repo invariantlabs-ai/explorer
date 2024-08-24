@@ -112,8 +112,8 @@ def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]
 
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
-    
     with Session(db()) as session:
+        print(user_name)
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
     
@@ -149,7 +149,7 @@ def delete_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, De
 
 @dataset.delete("/byuser/{username}/{dataset_name}")
 def delete_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return delete_dataset({'username': username, 'name': dataset_name}, userinfo)
+    return delete_dataset({'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
 # gets details on a dataset (including collections, but without traces)
@@ -160,10 +160,10 @@ def get_dataset(by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
     user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        dataset = load_dataset(session, by, user_id, allow_public=True)
+        dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
-        return dataset_to_json(dataset,
+        return dataset_to_json(dataset, user,
                                num_traces=num_traces,
                                buckets=get_collections(session, dataset, num_traces))
 
@@ -174,7 +174,7 @@ def get_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depen
 
 @dataset.get("/byuser/{username}/{dataset_name}")
 def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_dataset({'username': username, 'name': dataset_name}, userinfo)
+    return get_dataset({'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
 # update the dataset, currently only allows to change the visibility
@@ -185,23 +185,23 @@ async def update_dataset(request: Request, by: dict, userinfo: Annotated[dict, D
     user_id = userinfo["sub"]
   
     with Session(db()) as session:
-        dataset = load_dataset(session, by, user_id)
+        dataset, user = load_dataset(session, by, user_id, return_user=True)
         payload = await request.json()
         is_public = bool(payload.get("content"))
         dataset.is_public = is_public        
         session.commit()
         
         # count all traces
-        num_traces = session.query(Trace).filter(Trace.dataset_id == id).count()
+        num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
         return dataset_to_json(dataset, num_traces=num_traces, buckets=get_collections(session, dataset, num_traces))
 
 @dataset.put("/byid/{id}")
-def update_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return update_dataset(request, {'id': id}, userinfo)
+async def update_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    return await update_dataset(request, {'id': id}, userinfo)
 
 @dataset.put("/byuser/{username}/{dataset_name}")
-def update_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return update_dataset(request, {'username': username, 'name': dataset_name}, userinfo)
+async def update_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    return await update_dataset(request, {'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
 # get all traces of a dataset in the given collection (formerly known as bucket)
@@ -216,7 +216,7 @@ def get_traces(request: Request, by: dict, bucket: str, userinfo: Annotated[dict
     user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        dataset = load_dataset(session, by, user_id, allow_public=True)
+        dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         
         if bucket == "all":
             traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
@@ -262,7 +262,7 @@ def get_traces_by_id(request: Request, id: str, bucket: str, userinfo: Annotated
 
 @dataset.get("/byuser/{username}/{dataset_name}/{bucket}")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_traces(request, {'username': username, 'name': dataset_name}, bucket, userinfo)
+    return get_traces(request, {'User.username': username, 'name': dataset_name}, bucket, userinfo)
 
 ########################################
 # get the full dataset with all traces and annotations
@@ -270,7 +270,7 @@ def get_traces_by_name(request: Request, username:str, dataset_name:str, bucket:
 
 def get_all_traces(by: dict,  user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
-        dataset = load_dataset(session, by, user['sub'], allow_public=True)
+        dataset, user = load_dataset(session, by, user['sub'], allow_public=True, return_user=True)
         
         out = dataset_to_json(dataset) 
         out['traces'] = []
@@ -287,4 +287,4 @@ def get_all_traces_by_id(id: str, userinfo: Annotated[dict, Depends(UserIdentity
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
 def get_all_traces_by_name(username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_all_traces({'username': username, 'name': dataset_name}, userinfo)
+    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)

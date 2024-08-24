@@ -19,6 +19,7 @@ class Base(DeclarativeBase):
     pass
 
 class Dataset(Base):
+    __objectname__ = "Dataset"
     __tablename__ = "datasets"
     __table_args__ = (UniqueConstraint('user_id', 'name', name='_user_id_name_uc'),)
 
@@ -36,6 +37,7 @@ class Dataset(Base):
     extra_metadata = mapped_column(String, nullable=False)
 
 class Trace(Base):
+    __objectname__ = "Trace"
     __tablename__ = "traces"
 
     # key is uuid that auto creates
@@ -51,6 +53,7 @@ class Trace(Base):
     extra_metadata = mapped_column(String, nullable=False)
 
 class User(Base):
+    __objectname__ = "User"
     __tablename__ = "users"
     # database of users
     # this is NOT used for auth (see routes/auth.py), but just to map user_id -> display, image_path
@@ -61,6 +64,7 @@ class User(Base):
     image_url_hash = mapped_column(String, nullable=False)
 
 class Annotation(Base):
+    __objectname__ = "Annotation"
     __tablename__ = "annotations"
 
     # key is uuid that auto creates
@@ -78,6 +82,7 @@ class Annotation(Base):
 
 # simple table to capture all shared trace IDs
 class SharedLinks(Base):
+    __objectname__ = "SharedLinks"
     __tablename__ = "shared_links"
 
     # key is uuid that auto creates

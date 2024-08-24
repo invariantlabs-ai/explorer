@@ -7,6 +7,7 @@ import { BiSolidCommentDetail } from 'react-icons/bi'
 import { sharedFetch } from './SharedFetch'
 import { RemoteResource, useRemoteResource } from './RemoteResource';
 
+
 interface Bucket {
   id: string
   name: string
@@ -24,14 +25,16 @@ interface DatasetData {
 
 
 class Dataset extends RemoteResource {
-  constructor(datasetId) {
-    super(`/api/v1/dataset/byid/${datasetId}`,
-          `/api/v1/dataset/byid/${datasetId}`,
-          `/api/v1/dataset/byid/${datasetId}`,
-          `/api/v1/dataset/byid/${datasetId}`
+  constructor(username: string, datasetname: string) {
+    super(
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}` 
     )
     //@ts-ignore
-    this.datasetId = datasetId
+    this.username = username
+    this.datasetname = datasetname
   }
 
 }
@@ -54,14 +57,14 @@ function metadata(dataset) {
   }
 }
 
-function Bucket({datasetId, id, name, count, active, icon, onSelect}: {datasetId: string, id: string, name: string, count: number, active?: boolean, icon?: React.ReactNode, onSelect?: () => void}) {
+function Bucket({dataset, id, name, count, active, icon, onSelect}: {dataset, id: string, name: string, count: number, active?: boolean, icon?: React.ReactNode, onSelect?: () => void}) {
   const iconMap: {[key: string]: React.ReactNode} = {
     'all': <BsCheckCircleFill/>,
     'annotated': <BsPencilFill style={{color: 'green'}}/>,
     'unannotated': <BsQuestionCircleFill style={{color: 'gold'}}/>,
   }
 
-  return <Link to={`/dataset/${datasetId}/${id}`}>
+  return <Link to={`/user/${dataset.user.username}/dataset/${dataset.name}/${id}`}>
     <div className={'bucket ' + (active ? 'active' : '')}>
       <div className='icon'>{icon || iconMap[id] || null}</div>
       <div className='count'>{count}</div>
@@ -72,8 +75,9 @@ function Bucket({datasetId, id, name, count, active, icon, onSelect}: {datasetId
 
 function DatasetView() {
   const props: any = useLoaderData()
-  const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.datasetId)
+  const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.username, props.datasetname)
   const [activeBucket, setActiveBucket] = React.useState(null as string | null)
+  const userInfo = useUserInfo()
 
   const onPublicChange = (e) => {
     datasetLoader.update(null, {content: e.target.checked})
@@ -93,7 +97,7 @@ function DatasetView() {
   return <div className="panel entity-list">
     <header>
       <h1>
-        <Link to='/'>Datasets</Link> / {dataset?.name}
+        <Link to={userInfo?.id == dataset?.user.id ? '/' : '/user/' + dataset.user.username }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
         {dataset.is_public && <span className='description'> <BsGlobe/></span>}
       </h1>
       <div className="spacer"/>
@@ -113,12 +117,12 @@ function DatasetView() {
     </div>
     <div>
     <label htmlFor='public'><h4>Public</h4></label>
-    <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange}/>
+    <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>
     </div>
     <h4>Collections</h4>
     <div className='bucket-list'>
       {dataset.buckets.map(bucket => {
-        return <Bucket datasetId={dataset.id} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
+        return <Bucket dataset={dataset} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
       })}
     </div>
     <h4>Recent Activity</h4>

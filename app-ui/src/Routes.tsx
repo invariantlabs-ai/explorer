@@ -5,7 +5,7 @@ import Layout from './Layout.tsx'
 import {Traces, SingleTrace} from './Traces.tsx'
 import './App.scss'
 import DatasetView from './Dataset.tsx'
-import { Link } from 'react-router-dom'
+import { Link, } from 'react-router-dom'
 import { New } from './New.tsx'
 import { SignUp } from './SignUp.tsx'
 import User from './User.tsx'
@@ -27,47 +27,36 @@ export const routes = [
     }
   },
   {
-    path: '/dataset/:datasetId',
+    path: '/user/:username/dataset/:datasetname',
     label: 'Dataset',
     element: <Layout><DatasetView/></Layout>,
     loader: async (task: any) => {
-      return {"datasetId": task.params.datasetId}
-    }
+      return {"datasetname": task.params.datasetname,
+              "username": task.params.username}
+      }
   },
   {
-    path: '/dataset/:datasetId/:bucketId/:traceId',
+    path: '/user/:username/dataset/:datasetname/:bucketId/:traceId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
-      return {
-        "datasetId": task.params.datasetId,
-        "bucketId": task.params.bucketId,
-        "traceId": task.params.traceId
+      return {"datasetname": task.params.datasetname,
+              "username": task.params.username,
+              "bucketId": task.params.bucketId,
+              "traceId": task.params.traceId
+            }
       }
-    }
   },
   {
-    path: '/dataset/:datasetId/:bucketId',
+    path: '/user/:username/dataset/:datasetname/:bucketId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
-      return {
-        "datasetId": task.params.datasetId,
-        "bucketId": task.params.bucketId,
-        "traceId": null
-      }
-    }
-  },
-  {
-    path: '/dataset/:datasetId/:bucketId',
-    label: 'Dataset',
-    element: <Layout fullscreen><Traces/></Layout>,
-    loader: async (task: any) => {
-      return {
-        "datasetId": task.params.datasetId,
-        "bucketId": task.params.bucketId,
-        "traceId": null
-      }
+      return {"datasetname": task.params.datasetname,
+              "username": task.params.username,
+              "bucketId": task.params.bucketId,
+              "traceId": null
+            }
     }
   },
   {
