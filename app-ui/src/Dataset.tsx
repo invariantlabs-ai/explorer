@@ -25,10 +25,10 @@ interface DatasetData {
 
 class Dataset extends RemoteResource {
   constructor(datasetId) {
-    super(`/api/v1/dataset/${datasetId}`,
-          `/api/v1/dataset/${datasetId}`,
-          `/api/v1/dataset/${datasetId}`,
-          `/api/v1/dataset/${datasetId}`
+    super(`/api/v1/dataset/byid/${datasetId}`,
+          `/api/v1/dataset/byid/${datasetId}`,
+          `/api/v1/dataset/byid/${datasetId}`,
+          `/api/v1/dataset/byid/${datasetId}`
     )
     //@ts-ignore
     this.datasetId = datasetId

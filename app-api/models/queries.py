@@ -1,5 +1,6 @@
 import json
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
+from sqlalchemy import and_
 from fastapi import HTTPException
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks
 from util.util import get_gravatar_hash, split
@@ -30,10 +31,14 @@ def translate_leaves_to_annotation_anchors(object, prefix=""):
     return object
 
 
-def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=False, return_user=False):
-    # # join on user_id to get real user name
-    if return_user: trace, user = session.query(Trace, User).filter(Trace.id == trace_id).join(User, User.id == Trace.user_id).first()
-    else: trace = session.query(Trace).filter(Trace.id == trace_id).first()
+def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
+    if not isinstance(by, dict): by = {"id": by}
+    query_filter = and_(*[getattr(Trace, k) == v for k, v in by.items()])
+    if return_user:
+        # join on user_id to get real user name
+        trace, user = session.query(Trace, User).filter(query_filter).join(User, User.id == Trace.user_id).first()
+    else:
+        trace = session.query(Trace).filter(query_filter).first()
     
     if trace is None:
         raise HTTPException(status_code=404, detail="Trace not found")
@@ -54,11 +59,15 @@ def load_trace(session, trace_id, user_id, allow_shared=False, allow_public=Fals
     else:
         return trace
 
-def load_annoations(session, trace_id):
-    return session.query(Annotation, User).filter(Annotation.trace_id == trace_id).join(User, User.id == Annotation.user_id).all()
+def load_annoations(session, by):
+    if not isinstance(by, dict): by = {"trace_id": by}
+    query_filter = and_(*[getattr(Annotation, k) == v for k, v in by.items()])
+    return session.query(Annotation, User).filter(query_filter).join(User, User.id == Annotation.user_id).all()
 
-def load_dataset(session, id, user_id, allow_public=False):
-    dataset = session.query(Dataset).filter(Dataset.id == id).first()
+def load_dataset(session, by, user_id, allow_public=False):
+    if not isinstance(by, dict): by = {"id": by}
+    query_filter = and_(*[getattr(Dataset, k) == v for k, v in by.items()])
+    dataset = session.query(Dataset).filter(query_filter).first()
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):

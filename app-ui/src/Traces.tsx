@@ -23,7 +23,7 @@ function useDataset(datasetId: string): [DatasetData | null, string | null] {
   const [error, setError] = React.useState(null as string | null);
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/${datasetId}`)
+    sharedFetch(`/api/v1/dataset/byid/${datasetId}`)
       .then(data => setDataset(data))
       .catch(e => {
         alert("Error loading dataset")
@@ -48,7 +48,7 @@ function useTraces(datasetId: string, bucket: string): [any | null, any] {
   const [traces, setTraces] = React.useState(null)
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/${datasetId}/${bucket}`).then(data => {
+    sharedFetch(`/api/v1/dataset/byid/${datasetId}/${bucket}`).then(data => {
         data = transformTraces(data)
         setTraces(data)
     }).catch(e => alert("Error loading traces"))
@@ -327,7 +327,7 @@ export function SingleTrace() {
     
     if (trace.dataset) {
       // depending on permissions, this may not be available
-      sharedFetch(`/api/v1/dataset/${trace?.dataset}`).then(data => {
+      sharedFetch(`/api/v1/dataset/byid/${trace?.dataset}`).then(data => {
         setDataset(data)
       }).catch(e => {})
     } else {
