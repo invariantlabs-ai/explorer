@@ -8,6 +8,7 @@ import DatasetView from './Dataset.tsx'
 import { Link } from 'react-router-dom'
 import { New } from './New.tsx'
 import { SignUp } from './SignUp.tsx'
+import User from './User.tsx'
 
 export const routes = [
   {
@@ -16,6 +17,14 @@ export const routes = [
     icon: <BsSpeedometer2/>,
     element: <Layout><Home/></Layout>,
     category: 'home'
+  },
+  {
+    path: '/user/:username',
+    label: 'User',
+    element: <Layout><User/></Layout>,
+    loader: async (user: any) => {
+      return {"username": user.params.username}
+    }
   },
   {
     path: '/dataset/:datasetId',

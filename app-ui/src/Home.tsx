@@ -3,21 +3,8 @@ import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
+import { EntityList, DatasetList } from './EntityList'
 
-function EntityList(props) {
-  return <div className="panel entity-list">
-    <header>
-      <h1>{props.title}</h1>
-      <div className="spacer"/>
-      <div className="actions">
-        {props.actions}
-      </div>
-    </header>
-    <ul>
-      {props.children}
-    </ul>
-  </div>
-}
 
 function uploadDataset(name: string, file: File) {
   const promise = new Promise((resolve, reject) => {
@@ -195,49 +182,7 @@ function Home() {
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
   const [downloadState, setDownloadState] = React.useState({})
-  
   const navigate = useNavigate()
-  
-  useEffect(() => {
-    let state = downloadState || {}
-    for (const dataset of datasets) {
-      if (state[dataset.id] === undefined) {
-        state[dataset.id] = 'ready'
-      }
-    }
-    setDownloadState(state)
-  }, [userInfo, datasets])
-  
-  const onDownloadDataset = (dataset) => {
-    return (event) => {
-      if (downloadState[dataset.id] ==='ready') {
-        setDownloadState({...downloadState, [dataset.id]: 'waiting'})
-        fetch('/api/v1/dataset/full/'+dataset.id).then(response => {
-          if (!response.ok) {
-            throw new Error('could net fetch dataset')
-          }
-          return response.json()}).then(data => {
-            const link = document.createElement('a')
-            var out = ''
-            data.traces.forEach(trace => {
-              out += JSON.stringify(trace) + '\n'
-            })
-            link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(out)
-            link.setAttribute('download', dataset.name + '.jsonl')
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            setDownloadState({...downloadState, [dataset.id]: 'ready'})
-        }).catch(err => {
-          setDownloadState({...downloadState, [dataset.id]:'ready'})
-          alert('Could not download the dataset.')
-        })
-      }
-      event.preventDefault()
-    }
-  }
-
-
   return <>
     {/* upload modal */}
     {showUploadModal && <Modal title="Upload Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
@@ -247,65 +192,20 @@ function Home() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
-    <EntityList title="My Datasets" actions={<>
-      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
-        <BsUpload/>
-        Upload New Dataset
-      </button>}
-      {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
-        <BsUpload/>
-        Upload Trace
-      </button>}
-    </>}>
-      {(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id).map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
-        <h3>{dataset.name}</h3>
-        {dataset.is_public && <span className='description'><BsGlobe/></span>}
-        <span className='description'>
-          {dataset.extra_metadata}
-        </span>
-        <div className='spacer'/>
-        <div className='actions'>
-          {/* <button>
-            <BsPencilFill/> Edit
-          </button> */}
-          <button className='tool' onClick={onDownloadDataset(dataset)}>
-            {downloadState[dataset.id] == 'ready' && <BsDownload/>}
-            {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
-            {downloadState[dataset.id] != 'ready' && downloadState[dataset.id] != 'waiting' && <BsDownload/>}
-          </button>
-          <button className='tool danger' onClick={(e) => {
-            e.preventDefault()
-            setSelectedDatasetForDelete(dataset)
-          }}><BsTrash/></button>
-          <button className='primary'>View</button>
-        </div>
-      </li></Link>)}
-    </EntityList>
-    <EntityList title="Public Datasets">
-      {(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)
-      .map((dataset, i) => <Link className='item' to={`/dataset/${dataset.id}`} key={i}><li>
-        <h3>{dataset.user.username}/{dataset.name}</h3>
-        <span className='description'>
-          {dataset.extra_metadata}
-        </span>
-        <div className='spacer'/>
-        <div className='actions'>
-          {/* <button>
-            <BsPencilFill/> Edit
-          </button> */}
-          <button className='tool' onClick={onDownloadDataset(dataset)}>
-            {downloadState[dataset.id] == 'ready' && <BsDownload/>}
-            {downloadState[dataset.id] == 'waiting' && <BsClockHistory/>}
-            {downloadState[dataset.id] != 'ready' && downloadState[dataset.id] != 'waiting' && <BsDownload/>}
-          </button>
-          {dataset.user.username == userInfo?.username && <button className='tool danger' onClick={(e) => {
-            e.preventDefault()
-            setSelectedDatasetForDelete(dataset)
-          }}><BsTrash/></button>}
-          <button className='primary'>View</button>
-        </div>
-      </li></Link>)}
-    </EntityList>
+    <DatasetList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
+                 actions={<>
+                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
+                        <BsUpload/>
+                        Upload New Dataset
+                      </button>}
+                      {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
+                        <BsUpload/>
+                        Upload Trace
+                      </button>}
+                    </>}
+                  onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
+      />
+    <DatasetList title="Public Datasets" datasets={(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)}/>
     <EntityList title="Snippets">
         {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
           <h3>{snippet.name}</h3>

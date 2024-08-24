@@ -12,7 +12,7 @@ from sqlalchemy import String, Integer, Column, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, or_
+from sqlalchemy import create_engine, or_, and_
 
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
@@ -119,6 +119,14 @@ def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]
     with Session(db()) as session:
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(or_(Dataset.user_id == user_id, Dataset.is_public)).all()
         
+        return [dataset_to_json(dataset, user) for dataset, user in datasets]
+    
+@dataset.get("/byuser/{user_name}")
+def list_datasets(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
+    user_id = user.get("sub")
+    
+    with Session(db()) as session:
+        datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
 
 # delete a dataset
