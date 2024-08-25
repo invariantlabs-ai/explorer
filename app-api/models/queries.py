@@ -45,7 +45,7 @@ def load_trace(session, by, user_id, allow_shared=False, allow_public=False, ret
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
     
     if not (str(trace.user_id) == user_id or # correct user
-            (allow_shared and user_id is None and has_link_sharing(session, trace_id)) or # in sharing mode
+            (allow_shared and has_link_sharing(session, trace.id)) or # in sharing mode
             allow_public and dataset.is_public # public dataset
             ):
         raise HTTPException(status_code=401, detail="Unauthorized get")
