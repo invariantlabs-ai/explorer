@@ -146,13 +146,14 @@ def trace_to_json(trace, annotations=None, tokenize=True, user=None):
         out['annotations'] = [annotation_to_json(annotation, user=user) for annotation, user in annotations]
     return out
 
-def annotation_to_json(annotation, user=None):
+def annotation_to_json(annotation, user=None, **kwargs):
     out = {
         "id": annotation.id,
         "content": annotation.content,
         "address": annotation.address,
         "time_created": annotation.time_created
     }
+    out = {**out, **kwargs}
     if user is not None:
         out['user'] = user_to_json(user)
     return out

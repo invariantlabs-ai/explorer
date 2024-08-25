@@ -33,6 +33,7 @@ class Dataset(Base):
     path = mapped_column(String, nullable=False)
     # is the dataset visible to other users
     is_public = mapped_column(Boolean, default=False, nullable=False) 
+    time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
     # JSON object of the metadata parsed at ingestion
     extra_metadata = mapped_column(String, nullable=False)
 
@@ -51,6 +52,7 @@ class Trace(Base):
     
     content = mapped_column(String, nullable=False)
     extra_metadata = mapped_column(String, nullable=False)
+    time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
 
 class User(Base):
     __objectname__ = "User"
@@ -89,6 +91,9 @@ class SharedLinks(Base):
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # foreign user id that this shared link belongs to
     trace_id = mapped_column(UUID(as_uuid=True), ForeignKey("traces.id"), nullable=False)
+    # timestamp of the sharing of the trace
+    time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
+
 
 def get_db_url():
     return "postgresql://{}:{}@database:5432/{}".format(os.environ["POSTGRES_USER"],

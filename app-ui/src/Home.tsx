@@ -92,6 +92,29 @@ function FileUploadMask(props) {
   </div>
 }
 
+function useActivity(): [any[], () => void] {
+  const [activity, setActivity] = React.useState<any[]>([])
+
+  const refresh = () => {
+    fetch('/api/v1/user/events').then(response => {
+      if (response.ok) {
+        response.json().then(data => {
+          setActivity(data)
+        })
+      }
+    })
+  }
+
+  React.useEffect(() => refresh(), [])
+
+  return [
+    activity,
+    refresh
+  ]
+}
+
+
+
 function useDatasetList(): [any[], () => void] {
   const [datasets, setDatasets] = React.useState<any[]>([])
 
@@ -181,8 +204,34 @@ function Home() {
   const [snippets, refreshSnippets] = useSnippetsList() 
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
-  const [downloadState, setDownloadState] = React.useState({})
+  const [activity, refreshActivity] = useActivity()
   const navigate = useNavigate()
+  
+  const timeAgo = (timestamp) => {
+    const now = new Date()
+    const diff = now.getTime() - new Date(timestamp).getTime()
+    const seconds = Math.floor(diff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+    const months = Math.floor(days / 30)
+    const years = Math.floor(months / 12)
+    if (years > 0) {
+      return `${years} years ago`
+    } else if (months > 0) {
+      return `${months} months ago`
+    } else if (days > 0) {
+      return `${days} days ago`
+    } else if (hours > 0) {
+      return `${hours} hours ago`
+    } else if (minutes > 0) {
+      return `${minutes} minutes ago`
+    } else {
+      return `${seconds} seconds ago`
+    }
+  }
+
+  
   return <>
     {/* upload modal */}
     {showUploadModal && <Modal title="Upload Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
@@ -216,7 +265,45 @@ function Home() {
           </div>
         </li></Link>)}
     </EntityList>
-
+    <EntityList title="Activity">
+    {activity.map((event, i) =>
+    <Link className='item' to={
+      {'dataset':  '/user/' + event.user.username + '/dataset/' + event.details.name,
+       'trace': '/trace/' + event.details.id,
+       'annotation': '/trace/' + event.details?.trace?.id
+      }[event.type]
+    } key={i}>
+      <li className='event'>
+        <div className='event-info'>
+          <Link to={`/user/${event.user.username}`}>
+            <div className='user'>
+              <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
+              <span>{event.user.username}</span>
+            </div>
+          </Link>
+          <div className='event-time'>{timeAgo(event.time)}</div>
+        </div>
+        <h3>{event.text +
+             {'dataset': ': ' + event.details.name,
+              'trace': '',
+              'annotation': ''
+             }[event.type]}</h3>
+        <span className='description'>
+        {
+             {'dataset': ' ' + event.details.extra_metadata,
+              'trace': event.details.extra_metadata,
+              'annotation': event.details.content
+             }[event.type]
+        }
+        </span>
+        <div className='spacer'/>
+        <div className='actions'>
+          <button className='primary'>View</button>
+        </div>
+      </li>
+    </Link>
+    )}
+    </EntityList>
   </>
 }
 
