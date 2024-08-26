@@ -1,19 +1,14 @@
-import { useState, useEffect, useRef, useCallback, act } from 'react'
-import './Annotations.scss'
-import './TraceView.scss'
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react';
+import './Annotations.scss';
+import './Explorer.scss';
 
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import Select from 'react-select'
-import Editor from '@monaco-editor/react';
-import { useStreamingEndpoint, StreamingFetch } from './streaming';
-import {useUserInfo} from './UserInfo';
 import { RemoteResource, useRemoteResource } from './RemoteResource';
+import { useUserInfo } from './UserInfo';
 
-import { RenderedTrace } from './lib/traceview/traceview';
 import { AnnotatedJSON } from './lib/traceview/annotations';
+import { RenderedTrace } from './lib/traceview/traceview';
 
-import { BsArrowReturnRight, BsArrowsCollapse, BsArrowsExpand, BsCaretDownFill, BsCaretRightFill, BsChatFill, BsCheck, BsClipboard2, BsClipboard2CheckFill, BsClipboard2Fill, BsCodeSquare, BsCommand, BsDatabase, BsExclamationCircleFill, BsFillGearFill, BsFillPuzzleFill, BsFillTerminalFill, BsGridFill, BsLightbulb, BsLightbulbFill, BsMagic, BsQuestionCircleFill, BsRobot, BsShare, BsSignpost2Fill, BsStop, BsTools, BsTrash, BsViewList, BsFillPenFill, BsPencilFill, BsWindows, BsDownload, BsMeta } from "react-icons/bs";
+import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTrash, BsViewList } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -174,17 +169,18 @@ export function Explorer(props) {
       <div className='empty'>No Trace Selected</div>
     </div>
   }
- 
-  const trace = activeTrace ? activeTrace.trace : null
 
-  const annotationView = (props) => {
-    return <div className="comment-insertion-point">
-      <AnnotationThread {...props} 
-      traceId={activeTraceId} />
-    </div>;
-  }
-  annotationView.hasHighlight = (address) => {
-    return annotations && annotations[address] !== undefined
+  const decorator = {
+    editorComponent: (props) => <div className="comment-insertion-point">
+        <AnnotationThread {...props} 
+        traceId={activeTraceId} />
+      </div>,
+    hasHighlight: (address, ...args) => {
+      if (annotations && annotations[address] !== undefined) {
+        return "highlighted num-" + annotations[address].length
+      }
+    },
+    extraArgs: [activeTraceId]
   }
   
   return <>
@@ -212,9 +208,10 @@ export function Explorer(props) {
     <div className='explorer panel traceview'>
       <RenderedTrace
         trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
+        // no highlights
         annotations={AnnotatedJSON.from_mappings([])}
         onMount={(events) => setEvents(events)}
-        annotationView={annotationView}
+        decorator={decorator}
       />
     </div>
   </>
@@ -297,7 +294,8 @@ function Annotation(props) {
     </div>
     <div className='bubble'>
       <header className='username'>
-        <b>{props.user.username}</b> annotated <span class='time'><Time>{props.time_created}</Time></span>
+        <BsCaretLeftFill className='caret'/>
+        <b>{props.user.username}</b> annotated <span className='time'><Time>{props.time_created}</Time></span>
         <div className='spacer'/>
         <div className='actions'>
           {!editing && <button onClick={() => setEditing(!editing)}><BsPencilFill /></button>}
@@ -308,7 +306,7 @@ function Annotation(props) {
       {editing && <textarea value={comment} onChange={(e) => setComment(e.target.value)} />}
       {editing && <div className='actions'>
         <button onClick={() => setEditing(!editing)}>Cancel</button>
-        <button className='inline primary' disabled={submitting && comment != ''} onClick={onUpdate}>Save</button>
+        <button className='primary' disabled={submitting && comment != ''} onClick={onUpdate}>Save</button>
       </div>}
     </div>
   </div>
@@ -402,6 +400,7 @@ function AnnotationEditor(props) {
     </div>
     <div className='bubble'>
       <header className='username'>
+        <BsCaretLeftFill className='caret'/>
         Add Annotation
         <div className='spacer'/>
         <div className='actions'>

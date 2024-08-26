@@ -9,6 +9,19 @@ import React, { useState, useEffect, useRef } from "react";
 
 import { ViewportList } from 'react-viewport-list';
 
+/**
+ * A way to provide inline decorations to a rendered trace view.
+ */
+export interface TraceDecorator {
+    // component to use as inline editor (instantiated with props: { highlights: GroupedAnnotation[], address: string, onClose: () => void })
+    editorComponent: React.ComponentType
+    // returns true, if a given address is highlighted (e.g. hints at annotations being present)
+    hasHighlight?: (address?: string, ...args: any) => boolean
+    
+    // global extra args that are passed to editor and hasHighlight functions
+    extraArgs?: any
+}
+
 interface TraceViewProps {
     inputData: string;
     handleInputChange: (value: string | undefined) => void;
@@ -18,7 +31,7 @@ interface TraceViewProps {
     // whether to use the side-by-side view
     sideBySide?: boolean
     // custom view to show when selecting a line
-    annotationView?: React.ComponentType
+    decorator?: TraceDecorator
     header?: React.ReactNode
     title?: string | React.ReactNode
     editor?: boolean
@@ -127,7 +140,7 @@ export function TraceView(props: TraceViewProps) {
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
             </div>
             <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
+                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {hasEditor && sideBySide && <div className="sidebyside">
@@ -135,12 +148,12 @@ export function TraceView(props: TraceViewProps) {
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
             </div>
             <div className="traces side">
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
+                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {!hasEditor && <div className="fullscreen">
             <div className={"side traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} annotationView={props.annotationView} />
+                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
     </div>
@@ -221,7 +234,7 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
 interface RenderedTraceProps {
     trace: string | object;
     annotations: AnnotatedJSON;
-    annotationView?: React.ComponentType
+    decorator?: TraceDecorator;
     onMount?: (events: Record<string, BroadcastEvent>) => void
 }
 
@@ -240,7 +253,7 @@ interface RenderedTraceState {
 interface AnnotationContext {
     selectedAnnotationAnchor: string | null
     setSelection: (address: string | null) => void
-    annotationView?: React.ComponentType
+    decorator?: TraceDecorator
 }
 
 class BroadcastEvent {
@@ -330,7 +343,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
 
         try {
             const annotationContext: AnnotationContext = {
-                annotationView: this.props.annotationView,
+                decorator: this.props.decorator,
                 selectedAnnotationAnchor: this.state.selectedAnnotationAddress,
                 setSelection: (address: string | null) => {
                     this.setState({ selectedAnnotationAddress: address })
@@ -339,7 +352,8 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
             return <div className="traces" ref={this.listRef}>
-                <ViewportList items={events} viewportRef={this.listRef} overscan={1} axis="y" withCache={true}>
+                {/* overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
+                <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
                     {(item: any, index: number) => {
                         return <MessageView key={index} index={index} message={item} annotations={this.props.annotations.for_path("messages." + index)} annotationContext={annotationContext} address={"messages[" + index + "]"} events={this.state.events} />
                     }}
@@ -453,7 +467,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
 
     componentDidMount(): void {
         this.props.events.collapseAll.on(this.collapse)
-        this.props.events.expandAll.on(this.expand)        
+        this.props.events.expandAll.on(this.expand)
     }
 
     componentWillUnmount(): void {
@@ -499,7 +513,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                 </div>
             } else {
                 // normal message (role + content and optional tool calls)
-                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")}>
+                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")} ref={this.domRef}>
                     {/* {message.role && <div className="role">
                         {message.role}
                         <div className="address">
@@ -661,7 +675,7 @@ function Annotated(props: { annotations: any, children: any, annotationContext?:
             elements.push(<Line key={'line-' + elements.length} highlights={highlights} annotationContext={props.annotationContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
         setContentElements(elements)
-    }, [props.annotations, props.children, props.annotationContext?.selectedAnnotationAnchor])
+    }, [props.annotations, props.children, props.annotationContext?.selectedAnnotationAnchor, props.annotationContext?.decorator])
 
     return <span ref={parentElement} className="annotated-parent text">{contentElements}</span>
 }
@@ -713,7 +727,7 @@ function AnnotatedStringifiedJSON(props: { annotations: any, children: any, anno
 
 function Line(props: { children: any, annotationContext?: AnnotationContext, address?: string, highlights?: GroupedAnnotation[] }) {
     // const [expanded, setExpanded] = useState(false)
-    const annotationView = props.annotationContext?.annotationView
+    const decorator = props.annotationContext?.decorator
 
     const setExpanded = (state: boolean) => {
         if (!props.address) {
@@ -731,19 +745,24 @@ function Line(props: { children: any, annotationContext?: AnnotationContext, add
     const className = "line " + (props.highlights?.length ? "has-annotations" : "")
     let extraClass = " "
 
-    if (!annotationView) {
+    if (!decorator) {
         return <span className={className}>{props.children}</span>
     }
 
-    if (annotationView["hasHighlight"]) {
-        extraClass += annotationView["hasHighlight"](props.address) ? "highlighted" : ""
+    if (decorator.hasHighlight) {
+        let highlightResult = decorator.hasHighlight(props.address, ...decorator.extraArgs);
+        if (typeof highlightResult === "boolean") {
+            extraClass +=  "highlighted"
+        } else if (typeof highlightResult === "string") {
+            extraClass += highlightResult
+        }
     }
 
     if (!expanded) {
         return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span></span>
     }
 
-    const InlineComponent: any = annotationView
+    const InlineComponent: any = decorator.editorComponent
     const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
     
     if (content === null) {

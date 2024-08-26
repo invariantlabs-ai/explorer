@@ -877,16 +877,34 @@ button.share {
 
 .traceview span.line.highlighted:before {
   content: "";
+  text-align: center;
+  font-size: 6pt;
+  line-height: 9.5pt;
+  font-family: NeueMontreal;
+  color: white;
   // little circle
   width: 10pt;
   height: 10pt;
   border-radius: 50%;
   background-color: green;
   position: relative;
-  top: 0.05em;
+  // top: 0.05em;
   margin-left: 4pt;
   margin-right: 4pt;
   display: inline-block;
+  // position: absolute;
+  // left: -20pt;
+  margin-top: 5pt;
+  position: relative;
+  top: -2pt;
+  // transform: scale(1.5);
+}
+
+// as for loop to 20
+@for $i from 1 through 20 {
+  .traceview span.line.highlighted.num-#{$i}:before {
+    content: "#{$i}";
+  }
 }
 
 .traceview span.line.highlighted {
@@ -925,17 +943,20 @@ span.time {
     margin-right: 20px;
 
     .user {
-    display: flex;
-    align-items: center;
-    * {
-      margin-right: 10px;
-      margin-top: 5px;
-    } 
-    img {
-          border-radius: 50%;
+      display: flex;
+      align-items: center;
+      
+      * {
+        margin-right: 10px;
+        margin-top: 5px;
+      } 
+      
+      img {
+          border-radius: 4pt;
           overflow: hidden;
           width: 30px;
           height: 30px;
+          margin-top: 2pt;
       }
     }
 
