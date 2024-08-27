@@ -138,18 +138,21 @@ function useDatasetList(): [any[], () => void] {
 
 function useSnippetsList(): [any[], () => void] {
   const [snippets, setSnippets] = React.useState<any[]>([])
+  const userInfo = useUserInfo()
 
   const refresh = () => {
-    fetch('/api/v1/trace/snippets').then(response => {
-      if (response.ok) {
-        response.json().then(data => {
-          setSnippets(data)
-        })
-      } else {
-        setSnippets([])
-        alert('Failed to fetch user snippets')
-      }
-    })
+    if (userInfo?.loggedIn) {
+      fetch('/api/v1/trace/snippets').then(response => {
+        if (response.ok) {
+          response.json().then(data => {
+            setSnippets(data)
+          })
+        } else {
+          setSnippets([])
+          alert('Failed to fetch user snippets')
+        }
+      })
+    }
   }
 
   React.useEffect(() => refresh(), [])
@@ -241,21 +244,23 @@ function Home() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
+    { userInfo?.loggedIn &&
     <DatasetList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
                  actions={<>
-                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
+                      {<button onClick={() => setShowUploadModal(true)}>
                         <BsUpload/>
                         Upload New Dataset
                       </button>}
-                      {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
+                      {<button className='primary' onClick={() => navigate('/new')}>
                         <BsUpload/>
                         Upload Trace
                       </button>}
                     </>}
                   onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
       />
+    }
     <DatasetList title="Public Datasets" datasets={(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)}/>
-    <EntityList title="Snippets">
+    { userInfo?.loggedIn && <EntityList title="Snippets">
         {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
           <h3>{snippet.name}</h3>
           <span className='description'>Snippet #{i}</span>
@@ -264,7 +269,7 @@ function Home() {
             <button className='primary'>View</button>
           </div>
         </li></Link>)}
-    </EntityList>
+    </EntityList>}
     <EntityList title="Activity">
     {activity.map((event, i) =>
     <Link className='item' to={
