@@ -50,26 +50,25 @@ function Home() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
-    {/* delete snippet modal */}
-    {selectedSnippetForDelete && <DeleteSnippetModal snippet={selectedSnippetForDelete} setSnippet={setSelectedSnippetForDelete} onSuccess={refreshSnippets}/>}
-    {userInfo?.loggedIn && <DatasetList title={<Link to='/datasets'>My Datasets</Link>}
-                 datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
+
+    { userInfo?.loggedIn &&
+    <DatasetList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
                  actions={<>
-                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
+                      {<button onClick={() => setShowUploadModal(true)}>
                         <BsUpload/>
                         Upload New Dataset
                       </button>}
-                    </>}
-                  onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
-      />}
-    <DatasetList title="Public Datasets" datasets={(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)}/>
-    {userInfo?.loggedIn && <EntityList title={<Link to='/snippets'>Snippets</Link>}
-      actions={<>
-      {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
+
+                      {<button className='primary' onClick={() => navigate('/new')}>
                         <BsUpload/>
                         Upload Trace
                       </button>}
-      </>}>
+                    </>}
+                  onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
+      />
+    }
+    <DatasetList title="Public Datasets" datasets={(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)}/>
+    { userInfo?.loggedIn && <EntityList title="Snippets">
         {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
           <h3>Snippet #{i}</h3>
           <span className='description'>

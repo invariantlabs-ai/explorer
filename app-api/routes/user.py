@@ -85,10 +85,7 @@ def events(request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], l
                 "details": annotation_to_json(annotation, trace=trace_to_json(trace))
             })
             
-        # new trace
-        # TODO: add snippet traces @Luca, this will depend on how they are stored wrt to dataset
-        
-        # newly shared trace
+        # newly shared trace ( will also include sniipets, as we don't joint to dataset)
         traces = session.query(Trace, User, SharedLinks)\
             .join(User, User.id == Trace.user_id)\
             .join(SharedLinks, Trace.id == SharedLinks.trace_id)\
