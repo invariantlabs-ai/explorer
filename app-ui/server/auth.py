@@ -115,6 +115,13 @@ async def UserIdentity(request: Request):
             "preferred_username": "developer",
             "name": "Developer"
         }
+    if "noauth=user1" in request.headers.get("referer", []):
+        return {
+            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+            "email": "dev2@mail.com",
+            "preferred_username": "developer2",
+            "name": "Developer2"
+        }
 
     try:
         token = json.loads(request.cookies.get("jwt"))

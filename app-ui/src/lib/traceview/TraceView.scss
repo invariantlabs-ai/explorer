@@ -301,12 +301,6 @@ body {
 
     span.line {
         cursor: pointer;
-
-        &:hover {
-            background-color: rgba(0, 0, 0, 0.07);
-            padding: 2pt 0pt;
-            border-radius: 2pt;
-        }
     }
 
     .annotated-parent {

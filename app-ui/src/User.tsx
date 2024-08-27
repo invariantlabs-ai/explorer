@@ -11,14 +11,20 @@ function User() {
   const username = props.username
   const [datasets, refreshDatasets] = useDatasetList()
 
-  return <>
-  <h1>{username}</h1>
-  <DatasetList datasets={datasets}/>
-  </>
-  
+  return <div className="panel entity-list">
+  <header>
+      <h1>
+          {username}
+      </h1>
+      <div className="spacer" />
+      <div className="actions">
+
+      </div>
+  </header>
+</div>
 }
 
-function useDatasetList(): [any[], () => void] {
+function useDatasetList(): [any[], (username: string) => void] {
   const props: any = useLoaderData()
   const username = props.username
   const [datasets, setDatasets] = React.useState<any[]>([])
@@ -40,9 +46,5 @@ function useDatasetList(): [any[], () => void] {
     refresh
   ]
 }
-
-
-
-
 
 export default User

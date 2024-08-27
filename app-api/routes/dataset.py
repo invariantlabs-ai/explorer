@@ -131,16 +131,20 @@ def delete_dataset(by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUser
             os.remove(dataset.path)
         
         # delete all traces
-        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).delete()
+        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
 
         # delete all annotations
-        for trace in traces:
-            session.query(Annotation).filter(Annotation.trace_id == trace.id).delete()
+        session.query(Annotation).filter(Annotation.trace_id.in_([trace.id for trace in traces])).delete()
+        # delete all shared links
+        session.query(SharedLinks).filter(SharedLinks.trace_id.in_([trace.id for trace in traces])).delete()
+        # delete all traces
+        session.query(Trace).filter(Trace.dataset_id == dataset.id).delete()
 
         # delete dataset
         session.delete(dataset)
         
         session.commit()
+        
         return {"message": "Deleted"}
     
 @dataset.delete("/byid/{id}")

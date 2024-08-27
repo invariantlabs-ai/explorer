@@ -106,9 +106,6 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
         return await call_next(request)
     return check_jwt
 
-"""
-Returns the JWT user identity, or an anonymous user if no JWT is present.
-"""
 async def UserIdentity(request: Request):
     # check for DEV_MODE
     if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
@@ -117,6 +114,13 @@ async def UserIdentity(request: Request):
             "email": "dev@mail.com",
             "preferred_username": "developer",
             "name": "Developer"
+        }
+    if "noauth=user1" in request.headers.get("referer", []):
+        return {
+            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+            "email": "dev2@mail.com",
+            "preferred_username": "developer2",
+            "name": "Developer2"
         }
 
     try:
@@ -139,9 +143,6 @@ async def UserIdentity(request: Request):
             "name": ''
         }
 
-"""
-Like UserIdentity, but raises a 401 if the user cannot be authenticated (e.g. anonymous user).
-"""
 async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
     if identity["sub"] is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")

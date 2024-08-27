@@ -1,4 +1,5 @@
 import uuid
+import datetime
 
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
@@ -28,7 +29,14 @@ def delete_trace_snippet(id: str, userinfo: Annotated[dict, Depends(Authenticate
     
     with Session(db()) as session:
         trace = load_trace(session, id, user_id)
+
+        # delete shared link if it exists
+        session.query(SharedLinks).filter(SharedLinks.trace_id == id).delete()
+        # delete annotations
+        session.query(Annotation).filter(Annotation.trace_id == id).delete()
+        # delete trace
         session.delete(trace)
+        
         session.commit()
         
         return {"message": "deleted"}
@@ -157,10 +165,9 @@ async def update_annotation(request: Request, id: str, annotation_id: str, useri
         session.commit()
         return annotation_to_json(annotation, user)
     
-@trace.post("/new")
+@trace.post("/snippets/new")
 async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
     user_id = userinfo["sub"]
-    print("upload trace for", user_id)
     
     with Session(db()) as session:
         payload = await request.json()

@@ -46,7 +46,7 @@ def load_trace(session, by, user_id, allow_shared=False, allow_public=False, ret
     
     if not (str(trace.user_id) == user_id or # correct user
             (allow_shared and has_link_sharing(session, trace.id)) or # in sharing mode
-            allow_public and dataset.is_public # public dataset
+            (dataset is not None and allow_public and dataset.is_public) # public dataset
             ):
         raise HTTPException(status_code=401, detail="Unauthorized get")
     
@@ -139,8 +139,10 @@ def trace_to_json(trace, annotations=None, tokenize=True, user=None):
         "index": trace.index,
         "messages": message_load(trace.content, tokenize=tokenize),
         "dataset": trace.dataset_id,
+        "user_id": trace.user_id,
         **({"user": user} if user is not None else {}),
-        "extra_metadata": trace.extra_metadata
+        "extra_metadata": trace.extra_metadata,
+        "time_created": trace.time_created
     }
     if annotations is not None:
         out['annotations'] = [annotation_to_json(annotation, user=user) for annotation, user in annotations]

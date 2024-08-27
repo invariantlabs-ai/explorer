@@ -10,6 +10,8 @@ import { sharedFetch } from './SharedFetch';
 
 import { ViewportList } from 'react-viewport-list';
 import { Modal } from './Modal';
+import { Time } from './components/Time';
+import { DeleteSnippetModal, snippetDelete } from './lib/snippets';
 
 export interface DatasetData {
   id: string
@@ -40,7 +42,9 @@ export interface Trace {
   dataset: string;
   messages: any[];
   extra_metadata: string;
-  // sometimes a trace already comes with the resolved user name
+  time_created: string;
+  user_id: string;
+  // sometimes a trace already comes with the resolved user name (if joined server-side)
   user?: string;
 }
 
@@ -300,8 +304,15 @@ export function SingleTrace() {
   const [trace, setTrace] = React.useState(null as Trace | null)
   const [dataset, setDataset] = React.useState(null as {name: string} | null)
   const [error, setError] = React.useState(null as string | null)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
+  const [showShareModal, setShowShareModal] = React.useState(false)
   // set if we are showing a snippet trace (a trace without dataset)
   const [snippetData, setSnippetData] = React.useState({isSnippet: false, user: null} as {isSnippet: boolean, user: string | null})
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false)
+  
+  const userInfo = useUserInfo()
+  const navigate = useNavigate()
+  const isUserOwned = userInfo?.id && userInfo?.id == trace?.user_id
 
   // fetch trace
   React.useEffect(() => {
@@ -333,22 +344,38 @@ export function SingleTrace() {
       }).catch(e => {})
     } else {
       // otherwise use trace.user, if available and hide index
-      setDataset({name: trace?.user})
-      setSnippetData({isSnippet: true, user: trace?.user})
+      setDataset({name: trace?.user || ''})
+      setSnippetData({isSnippet: true, user: trace?.user || ''})
     }
   }, [trace])
+
+  // delete trace callback (for snippets)
+  const onDelete = useCallback(() => {
+    snippetDelete(props.traceId).then(response => {
+      if (response.ok) {
+        navigate(`/`)
+      } else {
+        alert("Error deleting snippet")
+      }
+    }).catch(e => alert("Error deleting snippet"))
+  }, [props.traceId])
 
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
-      <h1>{snippetData.user} / {props.traceId}</h1> :
-      <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""} / <span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
+      <h1><Link to={`/user/${snippetData.user}`}>{snippetData.user}</Link> <span className='traceid'># {props.traceId}</span><Time className='time'>{trace?.time_created || ''}</Time>
+      </h1> :
+      <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""}/<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
 
   return <div className="panel fullscreen app">
     {error && <div className='empty'>
       <h3>{error}</h3>
     </div>}
+    {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
+      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
+    </Modal>}
+    {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{id: props.traceId}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
     {!error && <div className='sidebyside'>
     <Explorer
       // {...(transformedTraces || {})}
@@ -359,8 +386,11 @@ export function SingleTrace() {
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
       hasFocusButton={false}
-      onShare={null}
-      sharingEnabled={false}
+      onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
+      sharingEnabled={sharingEnabled}
+      actions={<>
+        {isUserOwned && snippetData.isSnippet && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+      </>}
     />
     </div>}
   </div>

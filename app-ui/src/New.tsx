@@ -41,7 +41,7 @@ const CONTENT = `[
 ]`
 
 function postTrace(trace: string) {
-  return fetch('/api/v1/trace/new', {
+  return fetch('/api/v1/trace/snippets/new', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

@@ -38,7 +38,7 @@ export function SignUp() {
         Please note that this is a demo application and we may store your data for research purposes.
       </p>
       {error && <div className="error">Error: {error}</div>}
-      <div className='buttons'>
+      <div className='signup-actions'>
         <a href='/logout' className="button secondary">
           Cancel
         </a>

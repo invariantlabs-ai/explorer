@@ -7,6 +7,7 @@ import { useUserInfo } from './UserInfo';
 
 import { AnnotatedJSON } from './lib/traceview/annotations';
 import { RenderedTrace } from './lib/traceview/traceview';
+import { Time } from './components/Time';
 
 import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTrash, BsViewList } from "react-icons/bs";
 
@@ -192,7 +193,6 @@ export function Explorer(props) {
       <div className='vr' />
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
-      {/*<CopyToClipboard object={'/api/v1/trace/'+activeTraceId+'?annotated=1'} appearance='toolbar' disabled={activeTrace === undefined}/>*/}
       <a href={'/api/v1/trace/'+activeTraceId+'?annotated=1'} download={activeTraceId+'.json'}>
         <button className='inline icon' onClick={(e) => {
           e.stopPropagation()
@@ -200,6 +200,7 @@ export function Explorer(props) {
         <BsDownload/>
         </button>
       </a>
+      {props.actions}
       <div className='vr' />
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare/> Share</> : <><BsCheck/> Shared</>}
@@ -266,6 +267,7 @@ function Annotation(props) {
   const [editing, setEditing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const user = props?.user
+  const userInfo = useUserInfo()
 
   const onDelete = () => {
     annotator.delete(props.id).then(() => {
@@ -295,11 +297,11 @@ function Annotation(props) {
     <div className='bubble'>
       <header className='username'>
         <BsCaretLeftFill className='caret'/>
-        <b>{props.user.username}</b> annotated <span className='time'><Time>{props.time_created}</Time></span>
+        <div><b>{props.user.username}</b> annotated <span className='time'> <Time>{props.time_created}</Time> </span></div>
         <div className='spacer'/>
         <div className='actions'>
-          {!editing && <button onClick={() => setEditing(!editing)}><BsPencilFill /></button>}
-          <button onClick={onDelete}><BsTrash /></button>
+          {userInfo?.id == props.user.id && !editing && <button onClick={() => setEditing(!editing)}><BsPencilFill /></button>}
+          {userInfo?.id == props.user.id && <button onClick={onDelete}><BsTrash /></button>}
         </div>
       </header>
       {!editing && <div className='content'>{props.content}</div>}
@@ -310,41 +312,6 @@ function Annotation(props) {
       </div>}
     </div>
   </div>
-}
-
-function Time(props) {
-  const timestamp = props.children.toString()
-  // for anything older than 6m show date, otherwise show time passed
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-  const months = Math.floor(days / 30)
-  const years = Math.floor(months / 12)
-
-  let text = null;
-
-  if (years > 0) {
-    text = <span>{years} year{years > 1 ? 's' : ''} ago</span>
-  } else if (months > 0) {
-    text = <span>{months} month{months > 1 ? 's' : ''} ago</span>
-  } else if (days > 0) {
-    text = <span>{days} day{days > 1 ? 's' : ''} ago</span>
-  } else if (hours > 0) {
-    text = <span>{hours} hour{hours > 1 ? 's' : ''} ago</span>
-  } else if (minutes > 0) {
-    text = <span>{minutes} minute{minutes > 1 ? 's' : ''} ago</span>
-  } else {
-    text = <span>Just now</span>
-  }
-
-
-  return <span className='swap-on-hover'>
-    <span>{text}</span>
-    <span>{date.toLocaleString()}</span>
-  </span>
 }
 
 function AnnotationEditor(props) {

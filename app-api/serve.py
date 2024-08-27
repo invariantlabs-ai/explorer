@@ -5,7 +5,7 @@ import fastapi
 from fastapi import HTTPException
 
 from routes.user import user
-from routes.auth import require_authorization, keycloak_openid
+from routes.auth import keycloak_openid
 from routes.dataset import dataset
 from routes.trace import trace
 from models.queries import has_link_sharing, load_trace

@@ -9,6 +9,9 @@ import { Link, } from 'react-router-dom'
 import { New } from './New.tsx'
 import { SignUp } from './SignUp.tsx'
 import User from './User.tsx'
+import { Snippets } from './Snippets.tsx'
+import { Settings } from './Settings.tsx'
+import { Datasets } from './Datasets.tsx'
 
 export const routes = [
   {
@@ -81,6 +84,24 @@ export const routes = [
     path: '/signup',
     label: 'Sign Up',
     element: <Layout><SignUp/></Layout>
+  },
+  // /snippets
+  {
+    path: '/snippets',
+    label: 'Snippets',
+    element: <Layout><Snippets/></Layout>,
+  },
+  // /datasets
+  {
+    path: '/datasets',
+    label: 'Datasets',
+    element: <Layout><Datasets/></Layout>,
+  },
+  // /settings
+  {
+    path: '/settings',
+    label: 'Settings',
+    element: <Layout><Settings/></Layout>,
   },
   // 404
   {

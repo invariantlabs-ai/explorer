@@ -39,19 +39,193 @@ header.top {
   align-items: center;
   justify-content: flex-start;
   width: auto;
+  border-bottom: 1pt solid $border-color;
 
   padding: 0pt 5pt;
 
-  img.logo {
-    margin-right: 5pt;
-    width: 20pt;
-    height: 20pt;
+  .sidebar {
+    position: absolute;
+    left: 0pt;
+    top: 0pt;
+    bottom: 0pt;
+    width: 250pt;
+    z-index: 10000;
+
+    .sidebar-background {
+      background-color: rgba(0, 0, 0, 0.2);
+      transition: background-color 0.1s;
+      position: absolute;
+      top: 0pt;
+      left: 0pt;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    >ul {
+      background-color: white;
+      border-right: 1pt solid $border-color;
+      width: auto;
+      position: relative;
+
+      margin: 0pt;
+      padding: 0pt;
+      height: 100vh;
+      list-style-type: none;
+      box-shadow: 0pt 0pt 10pt 0pt rgba(0, 0, 0, 0.1);
+      z-index: 10002;
+      position: relative;
+      left: 0pt;
+      transition: left 0.1s;
+      
+      button {
+        position: absolute;
+        top: 5pt;
+        right: 5pt;
+
+        svg {
+          transform: scale(1.3);
+        }
+      }
+
+      li.logo {
+        height: 30pt;
+        margin-bottom: 5pt;
+        padding-top: 4pt;
+        padding-left: 7pt;
+
+        h1 {
+          margin: 0pt;
+          padding-left: 0pt;
+          padding-top: 0pt;
+
+          &:hover {
+            background: none;
+          }
+        }
+
+        &:hover {
+          background: none;
+        }
+      }
+
+      li {
+        margin-left: 10pt;
+        
+
+        a {
+          display: block;
+          padding: 2pt 10pt;
+        }
+      }
+
+      h2 {
+        font-size: 10pt;
+        font-weight: 600;
+        margin-left: 0pt;
+        padding-left: 20pt;
+        padding-top: 10pt;
+        margin-top: 15pt;
+        border-top: 1pt solid $border-color;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        margin-bottom: -5pt;
+
+        a, a:visited {
+          text-decoration: none;
+          color: inherit;
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+      }
+
+      p {
+        padding-left: 20pt;
+        font-size: 10pt;
+
+        a {
+          display: inline-block;
+          margin-right: 5pt;
+          opacity: 0.8;
+          color: $color-primary;
+          text-decoration: none;
+
+          &:hover {
+            opacity: 1;
+            text-decoration: underline;
+          }
+
+          &:visited {
+            color: $color-primary;
+          }
+        }
+      }
+
+      li:not(.logo) {
+        cursor: pointer;
+        font-size: 12pt;
+        border-radius: 4pt;
+        margin-left: 10pt;
+        margin-top: 5pt;
+        margin-right: 10pt;
+        
+        svg {
+          margin-right: 8pt;
+          position: relative;
+          top: 2pt;
+          display: inline-block;
+          stroke-width: 0.4pt;
+          opacity: 0.8;
+        }
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.078);
+        }
+
+        a {
+          text-decoration: none;
+          color: $text-color;
+        }
+      }
+
+      li.separator {
+        border-bottom: 1pt solid $border-color;
+        margin: 5pt 4pt;
+      }
+    }
+
+
+    &:not(.open) {
+      .sidebar-background {
+        background-color: rgba(0, 0, 0, 0.0);
+      }
+      ul {
+        left: -250pt;
+      }
+
+    }
   }
 
-  h1 {
-    font-size: 16pt;
-    font-weight: 500;
-    margin-top: 1pt;
+  button.top {
+    padding: 0pt;
+    background: none;
+    color: $text-color;
+    border: 1pt solid $border-color;
+    border-radius: 6pt;
+    width: 25pt;
+    height: auto;
+    padding: 3pt;
+    margin-right: 5pt;
+    margin-left: 5pt;
+
+    svg {
+      flex: 1;
+      margin: auto;
+    }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.078);
+    }
   }
 
   button.inline {
@@ -79,7 +253,7 @@ header.top {
 
     &:hover {
       cursor: pointer;
-      background-color: white;
+      background-color: rgba(0, 0, 0, 0.078);
     }
 
     div {
@@ -87,13 +261,18 @@ header.top {
     }
 
     div.avatar {
-      background-color: rgb(222, 222, 222);
-      border-radius: 50%;
-      width: 25pt;
-      height: 25pt;
-      display: inline-block;
-      transform: scale(0.85);
       z-index: 2;
+      overflow: hidden;
+      border-radius: 4pt;
+      transform: scale(0.8);
+
+      img {
+          border-radius: 4pt;
+          overflow: hidden;
+          width: 25pt;
+          height: 25pt;
+          margin-top: 2pt;
+      }
     }
 
     >p {
@@ -102,15 +281,16 @@ header.top {
 
     .popover {
       position: absolute;
-      top: 35pt;
+      top: 34pt;
       right: -5pt;
       background-color: white;
+      border-radius: 4pt;
       padding: 5pt;
       display: none;
       z-index: 1000;
       z-index: 9999;
       min-width: 100pt;
-      box-shadow: 0pt 0pt 4pt 0pt rgba(0, 0, 0, 0.1);
+      box-shadow: 0pt 0pt 1pt 0pt rgba(0, 0, 0, 0.1);
 
       &.active {
         display: block;
@@ -158,7 +338,7 @@ header.top {
     }
 
     &.open {
-      background-color: white;
+      background-color: rgba(0, 0, 0, 0.078);
 
       .popover {
         display: block;
@@ -166,12 +346,29 @@ header.top {
     }
   }
 
-  div.avatar {
-    background-color: grey;
-    border-radius: 50%;
-    width: 30pt;
+  h1 {
+    font-size: 16pt;
+    font-weight: 500;
+
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+    padding: 2pt 5pt;
+    border-radius: 4pt;
+    margin: 10pt 0pt;
     height: 30pt;
-    display: inline-block;
+    margin-left: -2pt;
+
+    &:hover {
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.078);
+    }
+
+    img.logo {
+      margin-right: 5pt;
+      width: 20pt;
+      height: 20pt;
+    }
   }
 }
 
@@ -316,9 +513,30 @@ button {
 
   .modal-content {
     position: relative;
+    font-size: 16pt;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    max-width: 700pt;
+    min-width: 300pt;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20pt;
+    border-radius: 5pt;
 
     h1 {
-      font-size: 34pt;
+      font-size: 24pt;
+      margin: 0pt;
+      color: $text-color;
+      font-weight: 500;
+      margin-bottom: 20pt;
+      margin-bottom: 10pt;
+    }
+
+    h2 {
+      font-size: 14pt;
+      margin-top: -5pt;
+      opacity: 0.8;
       margin-bottom: 10pt;
     }
 
@@ -356,31 +574,6 @@ button {
         }
       }
     }
-    
-    font-size: 16pt;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    max-width: 700pt;
-    min-width: 300pt;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20pt;
-    border-radius: 5pt;
-
-    h1 {
-      font-size: 24pt;
-      margin: 0pt;
-      color: $text-color;
-      font-weight: 500;
-    }
-
-    h2 {
-      font-size: 14pt;
-      margin-top: -5pt;
-      opacity: 0.8;
-      margin-bottom: 10pt;
-    }
   }
 
   footer {
@@ -401,6 +594,8 @@ label {
 }
 
 .entity-list .actions {
+  white-space: nowrap;
+
   button:not(:first-of-type) {
     margin-left: 5pt;
   }
@@ -558,6 +753,12 @@ div.empty {
     font-size: 16pt;
     opacity: 0.5;
   }
+}
+
+.entity-list .empty {
+  min-height: auto;
+  height: 10pt;
+  padding: 0pt;
 }
 
 .metadata-items {
@@ -851,17 +1052,23 @@ button.share {
 }
 
 .app.new {
+  margin-top: 5pt;
+
   header {
     border-bottom: none;
   }
 
   .traceview {
-    height: calc(100vh - 50pt);
+    height: calc(100vh - 55pt);
     padding: 0pt;
     padding-top: 2pt;
     border-radius: 6pt;
     background: transparent;
     overflow: hidden;
+
+    h2 {
+      width: calc(100% - 5pt);
+    }
 
     .sidebyside {
       max-height: 100%;
@@ -873,6 +1080,21 @@ button.share {
   background-color: white;
   padding: 20pt !important;
   border: 1pt solid #e1e4e8;
+  width: 400pt;
+  margin: auto;
+
+  .signup-actions {
+    position: static;
+    height: 40pt;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+
+    button {
+      margin-left: 5pt;
+    }
+  }
 }
 
 .traceview span.line.highlighted:before {
@@ -896,6 +1118,7 @@ button.share {
   // left: -20pt;
   margin-top: 5pt;
   position: relative;
+  margin-left: 2pt;
   top: -2pt;
   // transform: scale(1.5);
 }
@@ -909,6 +1132,7 @@ button.share {
 
 .traceview span.line.highlighted {
   background-color: rgba(18, 90, 18, 0.168);
+  border-radius: 4pt;
 }
 
 .swap-on-hover {
@@ -964,4 +1188,51 @@ span.time {
       font-size: 10pt;
     }
   }
+}
+
+header.toolbar h1 .time {
+  transform: scale(0.8);
+  display: inline-block;
+  margin-left: 4pt;
+  transform-origin: left center;
+}
+
+header.top .sidebar {
+  .sidebar-content .entity-list {
+    span.description { 
+      margin-left: 4pt;
+    }
+    
+    ul {
+      box-shadow: none !important;
+    }
+
+    li {
+      height: 15pt;
+      padding: 0pt;
+      margin-left: 20pt;
+
+      &:hover {
+        text-decoration: underline;
+        background-color: white !important;
+      }
+
+      h3 {
+        font-size: 10pt !important;
+        margin: 0pt;
+      }
+    }
+  }
+}
+
+.secondary {
+  color: #a0a0a0;
+}
+
+.help-banner {
+  background-color: grey;
+  padding: 20pt;
+  border-radius: 10pt;
+  color: white;
+  background: linear-gradient(23deg, $color-primary, $color-button-blue);
 }
