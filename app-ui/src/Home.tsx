@@ -52,7 +52,7 @@ function Home() {
     </Modal>}
     {/* delete snippet modal */}
     {selectedSnippetForDelete && <DeleteSnippetModal snippet={selectedSnippetForDelete} setSnippet={setSelectedSnippetForDelete} onSuccess={refreshSnippets}/>}
-    <DatasetList title={<Link to='/datasets'>My Datasets</Link>}
+    {userInfo?.loggedIn && <DatasetList title={<Link to='/datasets'>My Datasets</Link>}
                  datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
                  actions={<>
                       {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
@@ -61,9 +61,9 @@ function Home() {
                       </button>}
                     </>}
                   onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
-      />
+      />}
     <DatasetList title="Public Datasets" datasets={(datasets || []).filter((dataset) => dataset.is_public && dataset.user?.id != userInfo?.id)}/>
-    <EntityList title={<Link to='/snippets'>Snippets</Link>}
+    {userInfo?.loggedIn && <EntityList title={<Link to='/snippets'>Snippets</Link>}
       actions={<>
       {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
                         <BsUpload/>
@@ -82,7 +82,7 @@ function Home() {
           </div>
         </li></Link>)}
         {snippets.length === 0 && <div className='empty'>No snippets</div>}
-    </EntityList>
+    </EntityList>}
     <EntityList title="Activity">
     {activity.map((event, i) =>
     <Link className='item' to={
