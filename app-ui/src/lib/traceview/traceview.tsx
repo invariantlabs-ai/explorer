@@ -513,7 +513,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                 </div>
             } else {
                 // normal message (role + content and optional tool calls)
-                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")} ref={this.domRef}>
+                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")}>
                     {/* {message.role && <div className="role">
                         {message.role}
                         <div className="address">
