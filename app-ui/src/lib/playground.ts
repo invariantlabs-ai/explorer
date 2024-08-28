@@ -15,7 +15,7 @@ function findSomeToolCallName(messages) {
 
 function makeCompatibleInvariantPolicy(messages) {
     let tool_call = findSomeToolCallName(messages)
-    if (tool_call && false) {
+    if (tool_call) {
         return "(call: ToolCall)\n    call is tool:" + tool_call
     } else {
         // find some random message with text content and create policy to match some word
