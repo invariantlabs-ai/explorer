@@ -445,13 +445,6 @@ div.panel {
     }
   }
 
-  h2 {
-      font-size: 12pt;
-      margin-top: 10pt;
-      font-weight: bold;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
-
   h4 {
     font-size: 14pt;
     margin-top: 10pt;
@@ -875,6 +868,13 @@ div.panel.explorer {
 }
 
 div.panel {
+  >h2 {
+    font-size: 12pt;
+    margin-top: 10pt;
+    font-weight: bold;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+
   header.toolbar {
     position: absolute;
     top: 41pt;
