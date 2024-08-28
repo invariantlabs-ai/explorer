@@ -5,12 +5,13 @@ import './Explorer.scss';
 import { RemoteResource, useRemoteResource } from './RemoteResource';
 import { useUserInfo } from './UserInfo';
 
+import { Time } from './components/Time';
+import { Metadata } from './lib/metadata';
+import { openInPlayground } from './lib/playground';
 import { AnnotatedJSON } from './lib/traceview/annotations';
 import { RenderedTrace } from './lib/traceview/traceview';
-import { InferredKeyIcon, InferredMetadataValueRender, Metadata } from './lib/metadata';
-import { Time } from './components/Time';
 
-import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsCheckCircleFill, BsCircleFill, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsExclamationCircleFill, BsPencilFill, BsRobot, BsShare, BsTrash, BsViewList } from "react-icons/bs";
+import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash, BsViewList } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -203,6 +204,7 @@ export function Explorer(props) {
       </a>
       {props.actions}
       <div className='vr' />
+      <button className='inline' onClick={() => openInPlayground(activeTrace?.messages || [])}> <BsTerminal /> Open In Invariant</button>
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
@@ -219,7 +221,6 @@ export function Explorer(props) {
     </div>
   </>
 }
-
 
 function CopyToClipboard(props) {
   const { value } = props;
