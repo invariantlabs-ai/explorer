@@ -4,10 +4,10 @@ import { useUserInfo } from './UserInfo';
 import { Link, useLoaderData, useNavigate } from 'react-router-dom';
 import { BsCodeSlash, BsDatabase, BsFillGearFill, BsGear, BsHouse, BsList, BsUpload, BsX } from 'react-icons/bs';
 import { BiSolidHome } from 'react-icons/bi';
-import { DatasetLinkList, DatasetList } from './EntityList';
 import { useDatasetList } from './lib/datasets';
 import { useSnippetsList } from './lib/snippets';
 import { CompactSnippetList } from './Snippets';
+import { DatasetLinkList } from './Datasets';
 
 function useAnimatedClassState(initialState: boolean) {
     // delayed state

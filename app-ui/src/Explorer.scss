@@ -214,12 +214,12 @@ button.inline {
 }
 
 .app button.icon {
+    padding: 10pt;
+    
     svg {
         position: relative;
         top: 1pt;
     }
-
-    padding: 10pt;
 }
 
 .badge {

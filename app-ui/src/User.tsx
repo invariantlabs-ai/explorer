@@ -1,9 +1,6 @@
-import React, { useEffect } from 'react'
-import {UserInfo, useUserInfo} from './UserInfo'
-import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
-import { Modal } from './Modal'
-import { EntityList, DatasetList } from './EntityList'
-import { Link, useLoaderData } from 'react-router-dom'
+import React from 'react'
+import { useLoaderData } from 'react-router-dom'
+import { DatasetLinkList } from './Datasets'
 
 
 function User() {
@@ -22,7 +19,7 @@ function User() {
       </div>
   </header>
   <h2>Public Datasets</h2>
-  <DatasetList datasets={datasets} empty={"No Public Datasets"} />
+  <DatasetLinkList datasets={datasets} />
 </div>
 }
 

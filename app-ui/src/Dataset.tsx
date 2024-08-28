@@ -148,7 +148,7 @@ function DatasetView() {
         return <Bucket dataset={dataset} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
       })}
     </div>
-    <h2>Settings</h2>
+    <h2>Other Actions</h2>
     <br/>
     <div className="actions">
       {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
@@ -174,7 +174,7 @@ function DatasetView() {
         <BsGlobe/> {dataset.is_public ? 'Make Private' : 'Publish'}
       </button>
     </div>}
-    {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
+    <div className='box full setting'>
       <p>
         <h3>Export Dataset</h3>
         Download a copy of the dataset.
@@ -183,7 +183,7 @@ function DatasetView() {
         <BsDownload/> Download
         {downloadState === 'waiting' && <BsMoonStarsFill/>}
       </button>
-    </div>}
+    </div>
   </div>
   </div>
 }

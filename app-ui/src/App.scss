@@ -9,7 +9,8 @@ $color-button: #AEADBF;
 $color-button-primary: #3A3E60;
 $color-button-blue: #948FE4;
 
-$border-color: #aeadbf51;
+// $border-color: #aeadbf51;
+$border-color: rgb(218, 217, 217);
 
 $color-green: #4AEC9B;
 
@@ -822,6 +823,7 @@ div.empty {
     border-radius: 10pt;
     padding: 10pt;
     transition: background-color 0.1s;
+    border: 1pt solid $border-color;
 
     .name {
       font-weight: 700;

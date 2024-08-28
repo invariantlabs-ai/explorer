@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react'
-import {UserInfo, useUserInfo} from './UserInfo'
-import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
+import React from 'react'
+import { BsFileBinaryFill, BsUpload } from 'react-icons/bs'
 import { Link, useNavigate } from 'react-router-dom'
+import { EntityList } from './EntityList'
 import { Modal } from './Modal'
-import { EntityList, DatasetList } from './EntityList'
-import { Time } from './components/Time'
-import { DeleteSnippetModal, snippetDelete, useSnippetsList } from './lib/snippets'
+import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 
 
@@ -132,6 +130,23 @@ export function DeleteDatasetModalContent(props) {
   </div>
 }
 
+
+export function DatasetLinkList(props) {
+  const userInfo = useUserInfo()
+  const datasets = props.datasets || [];
+  
+  const hasActions = typeof props.hasActions === 'undefined' ? true : props.hasActions
+  
+  return <>
+    <EntityList title={null} actions={null} className={props.className}>
+      {datasets.length === 0 && <div className='empty'>No datasets</div>}
+      {datasets.map((dataset, i) => <Link className='item' to={`/user/${dataset.user.username}/dataset/${dataset.name}`} key={i}><li>
+        <h3>{props.icon}{dataset.user.username}/{dataset.name}</h3>
+      </li></Link>)}
+    </EntityList>
+</>
+}
+
 export function Datasets() {
   const userInfo = useUserInfo()
   
@@ -149,14 +164,10 @@ export function Datasets() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
     </Modal>}
-    <DatasetList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}
-                 actions={<>
-                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}>
-                        <BsUpload/>
-                        Upload New Dataset
-                      </button>}
-                    </>}
-                  onDelete={(dataset) => setSelectedDatasetForDelete(dataset)}
-      />
+    <EntityList title="Datasets" actions={<>
+                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}><BsUpload/> Upload New Dataset</button>}
+                    </>}>
+    <DatasetLinkList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)} onDelete={setSelectedDatasetForDelete}/>
+      </EntityList>
   </>
 }

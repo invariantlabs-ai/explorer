@@ -3,11 +3,11 @@ import {UserInfo, useUserInfo} from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory, BsDatabase, BsCode, BsJustify } from 'react-icons/bs'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
-import { EntityList, DatasetList, DatasetLinkList } from './EntityList'
+import { EntityList } from './EntityList'
 import { Time } from './components/Time'
 import { DeleteSnippetModal, snippetDelete, useSnippetsList } from './lib/snippets'
 import { useDatasetList } from './lib/datasets'
-import { DeleteDatasetModalContent, UploadDatasetModalContent } from './Datasets'
+import { DatasetLinkList, DeleteDatasetModalContent, UploadDatasetModalContent } from './Datasets'
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
@@ -143,7 +143,7 @@ function Home() {
       </div>
       <div className='box'>
         <h2>
-          Snippets
+          <Link to='/snippets'>Snippets</Link>
           <button className='inline primary' onClick={() => navigate('/new')}>New Trace</button>
         </h2>
         <CompactSnippetList icon={<BsJustify />} snippets={snippets} />
@@ -152,7 +152,7 @@ function Home() {
     {/* public datastes */}
     <div className='box'>
       <h2>Public Datasets</h2>
-      <DatasetLinkList datasets={datasets.filter(dataset => dataset.is_public && dataset.user?.id != userInfo?.id)} icon={<BsGlobe />} />
+      <DatasetLinkList datasets={datasets.filter(dataset => dataset.is_public)} icon={<BsGlobe />} />
     </div>
     <ul className='box activity'>
       <h2>Activity</h2>
