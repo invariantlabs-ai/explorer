@@ -913,8 +913,8 @@ button.primary .shortcut {
   .sidebar {
     border: $border-color 1pt solid;
     margin: 2pt;
-    margin-left: 10pt;
-    margin-top: 56pt;
+    margin-left: 5pt;
+    margin-top: 45pt;
     border-radius: 5pt;
     width: 250pt;
     
@@ -923,7 +923,7 @@ button.primary .shortcut {
     overflow-y: auto;
     position: relative;
     transition: margin-left 0.2s;
-    height: calc(100vh - 120pt);
+    height: calc(100vh - 100pt);
     
     ul {
       overflow-y: auto;
@@ -1128,6 +1128,10 @@ button.share {
   .traceview span.line.highlighted.num-#{$i}:before {
     content: "#{$i}";
   }
+}
+
+.traceview span.line:hover {
+  background-color: rgba(18, 90, 18, 0.068);
 }
 
 .traceview span.line.highlighted {

@@ -41,7 +41,7 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
     
     # check that there is not a dataset with the same name
     with Session(db()) as session:
-        dataset = session.query(Dataset).filter(Dataset.name == name).first()
+        dataset = session.query(Dataset).filter(and_(Dataset.user_id == user_id, Dataset.name == name)).first()
         if dataset is not None:
             raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
@@ -82,18 +82,29 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
                     metadata = {**metadata, **object["metadata"]}
                     continue
                 else:
+                    # extra trace metadata if present
+                    if type(object) is list and len(object) > 0 and "metadata" in object[0].keys():
+                        trace_metadata = {**object[0]["metadata"]}
+                        object = object[1:]
+                    else:
+                        trace_metadata = {}
+                    # make sure to capture the number of messages
+                    trace_metadata["num_messages"] = len(object) if type(object) is list else 1
+
                     trace = Trace(
                         id=uuid.uuid4(),
                         index=i,
                         user_id=user_id,
                         dataset_id=dataset.id,
-                        content=line,
-                        extra_metadata=json.dumps({
-                            "num_messages": len(object) if type(object) is list else 1
-                        })
+                        content=json.dumps(object),
+                        extra_metadata=json.dumps(trace_metadata)
                     )
                     session.add(trace)
         
+        print("metadata", metadata, flush=True)
+
+        dataset.extra_metadata = json.dumps(metadata)
+
         session.commit()
         return dataset_to_json(dataset)
 

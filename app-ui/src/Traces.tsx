@@ -242,7 +242,7 @@ export function Traces() {
       activeTraceId={props.traceId} 
       bucketId={props.bucketId}
     />
-    <Explorer
+    {activeTrace && <Explorer
       // {...(transformedTraces || {})}
       activeTrace={activeTrace}
       loadTrace={loadTrace} 
@@ -255,7 +255,7 @@ export function Traces() {
       hasFocusButton={false}
       onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
-    />
+    />}
     </div>
   </div>
 }

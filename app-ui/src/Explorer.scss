@@ -1,16 +1,4 @@
-$color-primary: #8b89f7;
-$color-button: #AEADBF;
-$color-button-primary: #3A3E60;
-$color-button-blue: #948FE4;
-$color-green: #4AEC9B;
-$color-bg: #1E1E1E;
-
-$text-color: #2E2E2E;
-$text-color-highlight: #131124;
-$border-color: #aeadbf51;
-$highlighted-background: rgba(0, 0, 0, 0.05);
-
-$color-button-primary: #3A3E60;
+@import 'Colors.scss';
 
 .app {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

@@ -6,6 +6,7 @@ import { Link, useLoaderData } from 'react-router-dom'
 import { BiSolidCommentDetail } from 'react-icons/bi'
 import { sharedFetch } from './SharedFetch'
 import { RemoteResource, useRemoteResource } from './RemoteResource';
+import { Metadata } from './lib/metadata'
 
 
 interface Bucket {
@@ -107,14 +108,7 @@ function DatasetView() {
         </button>
       </div>
     </header>
-    <div className='metadata-items'>
-    {metadata(dataset).map(({key, value}) => {
-      return <div className='metadata' key={key}>
-        <label className='key'>{key}</label>
-        <div className='value'>{value}</div>
-      </div>
-    })}
-    </div>
+    <Metadata extra_metadata={dataset?.extra_metadata}/>
     <div>
     <label htmlFor='public'><h4>Public</h4></label>
     <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>

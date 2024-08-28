@@ -235,6 +235,7 @@ interface RenderedTraceProps {
     trace: string | object;
     annotations: AnnotatedJSON;
     decorator?: TraceDecorator;
+    prelude?: string
     onMount?: (events: Record<string, BroadcastEvent>) => void
 }
 
@@ -352,6 +353,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
             return <div className="traces" ref={this.listRef}>
+                {this.props.prelude}
                 {/* overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
                     {(item: any, index: number) => {

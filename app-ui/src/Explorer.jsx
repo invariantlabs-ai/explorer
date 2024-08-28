@@ -7,9 +7,10 @@ import { useUserInfo } from './UserInfo';
 
 import { AnnotatedJSON } from './lib/traceview/annotations';
 import { RenderedTrace } from './lib/traceview/traceview';
+import { InferredKeyIcon, InferredMetadataValueRender, Metadata } from './lib/metadata';
 import { Time } from './components/Time';
 
-import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTrash, BsViewList } from "react-icons/bs";
+import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsCheckCircleFill, BsCircleFill, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsExclamationCircleFill, BsPencilFill, BsRobot, BsShare, BsTrash, BsViewList } from "react-icons/bs";
 
 class ObservableDict {
   constructor(initial, local_storage_key) {
@@ -173,9 +174,9 @@ export function Explorer(props) {
 
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
-        <AnnotationThread {...props} 
+      <AnnotationThread {...props}
         traceId={activeTraceId} />
-      </div>,
+    </div>,
     hasHighlight: (address, ...args) => {
       if (annotations && annotations[address] !== undefined) {
         return "highlighted num-" + annotations[address].length
@@ -183,7 +184,7 @@ export function Explorer(props) {
     },
     extraArgs: [activeTraceId]
   }
-  
+
   return <>
     <header className='toolbar'>
       {props.header}
@@ -193,17 +194,17 @@ export function Explorer(props) {
       <div className='vr' />
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
-      <a href={'/api/v1/trace/'+activeTraceId+'?annotated=1'} download={activeTraceId+'.json'}>
+      <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
         <button className='inline icon' onClick={(e) => {
           e.stopPropagation()
         }}>
-        <BsDownload/>
+          <BsDownload />
         </button>
       </a>
       {props.actions}
       <div className='vr' />
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
-        {!props.sharingEnabled ? <><BsShare/> Share</> : <><BsCheck/> Shared</>}
+        {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
     </header>
     <div className='explorer panel traceview'>
@@ -213,10 +214,12 @@ export function Explorer(props) {
         annotations={AnnotatedJSON.from_mappings([])}
         onMount={(events) => setEvents(events)}
         decorator={decorator}
+        prelude={<Metadata extra_metadata={activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
       />
     </div>
   </>
 }
+
 
 function CopyToClipboard(props) {
   const { value } = props;
@@ -254,7 +257,7 @@ function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
   let threadAnnotations = (annotations || {})[props.address] || []
-  
+
   return <div className='annotation-thread'>
     {threadAnnotations.map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} />)}
     <AnnotationEditor address={props.address} traceId={props.traceId} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} />
@@ -296,9 +299,9 @@ function Annotation(props) {
     </div>
     <div className='bubble'>
       <header className='username'>
-        <BsCaretLeftFill className='caret'/>
+        <BsCaretLeftFill className='caret' />
         <div><b>{props.user.username}</b> annotated <span className='time'> <Time>{props.time_created}</Time> </span></div>
-        <div className='spacer'/>
+        <div className='spacer' />
         <div className='actions'>
           {userInfo?.id == props.user.id && !editing && <button onClick={() => setEditing(!editing)}><BsPencilFill /></button>}
           {userInfo?.id == props.user.id && <button onClick={onDelete}><BsTrash /></button>}
@@ -318,7 +321,7 @@ function AnnotationEditor(props) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [annotations, annotationStatus, annotationsError, annotator] = props.annotations
-  const textareaRef = useRef(null) 
+  const textareaRef = useRef(null)
   const userInfo = useUserInfo()
 
   const onSave = () => {
@@ -367,11 +370,11 @@ function AnnotationEditor(props) {
     </div>
     <div className='bubble'>
       <header className='username'>
-        <BsCaretLeftFill className='caret'/>
+        <BsCaretLeftFill className='caret' />
         Add Annotation
-        <div className='spacer'/>
+        <div className='spacer' />
         <div className='actions'>
-          <pre style={{opacity: 0.4}}>{props.address}</pre>
+          <pre style={{ opacity: 0.4 }}>{props.address}</pre>
         </div>
       </header>
       <textarea value={content} onChange={(e) => setContent(e.target.value)} ref={textareaRef} onKeyDown={onKeyDown} />
@@ -379,7 +382,7 @@ function AnnotationEditor(props) {
         <button className='secondary' onClick={props.onClose}>Close</button>
         <button className='primary' disabled={submitting || content == ''} onClick={onSave}>
           {!userInfo?.loggedIn ? 'Sign Up To Annotate' : (submitting ? 'Saving...' : <>
-          Save <span className='shortcut'><BsCommand/> + Enter</span>
+            Save <span className='shortcut'><BsCommand /> + Enter</span>
           </>)}
         </button>
       </div>

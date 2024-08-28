@@ -19,12 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # def translate(address):
-    # # //   annotation.address = (annotation.address.slice(0, -2) + ":L0").replace(/message/g, 'messages')
-    # if address.endswith(".0"):
-    #     return (address[:-2] + ":L0").replace("message", "messages")
-    # return address
-    # in the annotations table update all 'address' fields like this
+    # note: this does not support .n -> :Ln with n != 0, but we didn't have any of those at the time of migration
     op.execute("UPDATE annotations SET address = (substr(address, 0, length(address) - 1) || '\:L0') WHERE address LIKE '%.0';")
     op.execute("UPDATE annotations SET address = replace(address, 'message[', 'messages[') WHERE address LIKE '%message[%';")
 
