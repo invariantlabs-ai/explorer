@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session
 from fastapi.exception_handlers import http_exception_handler
 import traceback
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 v1 = fastapi.FastAPI()
 
 @v1.exception_handler(Exception)
@@ -33,6 +35,14 @@ async def home():
 
 app = fastapi.FastAPI()
 app.mount("/api/v1", v1)
+
+def auth_metrics(request: fastapi.Request):
+    request_token = request.headers.get("authorization", "")
+    token = os.getenv("PROMETHEUS_TOKEN", "")
+    if not token or request_token != f"Bearer {token}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+Instrumentator().instrument(app).expose(v1, dependencies=[fastapi.Depends(auth_metrics)])
 
 if __name__ == "__main__":
     import uvicorn
