@@ -405,8 +405,8 @@ table.json {
     td {
         padding: 5pt;
         background-color: rgba(0, 0, 0, 0.04);
-        border-bottom: 1pt solid white;
-        border-right: 1pt solid white;
+        border-bottom: 1pt solid var(--border-color);
+        border-right: 1pt solid var(--border-color);
     }
 
     tr td:last-child {

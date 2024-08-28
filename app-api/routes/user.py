@@ -56,14 +56,14 @@ def events(request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], l
         for dataset, user in datasets:
             events.append({
                 "time": dataset.time_created,
-                "text": "Dataset created",
+                "text": "created a new dataset",
                 "type": "dataset",
                 "user": user_to_json(user),
                 "details": dataset_to_json(dataset)
             })
             
         # annotations/comments on datasets visible to the user
-        annotations = session.query(Annotation, Trace, User)\
+        annotations = session.query(Annotation, Trace, User, Dataset)\
             .join(User, User.id == Annotation.user_id)\
             .join(Trace, Annotation.trace_id == Trace.id)\
             .join(Dataset, Trace.dataset_id == Dataset.id, isouter=True)\
@@ -76,12 +76,16 @@ def events(request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], l
                              )))\
             .order_by(Annotation.time_created.desc())\
             .limit(limit).all()
-        for annotation, trace, user in annotations:
+        for annotation, trace, user, dataset in annotations:
             events.append({
                 "time": annotation.time_created,
-                "text": "New Annotation",
+                "text": "annotated a trace",
                 "type": "annotation",
                 "user": user_to_json(user),
+                "dataset": {
+                    "name": dataset.name if dataset else None,
+                    "id": dataset.id if dataset else None
+                },
                 "details": annotation_to_json(annotation, trace=trace_to_json(trace))
             })
             
@@ -95,7 +99,7 @@ def events(request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], l
         for trace, user, shared_link in traces:
             events.append({
                 "time": shared_link.time_created,
-                "text": "Trace shared",
+                "text": "shared a trace",
                 "type": "trace",
                 "user": user_to_json(user),
                 "details": trace_to_json(trace)

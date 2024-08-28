@@ -124,7 +124,6 @@ def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
-        print(user_name)
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
     
@@ -271,12 +270,18 @@ def get_traces(request: Request, by: dict, bucket: str, userinfo: Annotated[dict
             "extra_metadata": trace.extra_metadata
         } for trace in traces]
 
+
 @dataset.get("/byid/{id}/{bucket}")
 def get_traces_by_id(request: Request, id: str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    if bucket == 'full':
+        return get_all_traces({'id': id}, userinfo)
     return get_traces(request, {'id': id}, bucket, userinfo)
 
 @dataset.get("/byuser/{username}/{dataset_name}/{bucket}")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    if bucket == 'full':
+        return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
+
     return get_traces(request, {'User.username': username, 'name': dataset_name}, bucket, userinfo)
 
 ########################################
@@ -290,16 +295,8 @@ def get_all_traces(by: dict,  user: Annotated[dict, Depends(UserIdentity)]):
         out = dataset_to_json(dataset) 
         out['traces'] = []
 
-        traces = session.query(Trace).filter(Trace.dataset_id == id).all()
+        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
         for trace in traces:
             annotations = load_annoations(session, trace.id)
             out['traces'].append(trace_to_json(trace, annotations))
         return out
-
-@dataset.get("/byid/{id}/full")
-def get_all_traces_by_id(id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_all_traces({'id': id}, userinfo)
-
-@dataset.get("/byuser/{username}/{dataset_name}/full")
-def get_all_traces_by_name(username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)

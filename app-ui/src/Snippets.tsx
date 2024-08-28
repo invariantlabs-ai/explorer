@@ -40,7 +40,7 @@ export function Snippets() {
     </>
 }
 
-export function CompactSnippetList() {
+export function CompactSnippetList(props) {
     const [snippets, refreshSnippets] = useSnippetsList()
 
     // never show more than 5 snippets
@@ -50,7 +50,7 @@ export function CompactSnippetList() {
     return <>
         <EntityList>
             {croppedSnippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
-                <h3>Snippet #{i}</h3>
+                <h3>{props.icon} Snippet #{i}</h3>
                 <span className='description'>
                 <Time>{snippet.time_created}</Time>
                 </span>

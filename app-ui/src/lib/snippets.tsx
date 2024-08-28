@@ -1,6 +1,7 @@
 import React from 'react'
 import { Modal } from '../Modal'
 import { sharedFetch } from '../SharedFetch'
+import { useUserInfo } from '../UserInfo'
 
 export function snippetDelete(id: string): Promise<Response> {
   return fetch(`/api/v1/trace/snippets/${id}`, {
@@ -51,6 +52,7 @@ export function DeleteSnippetModal(props: { snippet: any, setSnippet: (snippet: 
 
 export function useSnippetsList(): [any[], () => void] {
   const [snippets, setSnippets] = React.useState<any[]>([])
+  const userInfo = useUserInfo()
 
   const refresh = () => {
     sharedFetch('/api/v1/trace/snippets').then(response => {
@@ -61,7 +63,11 @@ export function useSnippetsList(): [any[], () => void] {
     })
   }
 
-  React.useEffect(() => refresh(), [])
+  React.useEffect(() => {
+    if (userInfo?.loggedIn) {
+      refresh()
+    }
+  }, [userInfo])
 
   return [
     snippets,

@@ -67,7 +67,7 @@ function DatasetList(props) {
 
 return <>
     <EntityList title={props.title} actions={props.actions} className={props.className}>
-      {datasets.length === 0 && <div className='empty'>No datasets</div>}
+      {datasets.length === 0 && <div className='empty'>{props.empty || "No datasets"}</div>}
       {datasets.map((dataset, i) => <Link className='item' to={`/user/${dataset.user.username}/dataset/${dataset.name}`} key={i}><li>
         <h3>{dataset.user.username}/{dataset.name}</h3>
         {!props.compact && <>
@@ -102,7 +102,7 @@ export function DatasetLinkList(props) {
     <EntityList title={null} actions={null} className={props.className}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
       {datasets.map((dataset, i) => <Link className='item' to={`/user/${dataset.user.username}/dataset/${dataset.name}`} key={i}><li>
-        <h3>{dataset.user.username}/{dataset.name}</h3>
+        <h3>{props.icon}{dataset.user.username}/{dataset.name}</h3>
       </li></Link>)}
     </EntityList>
 </>

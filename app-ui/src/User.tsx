@@ -21,6 +21,8 @@ function User() {
 
       </div>
   </header>
+  <h2>Public Datasets</h2>
+  <DatasetList datasets={datasets} empty={"No Public Datasets"} />
 </div>
 }
 

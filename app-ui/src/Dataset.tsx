@@ -1,12 +1,14 @@
 //@ts-nocheck
 import React, { useEffect } from 'react'
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsCheckCircleFill, BsFileBinaryFill, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload, BsGlobe } from 'react-icons/bs'
-import { Link, useLoaderData } from 'react-router-dom'
+import { BsCheckCircleFill, BsFileBinaryFill, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload, BsGlobe, BsDownload } from 'react-icons/bs'
+import { Link, useLoaderData, useNavigate } from 'react-router-dom'
 import { BiSolidCommentDetail } from 'react-icons/bi'
 import { sharedFetch } from './SharedFetch'
 import { RemoteResource, useRemoteResource } from './RemoteResource';
 import { Metadata } from './lib/metadata'
+import { DeleteDatasetModalContent } from './Datasets'
+import { Modal } from './Modal'
 
 
 interface Bucket {
@@ -78,6 +80,12 @@ function DatasetView() {
   const props: any = useLoaderData()
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.username, props.datasetname)
   const [activeBucket, setActiveBucket] = React.useState(null as string | null)
+  const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
+  const [downloadState, setDownloadState] = React.useState('ready')
+  
+  const navigate = useNavigate()
+
+  
   const userInfo = useUserInfo()
 
   const onPublicChange = (e) => {
@@ -87,6 +95,33 @@ function DatasetView() {
           }).catch((error) => {
             alert('Failed to save annotation: ' + error)
           })
+  }
+
+  const onDownloadDataset = (event) => {
+    if (downloadState ==='ready') {
+      setDownloadState('waiting')
+      fetch('/api/v1/dataset/byid/' + dataset.id + '/full').then(response => {
+        if (!response.ok) {
+          throw new Error('could net fetch dataset')
+        }
+        return response.json()}).then(data => {
+          const link = document.createElement('a')
+          var out = ''
+          data.traces.forEach(trace => {
+            out += JSON.stringify(trace) + '\n'
+          })
+          link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(out)
+          link.setAttribute('download', dataset.name + '.jsonl')
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          setDownloadState('ready')
+      }).catch(err => {
+        setDownloadState('ready')
+        alert('Could not download the dataset.')
+      })
+    }
+    event.preventDefault()
   }
  
   if (!dataset) {
@@ -98,30 +133,58 @@ function DatasetView() {
   return <div className="panel entity-list">
     <header>
       <h1>
-        <Link to={userInfo?.id == dataset?.user.id ? '/' : '/user/' + dataset.user.username }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
-        {dataset.is_public && <span className='description'> <BsGlobe/></span>}
+        <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/user/' + dataset.user.username) }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
+        {dataset.is_public && <span className='badge'>Public</span>}
       </h1>
-      <div className="spacer"/>
-      <div className="actions">
-        <button className='primary' onClick={() => {}}>
-          <BsTerminal/> Query
-        </button>
-      </div>
     </header>
+    {/* delete modal */}
+    {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
+      <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={() => navigate("/")}></DeleteDatasetModalContent>
+    </Modal>}
     <Metadata extra_metadata={dataset?.extra_metadata}/>
-    <div>
-    <label htmlFor='public'><h4>Public</h4></label>
-    <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>
-    </div>
-    <h4>Collections</h4>
+    <h2>Traces</h2>
     <div className='bucket-list'>
       {dataset.buckets.map(bucket => {
         return <Bucket dataset={dataset} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
       })}
     </div>
-    <h4>Recent Activity</h4>
+    <h2>Settings</h2>
     <br/>
-    TODO
+    <div className="actions">
+      {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
+      <p>
+        <h3>Delete Entire Dataset</h3>
+        Delete this dataset and all associated data. This action cannot be undone.
+      </p>
+      <button className='danger' onClick={() => setSelectedDatasetForDelete(dataset)}>
+        <BsTrash/> Delete
+      </button>
+      </div>}
+      {/* <div>
+    <label htmlFor='public'><h4>Public</h4></label>
+    <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>
+    </div> */}
+    {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
+      <p>
+        <h3>Publish</h3>
+        Make this dataset public. This will allow other users to view and annotate the data ({dataset.is_public ? 'currently public' : 'currently private'}).
+      </p>
+      <button className={!dataset.is_public ? 'primary' : ''}
+      onClick={() => onPublicChange({target: {checked: !dataset.is_public}})}>
+        <BsGlobe/> {dataset.is_public ? 'Make Private' : 'Publish'}
+      </button>
+    </div>}
+    {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
+      <p>
+        <h3>Export Dataset</h3>
+        Download a copy of the dataset.
+      </p>
+      <button className='primary' onClick={() => onDownloadDataset()}>
+        <BsDownload/> Download
+        {downloadState === 'waiting' && <BsMoonStarsFill/>}
+      </button>
+    </div>}
+  </div>
   </div>
 }
 
