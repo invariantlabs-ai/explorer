@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import logo from './assets/invariant.svg';
 import { useUserInfo } from './UserInfo';
 import { Link, useLoaderData, useNavigate } from 'react-router-dom';
-import { BsCodeSlash, BsDatabase, BsFillGearFill, BsGear, BsHouse, BsList, BsUpload, BsX } from 'react-icons/bs';
+import { BsCodeSlash, BsDatabase, BsFillGearFill, BsGear, BsHouse, BsList, BsPerson, BsUpload, BsX } from 'react-icons/bs';
 import { BiSolidHome } from 'react-icons/bi';
 import { useDatasetList } from './lib/datasets';
 import { useSnippetsList } from './lib/snippets';
@@ -55,11 +55,13 @@ function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebar
                 <BsX/>
             </button>
             {props.children}
+            {userInfo?.loggedIn && <>
             <h2><Link to='/datasets'>Recent Datasets</Link></h2>
             <DatasetLinkList datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}/>
             <h2><Link to='/snippets'>Recent Snippets</Link></h2>
             <CompactSnippetList limit={4}/>
             <h2></h2>
+            </>}
             {/* unicode copyright */}
             <p className='secondary'>&copy; 2024 Invariant Labs</p>
             <p>
@@ -77,6 +79,9 @@ function Sidebar(props) {
     // on open, register escape key listener
     useEffect(() => {
         if (sidebarOpen) {
+            document.body.style.overflow = 'hidden';
+            window.scrollTo(0, 0);
+
             const listener = (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
                     setSidebarOpen(false);
@@ -84,6 +89,8 @@ function Sidebar(props) {
             };
             document.addEventListener('keydown', listener);
             return () => document.removeEventListener('keydown', listener);
+        } else {
+            document.body.style.overflow = 'auto';
         }
     }, [sidebarOpen, setSidebarOpen]);
     
@@ -112,10 +119,16 @@ function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLo
                         Invariant Explorer
                     </h1>
                 </li>
+                {!userInfo?.loggedIn && <>
+                <li><a href='/login'>
+                    <BsPerson/>
+                    Sign In
+                </a></li></>}
                 <li><a href='/'>
                     <BsHouse/>
                     Home
                 </a></li>
+                {userInfo?.loggedIn && <>
                 <li><a href='/datasets'>
                     <BsDatabase/>
                     Datasets
@@ -128,6 +141,7 @@ function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLo
                     <BsGear/>
                     Settings
                 </a></li>
+                </>}
             </Sidebar>
             <h1 onClick={() => navigate('/')} className='title' title='Invariant Explorer'>
                 <img src={logo} alt='Invariant logo' className='logo' onClick={() => navigate('/')}/>
