@@ -11,7 +11,7 @@ import { sharedFetch } from './SharedFetch';
 import { ViewportList } from 'react-viewport-list';
 import { Modal } from './Modal';
 import { Time } from './components/Time';
-import { DeleteSnippetModal, traceDelete } from './lib/snippets';
+import { DeleteSnippetModal } from './lib/snippets';
 
 export interface DatasetData {
   id: string

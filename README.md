@@ -19,6 +19,7 @@ This will spin up a local deployment of the explorer application at `https://loc
 
 * `app-ui` includes the frontend code that communciates with the API services located at `/api/v1/*`.
 * `app-api` implements the backend API as FastAPI application. It uses SQLAlchemy for database mappings, with the main datamodel in `app-api/models/datasets_and_traces.py`.
+* `DOCS.md` contains a basic documentation of the Invariant Explorer API.
 
 ## Local Development vs. Production
 

@@ -75,7 +75,7 @@ metadata: list[dict] (optional)
 This example shows how to push two traces with metadata to the dataset `example_dataset`.
 
 ```bash
-curl -X POST https://localhost/api/v1/push/trace \
+curl -X POST https://explorer.invariantlabs.ai/api/v1/push/trace \
 -H "Authorization: Bearer YOUR_API_TOKEN" \
 -H "Content-Type: application/json" \
 -d '{
