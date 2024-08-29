@@ -16,6 +16,7 @@ from fastapi.exception_handlers import http_exception_handler
 import traceback
 
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from metrics.active_users import active_users, install_middleware
 
 v1 = fastapi.FastAPI()
 
@@ -37,10 +38,16 @@ app = fastapi.FastAPI()
 app.mount("/api/v1", v1)
 
 def auth_metrics(request: fastapi.Request):
+    # in case of DEV_MODE, we don't require a token for metrics
+    if os.getenv("DEV_MODE") == "true":
+        return True
+
     request_token = request.headers.get("authorization", "")
     token = os.getenv("PROMETHEUS_TOKEN", "")
     if not token or request_token != f"Bearer {token}":
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+install_middleware(app)
 
 Instrumentator().add(
     metrics.default(
