@@ -30,10 +30,6 @@ export function Snippets() {
                 <Time>{snippet.time_created}</Time>
                 </span>
                 <div className='spacer'/>
-                <div className='actions'>
-                <button className='tool danger' onClick={(e) => { setSelectedSnippetForDelete(snippet); e.preventDefault(); e.stopPropagation(); }}><BsTrash/></button>
-                <button className='primary'>View</button>
-                </div>
             </li></Link>)}
             {snippets.length === 0 && <div className='empty'>No snippets</div>}
         </EntityList>

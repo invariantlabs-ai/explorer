@@ -8,6 +8,10 @@ from routes.user import user
 from routes.auth import keycloak_openid
 from routes.dataset import dataset
 from routes.trace import trace
+from routes.apikeys import apikeys
+# push API
+from routes.push import push
+
 from models.queries import has_link_sharing, load_trace
 from models.datasets_and_traces import db
 from sqlalchemy.orm import Session
@@ -29,6 +33,8 @@ async def custom_http_exception_handler(request, exc):
 v1.mount("/user", user)
 v1.mount("/dataset", dataset)
 v1.mount("/trace", trace)
+v1.mount("/keys", apikeys)
+v1.mount("/push", push)
 
 @v1.get("/")
 async def home():

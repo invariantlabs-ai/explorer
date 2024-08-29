@@ -621,22 +621,22 @@ label {
   button:not(:first-of-type) {
     margin-left: 5pt;
   }
+}
 
-  button.tool {
-    background: none;
-    color: $text-color;
-    opacity: 0.8;
-    margin: 0pt;
-    padding: 5pt 10pt;
+button.tool {
+  background: none;
+  color: $text-color;
+  opacity: 0.8;
+  margin: 0pt;
+  padding: 5pt 10pt;
 
-    &.danger {
-      color: #ED707B;
-    }
+  &.danger {
+    color: #ED707B;
+  }
 
-    &:hover {
-      opacity: 1;
-      cursor: pointer;
-    }
+  &:hover {
+    opacity: 1;
+    cursor: pointer;
   }
 }
 
@@ -1273,6 +1273,10 @@ header.top .sidebar {
           border-radius: 4pt;
           margin-top: -2pt;
       }
+
+      input {
+        margin-right: 10pt;
+      }
   }
 
   ul {
@@ -1328,6 +1332,68 @@ header.top .sidebar {
       flex: 1;
       white-space: pre-wrap;
       margin-right: 10pt;
+    }
+  }
+}
+
+table.data {
+  width: 100%;
+  font-size: 12pt;
+
+  thead {
+    opacity: 0.4;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 10pt;
+  }
+
+  td>svg {
+    position: relative;
+    top: 1pt;
+    margin-right: 4pt;
+  }
+
+  td {
+    white-space: nowrap;
+  }
+
+  td.actions {
+    text-align: right;
+    
+    button {
+      font-size: 10pt;
+      height: 30pt;
+      line-height: 5pt;
+      margin: 10pt 0pt;
+      border-radius: 4pt;
+    }
+  }
+
+  .empty {
+    margin: 50pt;
+  }
+}
+
+table.api-keys {
+  tr {
+    height: 30pt;
+
+    .actions {
+      padding: 0pt;
+
+      button {
+        height: 20pt;
+        line-height: 0pt;
+      }
+    }
+  }
+
+  tr.expired {
+    text-decoration: line-through;
+    opacity: 0.5;
+
+    .actions {
+      opacity: 0.0;
     }
   }
 }

@@ -94,6 +94,31 @@ class SharedLinks(Base):
     # timestamp of the sharing of the trace
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
 
+class APIKey(Base):
+    __objectname__ = "APIKeys"
+    __tablename__ = "api_keys"
+
+    # key id
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Hashed key (sha256 + last 4 characters of original key) 
+    #  - Show [-4:] of this to the user to enable them to distinguish between keys.
+    #  - Showing the rest would be a security risk, as they could then try to brute force the key.
+    hashed_key = mapped_column(String, primary_key=True)
+    # foreign user id that this api key belongs to
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    # timestamp of the creation of the api key
+    time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
+    # expired (true if the key has been revoked)
+    expired = mapped_column(Boolean, nullable=False, default=False)
+
+    @staticmethod
+    def hash_key(key):
+        return hashlib.sha256(key.encode()).hexdigest() + key[-4:]
+    
+    @staticmethod
+    def generate_key():
+        # generate a random 32 character key
+        return "inv-" + hashlib.sha256(os.urandom(32)).hexdigest()
 
 def get_db_url():
     return "postgresql://{}:{}@database:5432/{}".format(os.environ["POSTGRES_USER"],

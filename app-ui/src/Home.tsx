@@ -36,7 +36,7 @@ function useActivity(): [any[], () => void] {
 function Home() {
   const userInfo = useUserInfo()
   
-  const [datasets, refresh] = useDatasetList()
+  const [datasets, refresh] = useDatasetList(8)
   const [snippets, refreshSnippets] = useSnippetsList() 
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   const [selectedSnippetForDelete, setSelectedSnippetForDelete] = React.useState(null)
@@ -63,7 +63,7 @@ function Home() {
           <Link to='/snippets'>Snippets</Link>
           <button className='inline primary' onClick={() => navigate('/new')}>New Trace</button>
         </h2>
-        <CompactSnippetList icon={<BsJustify />} snippets={snippets} />
+        <CompactSnippetList icon={<BsJustify />} snippets={snippets} limit={8} />
       </div>
     </div>}
     {/* public datasets */}
