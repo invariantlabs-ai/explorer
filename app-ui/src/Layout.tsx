@@ -8,6 +8,7 @@ import { useDatasetList } from './lib/datasets';
 import { useSnippetsList } from './lib/snippets';
 import { CompactSnippetList } from './Snippets';
 import { DatasetLinkList } from './Datasets';
+import { SignUp } from './SignUp';
 
 function useAnimatedClassState(initialState: boolean) {
     // delayed state
@@ -94,10 +95,13 @@ function Sidebar(props) {
     </>
 }
 
-function Layout(props: {children: React.ReactNode, fullscreen?: boolean}) {
+function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean}) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
     const navigate = useNavigate();
+
+    const needsSignup = (userInfo && userInfo?.loggedIn && !userInfo?.signedUp);
+    const needsLogin = props.needsLogin && (!userInfo || !userInfo.loggedIn);
 
     return <>
         <header className='top'>
@@ -148,7 +152,11 @@ function Layout(props: {children: React.ReactNode, fullscreen?: boolean}) {
             </div>
         </header>
         <div className={'content ' + (props.fullscreen ? 'fullscreen' : '')}>
-        {props.children}
+        {needsLogin && <div className='empty'>
+            <p>You must be signed in to view this page.</p>
+        </div>}
+        {needsSignup && <SignUp/>}
+        {!needsSignup && !needsLogin && props.children}
         </div>
     </>;
 }

@@ -16,7 +16,7 @@ import { Datasets } from './Datasets.tsx'
 export const routes = [
   {
     path: '/',
-    label: 'Overview',
+    label: 'Home',
     icon: <BsSpeedometer2/>,
     element: <Layout><Home/></Layout>,
     category: 'home'
@@ -75,7 +75,7 @@ export const routes = [
   {
     path: '/new',
     label: 'Upload New Trace',
-    element: <Layout fullscreen><New/></Layout>,
+    element: <Layout needsLogin fullscreen><New/></Layout>,
     loader: async (task: any) => {
       return {}
     }
@@ -83,25 +83,25 @@ export const routes = [
   {
     path: '/signup',
     label: 'Sign Up',
-    element: <Layout><SignUp/></Layout>
+    element: <Layout needsLogin><SignUp/></Layout>
   },
   // /snippets
   {
     path: '/snippets',
     label: 'Snippets',
-    element: <Layout><Snippets/></Layout>,
+    element: <Layout needsLogin><Snippets/></Layout>,
   },
   // /datasets
   {
     path: '/datasets',
     label: 'Datasets',
-    element: <Layout><Datasets/></Layout>,
+    element: <Layout needsLogin><Datasets/></Layout>,
   },
   // /settings
   {
     path: '/settings',
     label: 'Settings',
-    element: <Layout><Settings/></Layout>,
+    element: <Layout needsLogin><Settings/></Layout>,
   },
   // 404
   {

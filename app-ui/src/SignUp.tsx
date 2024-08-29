@@ -35,7 +35,7 @@ export function SignUp() {
       </h2>
       <p>
         By signing up, you agree to our privacy policy and terms of service.<br /><br />
-        Please note that this is a demo application and we may store your data for research purposes.
+        Please note that this is an early preview of the application and that we may store your data for research purposes.
       </p>
       {error && <div className="error">Error: {error}</div>}
       <div className='signup-actions'>

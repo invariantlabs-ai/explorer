@@ -22,7 +22,7 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
     print(payload['messages'])
 
     # curl https://localhost/api/v1/keys/test -H "Authorization: Bearer <API>"
-    r = requests.post('https://localhost/api/v1/push/trace', json=payload, headers={"Authorization": "Bearer " + api_token}, verify=False)
+    r = requests.post('https://explorer.invariantlabs.ai/api/v1/push/trace', json=payload, headers={"Authorization": "Bearer " + api_token}, verify=False)
 
     if r.status_code == 401:
         raise ValueError('Invalid API token. Please make sure your INVARIANT_API_KEY is set correctly, has not expired and is connected to the correct account.')

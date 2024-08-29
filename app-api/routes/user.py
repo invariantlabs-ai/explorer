@@ -18,12 +18,21 @@ user = FastAPI()
 
 @user.get("/info")
 def get_user(userinfo: Annotated[dict, Depends(UserIdentity)]):
+    userid = userinfo['sub']
+    signedup = False
+
+    if userid is not None:
+        with Session(db()) as session:
+            session_user = session.query(User).filter(User.id == userinfo['sub']).first()
+            signedup = session_user is not None
+
     return {
         "id": userinfo['sub'],
         "username": userinfo['preferred_username'],
         "email": userinfo['email'],
         "name": userinfo['name'],
-        "image_url_hash": get_gravatar_hash(userinfo['email'])
+        "image_url_hash": get_gravatar_hash(userinfo['email']),
+        "signedUp": signedup
     }
 
 @user.post("/signup")

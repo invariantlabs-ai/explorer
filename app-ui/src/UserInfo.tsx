@@ -8,6 +8,7 @@ export interface UserInfo {
   email: string
   loggedIn?: boolean
   image_url_hash?: string
+  signedUp?: boolean
 }
 
 const ANON = {
@@ -16,7 +17,8 @@ const ANON = {
   name: 'Not Logged In',
   email: '',
   loggedIn: false,
-  image_url_hash: ''
+  image_url_hash: '',
+  signedUp: false
 }
 
 let USER_INFO_CACHE = {
