@@ -216,7 +216,7 @@ export function Explorer(props) {
         annotations={AnnotatedJSON.from_mappings([])}
         onMount={(events) => setEvents(events)}
         decorator={decorator}
-        prelude={<Metadata extra_metadata={activeTrace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
+        prelude={<Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
       />
     </div>
   </>

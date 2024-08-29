@@ -65,7 +65,6 @@ def load_annoations(session, by):
 def get_query_filter(by, main_object, *other_objects, default_key='id'):
     if not isinstance(by, dict): by = {default_key: by}
     objects = {o.__objectname__: o for o in [main_object, *other_objects]}
-    print(objects)
     query_filter = []
     for k, v in by.items():
         if '.' in k:
@@ -79,11 +78,13 @@ def get_query_filter(by, main_object, *other_objects, default_key='id'):
 
 def load_dataset(session, by, user_id, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Dataset, User)
-    if return_user:
-        # join on user_id to get real user name
-        dataset, user = session.query(Dataset, User).filter(query_filter).join(User, User.id == Dataset.user_id).first()
-    else:
-        dataset = session.query(Dataset).filter(query_filter).first()
+    
+    # join on user_id to get real user name
+    result = session.query(Dataset, User).filter(query_filter).join(User, User.id == Dataset.user_id).first()
+    if result is None:
+        return None
+    dataset, user = result
+    
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
@@ -174,6 +175,7 @@ def dataset_to_json(dataset, user=None, **kwargs):
             # "path": dataset.path, 
             "extra_metadata": dataset.extra_metadata,
             "is_public": dataset.is_public,
+            "user_id": dataset.user_id
         }
     out = {**out, **kwargs}
     if user:

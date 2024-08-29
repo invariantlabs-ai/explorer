@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react'
 import { useNavigate } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
+import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 import { TraceView } from './lib/traceview/traceview';
 
@@ -11,13 +11,14 @@ import { sharedFetch } from './SharedFetch';
 import { ViewportList } from 'react-viewport-list';
 import { Modal } from './Modal';
 import { Time } from './components/Time';
-import { DeleteSnippetModal, snippetDelete } from './lib/snippets';
+import { DeleteSnippetModal, traceDelete } from './lib/snippets';
 
 export interface DatasetData {
   id: string
   name: string
   num_traces: number
   extra_metadata: string
+  user_id: string
 }
 
 function useDataset(username:string, datasetname: string): [DatasetData | null, string | null] {
@@ -48,17 +49,18 @@ export interface Trace {
   user?: string;
 }
 
-function useTraces(username: string, datasetname: string, bucket: string): [any | null, any] {
+function useTraces(username: string, datasetname: string, bucket: string): [any | null, (traces: any) => void, () => void] {
   const [traces, setTraces] = React.useState(null)
 
-  React.useEffect(() => {
+  React.useEffect(() => refresh(), [username, datasetname, bucket])
+  const refresh = () => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/${bucket}`).then(data => {
         data = transformTraces(data)
         setTraces(data)
     }).catch(e => alert("Error loading traces"))
-  }, [username, datasetname, bucket])
+  }
 
-  return [traces, setTraces]
+  return [traces, setTraces, refresh]
 }
 
 function transformTraces(traces: Trace[]): any {
@@ -180,15 +182,26 @@ function useTraceShared(traceId: string | null): [boolean | null, (shared: boole
   return [shared, setRemoteShared]
 }
 
+// returns the ID of the trace that comes before the given trace in the list of traces
+function findPreviousTrace(traceId, traces) {
+  const index = traces.indices.indexOf(traceId)
+  if (index > 0) {
+    return traces.indices[index - 1]
+  }
+  return null
+}
 
 export function Traces() {
   const props: {username: string, datasetname: string, bucketId: string, traceId: string|null} = useLoaderData() as any
   const navigate = useNavigate()
   
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
-  const [traces, setTraces] = useTraces(props.username, props.datasetname, props.bucketId)
+  const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname, props.bucketId)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false)
+
+  const userInfo = useUserInfo()
   
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
@@ -196,6 +209,12 @@ export function Traces() {
       navigate(`/user/${props.username}/dataset/${props.datasetname}/${props.bucketId}/${traces.indices[0]}`)
     }
   }, [props.traceId, traces])
+
+  // navigates to the given trace ID and refreshes the list of traces
+  const navigateToTrace = useCallback((traceId: string | null) => {
+    navigate(`/user/${props.username}/dataset/${props.datasetname}/${props.bucketId}/${traceId || ''}`)
+    refresh()
+  }, [props.username, props.datasetname, props.bucketId])
 
   const loadTrace = useCallback((trace: Trace) => {
     fetchTrace(trace).then(change => {
@@ -230,10 +249,13 @@ export function Traces() {
     </div>
   }
 
+  const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
+
   return <div className="panel fullscreen app">
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
     </Modal>}
+    {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{id: props.traceId}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(props.traceId, traces))} />}
     <div className='sidebyside'>
     <Sidebar 
       traces={traces} 
@@ -241,6 +263,7 @@ export function Traces() {
       datasetname={props.datasetname} 
       activeTraceId={props.traceId} 
       bucketId={props.bucketId}
+      onRefresh={refresh}
     />
     {activeTrace && <Explorer
       // {...(transformedTraces || {})}
@@ -255,6 +278,9 @@ export function Traces() {
       hasFocusButton={false}
       onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
+      actions={<>
+        {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+      </>}
     />}
     </div>
   </div>
@@ -269,6 +295,7 @@ function Sidebar(props) {
     <header>
       <h1>{props.traces ? props.traces.indices.length + " Traces" : "Loading..."}</h1>
       <div className='spacer'></div>
+      <button className='toggle icon' onClick={props.onRefresh}><BsArrowClockwise /></button>
       <button className='toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>
@@ -349,17 +376,6 @@ export function SingleTrace() {
     }
   }, [trace])
 
-  // delete trace callback (for snippets)
-  const onDelete = useCallback(() => {
-    snippetDelete(props.traceId).then(response => {
-      if (response.ok) {
-        navigate(`/`)
-      } else {
-        alert("Error deleting snippet")
-      }
-    }).catch(e => alert("Error deleting snippet"))
-  }, [props.traceId])
-
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
@@ -389,7 +405,7 @@ export function SingleTrace() {
       onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
       actions={<>
-        {isUserOwned && snippetData.isSnippet && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+        {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
       </>}
     />
     </div>}

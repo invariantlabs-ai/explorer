@@ -26,12 +26,13 @@ def get_trace_snippets(request: Request, userinfo: Annotated[dict, Depends(Authe
         traces = session.query(Trace).filter(Trace.user_id == user_id, Trace.dataset_id == None).order_by(Trace.time_created.desc()).limit(limit).all()
         return [trace_to_json(t, tokenize=False) for t in traces]
 
-@trace.delete("/snippets/{id}")
-def delete_trace_snippet(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+@trace.delete("/{id}")
+def delete_trace(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
     user_id = userinfo["sub"]
     
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id)
+        # can only delete own traces
+        trace = load_trace(session, id, user_id, allow_public=False, allow_shared=False)
 
         # delete shared link if it exists
         session.query(SharedLinks).filter(SharedLinks.trace_id == id).delete()
