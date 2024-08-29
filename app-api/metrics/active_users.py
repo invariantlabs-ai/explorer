@@ -74,8 +74,6 @@ def install_middleware(app):
             if userinfo.get("sub") is None:
                 ACTIVE_ANONYMOUS_USERS.add(userid)
         
-        print(list(ACTIVE_USERS))
-        
         active_users.set(len(ACTIVE_USERS))
         active_anonymous_users.set(len(ACTIVE_ANONYMOUS_USERS))
         
