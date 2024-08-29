@@ -116,8 +116,16 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
 def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]):
     user_id = user.get("sub")
     
+    limit = request.query_params.get("limit")
+    limit = limit if limit != '' else None
+    
     with Session(db()) as session:
-        datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(or_(Dataset.user_id == user_id, Dataset.is_public)).all()
+        datasets = session.query(Dataset, User)\
+            .join(User, User.id == Dataset.user_id)\
+            .filter(or_(Dataset.user_id == user_id, Dataset.is_public))\
+            .order_by(Dataset.time_created.desc())\
+            .limit(limit)\
+            .all()
         
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
 

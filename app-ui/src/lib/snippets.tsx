@@ -50,12 +50,12 @@ export function DeleteSnippetModal(props: { snippet: any, setSnippet: (snippet: 
   </Modal>
 }
 
-export function useSnippetsList(): [any[], () => void] {
+export function useSnippetsList(limit: number | null = null): [any[], () => void] {
   const [snippets, setSnippets] = React.useState<any[]>([])
   const userInfo = useUserInfo()
 
   const refresh = () => {
-    sharedFetch('/api/v1/trace/snippets').then(response => {
+    sharedFetch('/api/v1/trace/snippets?limit=' + (limit || '')).then(response => {
       setSnippets(response)
     }).catch(() => {
         setSnippets([])

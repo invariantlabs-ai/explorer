@@ -15,12 +15,15 @@ from models.queries import *
 trace = FastAPI()
 
 @trace.get("/snippets")
-def get_trace_snippets(userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+def get_trace_snippets(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
     user_id = userinfo["sub"]
+
+    limit = request.query_params.get("limit")
+    limit = limit if limit != '' else None
     
     # gets a users trace snippets (traces without a dataset)
     with Session(db()) as session:
-        traces = session.query(Trace).filter(Trace.user_id == user_id, Trace.dataset_id == None).all()
+        traces = session.query(Trace).filter(Trace.user_id == user_id, Trace.dataset_id == None).order_by(Trace.time_created.desc()).limit(limit).all()
         return [trace_to_json(t, tokenize=False) for t in traces]
 
 @trace.delete("/snippets/{id}")

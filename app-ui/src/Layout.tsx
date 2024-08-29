@@ -42,12 +42,36 @@ function useAnimatedClassState(initialState: boolean) {
     }
 }
 
+function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void, children: React.ReactNode}) {
+    const {userInfo, sidebarOpen, setSidebarOpen} = props;
+
+    const [datasets, refresh] = useDatasetList(4);
+
+    return <div className={"sidebar " + (sidebarOpen ? 'open' : '')}>
+        <div className='sidebar-background' onClick={() => setSidebarOpen(false)}/>
+        <ul className='sidebar-content' onClick={(e) => setTimeout(() => setSidebarOpen(false), 0)}>
+            <button className='top close' onClick={() => setSidebarOpen(false)}>
+                <BsX/>
+            </button>
+            {props.children}
+            <h2><Link to='/datasets'>Recent Datasets</Link></h2>
+            <DatasetLinkList datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}/>
+            <h2><Link to='/snippets'>Recent Snippets</Link></h2>
+            <CompactSnippetList limit={4}/>
+            <h2></h2>
+            {/* unicode copyright */}
+            <p className='secondary'>&copy; 2024 Invariant Labs</p>
+            <p>
+                <a href='https://invariantlabs.ai' target='_blank'>About</a>
+                <a href='https://github.com/invariantlabs-ai/invariant' target='_blank'>Analyzer</a>
+            </p>
+        </ul>
+    </div>
+}
+
 function Sidebar(props) {
     const [sidebarDomIncluded, sidebarOpen, setSidebarOpen] = useAnimatedClassState(false);
     const userInfo = useUserInfo();
-    
-    const [datasets, refresh] = useDatasetList();
-    const [snippets, refreshSnippets] = useSnippetsList() 
     
     // on open, register escape key listener
     useEffect(() => {
@@ -66,27 +90,8 @@ function Sidebar(props) {
         <button className='top' onClick={() => setSidebarOpen(!sidebarOpen)}>
             <BsList/>
         </button>
-    {sidebarDomIncluded && <div className={"sidebar " + (sidebarOpen ? 'open' : '')}>
-        <div className='sidebar-background' onClick={() => setSidebarOpen(false)}/>
-        <ul className='sidebar-content' onClick={(e) => setTimeout(() => setSidebarOpen(false), 0)}>
-            <button className='top close' onClick={() => setSidebarOpen(false)}>
-                <BsX/>
-            </button>
-            {props.children}
-            <h2><Link to='/datasets'>Datasets</Link></h2>
-            {props.datasets}
-            <DatasetLinkList datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}/>
-            <h2><Link to='/snippets'>Snippets</Link></h2>
-            <CompactSnippetList/>
-            <h2></h2>
-            {/* unicode copyright */}
-            <p className='secondary'>&copy; 2024 Invariant Labs</p>
-            <p>
-                <a href='https://invariantlabs.ai' target='_blank'>About</a>
-                <a href='https://github.com/invariantlabs-ai/invariant' target='_blank'>Analyzer</a>
-            </p>
-        </ul>
-    </div>}</>
+        {sidebarDomIncluded && <SidebarContent userInfo={userInfo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}>{props.children}</SidebarContent>}
+    </>
 }
 
 function Layout(props: {children: React.ReactNode, fullscreen?: boolean}) {

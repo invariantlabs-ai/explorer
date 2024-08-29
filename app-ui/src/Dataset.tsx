@@ -152,10 +152,10 @@ function DatasetView() {
     <br/>
     <div className="actions">
       {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
-      <p>
+      <div>
         <h3>Delete Entire Dataset</h3>
         Delete this dataset and all associated data. This action cannot be undone.
-      </p>
+      </div>
       <button className='danger' onClick={() => setSelectedDatasetForDelete(dataset)}>
         <BsTrash/> Delete
       </button>
@@ -165,20 +165,20 @@ function DatasetView() {
     <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>
     </div> */}
     {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
-      <p>
+      <div>
         <h3>Publish</h3>
         Make this dataset public. This will allow other users to view and annotate the data ({dataset.is_public ? 'currently public' : 'currently private'}).
-      </p>
+      </div>
       <button className={!dataset.is_public ? 'primary' : ''}
       onClick={() => onPublicChange({target: {checked: !dataset.is_public}})}>
         <BsGlobe/> {dataset.is_public ? 'Make Private' : 'Publish'}
       </button>
     </div>}
     <div className='box full setting'>
-      <p>
+      <div>
         <h3>Export Dataset</h3>
         Download a copy of the dataset.
-      </p>
+      </div>
       <button className='primary' onClick={() => onDownloadDataset()}>
         <BsDownload/> Download
         {downloadState === 'waiting' && <BsMoonStarsFill/>}

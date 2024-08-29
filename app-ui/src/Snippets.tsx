@@ -25,7 +25,7 @@ export function Snippets() {
                             </button>}
             </>}>
             {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
-                <h3>Snippet #{i}</h3>
+                <h3>Snippet <span className='traceid'>#{snippet.id.slice(0, 6)}</span></h3>
                 <span className='description'>
                 <Time>{snippet.time_created}</Time>
                 </span>
@@ -41,16 +41,12 @@ export function Snippets() {
 }
 
 export function CompactSnippetList(props) {
-    const [snippets, refreshSnippets] = useSnippetsList()
-
-    // never show more than 5 snippets
-    let maxSnippets = 5
-    let croppedSnippets = snippets.slice(0, maxSnippets)
+    const [snippets, refreshSnippets] = useSnippetsList(props.limit || null);
 
     return <>
         <EntityList>
-            {croppedSnippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
-                <h3>{props.icon} Snippet #{i}</h3>
+            {snippets.map((snippet, i) => <Link className='item' to={`/trace/${snippet.id}`} key={i}><li>
+                <h3>{props.icon} Snippet <span className='traceid'>#{snippet.id.slice(0, 6)}</span></h3>
                 <span className='description'>
                 <Time>{snippet.time_created}</Time>
                 </span>

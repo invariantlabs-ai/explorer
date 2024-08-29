@@ -39,6 +39,7 @@ header.top {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
+  white-space: nowrap;
   width: auto;
   border-bottom: 1pt solid $border-color;
 
@@ -386,10 +387,17 @@ div.content {
   border-radius: 5pt;
   background-color: rgb(246, 246, 246);
   margin-top: 5pt;
-  min-width: 500pt;
+  // min-width: 500pt;
 
   h1 {
     text-align: left;
+  }
+}
+
+@media (max-width: 800px) {
+  div.content {
+    padding: 10pt;
+    padding-top: 5pt;
   }
 }
 
@@ -1276,6 +1284,12 @@ header.top .sidebar {
           height: 10pt;
           padding: 5pt 0pt !important;
           margin: 0pt;
+          line-height: 20pt;
+          
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
 
           h3 {
               padding: 0pt;
@@ -1310,8 +1324,10 @@ header.top .sidebar {
       margin-bottom: 5pt;
     }
 
-    p {
+    div:first-child {
       flex: 1;
+      white-space: pre-wrap;
+      margin-right: 10pt;
     }
   }
 }
