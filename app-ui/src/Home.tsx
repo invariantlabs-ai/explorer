@@ -75,7 +75,7 @@ function Home() {
       <h2>Activity</h2>
       {activity.map((event, i) =>
       <div className='item' onClick={() => navigate(
-        {'dataset':  '/user/' + event.user.username + '/dataset/' + event.details.name,
+        {'dataset':  '/u/' + event.user.username + '/' + event.details.name,
         'trace': '/trace/' + event.details.id,
         'annotation': '/trace/' + event.details?.trace?.id
         }[event.type])
@@ -85,7 +85,7 @@ function Home() {
             <div className='user'>
               <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
               <div className='left'>
-                <div><Link to={`/user/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
+                <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
                 <div className='event-time'><Time text={true}>{event.time}</Time></div>
               </div>
             </div>

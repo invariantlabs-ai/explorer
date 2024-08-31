@@ -67,7 +67,7 @@ function Bucket({dataset, id, name, count, active, icon, onSelect}: {dataset, id
     'unannotated': <BsQuestionCircleFill style={{color: 'gold'}}/>,
   }
 
-  return <Link to={`/user/${dataset.user.username}/dataset/${dataset.name}/${id}`}>
+  return <Link to={`/u/${dataset.user.username}/${dataset.name}/${id}`}>
     <div className={'bucket ' + (active ? 'active' : '')}>
       <div className='icon'>{icon || iconMap[id] || null}</div>
       <div className='count'>{count}</div>
@@ -133,7 +133,7 @@ function DatasetView() {
   return <div className="panel entity-list">
     <header>
       <h1>
-        <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/user/' + dataset.user.username) }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
+        <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/u/' + dataset.user.username) }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
         {dataset.is_public && <span className='badge'>Public</span>}
       </h1>
     </header>

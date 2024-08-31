@@ -22,7 +22,7 @@ export const routes = [
     category: 'home'
   },
   {
-    path: '/user/:username',
+    path: '/u/:username',
     label: 'User',
     element: <Layout><User/></Layout>,
     loader: async (user: any) => {
@@ -30,7 +30,7 @@ export const routes = [
     }
   },
   {
-    path: '/user/:username/dataset/:datasetname',
+    path: '/u/:username/:datasetname',
     label: 'Dataset',
     element: <Layout><DatasetView/></Layout>,
     loader: async (task: any) => {
@@ -39,7 +39,7 @@ export const routes = [
       }
   },
   {
-    path: '/user/:username/dataset/:datasetname/:bucketId/:traceId',
+    path: '/u/:username/:datasetname/:bucketId/:traceId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
@@ -51,7 +51,7 @@ export const routes = [
       }
   },
   {
-    path: '/user/:username/dataset/:datasetname/:bucketId',
+    path: '/u/:username/:datasetname/:bucketId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {

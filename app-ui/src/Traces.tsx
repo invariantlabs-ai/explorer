@@ -207,13 +207,13 @@ export function Traces() {
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
     if (props.traceId === null && traces && traces.indices.length > 0) {
-      navigate(`/user/${props.username}/dataset/${props.datasetname}/${props.bucketId}/${traces.indices[0]}`)
+      navigate(`/u/${props.username}/${props.datasetname}/${props.bucketId}/${traces.indices[0]}`)
     }
   }, [props.traceId, traces])
 
   // navigates to the given trace ID and refreshes the list of traces
   const navigateToTrace = useCallback((traceId: string | null) => {
-    navigate(`/user/${props.username}/dataset/${props.datasetname}/${props.bucketId}/${traceId || ''}`)
+    navigate(`/u/${props.username}/${props.datasetname}/${props.bucketId}/${traceId || ''}`)
     refresh()
   }, [props.username, props.datasetname, props.bucketId])
 
@@ -272,7 +272,7 @@ export function Traces() {
       loadTrace={loadTrace} 
       loading={!traces}
       header={
-        <h1><Link to='/'>Datasets</Link> / <Link to={`/user/${props.username}/dataset/${props.datasetname}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+        <h1><Link to='/'>Datasets</Link> / <Link to={`/u/${props.username}/${props.datasetname}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
       }
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
@@ -364,7 +364,7 @@ function Sidebar(props) {
         {(id: string) => {
           const trace = props.traces.elements[id]
           return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-            <Link to={`/user/${username}/dataset/${datasetname}/${props.bucketId}/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
+            <Link to={`/u/${username}/${datasetname}/${props.bucketId}/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
               Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
             </Link>
           </li>
@@ -428,7 +428,7 @@ export function SingleTrace() {
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
-      <h1><Link to={`/user/${snippetData.user}`}>{snippetData.user}</Link> <span className='traceid'># {props.traceId}</span><Time className='time'>{trace?.time_created || ''}</Time>
+      <h1><Link to={`/u/${snippetData.user}`}>{snippetData.user}</Link> <span className='traceid'># {props.traceId}</span><Time className='time'>{trace?.time_created || ''}</Time>
       </h1> :
       <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""}/<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
