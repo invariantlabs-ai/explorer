@@ -1,0 +1,40 @@
+.search {
+
+    display: flex;
+    flex-direction: row;
+    font-size:0; /* whitespace remover */
+    margin: 5pt;
+    overflow: hidden;
+    border: 2pt solid #ccc;
+    border-radius: 10pt;
+    
+    & > * {
+        display: inline-block;
+        background-color: white;
+        color: black;
+        border: 0px;
+        height: 50px;
+        border-radius: 0;
+        position: relative;
+    }
+    
+    .search-select {
+        flex: 1;
+    }
+    .search-text {
+        flex: 8;
+    }
+    .search-submit {
+        flex: 1;
+        padding: 0;
+        margin: 0;
+    }
+    .search-submit:active {
+        background-color: white;
+    }
+    .search-submit:hover {
+        background-color: white;
+    }
+
+    
+}

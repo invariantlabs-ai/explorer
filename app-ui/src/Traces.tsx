@@ -4,6 +4,7 @@ import {UserInfo, useUserInfo} from './UserInfo'
 import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 import { TraceView } from './lib/traceview/traceview';
+import Search from './lib/Search';
 
 import { Explorer } from './Explorer'
 import { sharedFetch } from './SharedFetch';
@@ -290,12 +291,40 @@ function Sidebar(props) {
   const {username, datasetname, activeTraceId} = props
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
+  const [activeIndices, setActiveIndices] = React.useState([])
+  const [searchQuery, setSearchQuery] = React.useState('')
+  
+  useEffect(() => {
+    setActiveIndices(props.traces ? props.traces.indices : [])    
+  }, [props.traces])
+  
+  const search = (query) => {
+    return sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/s?query=${query}`)
+      .then(data => {
+        if (props.traces) {
+          const ids = new Set(data.map(d => d.id))
+          setActiveIndices(props.traces.indices.filter(t => ids.has(t)))
+        }
+        return data
+      })
+      .catch(e => {
+        alert("Error searching traces: " + e)
+        throw e
+      })
+  }
+  let query = '';
+  const onRefresh = (e) => {
+    setSearchQuery('')
+    props.onRefresh(e)
+  };
 
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
+    <Search search={search} query={searchQuery} setQuery={setSearchQuery} />
     <header>
-      <h1>{props.traces ? props.traces.indices.length + " Traces" : "Loading..."}</h1>
+      {props.traces && <h1>{(props.traces.indices.length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.indices.length + " Traces"}</h1>}
+      {!props.traces && <h1>Loading...</h1>}
       <div className='spacer'></div>
-      <button className='toggle icon' onClick={props.onRefresh}><BsArrowClockwise /></button>
+      <button className='toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
       <button className='toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>
@@ -308,7 +337,7 @@ function Sidebar(props) {
         </li>
       }) : null} */}
       <ViewportList
-        items={props.traces ? props.traces.indices : []}
+        items={activeIndices}
         viewportRef={viewportRef}
         overscan={10}
       >

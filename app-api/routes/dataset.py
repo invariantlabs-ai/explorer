@@ -199,6 +199,25 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
     return get_dataset({'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
+# search
+########################################
+
+@dataset.get("/byuser/{username}/{dataset_name}/s")
+def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
+    if query is None:
+        return {"message": "Please provide a query"}
+    user_id = userinfo['sub']
+    with Session(db()) as session:
+        by = {'User.username': username, 'name': dataset_name}
+        dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+        
+        selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).filter(Trace.content.contains(query)).all()
+        return [{'id': trace.id, 'address':'@'} for trace in selected_traces]
+
+
+
+
+########################################
 # update the dataset, currently only allows to change the visibility
 ########################################
 
