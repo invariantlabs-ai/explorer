@@ -216,11 +216,12 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
         grammar = r"""
         query: (term WS*)+ 
         term: filter_term | quoted_term | simple_term
-        filter_term: WORD ":" WORD
+        filter_term: WORD OP WORD
         quoted_term: "\"" /[^\"]+/ "\""
         simple_term: WORD
+        OP: ":" | "==" | ">" | "<" | "<=" | ">="
         WS: /\s/
-        %import common.WORD
+        WORD: /[^\s><=]+/
         """
         class QueryTransformer(Transformer): 
             def __init__(self):
@@ -235,7 +236,7 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
                 self.search_terms.append(" ".join(map(lambda x: x.value, items)))
                 
             def filter_term(self, items):
-                self.filters.append((items[0].value, items[1].value))
+                self.filters.append((items[0].value, items[1].value, items[2].value))
 
 
         selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
@@ -248,14 +249,25 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
             if len(transformer.search_terms) > 0: 
                 selected_traces = selected_traces.filter(or_(Trace.content.contains(term) for term in transformer.search_terms))
             for filter in transformer.filters:
-                if filter[0] == 'is' and filter[1] == 'annotated':
+                if filter[0] == 'is' and filter[1] == ':' and filter[2] == 'annotated':
                     selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
-                elif filter[0] == 'not' and filter[1] == 'annotated':
+                elif filter[0] == 'not' and filter[1] == ':' and filter[2] == 'annotated':
                     selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
+                elif filter[1] in ['>', '<', '>=', '<=', '=='] and (filter[0] == 'num_messages' or filter[2] == 'num_messages'):
+                    assert ((filter[0] == 'num_messages' and int(filter[2]) >= 0) or
+                            (filter[2] == 'num_messages' and int(filter[1]) >= 0))
+                    op = filter[1]
+                    if filter[2] == 'num_messages':
+                        comp = int(filter[1])
+                        op = {'>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '=='}[op]
+                    else:
+                        comp = int(filter[2])
+                    criteria = eval(f"Trace.extra_metadata['num_messages'].as_integer() {op} {comp}")
+                    selected_traces = selected_traces.filter(criteria)
                 else:
                     raise Exception("Invalid filter")
         except Exception as e:
-            print(e) # we still want these searches to go through 
+            print('Error in query', e) # we still want these searches to go through 
         
         selected_traces = selected_traces.all()
         return [{'id': trace.id, 'address':'@'} for trace in selected_traces]

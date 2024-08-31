@@ -5,9 +5,10 @@ import json
 import datetime
 
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String, Integer, Column, ForeignKey, DateTime, UniqueConstraint, Boolean
+from sqlalchemy import String, Integer, Column, ForeignKey, DateTime, UniqueConstraint, Boolean, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 
@@ -35,7 +36,7 @@ class Dataset(Base):
     is_public = mapped_column(Boolean, default=False, nullable=False) 
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
     # JSON object of the metadata parsed at ingestion
-    extra_metadata = mapped_column(String, nullable=False)
+    extra_metadata = mapped_column(JSON, nullable=False)
 
 class Trace(Base):
     __objectname__ = "Trace"
@@ -51,8 +52,12 @@ class Trace(Base):
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
     content = mapped_column(String, nullable=False)
-    extra_metadata = mapped_column(String, nullable=False)
+    extra_metadata = mapped_column(JSON, nullable=False)
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
+    
+    @hybrid_property
+    def num_messages(self):
+        return int(self.content['num_messages'])
 
 class User(Base):
     __objectname__ = "User"
