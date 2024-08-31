@@ -78,8 +78,9 @@ function Search(props) {
         </button>
          <div className='search-select-dropdown'>
          <ul>
-            <li onClick={(e)=>{addFilter(e, 'is:annotated')}} >Has Annotation</li>
-            <li onClick={(e)=>{addFilter(e, 'not:annotated')}} >No Annotation</li>
+            <li onClick={(e)=>{addFilter(e, 'is:annotated')}} >Has annotation</li>
+            <li onClick={(e)=>{addFilter(e, 'not:annotated')}} >No annotation</li>
+            <li onClick={(e)=>{addFilter(e, 'num_messages>10')}} >At least 10 messages</li>
          </ul>
          </div>
         <input className='search-text' type="text" onChange={update} value={query} placeholder="Search" />
