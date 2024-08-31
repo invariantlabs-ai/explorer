@@ -210,8 +210,54 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
     with Session(db()) as session:
         by = {'User.username': username, 'name': dataset_name}
         dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+
+
+        from lark import Lark, Transformer
+        grammar = r"""
+        query: (term WS*)+ 
+        term: filter_term | quoted_term | simple_term
+        filter_term: WORD ":" WORD
+        quoted_term: "\"" /[^\"]+/ "\""
+        simple_term: WORD
+        WS: /\s/
+        %import common.WORD
+        """
+        class QueryTransformer(Transformer): 
+            def __init__(self):
+                super().__init__()
+                self.search_terms = []
+                self.filters = []  
+            
+            def simple_term(self, items):
+                self.search_terms.append(items[0].value)
+            
+            def quoted_term(self, items):
+                self.search_terms.append(" ".join(map(lambda x: x.value, items)))
+                
+            def filter_term(self, items):
+                self.filters.append((items[0].value, items[1].value))
+
+
+        selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+        try:
+            parser = Lark(grammar, parser='lalr', start='query')
+            query_parse_tree = parser.parse(query)
+            transformer = QueryTransformer()
+            transformer.transform(query_parse_tree)
+
+            if len(transformer.search_terms) > 0: 
+                selected_traces = selected_traces.filter(or_(Trace.content.contains(term) for term in transformer.search_terms))
+            for filter in transformer.filters:
+                if filter[0] == 'is' and filter[1] == 'annotated':
+                    selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
+                elif filter[0] == 'not' and filter[1] == 'annotated':
+                    selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
+                else:
+                    raise Exception("Invalid filter")
+        except Exception as e:
+            print(e) # we still want these searches to go through 
         
-        selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).filter(Trace.content.contains(query)).all()
+        selected_traces = selected_traces.all()
         return [{'id': trace.id, 'address':'@'} for trace in selected_traces]
 
 

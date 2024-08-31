@@ -46,7 +46,7 @@ export const routes = [
       return {"datasetname": task.params.datasetname,
               "username": task.params.username,
               "bucketId": task.params.bucketId,
-              "traceId": task.params.traceId
+              "traceId": task.params.traceId,
             }
       }
   },

@@ -8,3 +8,4 @@ passlib[bcrypt]
 python-multipart
 fastapi-keycloak-middleware
 prometheus-fastapi-instrumentator
+lark

@@ -18,20 +18,42 @@
         position: relative;
     }
     
-    .search-select {
-        flex: 1;
+    .search-select-dropdown {
+        position: absolute;
+        top: 50px;
+        left: 5px;
+        width: calc(100% - 10px);
+        border: 2pt solid #ccc;
+        height: auto;
+        z-index: 1;
+        display: none;
+        
+        ul {
+            flex: 1;
+            li {
+                font-size: 10pt;
+                height: 20px;
+            }
+        }
     }
+    
+    .search-select-dropdown-show {
+        display: flex;
+        flex-direction: column;
+    }
+    
     .search-text {
         flex: 8;
     }
-    .search-submit {
+    .search-submit, .search-select {
         flex: 1;
         padding: 0;
         margin: 0;
     }
-    .search-submit:active {
-        background-color: white;
-    }
+
+    .search-select:active,
+    .search-select:hover,
+    .search-submit:active,
     .search-submit:hover {
         background-color: white;
     }

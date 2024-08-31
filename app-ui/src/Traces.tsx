@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react'
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
 import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
@@ -292,18 +292,38 @@ function Sidebar(props) {
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
   const [activeIndices, setActiveIndices] = React.useState([])
-  const [searchQuery, setSearchQuery] = React.useState('')
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, _setSearchQuery] = React.useState(searchParams.get('query') || '')
+  const [searchResult, setSearchResult] = React.useState(null)
+  const setSearchQuery = (value) => {
+    if (value) {
+      setSearchParams({...searchParams, query: value})
+    } else {
+      searchParams.delete('query')
+      setSearchParams(searchParams)
+    }
+    _setSearchQuery(value)
+  };
   
   useEffect(() => {
-    setActiveIndices(props.traces ? props.traces.indices : [])    
-  }, [props.traces])
-  
+    if (searchResult) {
+      setActiveIndices(searchResult)
+    } else {
+      setActiveIndices(props.traces ? props.traces.indices : [])    
+      // no search result, but search query is set -> perform search
+      // triggers upon initial load
+      if (searchQuery) {
+        search(searchQuery)
+      }
+    }
+  }, [props.traces, searchResult, searchQuery])
+
   const search = (query) => {
     return sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/s?query=${query}`)
       .then(data => {
         if (props.traces) {
           const ids = new Set(data.map(d => d.id))
-          setActiveIndices(props.traces.indices.filter(t => ids.has(t)))
+          setSearchResult(props.traces.indices.filter(t => ids.has(t)))
         }
         return data
       })
@@ -312,7 +332,7 @@ function Sidebar(props) {
         throw e
       })
   }
-  let query = '';
+
   const onRefresh = (e) => {
     setSearchQuery('')
     props.onRefresh(e)
@@ -344,7 +364,7 @@ function Sidebar(props) {
         {(id: string) => {
           const trace = props.traces.elements[id]
           return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-            <Link to={'/user/' + username + '/dataset/' + datasetname + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
+            <Link to={`/user/${username}/dataset/${datasetname}/${props.bucketId}/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
               Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
             </Link>
           </li>
