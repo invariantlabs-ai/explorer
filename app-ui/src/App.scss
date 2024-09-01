@@ -1053,6 +1053,17 @@ button.primary .shortcut {
       padding-top: 2pt;
       position: relative;
       border-bottom: 1pt solid $border-color;
+      flex-wrap: wrap;
+      height:auto;
+      
+      .header-short {
+        flex: 0 1 10%;
+      }
+      
+      .header-long {
+        flex: 1 1 70%;
+      }
+
 
       h1 {
         font-size: 12pt;

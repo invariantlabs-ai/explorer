@@ -366,16 +366,15 @@ function Sidebar(props) {
   }
 
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
-    <Search search={search} query={searchQuery} setQuery={setSearchQuery} />
     <header>
-      {props.traces && <h1>{(props.traces.indices.length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.indices.length + " Traces"}</h1>}
-      {!props.traces && <h1>Loading...</h1>}
-      <div className='spacer'></div>
+      <Search className='header-long' search={search} query={searchQuery} setQuery={setSearchQuery} />
       { searchQuery && 
-        <button className='toggle icon' onClick={onSave}><BsSave/></button>
+        <button className='header-short toggle icon' onClick={onSave}><BsSave/></button>
       }
-      <button className='toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
-      <button className='toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
+      <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
+      {props.traces && <h1 className='header-long'>{(props.traces.indices.length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.indices.length + " Traces"}</h1>}
+      {!props.traces && <h1 className='header-long'>Loading...</h1>}
+      <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>
       <ViewportList
