@@ -279,12 +279,16 @@ export function Traces() {
       onRefresh={refresh}
     />
     {activeTrace && <Explorer
-      // {...(transformedTraces || {})}
       activeTrace={activeTrace}
       loadTrace={loadTrace} 
       loading={!traces}
       header={
-        <h1><Link to='/'>Datasets</Link> / <Link to={`/u/${props.username}/${props.datasetname}`}>{dataset?.name}</Link> / <span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+        <h1>
+          <Link to='/'>/</Link>
+          <Link to={`/u/${props.username}`}>{props.username}</Link>/
+          <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
+          <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTraceIdx}`}><span className='traceid'>{activeTraceIdx}</span></Link>
+        </h1>
       }
       queryId={"<queryId>"}
       selectedTraceId={activeTraceId}
