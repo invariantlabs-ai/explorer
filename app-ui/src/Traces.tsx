@@ -358,7 +358,7 @@ function Sidebar(props) {
     fetch(`/api/v1/dataset/byuser/${username}/${datasetname}/s`, {
       'method': 'PUT',
       'body': JSON.stringify({query: searchQuery,
-                              name: searchQuery
+                              name: 'Search: ' + searchQuery
       })
     }).then(() => {
       alert("Saved search")

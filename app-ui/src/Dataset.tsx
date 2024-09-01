@@ -61,20 +61,40 @@ function metadata(dataset) {
   }
 }
 
-function Query({dataset, id, name, count, query, icon, onSelect}: {dataset, id: string, name: string, count: number, query: string, icon?: React.ReactNode, onSelect?: () => void}) {
+function Query({dataset, id, name, count, query, deletable, icon, onSelect, refresh}: {dataset, id: string, name: string, count: number, query: string, deletable: boolean, icon?: React.ReactNode, onSelect?: () => void, refresh: () => void}) {
   const iconMap: {[key: string]: React.ReactNode} = {
     'all': <BsCheckCircleFill/>,
     'annotated': <BsPencilFill style={{color: 'green'}}/>,
     'unannotated': <BsQuestionCircleFill style={{color: 'gold'}}/>,
   }
 
-  return <Link to={`/u/${dataset.user.username}/${dataset.name}/t` + (query ? '?query='+query : '')}>
+  const deleteQuery = (e) => {
+    if (deletable) {
+      fetch(`/api/v1/dataset/query/${id}`, {
+        'method': 'DELETE',
+      }).then(() => {
+        alert('query delete')
+        refresh()
+      }).catch((error) => {
+        alert('Failed to delete query: ' + error)
+      })
+    }
+    e.preventDefault()
+  }
+  
+  return <>
+
     <div className={'query'}>
-      <div className='icon'>{icon || iconMap[id] || null}</div>
-      <div className='count'>{count}</div>
-      <div className='name'>{name}</div>
+      <Link to={`/u/${dataset.user.username}/${dataset.name}/t` + (query ? '?query='+query : '')}>
+          <div className='icon'>{icon || iconMap[id] || null}</div>
+          <div className='count'>{count}</div>
+          <div className='name'>{name}</div>
+      </Link>
+    {deletable &&
+      <button onClick={deleteQuery}><BsTrash/></button>
+    }
     </div>
-  </Link>
+  </>
 }
 
 function DatasetView() {
@@ -145,7 +165,7 @@ function DatasetView() {
     <h2>Traces</h2>
     <div className='query-list'>
       {dataset.queries.map(query => {
-        return <Query dataset={dataset} {...query} key={query.name}/>
+        return <Query dataset={dataset} {...query} key={query.name} refresh={() => {datasetLoader.refresh()}}/>
       })}
     </div>
     <h2>Other Actions</h2>

@@ -105,19 +105,22 @@ def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
             "id": "all",
             "name": "All",
             "count": num_traces,
-            "query": None
+            "query": None,
+            "deletable": False
         },
         {
             "id": "annotated",
             "name": "Annotated",
             "count": num_annotated,
-            "query": 'is:annotated'
+            "query": 'is:annotated',
+            "deletable": False
         },
         {
             "id": "unannotated",
             "name": "Unannotated",
             "count": num_traces - num_annotated,
-            "query": 'not:annotated'
+            "query": 'not:annotated',
+            "deletable": False
         }
     ]
    
@@ -129,7 +132,8 @@ def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
                 "id": query.id,
                 "name": query.name,
                 "count": count,
-                "query": query.query 
+                "query": query.query ,
+                "deletable": True
             }
         )
     

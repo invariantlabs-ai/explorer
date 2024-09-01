@@ -811,11 +811,6 @@ div.empty {
   margin-left: -5pt;
   margin-right: -5pt;
 
-  >a {
-    text-decoration: none;
-    color: $text-color;
-  }
-
   .query {
     width: 100pt;
     min-height: 40pt;
@@ -825,6 +820,26 @@ div.empty {
     padding: 10pt;
     transition: background-color 0.1s;
     border: 1pt solid $border-color;
+
+    >a {
+      text-decoration: none;
+      color: $text-color;
+    }
+    
+    button {
+      margin-top: -50pt;
+      width: 30pt;
+      padding: 0pt;
+      text-align: center;
+      height: auto;
+      float: right;
+      display: flexbox;
+      justify-content: center;
+      * {
+        padding: 0pt;
+        margin: 0pt;
+      }
+    }
 
     .name {
       font-weight: 700;
