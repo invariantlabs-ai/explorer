@@ -191,27 +191,42 @@ function findPreviousTrace(traceId, traces) {
 }
 
 export function Traces() {
-  const props: {username: string, datasetname: string, traceId: string|null} = useLoaderData() as any
+  const props: {username: string, datasetname: string, traceIdx: number|null} = useLoaderData() as any
   const navigate = useNavigate()
   
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
   const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
-  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceIdx)
   const [showShareModal, setShowShareModal] = React.useState(false)
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
+
+  const [activeTraceId, setActiveTraceId] = React.useState<string | null>(null)
+  const [activeTraceIdx, setActiveTraceIdx] = React.useState<number | null>(null)
+  
+  useEffect(() => {
+    if (traces && props.traceIdx !== null) {
+      const traceId = traces.indices[props.traceIdx]
+      setActiveTraceId(traceId)
+      setActiveTraceIdx(props.traceIdx)
+    } else {
+      setActiveTraceId(null)
+      setActiveTraceIdx(props.traceIdx)
+    }
+  }, [props.traceIdx, traces])
+
 
   const userInfo = useUserInfo()
   
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
-    if (props.traceId === null && traces && traces.indices.length > 0) {
-      navigate(`/u/${props.username}/${props.datasetname}/t/${traces.indices[0]}`)
+    if (props.traceIdx === null && traces && traces.indices.length > 0) {
+      navigate(`/u/${props.username}/${props.datasetname}/t/0}`)
     }
-  }, [props.traceId, traces])
+  }, [props.traceIdx, traces])
 
-  // navigates to the given trace ID and refreshes the list of traces
-  const navigateToTrace = useCallback((traceId: string | null) => {
-    navigate(`/u/${props.username}/${props.datasetname}/t/${traceId || ''}`)
+  // navigates to the given trace index and refreshes the list of traces
+  const navigateToTrace = useCallback((traceIdx: number | null) => {
+    navigate(`/u/${props.username}/${props.datasetname}/t/${traceIdx || ''}`)
     refresh()
   }, [props.username, props.datasetname])
 
@@ -236,7 +251,7 @@ export function Traces() {
     })
   }, [setTraces])
 
-  const activeTrace = props.traceId ? traces?.elements[props.traceId] : null
+  const activeTrace = activeTraceId ? traces?.elements[activeTraceId] : null
 
   if (datasetLoadingError) {
     return <div className='empty'>
@@ -260,7 +275,7 @@ export function Traces() {
       traces={traces} 
       username={props.username}
       datasetname={props.datasetname} 
-      activeTraceId={props.traceId} 
+      activeTraceId={activeTraceId} 
       onRefresh={refresh}
     />
     {activeTrace && <Explorer
@@ -272,7 +287,7 @@ export function Traces() {
         <h1><Link to='/'>Datasets</Link> / <Link to={`/u/${props.username}/${props.datasetname}`}>{dataset?.name}</Link> / <span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
       }
       queryId={"<queryId>"}
-      selectedTraceId={props.traceId}
+      selectedTraceId={activeTraceId}
       hasFocusButton={false}
       onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
@@ -367,7 +382,7 @@ function Sidebar(props) {
         {(id: string) => {
           const trace = props.traces.elements[id]
           return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-            <Link to={`/u/${username}/${datasetname}/t/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
+            <Link to={`/u/${username}/${datasetname}/t/${trace.trace.index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
               Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
             </Link>
           </li>

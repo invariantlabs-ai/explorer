@@ -38,13 +38,13 @@ export const routes = [
       }
   },
   {
-    path: '/u/:username/:datasetname/t/:traceId',
+    path: '/u/:username/:datasetname/t/:traceIdx',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
       return {"datasetname": task.params.datasetname,
               "username": task.params.username,
-              "traceId": task.params.traceId,
+              "traceIdx": task.params.traceIdx,
             }
       }
   },
