@@ -803,7 +803,7 @@ div.empty {
   }
 }
 
-.bucket-list {
+.query-list {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -816,7 +816,7 @@ div.empty {
     color: $text-color;
   }
 
-  .bucket {
+  .query {
     width: 100pt;
     min-height: 40pt;
     background-color: white;

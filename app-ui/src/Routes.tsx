@@ -1,5 +1,4 @@
 import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFill, BsFillTerminalFill, BsSpeedometer2, BsThreeDots, BsListColumns, BsRobot, BsSearch } from 'react-icons/bs'
-
 import Home from './Home.tsx'
 import Layout from './Layout.tsx'
 import {Traces, SingleTrace} from './Traces.tsx'
@@ -39,25 +38,23 @@ export const routes = [
       }
   },
   {
-    path: '/u/:username/:datasetname/:bucketId/:traceId',
+    path: '/u/:username/:datasetname/t/:traceId',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
       return {"datasetname": task.params.datasetname,
               "username": task.params.username,
-              "bucketId": task.params.bucketId,
               "traceId": task.params.traceId,
             }
       }
   },
   {
-    path: '/u/:username/:datasetname/:bucketId',
+    path: '/u/:username/:datasetname/t',
     label: 'Dataset',
     element: <Layout fullscreen><Traces/></Layout>,
     loader: async (task: any) => {
       return {"datasetname": task.params.datasetname,
               "username": task.params.username,
-              "bucketId": task.params.bucketId,
               "traceId": null
             }
     }

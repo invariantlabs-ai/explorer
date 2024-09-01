@@ -187,7 +187,7 @@ def get_dataset(by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
         num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
         return dataset_to_json(dataset, user,
                                num_traces=num_traces,
-                               buckets=get_collections(session, dataset, num_traces))
+                               queries=get_savedqueries(session, dataset, user_id, num_traces))
 
 
 @dataset.get("/byid/{id}")
@@ -204,76 +204,26 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
 
 @dataset.get("/byuser/{username}/{dataset_name}/s")
 def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
-    if query is None:
-        return {"message": "Please provide a query"}
     user_id = userinfo['sub']
     with Session(db()) as session:
         by = {'User.username': username, 'name': dataset_name}
         dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
-
-
-        from lark import Lark, Transformer
-        grammar = r"""
-        query: (term WS*)+ 
-        term: filter_term | quoted_term | simple_term
-        filter_term: WORD OP WORD
-        quoted_term: "\"" /[^\"]+/ "\""
-        simple_term: WORD
-        OP: ":" | "==" | ">" | "<" | "<=" | ">="
-        WS: /\s/
-        WORD: /[^\s><=]+/
-        """
-        class QueryTransformer(Transformer): 
-            def __init__(self):
-                super().__init__()
-                self.search_terms = []
-                self.filters = []  
-            
-            def simple_term(self, items):
-                self.search_terms.append(items[0].value)
-            
-            def quoted_term(self, items):
-                self.search_terms.append(" ".join(map(lambda x: x.value, items)))
-                
-            def filter_term(self, items):
-                self.filters.append((items[0].value, items[1].value, items[2].value))
-
-
-        selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
-        try:
-            parser = Lark(grammar, parser='lalr', start='query')
-            query_parse_tree = parser.parse(query)
-            transformer = QueryTransformer()
-            transformer.transform(query_parse_tree)
-
-            if len(transformer.search_terms) > 0: 
-                selected_traces = selected_traces.filter(or_(Trace.content.contains(term) for term in transformer.search_terms))
-            for filter in transformer.filters:
-                if filter[0] == 'is' and filter[1] == ':' and filter[2] == 'annotated':
-                    selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
-                elif filter[0] == 'not' and filter[1] == ':' and filter[2] == 'annotated':
-                    selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
-                elif filter[1] in ['>', '<', '>=', '<=', '=='] and (filter[0] == 'num_messages' or filter[2] == 'num_messages'):
-                    assert ((filter[0] == 'num_messages' and int(filter[2]) >= 0) or
-                            (filter[2] == 'num_messages' and int(filter[1]) >= 0))
-                    op = filter[1]
-                    if filter[2] == 'num_messages':
-                        comp = int(filter[1])
-                        op = {'>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '=='}[op]
-                    else:
-                        comp = int(filter[2])
-                    criteria = eval(f"Trace.extra_metadata['num_messages'].as_integer() {op} {comp}")
-                    selected_traces = selected_traces.filter(criteria)
-                else:
-                    raise Exception("Invalid filter")
-        except Exception as e:
-            print('Error in query', e) # we still want these searches to go through 
-        
-        selected_traces = selected_traces.all()
+        selected_traces = query_traces(session, dataset, query)
         return [{'id': trace.id, 'address':'@'} for trace in selected_traces]
-
-
-
+    
+@dataset.put("/byuser/{username}/{dataset_name}/s")
+async def save_query(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo['sub']
+    with Session(db()) as session:
+        by = {'User.username': username, 'name': dataset_name}
+        dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+        data = await request.json()
+        savedquery = SavedQueries(user_id=user_id,
+                                  dataset_id=dataset.id,
+                                  query=data['query'],
+                                  name=data['name'])
+        session.add(savedquery)
+        session.commit()
 
 ########################################
 # update the dataset, currently only allows to change the visibility
@@ -292,7 +242,8 @@ async def update_dataset(request: Request, by: dict, userinfo: Annotated[dict, D
         
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
-        return dataset_to_json(dataset, num_traces=num_traces, buckets=get_collections(session, dataset, num_traces))
+        return dataset_to_json(dataset, num_traces=num_traces,
+                               queries=get_savedqueries(session, dataset, user_id, num_traces))
 
 @dataset.put("/byid/{id}")
 async def update_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
@@ -303,10 +254,10 @@ async def update_dataset_by_name(request: Request, username:str, dataset_name:st
     return await update_dataset(request, {'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
-# get all traces of a dataset in the given collection (formerly known as bucket)
+# get all traces of a dataset 
 ########################################
 
-def get_traces(request: Request, by: dict, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
@@ -317,25 +268,13 @@ def get_traces(request: Request, by: dict, bucket: str, userinfo: Annotated[dict
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         
-        if bucket == "all":
-            traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
-        elif bucket == "annotated" or bucket == "unannotated":
-            # same as above
-            traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
-        else:
-            raise HTTPException(status_code=404, detail="Bucket not found")
-        
+        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+                
         # with join, count number of annotations per trace
         traces = traces\
             .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
             .group_by(Trace.id)\
             .add_columns(Trace.id, Trace.index, Trace.content, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
-
-        # 
-        if bucket == "annotated":
-            traces = traces.having(func.count(Annotation.id) > 0)
-        elif bucket == "unannotated":
-            traces = traces.having(func.count(Annotation.id) == 0)
         
         if limit is not None:
             traces = traces.limit(int(limit))
@@ -356,18 +295,19 @@ def get_traces(request: Request, by: dict, bucket: str, userinfo: Annotated[dict
         } for trace in traces]
 
 
-@dataset.get("/byid/{id}/{bucket}")
-def get_traces_by_id(request: Request, id: str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    if bucket == 'full':
-        return get_all_traces({'id': id}, userinfo)
-    return get_traces(request, {'id': id}, bucket, userinfo)
+@dataset.get("/byid/{id}/traces")
+def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    #if bucket == 'full':
+    #    return get_all_traces({'id': id}, userinfo)
+    return get_traces(request, {'id': id}, userinfo)
 
-@dataset.get("/byuser/{username}/{dataset_name}/{bucket}")
-def get_traces_by_name(request: Request, username:str, dataset_name:str, bucket: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    if bucket == 'full':
-        return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
+@dataset.get("/byuser/{username}/{dataset_name}/traces")
+def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    #if bucket == 'full':
+    #    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
+    # TODO support full again
 
-    return get_traces(request, {'User.username': username, 'name': dataset_name}, bucket, userinfo)
+    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
 # get the full dataset with all traces and annotations

@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {UserInfo, useUserInfo} from './UserInfo'
-import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload } from 'react-icons/bs'
+import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload, BsSave } from 'react-icons/bs'
 import { Link, useLoaderData } from 'react-router-dom'
 import { TraceView } from './lib/traceview/traceview';
 import Search from './lib/Search';
-
 import { Explorer } from './Explorer'
 import { sharedFetch } from './SharedFetch';
-
 import { ViewportList } from 'react-viewport-list';
 import { Modal } from './Modal';
 import { Time } from './components/Time';
@@ -27,7 +25,7 @@ function useDataset(username:string, datasetname: string): [DatasetData | null, 
   const [error, setError] = React.useState(null as string | null);
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`)
       .then(data => setDataset(data))
       .catch(e => {
         alert("Error loading dataset")
@@ -50,12 +48,12 @@ export interface Trace {
   user?: string;
 }
 
-function useTraces(username: string, datasetname: string, bucket: string): [any | null, (traces: any) => void, () => void] {
+function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
   const [traces, setTraces] = React.useState(null)
 
-  React.useEffect(() => refresh(), [username, datasetname, bucket])
+  React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
-    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/${bucket}`).then(data => {
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`).then(data => {
         data = transformTraces(data)
         setTraces(data)
     }).catch(e => alert("Error loading traces"))
@@ -193,11 +191,11 @@ function findPreviousTrace(traceId, traces) {
 }
 
 export function Traces() {
-  const props: {username: string, datasetname: string, bucketId: string, traceId: string|null} = useLoaderData() as any
+  const props: {username: string, datasetname: string, traceId: string|null} = useLoaderData() as any
   const navigate = useNavigate()
   
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
-  const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname, props.bucketId)
+  const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
@@ -207,15 +205,15 @@ export function Traces() {
   // if trace ID is null, select first from 'elements'
   useEffect(() => {
     if (props.traceId === null && traces && traces.indices.length > 0) {
-      navigate(`/u/${props.username}/${props.datasetname}/${props.bucketId}/${traces.indices[0]}`)
+      navigate(`/u/${props.username}/${props.datasetname}/t/${traces.indices[0]}`)
     }
   }, [props.traceId, traces])
 
   // navigates to the given trace ID and refreshes the list of traces
   const navigateToTrace = useCallback((traceId: string | null) => {
-    navigate(`/u/${props.username}/${props.datasetname}/${props.bucketId}/${traceId || ''}`)
+    navigate(`/u/${props.username}/${props.datasetname}/t/${traceId || ''}`)
     refresh()
-  }, [props.username, props.datasetname, props.bucketId])
+  }, [props.username, props.datasetname])
 
   const loadTrace = useCallback((trace: Trace) => {
     fetchTrace(trace).then(change => {
@@ -263,7 +261,6 @@ export function Traces() {
       username={props.username}
       datasetname={props.datasetname} 
       activeTraceId={props.traceId} 
-      bucketId={props.bucketId}
       onRefresh={refresh}
     />
     {activeTrace && <Explorer
@@ -272,7 +269,7 @@ export function Traces() {
       loadTrace={loadTrace} 
       loading={!traces}
       header={
-        <h1><Link to='/'>Datasets</Link> / <Link to={`/u/${props.username}/${props.datasetname}`}>{dataset?.name}</Link> / {props.bucketId}<span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
+        <h1><Link to='/'>Datasets</Link> / <Link to={`/u/${props.username}/${props.datasetname}`}>{dataset?.name}</Link> / <span className='traceid'>#{activeTrace?.trace.index} {props.traceId}</span></h1> 
       }
       queryId={"<queryId>"}
       selectedTraceId={props.traceId}
@@ -337,6 +334,17 @@ function Sidebar(props) {
     setSearchQuery('')
     props.onRefresh(e)
   };
+  
+  const onSave = (e) => {
+    fetch(`/api/v1/dataset/byuser/${username}/${datasetname}/s`, {
+      'method': 'PUT',
+      'body': JSON.stringify({query: searchQuery,
+                              name: searchQuery
+      })
+    }).then(() => {
+      alert("Saved search")
+    })
+  }
 
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <Search search={search} query={searchQuery} setQuery={setSearchQuery} />
@@ -344,18 +352,13 @@ function Sidebar(props) {
       {props.traces && <h1>{(props.traces.indices.length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.indices.length + " Traces"}</h1>}
       {!props.traces && <h1>Loading...</h1>}
       <div className='spacer'></div>
+      { searchQuery && 
+        <button className='toggle icon' onClick={onSave}><BsSave/></button>
+      }
       <button className='toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
       <button className='toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>
-      {/* {props.traces ? props.traces.indices.map(id => {
-        const trace = props.traces.elements[id]
-        return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-          <Link to={'/dataset/' + datasetId + '/' + props.bucketId + '/' + id} className={id === activeTraceId ? 'active' : ''}>
-            Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
-          </Link>
-        </li>
-      }) : null} */}
       <ViewportList
         items={activeIndices}
         viewportRef={viewportRef}
@@ -364,7 +367,7 @@ function Sidebar(props) {
         {(id: string) => {
           const trace = props.traces.elements[id]
           return <li key={id} className={'trace ' + (id === activeTraceId ? 'active' : '')}>
-            <Link to={`/u/${username}/${datasetname}/${props.bucketId}/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
+            <Link to={`/u/${username}/${datasetname}/t/${id}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={id === activeTraceId ? 'active' : ''}>
               Run {trace.name} {trace.trace.num_annotations > 0 ? <span className='badge'>{trace.trace.num_annotations}</span> : null}
             </Link>
           </li>

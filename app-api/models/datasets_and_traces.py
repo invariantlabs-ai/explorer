@@ -38,6 +38,17 @@ class Dataset(Base):
     # JSON object of the metadata parsed at ingestion
     extra_metadata = mapped_column(JSON, nullable=False)
 
+class SavedQueries(Base):
+    __objectname__ = "SavedQueries"
+    __tablename__ = "queries"
+   
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4) 
+    name = mapped_column(String, nullable=False)
+    user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    dataset_id = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), nullable=False)
+    query = mapped_column(String, nullable=True)
+   
+
 class Trace(Base):
     __objectname__ = "Trace"
     __tablename__ = "traces"
