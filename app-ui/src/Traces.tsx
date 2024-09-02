@@ -292,7 +292,7 @@ export function Traces() {
       let new_index = 0
       if (traces) new_index = Math.min(...traces.map(t => t.index))
       if (displayedIndices) new_index = Math.min(...displayedIndices)
-      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}`)
+      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
   }, [props.traceIndex, traces, displayedIndices])
   
@@ -419,7 +419,7 @@ function SearchBox(props) {
         <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
         <button className='search-submit' onClick={()=>{ props.searchNow() }}>
             {!props.searching && <BsSearch />}
-            {props.searching && <ClockLoader size={'15'} />}
+            {props.searching && <ClockLoader size={'15px'} />}
         </button>
     </div>
     </>
