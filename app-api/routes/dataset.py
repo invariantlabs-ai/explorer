@@ -208,8 +208,9 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
     with Session(db()) as session:
         by = {'User.username': username, 'name': dataset_name}
         dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
-        selected_traces = query_traces(session, dataset, query)
-        return [{'id': trace.id, 'address':'@'} for trace in selected_traces]
+        selected_traces, search_terms = query_traces(session, dataset, query, return_search_terms=True)
+        return [{'index': trace.index,
+                 'mapping': search_term_mappings(trace, search_terms)} for trace in selected_traces]
     
 @dataset.put("/byuser/{username}/{dataset_name}/s")
 async def save_query(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):

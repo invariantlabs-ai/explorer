@@ -204,7 +204,7 @@ def dataset_to_json(dataset, user=None, **kwargs):
         out["user"] = user_to_json(user)
     return out
  
-def query_traces(session, dataset, query, count=False):    
+def query_traces(session, dataset, query, count=False, return_search_terms=False):    
     grammar = r"""
     query: (term WS*)+ 
     term: filter_term | quoted_term | simple_term
@@ -231,12 +231,14 @@ def query_traces(session, dataset, query, count=False):
             self.filters.append((items[0].value, items[1].value, items[2].value))
 
     selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+    search_terms = []
     if query is not None and len(query.strip()) > 0:
         try:
             parser = Lark(grammar, parser='lalr', start='query')
             query_parse_tree = parser.parse(query)
             transformer = QueryTransformer()
             transformer.transform(query_parse_tree)
+            search_terms = transformer.search_terms
 
             #print(query, transformer.search_terms, transformer.filters)
             if len(transformer.search_terms) > 0: 
@@ -262,7 +264,30 @@ def query_traces(session, dataset, query, count=False):
         except Exception as e:
             print('Error in query', e) # we still want these searches to go through 
 
-    if count:
-        return selected_traces.count()
+    out = selected_traces.count() if count else selected_traces.all()
+    if return_search_terms:
+        return out, search_terms
     else:
-        return selected_traces.all()
+        return out
+    
+    
+def search_term_mappings(trace, search_terms):
+    mappings = dict()
+    def traverse(o, path=''):
+        if isinstance(o, dict):
+            for key in o.keys():
+                traverse(o[key], path=path+f'.{key}')
+        elif isinstance(o, list):
+            for i in range(len(o)):
+                traverse(o[i], path=path+f'.{i}')
+        else:
+            s = str(o)
+            for term in search_terms:
+                if term in s:
+                    start = s.index(term)
+                    end = start + len(term)
+                    mappings[f"{path}:{start}-{end}"] = term
+    content_object = json.loads(trace.content)
+    traverse(content_object, path='messages')
+    return mappings
+

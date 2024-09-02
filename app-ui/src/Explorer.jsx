@@ -159,9 +159,8 @@ export function Explorer(props) {
 
   // when elements change, load trace
   useEffect(() => {
-    const trace = activeTrace ? activeTrace.trace : null
-    if (trace) {
-      props.loadTrace(trace)
+    if (activeTrace) {
+      props.loadTrace(activeTrace)
     }
 
   }, [activeTrace])
@@ -213,7 +212,7 @@ export function Explorer(props) {
       <RenderedTrace
         trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
         // no highlights
-        annotations={AnnotatedJSON.from_mappings([])}
+        annotations={AnnotatedJSON.from_mappings(props.mappings || {})}
         onMount={(events) => setEvents(events)}
         decorator={decorator}
         prelude={<Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
