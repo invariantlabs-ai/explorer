@@ -28,7 +28,7 @@ function useDataset(username:string, datasetname: string): [DatasetData | null, 
   const [error, setError] = React.useState(null as string | null);
 
   React.useEffect(() => {
-    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`)
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
       .then(data => setDataset(data))
       .catch(e => {
         alert("Error loading dataset")
@@ -49,6 +49,7 @@ export interface Trace {
   user_id: string;
   // sometimes a trace already comes with the resolved user name (if joined server-side)
   user?: string;
+  fetched?: boolean;
 }
 
 function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
@@ -57,10 +58,10 @@ function useTraces(username: string, datasetname: string): [any | null, (traces:
   React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`).then(traces => {
-        setTraces(traces.sort((a, b) => a.id - b.id).map(t => {return {...t, name: '#'+t.index}}))
+        setTraces(traces.sort((a, b) => a.id - b.id).map(t => {return {...t, name: '#'+t.index, fetched: false}}))
     }).catch(e => alert("Error loading traces"))
   }
-
+  
   return [traces, setTraces, refresh]
 }
 
@@ -241,6 +242,7 @@ function useSearch() {
         searchTimeout.current = null
       }
     }, 50)
+    searchTimeout.current = st
   }
 
   const setSearchQuery = (value: string|null) => {
@@ -267,53 +269,55 @@ function useSearch() {
 export function Traces() {
   const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
   const navigate = useNavigate()
-  
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
   const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
   const [showShareModal, setShowShareModal] = React.useState(false)
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
-
-  let activeTrace = null;
-  if (traces && props.traceIndex !== null) {
-    console.log('setting trace' + traces[props.traceIndex])
-    activeTrace = traces[props.traceIndex]
-  }
-  const [sharingEnabled, setSharingEnabled] = useTraceShared(activeTrace?.id)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
   const userInfo = useUserInfo()
   const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
-
+  const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
+  
   useEffect(() => {
-    console.log('displayedIndices from Traces:', displayedIndices);
-  }, [displayedIndices]);
-
-  useEffect(() => {
-    // if trace ID is null, select first from 'elements'
-    if (props.traceIndex === null && traces && traces.length > 0) {
-      navigate(`/u/${props.username}/${props.datasetname}/t/0}`)
+    if (traces
+        && props.traceIndex !== null
+        && props.traceIndex !== undefined
+        && traces.map(t => t.index).includes(+props.traceIndex)
+        && (displayedIndices === null || displayedIndices.includes(+props.traceIndex))) {
+      setActiveTrace(traces[props.traceIndex])
+    } else if (!traces) {
+      setActiveTrace(null)
+    } else {
+      let new_index = 0
+      if (traces) new_index = Math.min(...traces.map(t => t.index))
+      if (displayedIndices) new_index = Math.min(...displayedIndices)
+      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}`)
     }
-  }, [props.traceIndex, traces])
+  }, [props.traceIndex, traces, displayedIndices])
+  
+  useEffect(() => {
+    // if we switch to a different active trace, update the active trace to fetch the messages
+    if (traces && activeTrace && !activeTrace.fetched) {
+      fetchTrace(activeTrace).then(change => {
+        if (!change.updated) return;
+        const t = change.trace;
+        if (!t) return;
+        console.log('updating trace', t.id, t.messages.length)
+        setTraces(traces => {
+          traces[t.index] = {...t, fetched: true, name: '#'+t.index} 
+          return traces
+        })
+        setActiveTrace(traces[t.index])
+      })
+    }
+  }, [traces, activeTrace])
 
- 
   // navigates to the given trace index and refreshes the list of traces
   const navigateToTrace = useCallback((traceIndex: number | null) => {
     navigate(`/u/${props.username}/${props.datasetname}/t/${traceIndex || ''}`)
     refresh()
   }, [props.username, props.datasetname])
-
-  const loadTrace = useCallback((trace: Trace) => {
-    console.log('loading trace', trace)
-    fetchTrace(trace).then(change => {
-      if (!change.updated) return;
-      
-      const t = change.trace;
-      if (!t) return;
-      setTraces(traces => {
-        traces[t.index] = {...t, name: '#' + t.index}
-        return traces
-      })
-    })
-  }, [setTraces])
 
   if (datasetLoadingError) {
     return <div className='empty'>
@@ -325,18 +329,17 @@ export function Traces() {
     </div>
   }
  
-  console.log('activeTrace', activeTrace)
   return <div className="panel fullscreen app">
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} />
     </Modal>}
-    {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{id: activeTrace?.id}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(props.traceId, traces))} />}
+    {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{id: activeTrace?.id}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
     <div className='sidebyside'>
     <Sidebar 
       traces={traces} 
       username={props.username}
       datasetname={props.datasetname} 
-      activeTraceIndex={props.traceIndex} 
+      activeTraceIndex={activeTrace?.index} 
       onRefresh={refresh}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -348,14 +351,14 @@ export function Traces() {
       activeTrace={ activeTrace }
       selectedTraceId={activeTrace?.id}
       mappings={highlightMappings[activeTrace.index]}
-      loadTrace={loadTrace} 
+      loadTrace={() => {}} 
       loading={!traces}
       header={
         <h1>
           <Link to='/'>/</Link>
           <Link to={`/u/${props.username}`}>{props.username}</Link>/
           <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
-          <Link to={`/u/${props.username}/${props.datasetname}/t/${props.traceIndex}`}><span className='traceid'>{props.traceIndex}</span></Link>
+          <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link>
         </h1>
       }
       queryId={"<queryId>"}
@@ -416,7 +419,7 @@ function SearchBox(props) {
         <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
         <button className='search-submit' onClick={()=>{ props.searchNow() }}>
             {!props.searching && <BsSearch />}
-            {props.searching && <ClockLoader size={'15'} margin={0} />}
+            {props.searching && <ClockLoader size={'15'} />}
         </button>
     </div>
     </>
@@ -429,7 +432,7 @@ function Sidebar(props) {
   const {username, datasetname, activeTraceId} = props
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
-  const [activeIndices, setActiveIndices] = React.useState<number>([]);
+  const [activeIndices, setActiveIndices] = React.useState<number[]>([]);
 
   useEffect(() => {
     if (displayedIndices) {
