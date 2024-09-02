@@ -34,21 +34,24 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     dataset = payload.get("dataset", None)
     metadata = payload.get("metadata")
 
-    # check messages
-    assert type(messages) == list, "messages must be a list of messages"
-    assert len(messages) > 0, "messages must not be empty"
-    assert all(type(msg) == list for msg in messages), "messages must be a list of traces"
+    try:
+        # check messages
+        assert type(messages) == list, "messages must be a list of messages"
+        assert len(messages) > 0, "messages must not be empty"
+        assert all(type(msg) == list for msg in messages), "messages must be a list of traces"
 
-    # check other properties
-    assert annotations is None or type(annotations) == list, "annotations must be a list of annotations"
-    assert dataset is None or type(dataset) == str, "dataset must be a string"
-    assert metadata is None or type(metadata) == list, "metadata must be a list of metadata"
-
-    # make sure if present that messages, annotations, and metadata are all the same length
-    if annotations is not None:
-        assert len(annotations) == len(messages), "annotations must be the same length as messages"
-    if metadata is not None:
-        assert len(metadata) == len(messages), "metadata must be the same length as messages"
+        # check other properties
+        assert annotations is None or type(annotations) == list, "annotations must be a list of annotations"
+        assert dataset is None or type(dataset) == str, "dataset must be a string"
+        assert metadata is None or type(metadata) == list, "metadata must be a list of metadata"
+        
+        # make sure if present that messages, annotations, and metadata are all the same length
+        if annotations is not None:
+            assert len(annotations) == len(messages), "annotations must be the same length as messages"
+        if metadata is not None:
+            assert len(metadata) == len(messages), "metadata must be the same length as messages"
+    except AssertionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # annotations are currently not supported
     if annotations is not None:
