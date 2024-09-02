@@ -86,17 +86,11 @@ function Pair(props) {
 }
 
 export function Metadata(props) {
-    let extra_metadata: any;
+    const extra_metadata = props.extra_metadata;
 
     
-    if (!props.extra_metadata) {
+    if (!extra_metadata) {
         return null;
-    }
-
-    try {
-        extra_metadata = JSON.parse(props.extra_metadata);
-    } catch (e) {
-        extra_metadata = { "extra_metadata": props.extra_metadata + " (failed to parsed)" }
     }
 
     return <div className='event metadata'>

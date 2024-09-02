@@ -11,10 +11,11 @@ import { DeleteDatasetModalContent } from './Datasets'
 import { Modal } from './Modal'
 
 
-interface Bucket {
+interface Query {
   id: string
   name: string
   count: number
+  query: string
 }
 
 interface DatasetData {
@@ -23,7 +24,7 @@ interface DatasetData {
   name: string
   is_public: boolean
   extra_metadata: string
-  buckets: Bucket[]
+  queries: Query[]
 }
 
 
@@ -60,26 +61,45 @@ function metadata(dataset) {
   }
 }
 
-function Bucket({dataset, id, name, count, active, icon, onSelect}: {dataset, id: string, name: string, count: number, active?: boolean, icon?: React.ReactNode, onSelect?: () => void}) {
+function Query({dataset, id, name, count, query, deletable, icon, onSelect, refresh}: {dataset, id: string, name: string, count: number, query: string, deletable: boolean, icon?: React.ReactNode, onSelect?: () => void, refresh: () => void}) {
   const iconMap: {[key: string]: React.ReactNode} = {
     'all': <BsCheckCircleFill/>,
     'annotated': <BsPencilFill style={{color: 'green'}}/>,
     'unannotated': <BsQuestionCircleFill style={{color: 'gold'}}/>,
   }
 
-  return <Link to={`/user/${dataset.user.username}/dataset/${dataset.name}/${id}`}>
-    <div className={'bucket ' + (active ? 'active' : '')}>
-      <div className='icon'>{icon || iconMap[id] || null}</div>
-      <div className='count'>{count}</div>
-      <div className='name'>{name}</div>
+  const deleteQuery = (e) => {
+    if (deletable) {
+      fetch(`/api/v1/dataset/query/${id}`, {
+        'method': 'DELETE',
+      }).then(() => {
+        alert('query delete')
+        refresh()
+      }).catch((error) => {
+        alert('Failed to delete query: ' + error)
+      })
+    }
+    e.preventDefault()
+  }
+  
+  return <>
+
+    <div className={'query'}>
+      <Link to={`/u/${dataset.user.username}/${dataset.name}/t` + (query ? '?query='+query : '')}>
+          <div className='icon'>{icon || iconMap[id] || null}</div>
+          <div className='count'>{count}</div>
+          <div className='name'>{name}</div>
+      </Link>
+    {deletable &&
+      <button onClick={deleteQuery}><BsTrash/></button>
+    }
     </div>
-  </Link>
+  </>
 }
 
 function DatasetView() {
   const props: any = useLoaderData()
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.username, props.datasetname)
-  const [activeBucket, setActiveBucket] = React.useState(null as string | null)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
   const [downloadState, setDownloadState] = React.useState('ready')
   
@@ -133,7 +153,7 @@ function DatasetView() {
   return <div className="panel entity-list">
     <header>
       <h1>
-        <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/user/' + dataset.user.username) }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
+        <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/u/' + dataset.user.username) }>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
         {dataset.is_public && <span className='badge'>Public</span>}
       </h1>
     </header>
@@ -143,9 +163,9 @@ function DatasetView() {
     </Modal>}
     <Metadata extra_metadata={dataset?.extra_metadata}/>
     <h2>Traces</h2>
-    <div className='bucket-list'>
-      {dataset.buckets.map(bucket => {
-        return <Bucket dataset={dataset} {...bucket} active={bucket.id == activeBucket} key={bucket.name} onSelect={() => setActiveBucket(bucket.id)}/>
+    <div className='query-list'>
+      {dataset.queries.map(query => {
+        return <Query dataset={dataset} {...query} key={query.name} refresh={() => {datasetLoader.refresh()}}/>
       })}
     </div>
     <h2>Other Actions</h2>

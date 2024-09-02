@@ -1,9 +1,11 @@
 import json
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from fastapi import HTTPException
-from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks
+from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks, SavedQueries
 from util.util import get_gravatar_hash, split
+from lark import Lark, Transformer
+from sqlalchemy.sql import func
 
 def message_load(content, tokenize=True):
     """
@@ -95,28 +97,48 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
         return dataset
 
 # returns the collections of a dataset
-def get_collections(session, dataset: Dataset, num_traces: int):
+def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
     # get number of traces with at least one annotation
-    num_annotated = session.query(Trace).filter(Trace.dataset_id == dataset.id)\
-        .join(Annotation, Trace.id == Annotation.trace_id).count()
-    
-    return [
+    num_annotated = query_traces(session, dataset, "is:annotated", count=True)
+    queries = [
         {
             "id": "all",
             "name": "All",
-            "count": num_traces
+            "count": num_traces,
+            "query": None,
+            "deletable": False
         },
         {
             "id": "annotated",
             "name": "Annotated",
-            "count": num_annotated
+            "count": num_annotated,
+            "query": 'is:annotated',
+            "deletable": False
         },
         {
             "id": "unannotated",
             "name": "Unannotated",
-            "count": num_traces - num_annotated
+            "count": num_traces - num_annotated,
+            "query": 'not:annotated',
+            "deletable": False
         }
     ]
+   
+    savedqueries = session.query(SavedQueries).filter(SavedQueries.user_id == user_id).filter(SavedQueries.dataset_id == dataset.id).all() 
+    for query in savedqueries:
+        count = query_traces(session, dataset, query.query, count=True)
+        queries.append(
+             {
+                "id": query.id,
+                "name": query.name,
+                "count": count,
+                "query": query.query ,
+                "deletable": True
+            }
+        )
+    
+    return queries 
+    
 
 def has_link_sharing(session, trace_id):
     try:
@@ -182,4 +204,90 @@ def dataset_to_json(dataset, user=None, **kwargs):
         out["user"] = user_to_json(user)
     return out
  
+def query_traces(session, dataset, query, count=False, return_search_terms=False):    
+    grammar = r"""
+    query: (term WS*)+ 
+    term: filter_term | quoted_term | simple_term
+    filter_term: WORD OP WORD
+    quoted_term: "\"" /[^\"]+/ "\""
+    simple_term: WORD
+    OP: ":" | "==" | ">" | "<" | "<=" | ">="
+    WS: /\s/
+    WORD: /[^\s><=\:]+/
+    """
+    class QueryTransformer(Transformer): 
+        def __init__(self):
+            super().__init__()
+            self.search_terms = []
+            self.filters = []  
+        
+        def simple_term(self, items):
+            self.search_terms.append(items[0].value)
+        
+        def quoted_term(self, items):
+            self.search_terms.append(" ".join(map(lambda x: x.value, items)))
+            
+        def filter_term(self, items):
+            self.filters.append((items[0].value, items[1].value, items[2].value))
+
+    selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+    search_terms = []
+    if query is not None and len(query.strip()) > 0:
+        try:
+            parser = Lark(grammar, parser='lalr', start='query')
+            query_parse_tree = parser.parse(query)
+            transformer = QueryTransformer()
+            transformer.transform(query_parse_tree)
+            search_terms = transformer.search_terms
+
+            #print(query, transformer.search_terms, transformer.filters)
+            if len(transformer.search_terms) > 0: 
+                selected_traces = selected_traces.filter(or_(Trace.content.contains(term) for term in transformer.search_terms))
+            for filter in transformer.filters:
+                if filter[0] == 'is' and filter[1] == ':' and filter[2] == 'annotated':
+                    selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
+                elif filter[0] == 'not' and filter[1] == ':' and filter[2] == 'annotated':
+                    selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
+                elif filter[1] in ['>', '<', '>=', '<=', '=='] and (filter[0] == 'num_messages' or filter[2] == 'num_messages'):
+                    assert ((filter[0] == 'num_messages' and int(filter[2]) >= 0) or
+                            (filter[2] == 'num_messages' and int(filter[1]) >= 0))
+                    op = filter[1]
+                    if filter[2] == 'num_messages':
+                        comp = int(filter[1])
+                        op = {'>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '=='}[op]
+                    else:
+                        comp = int(filter[2])
+                    criteria = eval(f"Trace.extra_metadata['num_messages'].as_integer() {op} {comp}")
+                    selected_traces = selected_traces.filter(criteria)
+                else:
+                    raise Exception("Invalid filter")
+        except Exception as e:
+            print('Error in query', e) # we still want these searches to go through 
+
+    out = selected_traces.count() if count else selected_traces.all()
+    if return_search_terms:
+        return out, search_terms
+    else:
+        return out
     
+    
+def search_term_mappings(trace, search_terms):
+    mappings = dict()
+    def traverse(o, path=''):
+        if isinstance(o, dict):
+            for key in o.keys():
+                traverse(o[key], path=path+f'.{key}')
+        elif isinstance(o, list):
+            for i in range(len(o)):
+                traverse(o[i], path=path+f'.{i}')
+        else:
+            s = str(o)
+            for term in search_terms:
+                if term in s:
+                    start = s.index(term)
+                    end = start + len(term)
+                    mappings[f"{path}:{start}-{end}"] = term
+    content_object = json.loads(trace.content)
+    traverse(content_object, path='messages')
+    return mappings
+

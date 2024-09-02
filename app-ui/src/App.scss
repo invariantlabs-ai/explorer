@@ -803,7 +803,7 @@ div.empty {
   }
 }
 
-.bucket-list {
+.query-list {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -811,12 +811,7 @@ div.empty {
   margin-left: -5pt;
   margin-right: -5pt;
 
-  >a {
-    text-decoration: none;
-    color: $text-color;
-  }
-
-  .bucket {
+  .query {
     width: 100pt;
     min-height: 40pt;
     background-color: white;
@@ -825,6 +820,26 @@ div.empty {
     padding: 10pt;
     transition: background-color 0.1s;
     border: 1pt solid $border-color;
+
+    >a {
+      text-decoration: none;
+      color: $text-color;
+    }
+    
+    button {
+      margin-top: -50pt;
+      width: 30pt;
+      padding: 0pt;
+      text-align: center;
+      height: auto;
+      float: right;
+      display: flexbox;
+      justify-content: center;
+      * {
+        padding: 0pt;
+        margin: 0pt;
+      }
+    }
 
     .name {
       font-weight: 700;
@@ -1038,6 +1053,17 @@ button.primary .shortcut {
       padding-top: 2pt;
       position: relative;
       border-bottom: 1pt solid $border-color;
+      flex-wrap: wrap;
+      height:auto;
+      
+      .header-short {
+        flex: 0 1 10%;
+      }
+      
+      .header-long {
+        flex: 1 1 70%;
+      }
+
 
       h1 {
         font-size: 12pt;
@@ -1396,4 +1422,66 @@ table.api-keys {
       opacity: 0.0;
     }
   }
+}
+
+.search {
+  flex: 1 1 60%;
+  display: flex;
+  flex-direction: row;
+  font-size:0; /* whitespace remover */
+  margin: 5pt;
+  overflow: hidden;
+  border: 2pt solid #ccc;
+  border-radius: 10pt;
+  
+  & > * {
+      display: inline-block;
+      background-color: white;
+      color: black;
+      border: 0px;
+      height: 50px;
+      border-radius: 0;
+      position: relative;
+  }
+  
+  .search-select-dropdown {
+      position: absolute;
+      top: 50px;
+      left: 5px;
+      width: calc(100% - 10px);
+      border: 2pt solid #ccc;
+      height: auto;
+      z-index: 1;
+      display: none;
+      
+      ul {
+          flex: 1;
+          li {
+              font-size: 10pt;
+              height: 20px;
+          }
+      }
+  }
+  
+  .search-select-dropdown-show {
+      display: flex;
+      flex-direction: column;
+  }
+  
+  .search-text {
+      flex: 8;
+  }
+  .search-submit, .search-select {
+      flex: 1;
+      padding: 0;
+      margin: 0;
+  }
+
+  .search-select:active,
+  .search-select:hover,
+  .search-submit:active,
+  .search-submit:hover {
+      background-color: white;
+  }
+  
 }

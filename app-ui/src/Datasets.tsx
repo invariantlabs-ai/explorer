@@ -140,7 +140,7 @@ export function DatasetLinkList(props) {
   return <>
     <EntityList title={null} actions={null} className={props.className}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
-      {datasets.map((dataset, i) => <Link className='item' to={`/user/${dataset.user.username}/dataset/${dataset.name}`} key={i}><li>
+      {datasets.map((dataset, i) => <Link className='item' to={`/u/${dataset.user.username}/${dataset.name}`} key={i}><li>
         <h3>{props.icon}{dataset.user.username}/{dataset.name}</h3>
       </li></Link>)}
     </EntityList>
