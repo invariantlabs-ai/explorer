@@ -80,7 +80,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         for i, msg in enumerate(messages):
             message_content = json.dumps(msg)
-            message_metadata = json.dumps(metadata[i])
+            message_metadata = metadata[i]
 
             trace = Trace(
                 id=uuid.uuid4(),

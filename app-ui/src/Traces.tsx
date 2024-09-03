@@ -278,6 +278,7 @@ export function Traces() {
     console.log('setting trace' + traces[props.traceIndex])
     activeTrace = traces[props.traceIndex]
   }
+
   const [sharingEnabled, setSharingEnabled] = useTraceShared(activeTrace?.id)
   const userInfo = useUserInfo()
   const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
@@ -348,7 +349,7 @@ export function Traces() {
       activeTrace={ activeTrace }
       selectedTraceId={activeTrace?.id}
       mappings={highlightMappings[activeTrace.index]}
-      loadTrace={loadTrace} 
+      loadTrace={loadTrace}
       loading={!traces}
       header={
         <h1>

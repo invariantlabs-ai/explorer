@@ -108,8 +108,10 @@ function useAppStatePath(path) {
   // traverse object to follow path
   segments = segments.slice(2)
 
+  let _localCopy = localCopy
+
   while (segments.length > 2) {
-    localCopy = localCopy[segments.shift()]
+    _localCopy = _localCopy[segments.shift()]
   }
 
   const setValue = (value) => {
@@ -138,7 +140,7 @@ function useAppStatePath(path) {
     }
   }, [])
 
-  return [localCopy, setValue]
+  return [_localCopy, setValue]
 }
 
 export function Explorer(props) {
