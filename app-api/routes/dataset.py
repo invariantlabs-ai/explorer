@@ -70,7 +70,7 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
             user_id=user_id,
             name=name,
             path=path,
-            extra_metadata=json.dumps(metadata)
+            extra_metadata=metadata
         )
         session.add(dataset)
         
@@ -97,13 +97,13 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
                         user_id=user_id,
                         dataset_id=dataset.id,
                         content=json.dumps(object),
-                        extra_metadata=json.dumps(trace_metadata)
+                        extra_metadata=trace_metadata
                     )
                     session.add(trace)
         
         print("metadata", metadata, flush=True)
 
-        dataset.extra_metadata = json.dumps(metadata)
+        dataset.extra_metadata = metadata
 
         session.commit()
         return dataset_to_json(dataset)
