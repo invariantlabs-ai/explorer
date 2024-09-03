@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import uuid
 
 from routes.apikeys import APIIdentity
-from models.datasets_and_traces import db, Trace
+from models.datasets_and_traces import db, Trace, Annotation
 from models.queries import load_trace, load_dataset
 
 from typing import Annotated
@@ -53,10 +53,6 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     except AssertionError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # annotations are currently not supported
-    if annotations is not None:
-        raise HTTPException(status_code=400, detail="annotations are not supported yet")
-
     # make sure metadata is a list of dictionaries
     metadata = [md if md is not None else {} for md in metadata] if metadata else [{} for _ in messages]
     # mark API key id that was used to upload the trace
@@ -93,6 +89,18 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
             session.add(trace)
             result_ids.append(str(trace.id))
+
+        session.commit()
+
+        if annotations is not None:
+            for i, trace_annotations in enumerate(annotations):
+                for ann in trace_annotations:
+                    session.add(Annotation(
+                        trace_id=result_ids[i],
+                        user_id=userid,
+                        content=ann["content"],
+                        address=ann["address"],
+                    ))
         
         session.commit()
         
