@@ -284,9 +284,14 @@ def search_term_mappings(trace, search_terms):
             s = str(o)
             for term in search_terms:
                 if term in s:
-                    start = s.index(term)
-                    end = start + len(term)
-                    mappings[f"{path}:{start}-{end}"] = term
+                    begin = 0
+                    while True:
+                        start = s.find(term, begin)
+                        if start == -1:
+                            break
+                        end = start + len(term)
+                        mappings[f"{path}:{start}-{end}"] = term
+                        begin = end
     content_object = json.loads(trace.content)
     traverse(content_object, path='messages')
     return mappings
