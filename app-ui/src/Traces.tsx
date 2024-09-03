@@ -352,11 +352,7 @@ export function Traces() {
       activeTrace={ activeTrace }
       selectedTraceId={activeTrace?.id}
       mappings={highlightMappings[activeTrace.index]}
-<<<<<<< HEAD
-      loadTrace={loadTrace}
-=======
       loadTrace={() => {}} 
->>>>>>> 895c87a19151c7a8ff2f362fa780710bcc01b48d
       loading={!traces}
       header={
         <h1>
