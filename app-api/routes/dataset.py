@@ -311,17 +311,21 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
 
 @dataset.get("/byid/{id}/traces")
 def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    #if bucket == 'full':
-    #    return get_all_traces({'id': id}, userinfo)
     return get_traces(request, {'id': id}, userinfo)
+
+@dataset.get("/byid/{id}/full")
+def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    return get_all_traces({'id': id}, userinfo)
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    #if bucket == 'full':
-    #    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
-    # TODO support full again
-
     return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo)
+
+@dataset.get("/byuser/{username}/{dataset_name}/full")
+def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
+
+
 
 ########################################
 # get the full dataset with all traces and annotations

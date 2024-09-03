@@ -200,8 +200,8 @@ function DatasetView() {
         Download a copy of the dataset.
       </div>
       <button className='primary' onClick={() => onDownloadDataset()}>
-        <BsDownload/> Download
-        {downloadState === 'waiting' && <BsMoonStarsFill/>}
+        {downloadState !== 'waiting' && <><BsDownload/> Download</>}
+        {downloadState === 'waiting' && <><BsMoonStarsFill/> Preparing...</>}
       </button>
     </div>
   </div>
