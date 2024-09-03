@@ -49,6 +49,12 @@ For local development, you can run the following command:
 ./dev up
 ```
 
+If the dependencies of the server changed, you will need to rebuild the images before starting the development server:
+
+```bash
+./dev build
+```
+
 This serves a local traefik instance that routes to the frontend and backend services, both accessible at `https://localhost` (https, to resolve the SSL warnings, see below).
 
 > The local setup always uses an authenticated mock user that is automatically logged in.
