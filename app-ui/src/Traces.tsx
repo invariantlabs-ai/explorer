@@ -277,6 +277,7 @@ export function Traces() {
   const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
   const [showShareModal, setShowShareModal] = React.useState(false)
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
+  
   const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
   const userInfo = useUserInfo()
   const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
@@ -549,7 +550,7 @@ export function SingleTrace() {
     header = snippetData.isSnippet ? 
       <h1><Link to={`/u/${snippetData.user}`}>{snippetData.user}</Link> <span className='traceid'># {props.traceId}</span><Time className='time'>{trace?.time_created || ''}</Time>
       </h1> :
-      <h1>{dataset ? <Link to={`/dataset/${trace?.dataset}`}>{dataset.name}</Link> : ""}/<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
+      <h1>{dataset ? <><Link to={`/user/${trace?.user}`}>{trace?.user} / </Link><Link to={`/user/${trace?.user}/dataset/${dataset.name}`}>{dataset.name}</Link></> : ""}<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
 
   return <div className="panel fullscreen app">
