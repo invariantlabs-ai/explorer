@@ -201,13 +201,17 @@ function useSearch() {
           mappings[d.index] = d.mapping
         })
         query.status = 'completed'
+        console.log('completed', query, searchQueue.current)
         // check that this is still the newest query to complete
         if (searchQueue.current.filter(q => q.status === 'completed' && q.date > query.date).length === 0)
         {
+          console.log('setting result for', query)
           setDisplayedIndices(new_displayed_indices)
           setHighlightMappings(mappings)
           // remove all queries that are older than this
-          searchQueue.current = searchQueue.current.filter(q => q.date > query.date)
+          searchQueue.current = searchQueue.current.filter(q => q.date >= query.date)
+        } else {
+          console.log('discarding result for', query)
         }
         return data
       })
