@@ -49,16 +49,20 @@ export interface Trace {
   user_id: string;
   // sometimes a trace already comes with the resolved user name (if joined server-side)
   user?: string;
+  // true if additional data has already been fetched for this trace
   fetched?: boolean;
 }
 
 function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
-  const [traces, setTraces] = React.useState(null)
+  const [traces, setTraces] = React.useState<(Trace|null)[] | null>(null)
 
   React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`).then(traces => {
-        setTraces(traces.sort((a, b) => a.id - b.id).map(t => {return {...t, name: '#'+t.index, fetched: false}}))
+        const n = Math.max(...traces.map(t => t.index))
+        const traceList = Array.from({ length: n }, (v, i) => null) as (Trace|null)[];
+        traces.forEach(t => {traceList[t.index] = {...t, name: '#'+t.index, fetched: false}})
+        setTraces(traceList)
     }).catch(e => alert("Error loading traces"))
   }
   
@@ -288,14 +292,14 @@ export function Traces() {
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.map(t => t.index).includes(+props.traceIndex)
+        && traces.filter(t => t !== null).map(t => t.index).includes(+props.traceIndex)
         && (displayedIndices === null || displayedIndices.includes(+props.traceIndex))) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
       setActiveTrace(null)
     } else {
       let new_index = 0
-      if (traces) new_index = Math.min(...traces.map(t => t.index))
+      if (traces) new_index = Math.min(...traces.map(t => t != null).map(t => t.index))
       if (displayedIndices) new_index = Math.min(...displayedIndices)
       navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
@@ -448,7 +452,7 @@ function Sidebar(props) {
     if (displayedIndices) {
       setActiveIndices(displayedIndices.sort((a, b) => a - b))
     } else {
-      setActiveIndices(props.traces.map((_, i) => i).sort((a, b) => a - b))
+      setActiveIndices(props.traces.filter(t => t !== null).map((t, i) => t.index).sort((a, b) => a - b))
     }
   }, [displayedIndices, props.traces])
 

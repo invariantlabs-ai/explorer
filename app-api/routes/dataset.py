@@ -76,7 +76,8 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
         
         # load jsonl file
         with open(path, "r") as f:
-            for i, line in enumerate(f):
+            i = 0
+            for line in f:
                 object = json.loads(line)
                 if i == 0 and type(object) is dict and "metadata" in object.keys():
                     metadata = {**metadata, **object["metadata"]}
@@ -100,6 +101,7 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
                         extra_metadata=trace_metadata
                     )
                     session.add(trace)
+                    i = i + 1
         
         print("metadata", metadata, flush=True)
 
