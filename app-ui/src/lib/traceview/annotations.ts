@@ -137,7 +137,18 @@ export class AnnotatedJSON {
     in_text(object_string: string): Annotation[] {
         // extract source map pointers
         try {
-            const map = jsonMap.parse(object_string)
+            let map = null as any
+            try {
+                // try to parse source map
+                map = jsonMap.parse(object_string)
+            } catch (e) {
+                // if parsing fails, assume it's a string and try again
+                map = {
+                    pointers: {
+                        "": { value: { pos: 0 }, valueEnd: { pos: object_string.length } }
+                    }
+                }
+            }
 
             const pointers: { start: number, end: number, content: string }[] = []
             for (const key in map.pointers) {
