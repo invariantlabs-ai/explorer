@@ -7,32 +7,6 @@ from util.util import get_gravatar_hash, split
 from lark import Lark, Transformer
 from sqlalchemy.sql import func
 
-def message_load(content, tokenize=True):
-    """
-    Loads the messages of a trace and chunks all string leaves into {"token": "string", "address": "address"} objects,
-    that can be used as annotation anchors.
-    """
-    try:
-        messages = json.loads(content)
-        messages = [translate_leaves_to_annotation_anchors(message, prefix=f"message[{i}]") for i, message in enumerate(messages)] if tokenize else messages
-        return messages
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"role": "system", "content": "failed to load message data"}
-    
-def translate_leaves_to_annotation_anchors(object, prefix=""):
-    if type(object) is dict:
-        return {k: translate_leaves_to_annotation_anchors(v, prefix + "." + k) if k != 'role' else v for k, v in object.items()}
-    if type(object) is list:
-        return [translate_leaves_to_annotation_anchors(v, prefix + "[" + str(i) + "]") for i, v in enumerate(object)]
-    if type(object) is str:
-        if prefix.endswith(".content") or prefix.endswith(".function.name") or ".function.arguments" in prefix:
-            # split by ' ' or '\n' and create a list of tokens
-            return [{"token": token, "address": prefix + "." + str(i)} for i, token in enumerate(split(object, r"[\n]+"))]
-    return object
-
-
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Trace, User)
     if return_user:
@@ -156,11 +130,11 @@ def save_user(session, userinfo):
                                       set_={k:user[k] for k in user if k != 'id'})
     session.execute(stmt)
 
-def trace_to_json(trace, annotations=None, tokenize=True, user=None):
+def trace_to_json(trace, annotations=None, user=None):
     out = {
         "id": trace.id,
         "index": trace.index,
-        "messages": message_load(trace.content, tokenize=tokenize),
+        "messages": json.loads(trace.content),
         "dataset": trace.dataset_id,
         "user_id": trace.user_id,
         **({"user": user} if user is not None else {}),

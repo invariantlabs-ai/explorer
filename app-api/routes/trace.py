@@ -24,7 +24,7 @@ def get_trace_snippets(request: Request, userinfo: Annotated[dict, Depends(Authe
     # gets a users trace snippets (traces without a dataset)
     with Session(db()) as session:
         traces = session.query(Trace).filter(Trace.user_id == user_id, Trace.dataset_id == None).order_by(Trace.time_created.desc()).limit(limit).all()
-        return [trace_to_json(t, tokenize=False) for t in traces]
+        return [trace_to_json(t) for t in traces]
 
 @trace.delete("/{id}")
 def delete_trace(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
@@ -52,7 +52,7 @@ def get_trace(request: Request, id: str, annotated:bool=False, userinfo: Annotat
     
     with Session(db()) as session:
         trace, user = load_trace(session, id, user_id, allow_public=True, allow_shared=True, return_user=True)
-        return trace_to_json(trace, load_annoations(session, id), user=user.username, tokenize=False)
+        return trace_to_json(trace, load_annoations(session, id), user=user.username)
         
 @trace.get("/{id}/shared")
 def get_trace_sharing(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
