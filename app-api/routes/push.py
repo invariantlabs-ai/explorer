@@ -1,22 +1,25 @@
 """
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
-
-from fastapi import FastAPI
-from sqlalchemy.orm import Session
+import json
+import logging
 import uuid
 
+from invariant.runtime.input import Input
+from fastapi import FastAPI
+from sqlalchemy.orm import Session
 from routes.apikeys import APIIdentity
 from models.datasets_and_traces import db, Trace, Annotation
 from models.queries import load_trace, load_dataset
-
 from typing import Annotated
 from fastapi import Request, Depends
 from fastapi.exceptions import HTTPException
 
-import json
+from util.validation import validate_annotation, validate_trace
+
 
 push = FastAPI()
+logger = logging.getLogger(__name__)
 
 """
 Write only API endpoint to push traces to the server.
@@ -58,6 +61,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     # mark API key id that was used to upload the trace
     for md in metadata: md["uploader"] = "Via API " + str(userinfo.get("apikey"))
 
+    traces = []
     with Session(db()) as session:
         next_index = 0
         dataset_id = None
@@ -86,7 +90,12 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 content=message_content,
                 extra_metadata=message_metadata
             )
-
+            try:
+                validate_trace(trace)
+            except Exception as e:
+                # TODO: For now we just warn instead of throwing an error
+                logger.warning(f"Error validating trace {i}: {str(e)}")
+            traces.append(trace)
             session.add(trace)
             result_ids.append(str(trace.id))
 
@@ -95,12 +104,18 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         if annotations is not None:
             for i, trace_annotations in enumerate(annotations):
                 for ann in trace_annotations:
-                    session.add(Annotation(
+                    new_annotation = Annotation(
                         trace_id=result_ids[i],
                         user_id=userid,
                         content=ann["content"],
                         address=ann["address"],
-                    ))
+                    )
+                    try:
+                        validate_annotation(new_annotation, traces[i])
+                    except Exception as e:
+                        # TODO: For now we just warn instead of throwing an error
+                        logger.warning(f"Error validating annotation {i}: {str(e)}")
+                    session.add(new_annotation)
         
         session.commit()
         

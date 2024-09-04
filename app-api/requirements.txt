@@ -9,3 +9,4 @@ python-multipart
 fastapi-keycloak-middleware
 prometheus-fastapi-instrumentator
 lark
+git+https://github.com/invariantlabs-ai/invariant.git
