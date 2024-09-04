@@ -20,13 +20,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.execute("""
+                CREATE OR REPLACE FUNCTION to_json(str text) RETURNS json LANGUAGE PLPGSQL
+                AS $$
+                DECLARE
+                    j json;
+                BEGIN
+                    j := str::json;
+                    return j;
+                EXCEPTION WHEN OTHERS THEN return ('{old_data: }'||str)::json;
+                END
+                $$;
+               """)
+
+    op.execute("""
     UPDATE traces
-    SET extra_metadata=cast(replace(substr(extra_metadata::text, 2, length(extra_metadata::text) - 2), '\"', '"' ) AS json)
+    SET extra_metadata=to_json(replace(substr(extra_metadata::text, 2, length(extra_metadata::text) - 2), '\"', '"' ))
     WHERE extra_metadata::text LIKE '"%"'
     """)
     op.execute("""
     UPDATE datasets
-    SET extra_metadata=cast(replace(substr(extra_metadata::text, 2, length(extra_metadata::text) - 2), '\"', '"' ) AS json)
+    SET extra_metadata=to_json(replace(substr(extra_metadata::text, 2, length(extra_metadata::text) - 2), '\"', '"' ))
     WHERE extra_metadata::text LIKE '"%"'
     """)
 
