@@ -299,7 +299,7 @@ export function Traces() {
       setActiveTrace(null)
     } else {
       let new_index = 0
-      if (traces) new_index = Math.min(...traces.map(t => t != null).map(t => t.index))
+      if (traces) new_index = Math.min(...traces.filter(t => t !== null).map(t => t.index))
       if (displayedIndices) new_index = Math.min(...displayedIndices)
       navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
