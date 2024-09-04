@@ -97,6 +97,7 @@ class Annotation(Base):
     address = mapped_column(String, nullable=False)
     # timestamp of the creation of the comment
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
+    extra_metadata = mapped_column(JSON, nullable=True)
 
 # simple table to capture all shared trace IDs
 class SharedLinks(Base):
