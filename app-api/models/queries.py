@@ -178,12 +178,11 @@ def dataset_to_json(dataset, user=None, **kwargs):
         out["user"] = user_to_json(user)
     return out
  
-def query_traces(session, dataset, query, count=False, return_search_terms=False):    
+def query_traces(session, dataset, query, count=False, return_search_term=False):    
     grammar = r"""
-    query: (term WS*)+ 
-    term: filter_term | quoted_term | simple_term
+    query: (filter_term WS+)* search?
+    search: (simple_term WS*)+
     filter_term: WORD OP WORD
-    quoted_term: "\"" /[^\"]+/ "\""
     simple_term: WORD
     OP: ":" | "==" | ">" | "<" | "<=" | ">="
     WS: /\s/
@@ -198,25 +197,21 @@ def query_traces(session, dataset, query, count=False, return_search_terms=False
         def simple_term(self, items):
             self.search_terms.append(items[0].value)
         
-        def quoted_term(self, items):
-            self.search_terms.append(" ".join(map(lambda x: x.value, items)))
-            
         def filter_term(self, items):
             self.filters.append((items[0].value, items[1].value, items[2].value))
 
     selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
-    search_terms = []
+    search_term = None
     if query is not None and len(query.strip()) > 0:
         try:
             parser = Lark(grammar, parser='lalr', start='query')
             query_parse_tree = parser.parse(query)
             transformer = QueryTransformer()
             transformer.transform(query_parse_tree)
-            search_terms = transformer.search_terms
 
-            #print(query, transformer.search_terms, transformer.filters)
-            if len(transformer.search_terms) > 0: 
-                selected_traces = selected_traces.filter(or_(Trace.content.contains(term) for term in transformer.search_terms))
+            if len(transformer.search_terms) > 0:
+                search_term = " ".join(transformer.search_terms)
+                selected_traces = selected_traces.filter(func.lower(Trace.content).contains(search_term.lower()))
             for filter in transformer.filters:
                 if filter[0] == 'is' and filter[1] == ':' and filter[2] == 'annotated':
                     selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
@@ -239,8 +234,8 @@ def query_traces(session, dataset, query, count=False, return_search_terms=False
             print('Error in query', e) # we still want these searches to go through 
 
     out = selected_traces.count() if count else selected_traces.all()
-    if return_search_terms:
-        return out, search_terms
+    if return_search_term:
+        return out, search_term
     else:
         return out
     
@@ -255,8 +250,9 @@ def search_term_mappings(trace, search_terms):
             for i in range(len(o)):
                 traverse(o[i], path=path+f'.{i}')
         else:
-            s = str(o)
+            s = str(o).lower()
             for term in search_terms:
+                term = term.lower()
                 if term in s:
                     begin = 0
                     while True:
