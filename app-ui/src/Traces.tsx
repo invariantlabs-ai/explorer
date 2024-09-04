@@ -479,7 +479,7 @@ function Sidebar(props) {
         <button className='header-short toggle icon' onClick={onSave}><BsSave/></button>
       }
       <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
-      {props.traces && <h1 className='header-long'>{(props.traces.length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.length + " Traces"}</h1>}
+      {props.traces && <h1 className='header-long'>{(props.traces.filter(t => t !== null).length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.filter(t => t != null).length + " Traces"}</h1>}
       {!props.traces && <h1 className='header-long'>Loading...</h1>}
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
