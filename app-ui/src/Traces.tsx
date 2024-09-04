@@ -440,7 +440,6 @@ function Sidebar(props) {
   const [activeIndices, setActiveIndices] = React.useState<number[]>([]);
 
   useEffect(() => {
-    // TODO: is this a good fix here
     if (!props.traces) {
       setActiveIndices([])
       return;
