@@ -12,8 +12,8 @@ services:
       # Defines the path to the configuration file with the certificates list.
       - --providers.file.filename=/root/.config/ssl.toml
       # Define Traefik entry points to port [80] for http and port [443] for https.
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.address=0.0.0.0:80
+      - --entrypoints.websecure.address=0.0.0.0:443
     networks:
       # Define the network on which traefik is going to operate.
       - web
@@ -69,7 +69,7 @@ services:
         target: /srv/app/routes/auth.py
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-api.rule=Host(`${PLATFORM_URL}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.$APP_NAME-api.rule=${PLATFORM_API_HOST}"
       - "traefik.http.routers.$APP_NAME-api.entrypoints=websecure"
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=web"
@@ -117,7 +117,7 @@ services:
       - APP_NAME=${APP_NAME}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${PLATFORM_URL}`)"
+      - "traefik.http.routers.$APP_NAME-ui.rule=${PLATFORM_HOST}"
       - "traefik.http.routers.$APP_NAME-ui.entrypoints=websecure"
       - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
       - "traefik.http.routers.$APP_NAME-ui.tls=true"
