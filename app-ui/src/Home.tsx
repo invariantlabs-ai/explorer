@@ -44,7 +44,7 @@ function Home() {
   
   return <>
     {/* upload modal */}
-    {showUploadModal && <Modal title="Upload Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
+    {showUploadModal && <Modal title="Create Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
       <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh}/>
     </Modal>}
     <h2 className='home'>Home</h2>

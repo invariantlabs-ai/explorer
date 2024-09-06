@@ -7,6 +7,32 @@ import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 
 
+function createDataset(name: string) {
+  const promise = new Promise((resolve, reject) => {
+
+    fetch('/api/v1/dataset/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        "name": name
+      })
+    }).then(response => {
+      if (response.ok) {
+        resolve({success: true})
+      } else {
+        response.json().then(data => {
+          reject(data)
+        }).catch(() => {
+          reject({"error": "Unknown error"})
+        })
+      }
+    }).catch(() => {
+      reject({"error": "Network error"})
+    })
+  })
+  
+  return promise
+}
+
 function uploadDataset(name: string, file: File) {
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData()
@@ -42,7 +68,16 @@ export function UploadDatasetModalContent(props) {
   const [error, setError] = React.useState('')
 
   const onSubmit = () => {
-    if (!name || !file) return
+    if (!name) return
+    if (!file) {
+      createDataset(name).then(() => {
+        props.onSuccess()
+        props.onClose()
+      }).catch(err => {
+        setError(err.detail || 'An unknown error occurred, please try again.')
+      })
+      return
+    }
     setLoading(true)
     uploadDataset(name, file).then(() => {
       // on success, close the modal
@@ -69,16 +104,16 @@ export function UploadDatasetModalContent(props) {
   }, [file])
   
   return <div className='form'>
-    <h2>Upload a new trace dataset to start using the Invariant Explorer.</h2>
+    <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
     <label>Name</label>
     <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dataset Name"/>
-    <label>File</label>
+    <label>File (optional)</label>
     <FileUploadMask file={file}/>
     <input type="file" onChange={e => setFile(e.target.files?.[0] || null)}/>
     <span className='description'>Before uploading a dataset, make sure it is in the correct format, as expected by the Invariant analysis engine.</span>
     <br/>
-    <button className='primary' disabled={!name || !file || loading} onClick={onSubmit}>
-      {loading ? 'Uploading...' : 'Upload'}
+    <button className='primary' disabled={!name || loading} onClick={onSubmit}>
+      {loading ? 'Uploading...' : 'Create'}
     </button>
     {error && <span className='error'>{error}</span>}
   </div>
@@ -157,7 +192,7 @@ export function Datasets() {
   
   return <>
     {/* upload modal */}
-    {showUploadModal && <Modal title="Upload Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
+    {showUploadModal && <Modal title="Create Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
       <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh}/>
     </Modal>}
     {/* delete modal */}

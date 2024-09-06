@@ -39,6 +39,44 @@ def create_dataset(user_id, name, metadata):
     return dataset
 
 
+def is_duplicate(user_id, name) -> bool:
+    """Check if a dataset with the same name already exists."""
+    with Session(db()) as session:
+        dataset = session.query(Dataset).filter(and_(Dataset.user_id == user_id, Dataset.name == name)).first()
+        if dataset is not None:
+            return True
+            # raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
+    return False
+
+
+@dataset.post("/create")
+async def create(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+    user_id = userinfo["sub"]
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Must be authenticated to create a dataset")
+
+    data = await request.json()
+    name = data.get("name")
+    if name is None:
+        raise HTTPException(status_code=400, detail="Name must be provided")
+    if is_duplicate(user_id, name):
+        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
+
+    metadata = data.get("metadata", dict())
+    metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    with Session(db()) as session:
+        dataset = Dataset(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            name=name,
+            extra_metadata=metadata
+        )
+        dataset.extra_metadata = metadata
+        session.add(dataset)
+        session.commit()
+        return dataset_to_json(dataset)
+
 @dataset.post("/upload")
 async def upload_file(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)], file: UploadFile = File(...)):
     # get name from the form
@@ -46,15 +84,11 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
     user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(status_code=401, detail="Must be authenticated to upload a dataset")
-    
-    # check that there is not a dataset with the same name
-    with Session(db()) as session:
-        dataset = session.query(Dataset).filter(and_(Dataset.user_id == user_id, Dataset.name == name)).first()
-        if dataset is not None:
-            raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
+    if is_duplicate(user_id, name):
+        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
     lines = file.file.readlines()
-    
+    # TODO: Not sure if file_size and num_lines metadata make sense, as more traces could be later uploaded to the dataset
     metadata = {
         "file_size": "{:.2f} kB".format(file.size / 1024),
         "num_lines": len(lines),
