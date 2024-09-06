@@ -5,7 +5,7 @@ import fastapi
 from fastapi import HTTPException
 
 from routes.user import user
-from routes.auth import keycloak_openid
+from routes.auth import keycloak_openid, write_back_refreshed_token
 from routes.dataset import dataset
 from routes.trace import trace
 from routes.apikeys import apikeys
@@ -55,6 +55,8 @@ def auth_metrics(request: fastapi.Request):
 
 install_middleware(app)
 
+app.middleware("http")(write_back_refreshed_token)
+
 Instrumentator().add(
     metrics.default(
         metric_namespace="invariant",
@@ -65,3 +67,4 @@ Instrumentator().add(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

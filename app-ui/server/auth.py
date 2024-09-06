@@ -32,28 +32,27 @@ def install_authorization_endpoints(app):
         code = request.query_params.get("code")
         
         if code is  None:
-            auth_url = keycloak_openid.auth_url(
+            auth_url = await keycloak_openid.a_auth_url(
                 redirect_uri=f"{base_url}/login",
                 scope="openid profile email"
             )
             return RedirectResponse(auth_url)
         try:
-            # access_token = keycloak_openid.token("lbeurerkellner", "admin")
-            access_token = keycloak_openid.token(
+            access_token = await keycloak_openid.a_token(
                 code=code, 
                 grant_type="authorization_code", 
                 redirect_uri=f"{base_url}/login", 
                 scope="openid profile email"
             )
 
-            userinfo = keycloak_openid.userinfo(access_token["access_token"])
+            userinfo = await keycloak_openid.a_userinfo(access_token["access_token"])
             response.set_cookie(key="jwt", value=json.dumps(access_token), httponly=True)
         except Exception as e:
             import traceback
             traceback.print_exc()
             access_token = None
 
-            auth_url = keycloak_openid.auth_url(
+            auth_url = await keycloak_openid.a_auth_url(
                 redirect_uri=f"{base_url}/login",
                 scope="openid profile email"
             )
@@ -64,7 +63,7 @@ def install_authorization_endpoints(app):
     @app.get("/logout")
     async def logout(request: Request):
         token = json.loads(request.cookies.get("jwt"))
-        keycloak_openid.logout(token["refresh_token"])
+        await keycloak_openid.a_logout(token["refresh_token"])
         response = RedirectResponse(url="/login")
         response.delete_cookie("jwt")
         return response
@@ -95,7 +94,7 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
             return response
         try:
             token = json.loads(request.cookies.get("jwt"))
-            userinfo = keycloak_openid.userinfo(token["access_token"])
+            userinfo = await keycloak_openid.a_userinfo(token["access_token"])
             request.state.userinfo = userinfo
         except Exception as e:
             print("authentication failed", e, "for", request.url.path)
@@ -106,6 +105,17 @@ def require_authorization(exceptions, redirect=False, exception_handlers=None):
         return await call_next(request)
     return check_jwt
 
+"""
+This middleware will write back the refreshed token to the response, if it was refreshed during the request.
+"""
+async def write_back_refreshed_token(request: Request, call_next):
+    response = await call_next(request)
+    
+    if hasattr(request.state, "refreshed_token"):
+        response.set_cookie(key="jwt", value=json.dumps(request.state.refreshed_token), httponly=True)
+    
+    return response
+
 async def UserIdentity(request: Request):
     # check for DEV_MODE
     if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
@@ -115,7 +125,7 @@ async def UserIdentity(request: Request):
             "preferred_username": "developer",
             "name": "Developer"
         }
-    if "noauth=user1" in request.headers.get("referer", []):
+    if "noauth=user1" in request.headers.get("referer", []) and os.getenv("DEV_MODE") == "true":
         return {
             "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
             "email": "dev2@mail.com",
@@ -125,7 +135,17 @@ async def UserIdentity(request: Request):
 
     try:
         token = json.loads(request.cookies.get("jwt"))
-        userinfo = keycloak_openid.userinfo(token["access_token"])
+        try:
+            # get user info (with current access token)
+            userinfo = await keycloak_openid.a_userinfo(token["access_token"])
+        except Exception as e:
+            # if the token is expired, try to refresh it
+            token = await keycloak_openid.a_refresh_token(token["refresh_token"])
+            # keep refreshed token in request state
+            request.state.refreshed_token = token
+
+            userinfo = await keycloak_openid.a_userinfo(token["access_token"])
+
         request.state.userinfo = userinfo
         
         return {
