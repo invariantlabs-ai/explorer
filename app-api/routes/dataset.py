@@ -27,17 +27,26 @@ from routes.auth import UserIdentity, AuthenticatedUserIdentity
 # dataset routes
 dataset = FastAPI()
 
-# upload a new dataset
+def create_dataset(user_id, name, metadata):
+    """Create a dataset with given parameters."""
+    dataset = Dataset(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        name=name,
+        path="",
+        extra_metadata=metadata
+    )
+    dataset.extra_metadata = metadata
+    return dataset
+
+
 @dataset.post("/upload")
 async def upload_file(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)], file: UploadFile = File(...)):
     # get name from the form
     name = (await request.form()).get("name")
-    # save the file to the user's directory
-    # /srv/datasets
     user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(status_code=401, detail="Must be authenticated to upload a dataset")
-    uuid_to_ensure_it_is_unique = hashlib.sha256(file.filename.encode()).hexdigest()
     
     # check that there is not a dataset with the same name
     with Session(db()) as session:
@@ -45,67 +54,46 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
         if dataset is not None:
             raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
-    # make sure user directory exists
-    os.makedirs(os.path.join("/srv/datasets", user_id), exist_ok=True)
-    path = os.path.join("/srv/datasets", user_id, uuid_to_ensure_it_is_unique)
-    with open(path, "wb") as f:
-        f.write(file.file.read())
+    lines = file.file.readlines()
     
-    # determine file size
-    file_size = os.path.getsize(path)
-    # number of lines
-    num_lines = sum(1 for line in open(path))
-    # create metadata
     metadata = {
-        "file_size": file_size,
-        "num_lines": num_lines,
-        "created_on": str(datetime.datetime.now())
+        "file_size": "{:.2f} kB".format(file.size / 1024),
+        "num_lines": len(lines),
+        "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     }
-    
+
     # save the metadata to the database
     with Session(db()) as session:
-        # create the dataset object
-        dataset = Dataset(
-            id=uuid.uuid4(),
-            user_id=user_id,
-            name=name,
-            path=path,
-            extra_metadata=metadata
-        )
+        dataset = create_dataset(user_id, name, metadata)
         session.add(dataset)
         
-        # load jsonl file
-        with open(path, "r") as f:
-            i = 0
-            for line in f:
-                object = json.loads(line)
-                if i == 0 and type(object) is dict and "metadata" in object.keys():
-                    metadata = {**metadata, **object["metadata"]}
-                    continue
+        i = 0
+        for line in lines:
+            object = json.loads(line)
+            if i == 0 and type(object) is dict and "metadata" in object.keys():
+                metadata = {**metadata, **object["metadata"]}
+                continue
+            else:
+                # extra trace metadata if present
+                if type(object) is list and len(object) > 0 and "metadata" in object[0].keys():
+                    trace_metadata = {**object[0]["metadata"]}
+                    object = object[1:]
                 else:
-                    # extra trace metadata if present
-                    if type(object) is list and len(object) > 0 and "metadata" in object[0].keys():
-                        trace_metadata = {**object[0]["metadata"]}
-                        object = object[1:]
-                    else:
-                        trace_metadata = {}
-                    # make sure to capture the number of messages
-                    trace_metadata["num_messages"] = len(object) if type(object) is list else 1
+                    trace_metadata = {}
+                # make sure to capture the number of messages
+                trace_metadata["num_messages"] = len(object) if type(object) is list else 1
+                trace = Trace(
+                    id=uuid.uuid4(),
+                    index=i,
+                    user_id=user_id,
+                    dataset_id=dataset.id,
+                    content=json.dumps(object),
+                    extra_metadata=trace_metadata
+                )
+                session.add(trace)
+                i = i + 1
 
-                    trace = Trace(
-                        id=uuid.uuid4(),
-                        index=i,
-                        user_id=user_id,
-                        dataset_id=dataset.id,
-                        content=json.dumps(object),
-                        extra_metadata=trace_metadata
-                    )
-                    session.add(trace)
-                    i = i + 1
-        
         print("metadata", metadata, flush=True)
-
-        dataset.extra_metadata = metadata
 
         session.commit()
         return dataset_to_json(dataset)
