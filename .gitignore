@@ -3,3 +3,6 @@
 acme.json
 data/database
 data/pgadmin
+*~
+.DS_Store
+venv/

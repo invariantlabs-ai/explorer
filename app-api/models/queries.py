@@ -168,7 +168,6 @@ def dataset_to_json(dataset, user=None, **kwargs):
     out = {
             "id": dataset.id, 
             "name": dataset.name, 
-            # "path": dataset.path, 
             "extra_metadata": dataset.extra_metadata,
             "is_public": dataset.is_public,
             "user_id": dataset.user_id

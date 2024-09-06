@@ -7,7 +7,7 @@ For local development, just run
 ```
 # create data folders
 mkdir data
-mkdir data/database data/datasets data/pgadmin
+mkdir data/database data/pgadmin
 
 # launch the dev environment
 ./dev up

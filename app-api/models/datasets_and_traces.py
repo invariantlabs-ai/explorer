@@ -30,8 +30,6 @@ class Dataset(Base):
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     # name of the dataset
     name = mapped_column(String, nullable=False)
-    # path to the dataset relative to the user's directory
-    path = mapped_column(String, nullable=False)
     # is the dataset visible to other users
     is_public = mapped_column(Boolean, default=False, nullable=False) 
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())

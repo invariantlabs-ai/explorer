@@ -33,7 +33,6 @@ def create_dataset(user_id, name, metadata):
         id=uuid.uuid4(),
         user_id=user_id,
         name=name,
-        path="",
         extra_metadata=metadata
     )
     dataset.extra_metadata = metadata
@@ -134,9 +133,6 @@ def delete_dataset(by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUser
     
     with Session(db()) as session:
         dataset = load_dataset(session, by, user_id)
-        # delete dataset file
-        if os.path.exists(dataset.path):
-            os.remove(dataset.path)
         
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()

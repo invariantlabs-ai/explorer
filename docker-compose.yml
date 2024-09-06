@@ -62,9 +62,6 @@ services:
         source: ./app-api
         target: /srv/app
       - type: bind
-        source: ./data/datasets
-        target: /srv/datasets
-      - type: bind
         source: ./platform-auth/auth.py
         target: /srv/app/routes/auth.py
     labels:
