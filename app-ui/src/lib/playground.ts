@@ -58,11 +58,16 @@ export function openInPlayground(messages) {
     ${makeCompatibleInvariantPolicy(messages) || 'True'}`,
       "input": JSON.stringify(messages || [])
     }
-    // JSON encode and send to playground
-    const json_object = JSON.stringify(object)  
-    // base64 encode
-    const b64_object = btoa(json_object)
+    // JSON encode, encode to utf-8, convert to base64 and send to playground
+    const json_object = JSON.stringify(object)
+    console.log(json_object)
+    const bytes = new TextEncoder().encode(json_object)
+    const encoded_string = Array.from(bytes, (byte) =>
+      String.fromCodePoint(byte),
+    ).join("");
+    const b64_object = btoa(encoded_string)
     // open in new tab
+    console.log(`https://playground.invariantlabs.ai/#${b64_object}`)
     window.open(`https://playground.invariantlabs.ai/#${b64_object}`, '_blank')
   } catch (e) {
     alert('Failed to send to Invariant: ' + e)
