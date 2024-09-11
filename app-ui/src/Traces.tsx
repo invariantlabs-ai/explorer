@@ -279,7 +279,9 @@ export function Traces() {
   const navigate = useNavigate()
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
   const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
+  // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false)
+  // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   
   const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)

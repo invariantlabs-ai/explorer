@@ -28,7 +28,14 @@ function makeCompatibleInvariantPolicy(messages) {
     }
 }
 
-export function openInPlayground(messages) {
+/**
+ * Open the given messages in the Invariant Playground.
+ * 
+ * @param messages The list of trace events to open in the playground. 
+ * Messages must be serializable to JSON and then Base64. Messages must 
+ * not exceed size of what a browser can handle in a URL.
+ */
+export function openInPlayground(messages: any[]) {
   if (!messages) {
     alert('Failed to send to Invariant: No messages');
     return;
@@ -60,14 +67,12 @@ export function openInPlayground(messages) {
     }
     // JSON encode, encode to utf-8, convert to base64 and send to playground
     const json_object = JSON.stringify(object)
-    console.log(json_object)
     const bytes = new TextEncoder().encode(json_object)
     const encoded_string = Array.from(bytes, (byte) =>
       String.fromCodePoint(byte),
     ).join("");
     const b64_object = btoa(encoded_string)
     // open in new tab
-    console.log(`https://playground.invariantlabs.ai/#${b64_object}`)
     window.open(`https://playground.invariantlabs.ai/#${b64_object}`, '_blank')
   } catch (e) {
     alert('Failed to send to Invariant: ' + e)

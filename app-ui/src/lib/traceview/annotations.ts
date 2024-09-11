@@ -110,9 +110,10 @@ export class AnnotatedJSON {
      * 
      * ```typescript
      * const annotations = {
-     *    "key1:0-5": "annotation1",    
+     *   "key1:0-5": "annotation1",    
      *   "key1.key2:0-5": "annotation2",
-     *  "key1.key2.key3:0-5": "annotation3"
+     *   "key1.key2.key3:0-5": "annotation3"
+     *   
      * }
      * const annotated = AnnotatedJSON.from_mappings(annotations)
      * ```

@@ -692,8 +692,8 @@ function AnnotatedStringifiedJSON(props: { annotations: any, children: any, anno
        
         let annotations_in_text = props.annotations.in_text(content)
         annotations_in_text = AnnotatedJSON.disjunct(annotations_in_text)
-        let annotations_per_line = AnnotatedJSON.by_lines(annotations_in_text, content);
-       
+        let annotations_per_line = AnnotatedJSON.by_lines(annotations_in_text, content)
+        
         for (const annotations of annotations_per_line) {
             let line: React.ReactNode[] = []
             for (const interval of annotations) {
