@@ -7,17 +7,22 @@ import { Time } from './components/Time';
 import { DeleteSnippetModal, useSnippetsList } from './lib/snippets';
 
 
+/**
+ * Component to show the list of snippets of the current user.
+ */
 export function Snippets() {
+    // remote call to get the list of snippets
     const [snippets, refreshSnippets] = useSnippetsList()
+    // tracks whether we are currently showing a delete modal for a particular snippet (null if none)
     const [selectedSnippetForDelete, setSelectedSnippetForDelete] = React.useState(null)
-    
+    // currently signed-in user info
     const userInfo = useUserInfo()
+    // used to navigate to a new page
     const navigate = useNavigate()
 
     return <>
         {/* delete snippet modal */}
         {selectedSnippetForDelete && <DeleteSnippetModal snippet={selectedSnippetForDelete} setSnippet={setSelectedSnippetForDelete} onSuccess={refreshSnippets}/>}
-        
         <EntityList title="Snippets" actions={<>
             {userInfo?.loggedIn && <button className='primary' onClick={() => navigate('/new')}>
                             <BsUpload/>
@@ -36,7 +41,11 @@ export function Snippets() {
     </>
 }
 
+/**
+ * Compact version of the snippet list (e.g. to use on the home page).
+ */
 export function CompactSnippetList(props) {
+    // remote call to get the list of snippets
     const [snippets, refreshSnippets] = useSnippetsList(props.limit || null);
 
     return <>

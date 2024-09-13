@@ -9,6 +9,7 @@ import { routes } from './Routes'
 
 const router = createBrowserRouter(routes);
 
+/** override window.alert to show errors in a nice way without blocking the UI */
 window.alert = (message: string) => {
   // get #alert-error-list element
   const alertErrorList = document.getElementById('alert-error-list');

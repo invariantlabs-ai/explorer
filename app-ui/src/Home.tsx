@@ -11,6 +11,7 @@ import { DatasetLinkList, DeleteDatasetModalContent, UploadDatasetModalContent }
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
 
+// fetches user activity from backend
 function useActivity(): [any[], () => void] {
   const [activity, setActivity] = React.useState<any[]>([])
 
@@ -32,14 +33,20 @@ function useActivity(): [any[], () => void] {
   ]
 }
 
+/**
+ * Home screen compopnents, including user's datasets and snippets, public datasets, and user activity.
+ */
 function Home() {
   const userInfo = useUserInfo()
   
+  // fetch datasets and snippets
   const [datasets, refresh] = useDatasetList(8)
   const [snippets, refreshSnippets] = useSnippetsList() 
+  // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false)
-  const [selectedSnippetForDelete, setSelectedSnippetForDelete] = React.useState(null)
+  // fetch user activity
   const [activity, refreshActivity] = useActivity()
+  // used to navigate to a new page
   const navigate = useNavigate()
   
   return <>
@@ -91,19 +98,6 @@ function Home() {
             </div>
           </div>
           <ActivityDetail event={event} />
-          {/* <h3>{event.text +
-              {'dataset': ': ' + event.details.name,
-                'trace': '',
-                'annotation': ''
-              }[event.type]}</h3>
-          <span className='description'>
-          {
-              {'dataset': ' ' + event.details.extra_metadata,
-                'trace': event.details.extra_metadata,
-                'annotation': event.details.content
-              }[event.type]
-          }
-          </span> */}
         </li>
       </div>
       )}
@@ -112,6 +106,7 @@ function Home() {
   </>
 }
 
+// Shows details specific to the type of event
 function ActivityDetail(props) {
   const event = props.event
 

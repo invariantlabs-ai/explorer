@@ -2,8 +2,19 @@ import React from 'react'
 import { Modal } from '../Modal'
 import { sharedFetch } from '../SharedFetch'
 import { useUserInfo } from '../UserInfo'
-import { traceDelete } from './traces'
 
+/**
+ * Calls the Delete Trace endpoint to delete a trace.
+ */
+export function traceDelete(id: string): Promise<Response> {
+  return fetch(`/api/v1/trace/${id}`, {
+      method: 'DELETE'
+  })
+}
+
+/**
+ * Modal content to show when deleting a snippet or trace.
+ */
 export function DeleteSnippetModalContent(props: { snippet: any, onClose: () => void, onSuccess?: () => void, entityName: string }) {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -39,6 +50,9 @@ export function DeleteSnippetModalContent(props: { snippet: any, onClose: () => 
   </div>
 }
 
+/**
+ * Modal to confirm deletion of a snippet or trace.
+ */
 export function DeleteSnippetModal(props: { snippet: any, setSnippet: (snippet: any) => void, onSuccess?: () => void, entityName?: string }) {
   const capitalized = (props.entityName || "snippet").charAt(0).toUpperCase() + (props.entityName || "snippet").slice(1)
   return <Modal title={"Delete " + capitalized} onClose={() => props.setSnippet(null)} hasWindowControls>
@@ -46,10 +60,14 @@ export function DeleteSnippetModal(props: { snippet: any, setSnippet: (snippet: 
   </Modal>
 }
 
+/**
+ * Fetches the list of snippets for the current user.
+ */
 export function useSnippetsList(limit: number | null = null): [any[], () => void] {
   const [snippets, setSnippets] = React.useState<any[]>([])
   const userInfo = useUserInfo()
 
+  // fetch the list of snippets from the server
   const refresh = () => {
     sharedFetch('/api/v1/trace/snippets?limit=' + (limit || '')).then(response => {
       setSnippets(response)
@@ -59,6 +77,7 @@ export function useSnippetsList(limit: number | null = null): [any[], () => void
     })
   }
 
+  // refresh the list of snippets when the user logs in
   React.useEffect(() => {
     if (userInfo?.loggedIn) {
       refresh()

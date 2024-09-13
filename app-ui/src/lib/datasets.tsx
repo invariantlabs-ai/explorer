@@ -1,6 +1,7 @@
 import React from 'react'
 import { sharedFetch } from '../SharedFetch'
 
+/** Hook to fetch the list of datasets from the server. */
 export function useDatasetList(limit: number | null = null): [any[], () => void] {
     const [datasets, setDatasets] = React.useState<any[]>([])
 

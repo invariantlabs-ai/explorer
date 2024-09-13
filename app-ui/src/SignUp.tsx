@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react'
 
+/**
+ * Simple screen component for user sign up.
+ */
 export function SignUp() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  // calls signup endpoint for the current user
   const onSignUp = () => {
     setIsLoading(true)
 

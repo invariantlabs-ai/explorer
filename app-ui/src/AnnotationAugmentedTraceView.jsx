@@ -39,17 +39,17 @@ class Annotations extends RemoteResource {
 }
 
 /**
- * 
- * @param {*} props 
- * @returns 
+ * Components that renders agent traces with the ability for user's to add comments ("annotation").
  */
-export function Explorer(props) {
+export function AnnotationAugmentedTraceView(props) {
+  // the rendered trace
   const activeTrace = props.activeTrace || null
+  // the trace ID
   const activeTraceId = props.selectedTraceId || null
+  // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({})
+  // loads and manages annotations as a remote resource (server CRUD)
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId)
-
-  console.log(annotations)
 
   // expand all messages
   const onExpandAll = () => {
@@ -61,13 +61,14 @@ export function Explorer(props) {
     events.collapseAll?.fire()
   }
 
-  // if not trace ID set
+  // if no trace ID set
   if (activeTraceId === null) {
     return <div className='explorer panel'>
       <div className='empty'>No Trace Selected</div>
     </div>
   }
 
+  // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
       <AnnotationThread {...props}
@@ -81,7 +82,7 @@ export function Explorer(props) {
     extraArgs: [activeTraceId]
   }
 
-  // Add annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
+  // add annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
   let mappings = props.mappings || {}
   for (let key in annotations) {
     let substr = key.substring(key.indexOf(":"))
@@ -118,17 +119,22 @@ export function Explorer(props) {
     </header>
     <div className='explorer panel traceview'>
       <RenderedTrace
+        // the trace events
         trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
-        // no highlights
+        // ranges to highlight (e.g. because of analyzer or search results)
         highlights={HighlightedJSON.from_mappings(mappings)}
+        // callback to register events for collapsing/expanding all messages
         onMount={(events) => setEvents(events)}
+        // extra UI decoration (inline annotation editor)
         decorator={decorator}
+        // extra UI to show at the top of the traceview like metadata
         prelude={<Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
       />
     </div>
   </>
 }
 
+// AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
 function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
@@ -140,6 +146,7 @@ function AnnotationThread(props) {
   </div>
 }
 
+// Annotation renders an annotation bubble with the ability to edit and delete
 function Annotation(props) {
   const annotator = props.annotator
   const [comment, setComment] = useState(props.content)
@@ -193,6 +200,7 @@ function Annotation(props) {
   </div>
 }
 
+// AnnotationEditor renders an inline annotation editor for a given address in a trace (for creating a new annotation).
 function AnnotationEditor(props) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)

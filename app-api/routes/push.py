@@ -22,7 +22,7 @@ push = FastAPI()
 logger = logging.getLogger(__name__)
 
 """
-Write only API endpoint to push traces to the server.
+Write-only API endpoint to push traces to the server.
 """
 @push.post("/trace")
 async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
@@ -103,12 +103,14 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         if annotations is not None:
             for i, trace_annotations in enumerate(annotations):
+                print("annotations", trace_annotations)
                 for ann in trace_annotations:
                     new_annotation = Annotation(
                         trace_id=result_ids[i],
                         user_id=userid,
                         content=ann["content"],
                         address=ann["address"],
+                        extra_metadata=ann.get("extra_metadata", None),
                     )
                     try:
                         validate_annotation(new_annotation, traces[i])

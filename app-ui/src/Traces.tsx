@@ -1,20 +1,22 @@
-import React, { useCallback, useEffect } from 'react'
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {UserInfo, useUserInfo} from './UserInfo'
-import { BsArrowClockwise, BsCheckCircleFill, BsDatabaseFill, BsExclamationCircleFill, BsFileBinaryFill, BsLayoutSidebarInset, BsMoonStarsFill, BsPencilFill, BsQuestionCircleFill, BsTerminal, BsTrash, BsUpload, BsSave } from 'react-icons/bs'
-import { Link, useLoaderData } from 'react-router-dom'
-import { TraceView } from './lib/traceview/traceview';
-import { Explorer } from './Explorer'
-import { sharedFetch } from './SharedFetch';
+/**
+ * Page components for displaying single and all dataset traces.
+ */
+
+import React, { useCallback, useEffect } from 'react';
+import { BsArrowClockwise, BsCaretDownFill, BsLayoutSidebarInset, BsSave, BsSearch, BsTrash } from 'react-icons/bs';
+import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
+import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from 'react-viewport-list';
+import { AnnotationAugmentedTraceView } from './AnnotationAugmentedTraceView';
 import { Modal } from './Modal';
+import { sharedFetch } from './SharedFetch';
+import { useUserInfo } from './UserInfo';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
-import ClockLoader from "react-spinners/ClockLoader";
-import { BsSearch, BsCaretDownFill } from "react-icons/bs";
-import { CgDisplaySpacing } from 'react-icons/cg';
-import { clear } from 'localforage';
 
+/**
+ * Metadata for a dataset that we receive from the server.
+ */
 export interface DatasetData {
   id: string
   name: string
@@ -23,6 +25,9 @@ export interface DatasetData {
   user_id: string
 }
 
+/**
+ * Hook to load the dataset metadata for a given user and dataset name.
+ */
 function useDataset(username:string, datasetname: string): [DatasetData | null, string | null] {
   const [dataset, setDataset] = React.useState(null)
   const [error, setError] = React.useState(null as string | null);
@@ -39,6 +44,9 @@ function useDataset(username:string, datasetname: string): [DatasetData | null, 
   return [dataset, error]
 }
 
+/**
+ * Metadata for a trace that we receive from the server.
+ */
 export interface Trace {
   id: string;
   index: number;
@@ -53,6 +61,7 @@ export interface Trace {
   fetched?: boolean;
 }
 
+// hook to load the traces in a dataset
 function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
   const [traces, setTraces] = React.useState<(Trace|null)[] | null>(null)
 
@@ -69,6 +78,8 @@ function useTraces(username: string, datasetname: string): [any | null, (traces:
   return [traces, setTraces, refresh]
 }
 
+// makes sure the provided trace has its .messages field populated, by loading the 
+// trace content from the server if necessary
 function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
   if (trace.messages.length != 0) {
     return Promise.resolve({
@@ -100,6 +111,7 @@ function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
   });
 }
 
+// content of the share modal to enable/disable link sharing for a trace
 function ShareModalContent(props) {
   const [justCopied, setJustCopied] = React.useState(false)
 
@@ -179,6 +191,7 @@ function findPreviousTrace(traceId, traces) {
   return null
 }
 
+// hook for interacting with the search functionality
 function useSearch() {
   const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
   const [searchParams, setSearchParams] = useSearchParams();
@@ -274,22 +287,37 @@ function useSearch() {
   return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] as const;
 }
 
+/**
+ * Component for displaying the list of traces in a dataset.
+ * 
+ * Consists of a Sidebar with a list of traces and an Explorer component for viewing the currently selected trace.
+ */
 export function Traces() {
+  // extract user and dataset name from loader data (populated by site router)
   const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
+  // used to navigate to a different trace
   const navigate = useNavigate()
+  // load the dataset metadata
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
+  // load information about the traces in the dataset
   const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false)
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   
+  // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
+  // load the logged in user's information
   const userInfo = useUserInfo()
+  // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
   const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
+  // tracks whether the current user owns the dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
+  // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
   
+  // when the trace index changes, update the activeTrace
   useEffect(() => {
     if (traces
         && props.traceIndex !== null
@@ -301,20 +329,25 @@ export function Traces() {
       setActiveTrace(null)
     } else {
       let new_index = 0
+      // if the trace index is not in the list of traces, navigate to the first trace
       if (traces) new_index = Math.min(...traces.filter(t => t !== null).map(t => t.index))
+      // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (displayedIndices) new_index = Math.min(...displayedIndices)
+      // update the URL to the new trace index
       navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
   }, [props.traceIndex, traces, displayedIndices])
   
   useEffect(() => {
-    // if we switch to a different active trace, update the active trace to fetch the messages
+    // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
     if (traces && activeTrace && !activeTrace.fetched) {
       fetchTrace(activeTrace).then(change => {
         if (!change.updated) return;
         const t = change.trace;
         if (!t) return;
         console.log('updating trace', t.id, t.messages.length)
+        // if the trace was updated, replace its spot in the 'traces' object, 
+        // to trigger a re-render
         setTraces(traces => {
           traces[t.index] = {...t, fetched: true, name: '#'+t.index} 
           return traces
@@ -330,6 +363,7 @@ export function Traces() {
     refresh()
   }, [props.username, props.datasetname])
 
+  // error state of this view
   if (datasetLoadingError) {
     return <div className='empty'>
       <h3>Failed to Load Dataset</h3>
@@ -341,11 +375,14 @@ export function Traces() {
   }
  
   return <div className="panel fullscreen app">
+    {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} />
     </Modal>}
+    {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{id: activeTrace?.id}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
     <div className='sidebyside'>
+    {/* trace explorer sidebar */}
     <Sidebar 
       traces={traces} 
       username={props.username}
@@ -358,12 +395,16 @@ export function Traces() {
       searchNow={searchNow}
       searching={searching}
     />
-    {activeTrace && <Explorer
+    {/* actual trace viewer */}
+    {activeTrace && <AnnotationAugmentedTraceView
+      // information on the currently selected trace
       activeTrace={ activeTrace }
       selectedTraceId={activeTrace?.id}
+      // current search highlights
       mappings={highlightMappings[activeTrace.index]}
-      loadTrace={() => {}} 
+      // whether we are still loading the dataset's trace data
       loading={!traces}
+      // header components to show in the explorer
       header={
         <h1>
           <Link to='/'>/</Link>
@@ -372,10 +413,11 @@ export function Traces() {
           <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link>
         </h1>
       }
-      queryId={"<queryId>"}
-      hasFocusButton={false}
+      // callback for when the user presses the 'Share' button
       onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
+      // whether link sharing is enabled for the current trace
       sharingEnabled={sharingEnabled}
+      // extra trace action buttons to show
       actions={<>
         {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
       </>}
@@ -384,6 +426,9 @@ export function Traces() {
   </div>
 }
 
+/**
+ * Displays a search box and search filters.
+ */
 function SearchBox(props) {
     const searchQuery=props.searchQuery
     const setSearchQuery=props.setSearchQuery
@@ -436,10 +481,13 @@ function SearchBox(props) {
     </>
 }
 
+/**
+ * Displays the list of traces in a dataset.
+ */
 function Sidebar(props) {
-  const searchQuery=props.searchQuery
-  const setSearchQuery=props.setSearchQuery
-  const displayedIndices=props.displayedIndices
+  const searchQuery = props.searchQuery
+  const setSearchQuery = props.setSearchQuery
+  const displayedIndices = props.displayedIndices
   const {username, datasetname, activeTraceId} = props
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
@@ -506,22 +554,33 @@ function Sidebar(props) {
   </div>
 }
 
+/**
+ * Like Traces, but only shows a single trace and thus no sidebar.
+ */
 export function SingleTrace() {
+  // extract the trace ID from the loader data (populated by site router)
   const props: {traceId: string} = useLoaderData() as any
+  // the loaded trace data
   const [trace, setTrace] = React.useState(null as Trace | null)
+  // the loaded dataset data
   const [dataset, setDataset] = React.useState(null as {name: string} | null)
+  // if an error occurs, this will be set to the error message
   const [error, setError] = React.useState(null as string | null)
+  // whether link sharing is enabled for the current trace
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
-  // set if we are showing a snippet trace (a trace without dataset)
+  // only set if we are showing a snippet trace (a trace without dataset)
   const [snippetData, setSnippetData] = React.useState({isSnippet: false, user: null} as {isSnippet: boolean, user: string | null})
+  // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
-  
+  // load the logged in user's information
   const userInfo = useUserInfo()
+  // used to navigate to a different trace
   const navigate = useNavigate()
+  // tracks whether the current user owns this dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == trace?.user_id
 
-  // fetch trace
+  // fetch trace data
   React.useEffect(() => {
     if (!props.traceId) {
       return
@@ -538,7 +597,7 @@ export function SingleTrace() {
     })
   }, [props.traceId])
 
-  // fetch dataset
+  // fetch dataset metadata
   React.useEffect(() => {
     if (!trace) {
       return
@@ -556,6 +615,7 @@ export function SingleTrace() {
     }
   }, [trace])
 
+  // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
@@ -573,14 +633,11 @@ export function SingleTrace() {
     </Modal>}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{id: props.traceId}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
     {!error && <div className='sidebyside'>
-    <Explorer
+    <AnnotationAugmentedTraceView
       activeTrace={trace}
-      loadTrace={() => {}}
       loading={!trace}
       header={header}
-      queryId={"<queryId>"}
       selectedTraceId={props.traceId}
-      hasFocusButton={false}
       onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
       sharingEnabled={sharingEnabled}
       actions={<>

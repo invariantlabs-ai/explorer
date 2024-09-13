@@ -77,11 +77,6 @@ For production, the authentication is done via the `auth.invariantlabs.ai` [Keyc
 * The client ID
 * The client secret
 
-
-## Getting Started
-
-TODO
-
 ### Database Versioning
 The database is connected via [SQLAlchemy](https://www.sqlalchemy.org) in the API server.
 For the data model see `app-api/models/datasets_and_traces.py`.

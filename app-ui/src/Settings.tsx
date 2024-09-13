@@ -4,6 +4,7 @@ import { BsKey, BsTrash } from 'react-icons/bs'
 import { sharedFetch } from './SharedFetch'
 import { Modal } from './Modal'
 
+// fetch the user's API keys from the server
 const useApiKeys = () => {
     const [apiKeys, setApiKeys] = useState<string[]>([])
     useEffect(() => {
@@ -19,6 +20,7 @@ const useApiKeys = () => {
     return [apiKeys, refresh] as const
 }
 
+// modal content to show when creating a new API key
 function NewAPIKeyModal({apiKey, onClose}) {
     const [justCopied, setJustCopied] = React.useState(false)
 
@@ -45,6 +47,9 @@ function NewAPIKeyModal({apiKey, onClose}) {
   </div>
 }
 
+/**
+ * UI screen for user settings.
+ */
 export function Settings() {
     const userInfo = useUserInfo()
     const [apiKeys, refresh] = useApiKeys()
@@ -52,6 +57,7 @@ export function Settings() {
     const [createdApiKey, setCreatedApiKey] = useState<string | null>(null)
     const [showExpired, setShowExpired] = useState(false)
 
+    // create a new API key for the current user
     const onCreateAPIKey = async () => {
         try {
             const res = await fetch('/api/v1/keys/create', {method: 'POST'})
@@ -63,6 +69,7 @@ export function Settings() {
         }
     }
 
+    // revoke an existing API key by its ID
     const onRevokeAPIKey = async (id: string) => {
         try {
             const res = await fetch('/api/v1/keys/' + id, {method: 'DELETE'})
@@ -77,6 +84,7 @@ export function Settings() {
         }
     }
 
+    // filter out expired keys if the user does not want to see them
     const keys = apiKeys.filter((apikey: any) => showExpired || !apikey.expired);
 
     return <div className="panel entity-list">
@@ -89,7 +97,7 @@ export function Settings() {
             </h2>
             <div className="spacer" />
             <div className="actions">
-
+                {/* no actions on top level */}
             </div>
         </header>
         <div className='box'>
@@ -101,13 +109,6 @@ export function Settings() {
             </h2>
             <table className='data api-keys'>
                 <tbody>
-                    {/* <tr>
-                        <td><BsKey/> <code>1234567890</code></td>
-                        <td>Created 2021-01-01</td>
-                        <td className='actions'>
-                            <button className='tool'><BsTrash /> Revoke</button>
-                        </td>
-                    </tr> */}
                     {keys.map((apikey: any) => <tr className={apikey.expired ? 'expired' : ''} key={apikey.id}>
                         <td><BsKey /> <code>***************{apikey.hashed_key.substr(0, 8)}</code></td>
                         <td>

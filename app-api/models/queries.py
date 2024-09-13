@@ -150,7 +150,8 @@ def annotation_to_json(annotation, user=None, **kwargs):
         "id": annotation.id,
         "content": annotation.content,
         "address": annotation.address,
-        "time_created": annotation.time_created
+        "time_created": annotation.time_created,
+        "extra_metadata": annotation.extra_metadata,
     }
     out = {**out, **kwargs}
     if user is not None:
@@ -259,7 +260,10 @@ def search_term_mappings(trace, search_terms):
                         if start == -1:
                             break
                         end = start + len(term)
-                        mappings[f"{path}:{start}-{end}"] = term
+                        mappings[f"{path}:{start}-{end}"] = {
+                            "content": term,
+                            "source": "search",
+                        }
                         begin = end
     content_object = json.loads(trace.content)
     traverse(content_object, path='messages')

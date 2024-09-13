@@ -5,44 +5,46 @@ import fastapi
 from fastapi import HTTPException
 
 from routes.user import user
-from routes.auth import keycloak_openid, write_back_refreshed_token
+from routes.auth import write_back_refreshed_token
 from routes.dataset import dataset
 from routes.trace import trace
 from routes.apikeys import apikeys
-# push API
 from routes.push import push
 
-from models.queries import has_link_sharing, load_trace
-from models.datasets_and_traces import db
 from sqlalchemy.orm import Session
-
 from fastapi.exception_handlers import http_exception_handler
+
 import traceback
 
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from metrics.active_users import active_users, install_middleware
+from metrics.active_users import install_active_user_monitoring_middleware
 
 v1 = fastapi.FastAPI()
 
+# make sure we always get full stack traces in the logs
 @v1.exception_handler(Exception)
 async def custom_http_exception_handler(request, exc):
     print(request.url)
     traceback.print_exception(exc)
     return await http_exception_handler(request, exc)
 
+# install the API routes
 v1.mount("/user", user)
 v1.mount("/dataset", dataset)
 v1.mount("/trace", trace)
 v1.mount("/keys", apikeys)
 v1.mount("/push", push)
 
+# for debugging, we can check if the API is up
 @v1.get("/")
 async def home():
     return {"message": "Hello v1"}
 
+# mount the API under /api/v1
 app = fastapi.FastAPI()
 app.mount("/api/v1", v1)
 
+# enforces that the request knows the PROMETHEUS_TOKEN when requesting metrics
 def auth_metrics(request: fastapi.Request):
     # in case of DEV_MODE, we don't require a token for metrics
     if os.getenv("DEV_MODE") == "true":
@@ -53,10 +55,13 @@ def auth_metrics(request: fastapi.Request):
     if not token or request_token != f"Bearer {token}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-install_middleware(app)
+# counts active users
+install_active_user_monitoring_middleware(app)
 
+# write back the refreshed token to the response if auth refreshed an access token
 app.middleware("http")(write_back_refreshed_token)
 
+# expose standard FastAPI request metrics to observability stack
 Instrumentator().add(
     metrics.default(
         metric_namespace="invariant",
@@ -64,6 +69,7 @@ Instrumentator().add(
     )
 ).instrument(app).expose(v1, dependencies=[fastapi.Depends(auth_metrics)])
 
+# serve the API
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -7,6 +7,12 @@ import { useState } from "react"
 import { BsCheckCircleFill, BsCircleFill, BsExclamationCircleFill, BsRobot } from "react-icons/bs"
 import "./Metadata.scss"
 
+/**
+ * Tries to infer a nice rendering for a given metadata value (e.g. success, error, warning) 
+ * and adds color or an icon accordingly.
+ * 
+ * Does nothing if the key does not contain any of the keywords.
+ */
 export function InferredMetadataValueRender(props) {
     const { keyValue } = props
 
@@ -52,6 +58,11 @@ export function InferredMetadataValueRender(props) {
     }
 }
 
+/**
+ * Tries to infer a nice icon for a given key.
+ * 
+ * Show no icon if the key does not contain any of the keywords.
+ */
 export function InferredKeyIcon(props) {
     let keyValue = props.keyValue
 
@@ -68,7 +79,9 @@ export function InferredKeyIcon(props) {
     return null;
 }
 
-
+/**
+ * Renders a key-value pair of metadata.
+ */
 function Pair(props) {
     const MAX_LENGTH = 80
     const [truncatedState, setTruncated] = useState(true)
@@ -85,9 +98,14 @@ function Pair(props) {
     </div>
 }
 
+/**
+ * Renders a given object of metadata as a list of key-value pairs.
+ * 
+ * @param props.extra_metadata The metadata object to render.
+ * @param props.header The header to display above the metadata.
+ */
 export function Metadata(props) {
     const extra_metadata = props.extra_metadata;
-
     
     if (!extra_metadata) {
         return null;

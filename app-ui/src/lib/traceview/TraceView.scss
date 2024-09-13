@@ -1,5 +1,7 @@
 body {
     --highlight-color: rgba(132, 126, 255, 0.445);
+    --highlight-search-color: rgba(255, 243, 132, 1);
+    --highlight-analyzer-color: rgba(255, 99, 132, 1);
     --highlight-message: rgba(132, 126, 255, 0.125);
     --text-color: #2E2E2E;
 }
@@ -344,6 +346,14 @@ body {
             div.annotations {
                 display: block;
             }
+        }
+
+        &.source-analyzer {
+            background-color: var(--highlight-analyzer-color);
+        }
+
+        &.source-search {
+            background-color: var(--highlight-search-color);
         }
     }
 }

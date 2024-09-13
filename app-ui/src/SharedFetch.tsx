@@ -1,5 +1,9 @@
 const MULTILISTENER_FETCHES = {}
 
+/**
+ * Shared fetch function that will only make one request to the server for the same GET request,
+ * even if multiple UI components are requesting the same data.
+ */
 export function sharedFetch(url: string): Promise<any> {
   if (MULTILISTENER_FETCHES[url]) {
     return new Promise((resolve, reject) => {

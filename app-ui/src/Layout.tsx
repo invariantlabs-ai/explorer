@@ -10,6 +10,9 @@ import { CompactSnippetList } from './Snippets';
 import { DatasetLinkList } from './Datasets';
 import { SignUp } from './SignUp';
 
+/**
+ * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
+ */
 function useAnimatedClassState(initialState: boolean) {
     // delayed state
     const [state, _setState] = React.useState(initialState);
@@ -43,6 +46,9 @@ function useAnimatedClassState(initialState: boolean) {
     }
 }
 
+/**
+ * Content of the site-wide sidebar (navigation, user info, etc).
+ */
 function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void, children: React.ReactNode}) {
     const {userInfo, sidebarOpen, setSidebarOpen} = props;
 
@@ -72,6 +78,10 @@ function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebar
     </div>
 }
 
+/**
+ * Site-wide sidebar (navigation, user info, etc), wraps around the main screen components to provide a consistent layout 
+ * like the header and sidebar.
+ */
 function Sidebar(props) {
     const [sidebarDomIncluded, sidebarOpen, setSidebarOpen] = useAnimatedClassState(false);
     const userInfo = useUserInfo();
@@ -102,6 +112,9 @@ function Sidebar(props) {
     </>
 }
 
+/**
+ * Site-wide layout (header, sidebar, content).
+ */
 function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean}) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);

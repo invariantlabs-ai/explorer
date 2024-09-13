@@ -3,9 +3,14 @@ import { useLoaderData } from 'react-router-dom'
 import { DatasetLinkList } from './Datasets'
 
 
+/**
+ * Component for displaying a user's public datasets, i.e. the user's profile page.
+ */
 function User() {
+  // get selected user from loader data (populated by site router)
   const props: any = useLoaderData()
   const username = props.username
+  
   const [datasets, refreshDatasets] = useDatasetList()
 
   return <div className="panel entity-list">
@@ -23,6 +28,7 @@ function User() {
 </div>
 }
 
+// fetches list of public datasets for a user
 function useDatasetList(): [any[], (username: string) => void] {
   const props: any = useLoaderData()
   const username = props.username

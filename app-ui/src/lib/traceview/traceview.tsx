@@ -2,7 +2,7 @@ import "./TraceView.scss"
 import Editor from "@monaco-editor/react";
 import { BsCaretRightFill, BsCaretDownFill, BsPersonFill, BsRobot, BsChatFill, BsCheck2, BsExclamationCircleFill } from "react-icons/bs";
 
-import { AnnotatedJSON, Annotation, GroupedAnnotation } from "./annotations";
+import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
 import { validate } from "./schema";
 import jsonMap from "json-source-map"
 import React, { useState, useEffect, useRef } from "react";
@@ -13,30 +13,41 @@ import { ViewportList } from 'react-viewport-list';
  * A way to provide inline decorations to a rendered trace view.
  */
 export interface TraceDecorator {
-    // component to use as inline editor (instantiated with props: { highlights: GroupedAnnotation[], address: string, onClose: () => void })
+    // component to use as inline editor (instantiated with props: { highlights: GroupedHighlight[], address: string, onClose: () => void })
     editorComponent: React.ComponentType
-    // returns true, if a given address is highlighted (e.g. hints at annotations being present)
+    // returns true, if a given address is highlighted (e.g. hints at highlights being present)
     hasHighlight?: (address?: string, ...args: any) => boolean
     
     // global extra args that are passed to editor and hasHighlight functions
     extraArgs?: any
 }
 
+/**
+ * Props for the TraceView component.
+ */
 interface TraceViewProps {
+    // JSON representation of the trace
     inputData: string;
+    // when the trace editor changes, this function is called with the new JSON string
     handleInputChange: (value: string | undefined) => void;
     
-    // annotations to highlight in the trace view
-    annotations: Record<string, string>
+    // highlights to highlight in the trace view
+    highlights: Record<string, string>
     // whether to use the side-by-side view
     sideBySide?: boolean
     // custom view to show when selecting a line
     decorator?: TraceDecorator
+    // additional header components to show
     header?: React.ReactNode
+    // title of the trace view
     title?: string | React.ReactNode
+    // whether to show the editor (default: true)
     editor?: boolean
 }
 
+/**
+ * A hook that automatically validates JSON input and provides validation results.
+ */
 function useJSONValidation(props: { text: string }) {
     const [validationResult, setValidationResult] = useState({ valid: true, errors: [] as any[] })
 
@@ -70,18 +81,22 @@ function useJSONValidation(props: { text: string }) {
     return validationResult
 }
 
-
+/**
+ * A component that shows the validation status of a trace, including error messages.
+ */
 export function TraceValidationStatus(props: { validation: { valid: boolean, errors: any[] } }) {
     const [showErrors, setShowErrors] = useState(false)
     const FORMAT_URL = "https://github.com/invariantlabs-ai/invariant?tab=readme-ov-file#trace-format"
     const validationResult = props.validation
     
+    // hide errors when the validation result is valid
     useEffect(() => {
         if (validationResult.errors.length == 0) {
             setShowErrors(false)
         }
     }, [validationResult.errors])
 
+    // show a valid status
     if (validationResult.valid) {
         return <div className="validation-status valid">
             <BsCheck2/> <a href={FORMAT_URL} target="_blank" rel="noreferrer">
@@ -89,6 +104,7 @@ export function TraceValidationStatus(props: { validation: { valid: boolean, err
             </a>
         </div>
     } else {
+        // show an invalid status with a list of errors
         return <div className="validation-status invalid" onClick={() => setShowErrors(!showErrors)}>
             <BsExclamationCircleFill/> 
             Format Issues ({validationResult.errors.length} Errors)
@@ -104,20 +120,26 @@ export function TraceValidationStatus(props: { validation: { valid: boolean, err
     }
 }
 
+/**
+ * A component that shows a trace view, including an editor and a preview of the trace.
+ */
 export function TraceView(props: TraceViewProps) {
-    const { inputData, handleInputChange, annotations } = props;
-    const [annotatedJSON, setAnnotatedJSON] = useState<AnnotatedJSON | null>(null);
+    // extract props
+    const { inputData, handleInputChange, highlights } = props;
+    // state for the annotated JSON 
+    const [annotatedJSON, setHighlightedJSON] = useState<HighlightedJSON | null>(null);
+    // current editing mode (editor or rendered trace)
     const [mode, setMode] = useState<"input" | "trace">("trace");
+    // provides a continous validation result
     const validationResult = useJSONValidation({ text: inputData })
-    
+
     const sideBySide = props.sideBySide
     const hasEditor = props.editor != false
 
+    // when the parent-provided highlights change, convert them to HighlightedJSON format
     useEffect(() => {
-        setAnnotatedJSON(AnnotatedJSON.from_mappings(annotations))
-    }, [annotations])
-
-    let content = null;
+        setHighlightedJSON(HighlightedJSON.from_mappings(highlights))
+    }, [highlights])
 
     return <div className="traceview">
         {props.header != false && <h2>
@@ -137,45 +159,55 @@ export function TraceView(props: TraceViewProps) {
         </h2>}
         {hasEditor && !sideBySide && <div className={"content"}>
             <div className={"tab" + (mode === "input" ? " active" : "")}>
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
+                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={annotatedJSON || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {hasEditor && sideBySide && <div className="sidebyside">
             <div className="side">
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} annotations={annotatedJSON || AnnotatedJSON.empty()} validation={validationResult} />
+                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={annotatedJSON || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className="traces side">
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {!hasEditor && <div className="fullscreen">
             <div className={"side traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} annotations={annotatedJSON || AnnotatedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
     </div>
 }
 
-export function TraceEditor(props: { inputData: string, handleInputChange: (value: string | undefined) => void, annotations: AnnotatedJSON, validation: { valid: boolean, errors: any[] } }) {
+/**
+ * A component that shows a JSON editor with syntax highlighting and validation of the trace format.
+ * 
+ * Also supports highlighting of specific ranges in the raw JSON representation.
+ */
+export function TraceEditor(props: { inputData: string, handleInputChange: (value: string | undefined) => void, highlights: HighlightedJSON, validation: { valid: boolean, errors: any[] } }) {
+    // state to keep a reference to the editor instance
     const [editor, setEditor] = useState(null as any)
+    // state to keep a reference to the monaco instance
     const [monaco, setMonaco] = useState(null as any)
+    // decorations shown in the editor (to visualize highlights)
     const [editorDecorations, setEditorDecorations] = useState([] as any)
+    // error underlines in the editor
     const [errorMarkerDecorations, setErrorMarkerDecorations] = useState([] as any)
+    // JSON validation results
     const validationResults = props.validation
 
-    // when annotations or pointers change, re-create the highlighted ranges from new sourcemap and annotations
+    // when highlights or pointers change, re-create the highlighted ranges from the updated sourcemap and highlights
     useEffect(() => {
         if (!editor || !monaco || !editorDecorations) {
             return
         }
         
-        let annotations_in_text = props.annotations.for_path("messages").in_text(props.inputData)
+        let highlights_in_text = props.highlights.for_path("messages").in_text(props.inputData)
 
         editorDecorations.clear()
-        editorDecorations.set(annotations_in_text.map((a: Annotation) => {
+        editorDecorations.set(highlights_in_text.map((a: Highlight) => {
             // get range from absolute start and end offsets
             let range = monaco.Range.fromPositions(editor.getModel().getPositionAt(a.start), editor.getModel().getPositionAt(a.end))
             let r = {
@@ -188,9 +220,7 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
             }
             return r;
         }))
-
-        // editor.deltaDecorations([], decorations)
-    }, [editor, props.annotations, monaco, props.inputData, editorDecorations])
+    }, [editor, props.highlights, monaco, props.inputData, editorDecorations])
 
     // when validation result changes, add error markers to the editor
     useEffect(() => {
@@ -210,7 +240,7 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
         
     }, [editor, monaco, validationResults, errorMarkerDecorations])
 
-    
+    // when the editor is mounted, save the editor and monaco instance
     const onMount = (editor: any, monaco: any) => {
         setEditor(editor)
         setMonaco(monaco)
@@ -220,6 +250,7 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
         setErrorMarkerDecorations(errorCollection)
     }
 
+    // when the editor content changes, update the parent state
     return <Editor defaultLanguage="json" value={props.inputData} onChange={props.handleInputChange} height="100%" theme="vs-light" onMount={onMount} options={{
         // line break
         wordWrap: "on",
@@ -227,36 +258,55 @@ export function TraceEditor(props: { inputData: string, handleInputChange: (valu
         minimap: { enabled: false },
         // custom theme with adapted background color
         theme: "vs-light",
-        
     }} />
 }
 
+// Props for the RenderedTrace component
 interface RenderedTraceProps {
+    // the serialized trace to render
     trace: string | object;
-    annotations: AnnotatedJSON;
+    // highlights to highlight in the trace view
+    highlights: HighlightedJSON;
+    // a decorator configuration for inline editor (e.g. to annotate a line, or comment on a line)
     decorator?: TraceDecorator;
-    prelude?: string
+    // additional components to show before the trace (in the same scroll container)
+    prelude?: React.ReactNode;
+    // callback when the component is mounted
     onMount?: (events: Record<string, BroadcastEvent>) => void
 }
 
+// state for the RenderedTrace component
 interface RenderedTraceState {
+    // error that occurred during rendering
     error: Error | null;
+    // parsed trace object
     parsed: any | null;
+    // last parsed trace string
     traceString: string | object | null;
-    selectedAnnotationAddress: string | null;
+    // currently selected highlight address (where the inline editor is shown)
+    selectedHighlightAddress: string | null;
 
+    // broadcast events for the trace view to allow parent components to 
+    // expand/collapse all messages
     events: {
         collapseAll: BroadcastEvent,
         expandAll: BroadcastEvent
     }
 }
 
-interface AnnotationContext {
-    selectedAnnotationAnchor: string | null
+// context for the highlight state
+interface HighlightContext {
+    // currently selected highlight address
+    selectedHighlightAnchor: string | null
+    // set the selected highlight address
     setSelection: (address: string | null) => void
+    // decorator configuration of the component to show
+    // when the inline editor is shown
     decorator?: TraceDecorator
 }
 
+// a broadcast event to allow parent components to call into handlers
+// in child views (e.g. to expand/collapse all messages)
 class BroadcastEvent {
     listeners: any[]
 
@@ -277,7 +327,10 @@ class BroadcastEvent {
     }
 }
 
-// handles exceptions in the rendering pass, gracefully
+/**
+ * Components that renders a list of messages, but handles rendering issues and errors gracefully 
+ * on a per-message basis.
+ */
 export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedTraceState> {
     listRef: any
 
@@ -289,7 +342,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             error: null, 
             parsed: null, 
             traceString: null,
-            selectedAnnotationAddress: null,
+            selectedHighlightAddress: null,
             events: {collapseAll: new BroadcastEvent(), expandAll: new BroadcastEvent()}
         }
 
@@ -343,21 +396,22 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
 
 
         try {
-            const annotationContext: AnnotationContext = {
+            const highlightContext: HighlightContext = {
                 decorator: this.props.decorator,
-                selectedAnnotationAnchor: this.state.selectedAnnotationAddress,
+                selectedHighlightAnchor: this.state.selectedHighlightAddress,
                 setSelection: (address: string | null) => {
-                    this.setState({ selectedAnnotationAddress: address })
+                    this.setState({ selectedHighlightAddress: address })
                 }
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
             return <div className="traces" ref={this.listRef}>
                 {this.props.prelude}
-                {/* overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
+                {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
+                {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
                     {(item: any, index: number) => {
-                        return <MessageView key={index} index={index} message={item} annotations={this.props.annotations.for_path("messages." + index)} annotationContext={annotationContext} address={"messages[" + index + "]"} events={this.state.events} />
+                        return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} events={this.state.events} />
                     }}
                 </ViewportList>
             </div>
@@ -372,15 +426,28 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
     }
 }
 
+/**
+ * Props for the MessageView component.
+ */
 interface MessageViewProps {
+    // message object to render
     message: any;
+    // index of the message in the trace
     index: number;
-    annotations: AnnotatedJSON;
-    annotationContext?: AnnotationContext;
+    // trace highlights that map to this message
+    highlights: HighlightedJSON;
+    // context for the highlights
+    highlightContext?: HighlightContext;
+    // address of the message in the trace
     address: string
+    // broadcast events for the trace view to allow parent components to
+    // e.g. expand/collapse all messages
     events: Record<string, BroadcastEvent>
 }
 
+/**
+ * A component that renders a single message in the trace view, including role, content, and tool calls
+ */
 function RoleIcon(props: { role: string }) {
     const role = props.role;
     if (role === "user") {
@@ -392,6 +459,9 @@ function RoleIcon(props: { role: string }) {
     }
 }
 
+/**
+ * Component that renders a message header, including the role and if applicable, a compact view of the message content (e.g. the tool call)
+ */
 function MessageHeader(props: { className: string, role: string, message: any, expanded: boolean, setExpanded: (state: boolean) => void, address: string }) {
     return <div className={"role " + props.className} onClick={() => props.setExpanded(!props.expanded)}>
         {props.expanded ? <BsCaretRightFill/> : <BsCaretDownFill/>}
@@ -404,6 +474,8 @@ function MessageHeader(props: { className: string, role: string, message: any, e
     </div>
 }
 
+// categorical color palette for marking different tools
+// to enable easier visual distinction
 const categorical_colors = [
     "#E1D1CF",
     "#FFC8C0",
@@ -415,11 +487,13 @@ const categorical_colors = [
     "#D0D5DC"
 ]
 
+// hashes a string to a color in the categorical color palette
 function string_color(s: string) {
     const hash = s.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
     return categorical_colors[hash % categorical_colors.length]
 }
 
+// component that renders a compact view of a message's content, e.g. the associated tool call
 function CompactView(props: { message: any }) {
     // get first tool call or use message as tool call
     const message = props.message.message
@@ -451,6 +525,9 @@ function CompactView(props: { message: any }) {
     </span>
 }
 
+/**
+ * Component that renders a single message in the trace view, including role, content, and tool calls
+ */
 class MessageView extends React.Component<MessageViewProps, { error: Error | null, expanded: boolean }> {
     collapse: () => void
     expand: () => void
@@ -488,7 +565,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
             </div>
         }
         
-        const isHighlighted = this.props.annotations.rootAnnotations.length
+        const isHighlighted = this.props.highlights.rootHighlights.length
 
         try {
             const message = this.props.message
@@ -500,7 +577,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                         <MessageHeader message={message} className="seamless" role="Assistant" expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />
                         {!this.state.expanded && <>
                         <div className="tool-calls seamless">
-                            <ToolCallView tool_call={message} annotations={this.props.annotations} annotationContext={this.props.annotationContext} address={this.props.address} />
+                            <ToolCallView tool_call={message} highlights={this.props.highlights} highlightContext={this.props.highlightContext} address={this.props.address} />
                         </div>
                         </>}
                     </div>
@@ -516,24 +593,17 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
             } else {
                 // normal message (role + content and optional tool calls)
                 return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")}>
-                    {/* {message.role && <div className="role">
-                        {message.role}
-                        <div className="address">
-                            {this.props.address}
-                        </div>
-                    </div>} */}
                     {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />}
                     {!this.state.expanded && <>
-                    {message.content && <div className={"content " + message.role}><Annotated annotations={this.props.annotations.for_path("content")} annotationContext={this.props.annotationContext} address={this.props.address + ".content"}>{message.content}</Annotated></div>}
+                    {message.content && <div className={"content " + message.role}><Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"}>{message.content}</Annotated></div>}
                     {message.tool_calls && <div className={"tool-calls " + (message.content ? "" : " seamless")}>
                         {message.tool_calls.map((tool_call: any, index: number) => {
-                            return <ToolCallView key={index} tool_call={tool_call} annotations={this.props.annotations.for_path("tool_calls." + index)} annotationContext={this.props.annotationContext} address={this.props.address + ".tool_calls[" + index + "]"} />
+                            return <ToolCallView key={index} tool_call={tool_call} highlights={this.props.highlights.for_path("tool_calls." + index)} highlightContext={this.props.highlightContext} address={this.props.address + ".tool_calls[" + index + "]"} />
                         })}
                     </div>}
                     </>}
                 </div>
             }
-
         } catch (e) {
             this.setState({ error: e as Error })
             return null
@@ -541,10 +611,14 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
     }
 }
 
-
-function ToolCallView(props: { tool_call: any, annotations: any, annotationContext?: AnnotationContext, address: string }) {
+/**
+ * Component that renders a tool call in the trace view, including the function name and arguments.
+ * 
+ * May occur as a top-level tool call or as part of a message.
+ */
+function ToolCallView(props: { tool_call: any, highlights: any, highlightContext?: HighlightContext, address: string }) {
     const tool_call = props.tool_call
-    const annotations = props.annotations
+    const highlights = props.highlights
 
     if (tool_call.type != "function") {
         return <pre>{JSON.stringify(tool_call, null, 2)}</pre>
@@ -553,7 +627,7 @@ function ToolCallView(props: { tool_call: any, annotations: any, annotationConte
     const f = tool_call.function
     let args = f.arguments;
 
-    const isHighlighted = annotations.rootAnnotations.length
+    const isHighlighted = highlights.rootHighlights.length
 
     // format args as error message if undefined
     if (typeof args === "undefined") {
@@ -564,12 +638,12 @@ function ToolCallView(props: { tool_call: any, annotations: any, annotationConte
         args = args.toString()
     }
 
-    // translate annotations on arguments back into JSON source ranges
-    const argumentAnnotations = annotations.for_path("function.arguments")
+    // translate highlights on arguments back into JSON source ranges
+    const argumentHighlights = highlights.for_path("function.arguments")
 
     return <div className={"tool-call " + (isHighlighted ? "highlight" : "")}>
         <div className="function-name">
-            <Annotated annotations={annotations.for_path("function.name")} annotationContext={props.annotationContext} address={props.address + ".function.name"}>
+            <Annotated highlights={highlights.for_path("function.name")} highlightContext={props.highlightContext} address={props.address + ".function.name"}>
                 {f.name || <span className="error">Could Not Parse Function Name</span>}
             </Annotated>
             <div className="address">
@@ -578,15 +652,22 @@ function ToolCallView(props: { tool_call: any, annotations: any, annotationConte
         </div>
         <div className="arguments">
             <pre>
-                <AnnotatedJSONTable tool_call={props.tool_call} annotations={argumentAnnotations} annotationContext={props.annotationContext} address={props.address + ".function.arguments"}>{args}</AnnotatedJSONTable>
+                <HighlightedJSONTable tool_call={props.tool_call} highlights={argumentHighlights} highlightContext={props.highlightContext} address={props.address + ".function.arguments"}>{args}</HighlightedJSONTable>
             </pre>
         </div>
     </div>
 }
 
-function AnnotatedJSONTable(props: { tool_call: any, annotations: any, children: any, annotationContext?: AnnotationContext, address: string }) {
+/**
+ * Component that renders a JSON object as a table with keys and values, highlighting specific ranges in the JSON.
+ * 
+ * Supports passing down the corresponding highlights to the keys and values.
+ * 
+ * Used to render the different arguments of a tool call.
+ */
+function HighlightedJSONTable(props: { tool_call: any, highlights: any, children: any, highlightContext?: HighlightContext, address: string }) {
     const tool_call = props.tool_call
-    const annotations = props.annotations
+    const highlights = props.highlights
 
     if (tool_call.type != "function") {
         return <pre>{JSON.stringify(tool_call, null, 2)}</pre>
@@ -602,7 +683,7 @@ function AnnotatedJSONTable(props: { tool_call: any, annotations: any, children:
     } else if (typeof args === "object") {
         keys = Object.keys(args)
     } else {
-        return <AnnotatedStringifiedJSON annotations={annotations} address={props.address}>{args}</AnnotatedStringifiedJSON>
+        return <AnnotatedStringifiedJSON highlights={highlights} address={props.address}>{args}</AnnotatedStringifiedJSON>
     }
 
     if (keys.length === 0) {
@@ -614,7 +695,7 @@ function AnnotatedJSONTable(props: { tool_call: any, annotations: any, children:
             {keys.map((key: string, index: number) => {
                 return <tr key={index}>
                     <td className="key">{key}</td>
-                    <td className="value"><AnnotatedStringifiedJSON annotations={annotations.for_path(key)} address={props.address + "." + key} annotationContext={props.annotationContext}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
+                    <td className="value"><AnnotatedStringifiedJSON highlights={highlights.for_path(key)} address={props.address + "." + key} highlightContext={props.highlightContext}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
                 </tr>
             })}
         </tbody>
@@ -639,7 +720,7 @@ function replaceNLs(content: string, key: string) {
     }
 }
 
-function Annotated(props: { annotations: any, children: any, annotationContext?: AnnotationContext, address?: string }) {
+function Annotated(props: { highlights: any, children: any, highlightContext?: HighlightContext, address?: string }) {
     const [contentElements, setContentElements] = useState([] as any)
     const parentElement = useRef(null as any);
 
@@ -647,13 +728,13 @@ function Annotated(props: { annotations: any, children: any, annotationContext?:
         const content = props.children.toString()
         const elements: React.ReactNode[] = []
         
-        let annotations_in_text = props.annotations.in_text(JSON.stringify(content, null, 2))
-        annotations_in_text = AnnotatedJSON.disjunct(annotations_in_text)
-        let annotations_per_line = AnnotatedJSON.by_lines(annotations_in_text, '"' + content + '"');
+        let highlights_in_text = props.highlights.in_text(JSON.stringify(content, null, 2))
+        highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
+        let highlights_per_line = HighlightedJSON.by_lines(highlights_in_text, '"' + content + '"');
         
-        for (const annotations of annotations_per_line) {
+        for (const highlights of highlights_per_line) {
             let line: React.ReactNode[] = []
-            for (const interval of annotations) {
+            for (const interval of highlights) {
                 // additionally highlight NLs with unicode character
                 let c = content.substring(interval.start - 1, interval.end - 1)
                 c = replaceNLs(c, 'content-' + interval.start + "-" + interval.end)
@@ -663,10 +744,11 @@ function Annotated(props: { annotations: any, children: any, annotationContext?:
                     </span>)
                 } else {
                     const message_content = content.substring(interval.start - 1, interval.end - 1)
-                    line.push(<span key={(elements.length) + "-" + (interval.start) + "-" + (interval.end)} className="annotated">{message_content}</span>)
+                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    line.push(<span key={(elements.length) + "-" + (interval.start) + "-" + (interval.end)} className={className}>{message_content}</span>)
                 }
             }
-            const highlights = annotations
+            const line_highlights = highlights
                 .filter(a => a.content)
                 .map(a => ({
                     snippet: content.substring(a.start - 1, a.end - 1),
@@ -674,15 +756,15 @@ function Annotated(props: { annotations: any, children: any, annotationContext?:
                     end: a.end - 1,
                     content: a.content
                 }))
-            elements.push(<Line key={'line-' + elements.length} highlights={highlights} annotationContext={props.annotationContext} address={props.address + ":L" + elements.length}>{line}</Line>)
+            elements.push(<Line key={'line-' + elements.length} highlights={line_highlights} highlightContext={props.highlightContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
         setContentElements(elements)
-    }, [props.annotations, props.children, props.annotationContext?.selectedAnnotationAnchor, props.annotationContext?.decorator])
+    }, [props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor, props.highlightContext?.decorator])
 
     return <span ref={parentElement} className="annotated-parent text">{contentElements}</span>
 }
 
-function AnnotatedStringifiedJSON(props: { annotations: any, children: any, annotationContext?: AnnotationContext, address: string }) {
+function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highlightContext?: HighlightContext, address: string }) {
     const [contentElements, setContentElements] = useState([] as any)
     const parentElement = useRef(null as any);
 
@@ -690,26 +772,27 @@ function AnnotatedStringifiedJSON(props: { annotations: any, children: any, anno
         const content = props.children.toString()
         const elements: React.ReactNode[] = []
        
-        let annotations_in_text = props.annotations.in_text(content)
-        annotations_in_text = AnnotatedJSON.disjunct(annotations_in_text)
-        let annotations_per_line = AnnotatedJSON.by_lines(annotations_in_text, content)
+        let highlights_in_text = props.highlights.in_text(content)
+        highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
+        let highlights_per_line = HighlightedJSON.by_lines(highlights_in_text, content)
         
-        for (const annotations of annotations_per_line) {
+        for (const line_highlights of highlights_per_line) {
             let line: React.ReactNode[] = []
-            for (const interval of annotations) {
-        // for (const interval of annotations_in_text) {
+            for (const interval of line_highlights) {
+        // for (const interval of highlights_in_text) {
                 if (interval.content === null) {
                     line.push(<span key={interval.start + "-" + interval.end} className="unannotated">
                         {content.substring(interval.start, interval.end)}
                     </span>)
                 } else {
-                    const content = props.children.toString().substring(interval.start, interval.end)
-                    line.push(<span key={(interval.start) + "-" + (interval.end)} className="annotated">
-                        {content}
+                    const message_content = props.children.toString().substring(interval.start, interval.end)
+                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    line.push(<span key={(interval.start) + "-" + (interval.end)} className={className}>
+                        {message_content}
                     </span>)
                 }
             }
-            const highlights = annotations
+            const highlights = line_highlights
                 .filter(a => a.content)
                 .map(a => ({
                     snippet: content.substring(a.start, a.end),
@@ -717,34 +800,34 @@ function AnnotatedStringifiedJSON(props: { annotations: any, children: any, anno
                     end: a.end,
                     content: a.content
                 }))
-            elements.push(<Line key={'line-' + elements.length} highlights={highlights} annotationContext={props.annotationContext} address={props.address + ":L" + elements.length}>{line}</Line>)
+            elements.push(<Line key={'line-' + elements.length} highlights={highlights} highlightContext={props.highlightContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
         setContentElements(elements)
-    }, [props.annotations, props.children, props.annotationContext?.selectedAnnotationAnchor])
+    }, [props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor])
    
     return <span ref={parentElement} className="annotated-parent">
         {contentElements}
     </span>
 }
 
-function Line(props: { children: any, annotationContext?: AnnotationContext, address?: string, highlights?: GroupedAnnotation[] }) {
+function Line(props: { children: any, highlightContext?: HighlightContext, address?: string, highlights?: GroupedHighlight[] }) {
     // const [expanded, setExpanded] = useState(false)
-    const decorator = props.annotationContext?.decorator
+    const decorator = props.highlightContext?.decorator
 
     const setExpanded = (state: boolean) => {
         if (!props.address) {
             return;
         }
 
-        if (!state && props.address === props.annotationContext?.selectedAnnotationAnchor) {
-            props.annotationContext?.setSelection(null)
+        if (!state && props.address === props.highlightContext?.selectedHighlightAnchor) {
+            props.highlightContext?.setSelection(null)
         } else {
-            props.annotationContext?.setSelection(props.address)
+            props.highlightContext?.setSelection(props.address)
         }
     }
     
-    const expanded = props.address === props.annotationContext?.selectedAnnotationAnchor
-    const className = "line " + (props.highlights?.length ? "has-annotations" : "")
+    const expanded = props.address === props.highlightContext?.selectedHighlightAnchor
+    const className = "line " + (props.highlights?.length ? "has-highlights" : "")
     let extraClass = " "
 
     if (!decorator) {

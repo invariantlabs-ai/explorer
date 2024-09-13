@@ -12,6 +12,11 @@ function endpoint(url) {
   return url;
 }
 
+/**
+ * CRUD manager for a given remote resource.
+ * 
+ * Exposes functions to fetch, update, delete and create objects.
+ */
 class RemoteResource {
   constructor(fetchUrl, updateUrl, deleteUrl, createUrl) {
     this.fetchUrl = fetchUrl
@@ -84,6 +89,9 @@ class RemoteResource {
     })
   }
 
+  /**
+   * Transform the data before storing it in the data loader.
+   */
   transform(data) {
     return data
   }

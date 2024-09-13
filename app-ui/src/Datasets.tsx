@@ -6,7 +6,9 @@ import { Modal } from './Modal'
 import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 
-
+/**
+ * Creates a new dataset with the given name, with no data.
+ */
 function createDataset(name: string) {
   const promise = new Promise((resolve, reject) => {
 
@@ -33,6 +35,9 @@ function createDataset(name: string) {
   return promise
 }
 
+/**
+ * Uploads a new dataset to the current user's account.
+ */
 function uploadDataset(name: string, file: File) {
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData()
@@ -60,6 +65,9 @@ function uploadDataset(name: string, file: File) {
   return promise
 }
 
+/**
+ * Modal content for uploading a new dataset.
+ */
 export function UploadDatasetModalContent(props) {
   const [name, setName] = React.useState('')
   const [file, setFile] = React.useState<File | null>(null)
@@ -119,6 +127,11 @@ export function UploadDatasetModalContent(props) {
   </div>
 }
 
+/**
+ * Component to show a custom UI overlay for file uploads.
+ * 
+ * Supports drag and drop, by rendering a 0.0 opacity file <input/> on top of the custom UI.
+ */
 function FileUploadMask(props) {
   return <div className='file-upload-mask'>
     <div className='overlay'>
@@ -128,6 +141,9 @@ function FileUploadMask(props) {
   </div>
 }
 
+/**
+ * Content to show in the modal when deleting a dataset.
+ */
 export function DeleteDatasetModalContent(props) {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -166,6 +182,9 @@ export function DeleteDatasetModalContent(props) {
 }
 
 
+/**
+ * Compact version of the dataset list (e.g. to use on the home page).
+ */
 export function DatasetLinkList(props) {
   const userInfo = useUserInfo()
   const datasets = props.datasets || [];
@@ -182,13 +201,18 @@ export function DatasetLinkList(props) {
 </>
 }
 
+/**
+ * List of datasets for the current user.
+ */
 export function Datasets() {
+  // currently signed-in user info
   const userInfo = useUserInfo()
-  
+  // remote call to get the list of datasets
   const [datasets, refresh] = useDatasetList()
+  // tracks whether the Upload Dataset modal is currently shown
   const [showUploadModal, setShowUploadModal] = React.useState(false)
+  // tracks whether we are currently showing a delete modal for a particular dataset (null if none)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
-  const navigate = useNavigate()
   
   return <>
     {/* upload modal */}

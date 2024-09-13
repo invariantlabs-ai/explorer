@@ -2,7 +2,9 @@
  * Utilities for opening a trace in the Invariant Playground.
  */
 
-
+/**
+ * Tries to find the name of a tool call in the given messages.
+ */
 function findSomeToolCallName(messages) {
     let tool_call_msg = messages.find(msg => msg.tool_calls)
     if (!tool_call_msg) return null
@@ -13,6 +15,13 @@ function findSomeToolCallName(messages) {
     return tool_call.function.name
 }
 
+/**
+ * Tries to create a policy that is compatible with the Invariant Playground
+ * from the given messages (i.e. that matches some specific pattern in the
+ * list of messages).
+ * 
+ * Returns null if no compatible policy could be created.
+ */
 function makeCompatibleInvariantPolicy(messages) {
     let tool_call = findSomeToolCallName(messages)
     if (tool_call) {
@@ -34,6 +43,9 @@ function makeCompatibleInvariantPolicy(messages) {
  * @param messages The list of trace events to open in the playground. 
  * Messages must be serializable to JSON and then Base64. Messages must 
  * not exceed size of what a browser can handle in a URL.
+ * 
+ * This function will try to automatically synthesize a policy that matches
+ * some pattern in the given messages to showcase the Invariant Playground.
  */
 export function openInPlayground(messages: any[]) {
   if (!messages) {

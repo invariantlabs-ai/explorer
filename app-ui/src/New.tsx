@@ -27,6 +27,9 @@ function postTrace(trace: string) {
   })
 }
 
+/**
+ * Screen component for uploading a new snippet (single trace outside of dataset).
+ */
 export function New() {
     const [traceString, setTraceString] = React.useState(CONTENT)
     const [sideBySide, setSideBySide] = React.useState(true)
@@ -56,6 +59,7 @@ export function New() {
         })
     }
     
+    // show Upload button in header
     const header = <>
         <div className="spacer"></div>
         <button className="primary" onClick={() => onPostTrace()}>
@@ -64,27 +68,17 @@ export function New() {
     </>
 
     return <div className="panel fullscreen app new">
-      {/* {showWarning && <Modal title="Validation Errors" hasWindowControls onClose={() => setShowWarning(false)}>
-        <p>
-          Your trace contains validation errors, are you sure you want to upload it? Some features may not work as expected. 
-        </p>
-        <p>
-          You cannot edit this trace after uploading.
-        </p>
-        <div className="buttons">
-          <button onClick={() => setShowWarning(false)}>
-            Cancel
-          </button>
-          <button className="primary" onClick={() => postTrace(traceString)}>
-            Upload Anyway
-          </button>
-        </div>
-      </Modal>} */}
+      {/* uses a standard trace view which includes a side-by-side of an editor and the rendered view */}
       <TraceView 
+        // the trace string to display in the editor
         inputData={traceString} 
+        // whether to use the tabbed or side-by-side layout
         sideBySide={sideBySide} 
+        // update the trace string when the user types into the editor
         handleInputChange={(input: string | undefined) => setTraceString(input || '')} 
-        annotations={{}} 
+        // nothing to highlight/annotate here
+        highlights={{}} 
+        // extra UI to show above the trace view
         header={header} 
         title={"Upload Trace"} 
       />

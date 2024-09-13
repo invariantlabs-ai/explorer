@@ -60,7 +60,7 @@ class max_live_set:
 ACTIVE_USERS = max_live_set()
 ACTIVE_ANONYMOUS_USERS = max_live_set()
 
-def install_middleware(app):
+def install_active_user_monitoring_middleware(app):
     @app.middleware("http")
     async def count_active_users(request: Request, call_next):
 

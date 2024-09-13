@@ -97,17 +97,26 @@ function Query({dataset, id, name, count, query, deletable, icon, onSelect, refr
   </>
 }
 
+/**
+ * Component for displaying a single dataset related functionality (view, edit, delete, download, etc.)
+ */
 function DatasetView() {
+  // get dataset id from loader data (populated by site router)
   const props: any = useLoaderData()
+  
+  // loads details about the dataset from the API
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.username, props.datasetname)
+  // tracks whether the Delete Dataset modal is open
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
+  // tracks whether the dataset is ready for download
   const [downloadState, setDownloadState] = React.useState('ready')
-  
+  // used to navigate to a new page
   const navigate = useNavigate()
-
-  
+  // obtains the active user's information (if signed in)
   const userInfo = useUserInfo()
 
+
+  // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
     datasetLoader.update(null, {content: e.target.checked})
     .then(() => {
@@ -117,14 +126,19 @@ function DatasetView() {
           })
   }
 
+  // callback for when a user downloads a dataset
   const onDownloadDataset = (event) => {
     if (downloadState ==='ready') {
+      // indicate that the download is being prepared
       setDownloadState('waiting')
+      // trigger the download
       fetch('/api/v1/dataset/byid/' + dataset.id + '/full').then(response => {
         if (!response.ok) {
           throw new Error('could net fetch dataset')
         }
+        // waits for the response to be completed
         return response.json()}).then(data => {
+          // only once ready, create a link to download the dataset
           const link = document.createElement('a')
           var out = ''
           data.traces.forEach(trace => {
@@ -133,6 +147,8 @@ function DatasetView() {
           link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(out)
           link.setAttribute('download', dataset.name + '.jsonl')
           document.body.appendChild(link)
+          
+          // click link synthetically to trigger actual download
           link.click()
           document.body.removeChild(link)
           setDownloadState('ready')
@@ -144,12 +160,14 @@ function DatasetView() {
     event.preventDefault()
   }
  
+  // if the dataset is not loaded yet, display a loading message
   if (!dataset) {
     return <div className='empty'>
       <h3>Loading...</h3>
     </div>
   }
 
+  // if the dataset is not found, display a message
   return <div className="panel entity-list">
     <header>
       <h1>
@@ -161,6 +179,7 @@ function DatasetView() {
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={() => navigate("/")}></DeleteDatasetModalContent>
     </Modal>}
+    {/* dataset metadata (e.g. time uploaded, uploader, num traces) */}
     <Metadata extra_metadata={dataset?.extra_metadata}/>
     <h2>Traces</h2>
     <div className='query-list'>
@@ -180,10 +199,6 @@ function DatasetView() {
         <BsTrash/> Delete
       </button>
       </div>}
-      {/* <div>
-    <label htmlFor='public'><h4>Public</h4></label>
-    <input type='checkbox' name='public' id='public' checked={dataset.is_public} onChange={onPublicChange} disabled={dataset.user.id != userInfo?.id}/>
-    </div> */}
     {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
       <div>
         <h3>Publish</h3>
@@ -208,4 +223,4 @@ function DatasetView() {
   </div>
 }
 
-export default DatasetView
+export default DatasetView;

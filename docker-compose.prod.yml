@@ -8,10 +8,6 @@ services:
       - database
     environment:
       - APP_NAME=${APP_NAME}
-    volumes:
-      - type: bind
-        source: ./platform-auth/auth.py
-        target: /srv/app/routes/auth.py
     networks:
       - web
       - internal
@@ -39,10 +35,6 @@ services:
       - web
     environment:
       - APP_NAME=${APP_NAME}
-    volumes:
-      - type: bind
-        source: ./platform-auth/auth.py
-        target: /app/app-ui/server/auth.py
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"
