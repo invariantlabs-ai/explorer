@@ -53,10 +53,10 @@ messages: list[list[dict]] (required)
 **Description:** A list of batched traces to push. Each element is itself a list of event.
 
 ```typescript
-annotations: null (required)
+annotations: list[list[dict]]
 ```
 
-**Description**: Currently not supported, should always be null.
+**Description**: A list of annotations per trace in messages. Each annotation is an object of shape `{"content": "...", "address": "..."}` where the address is of the form `messages.0.content:5-10`, i.e. a pair `<json_path>:<start>-<end>` that is resolved relative to the relevant trace in `messages`. For instance, `messages.0.content:5-10` will annotate the the character range 5-10 in the `content` value of the first message of the event log.
 
 ```typescript
 dataset: string (optional)
@@ -80,7 +80,7 @@ curl -X POST https://explorer.invariantlabs.ai/api/v1/push/trace \
 -H "Content-Type: application/json" \
 -d '{
   "messages": [[{"role": "user", "content": "first message in trace 1"}], [{"role": "user", "content": "first message in trace 2"}]],
-  "annotations": null,
+  "annotations": [[{"content": "example annotation", "address": "messages.0.content:5-10"}]]
   "dataset": "example_dataset",
   "metadata": [{"metadata_key1": "metadata_key1 for trace 1"}, {"metadata_key2": "metadata_key2 for trace 2"}]
 }
