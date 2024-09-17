@@ -298,6 +298,10 @@ body {
         pre {
             white-space: pre-wrap;
             border-radius: 0pt;
+
+            .value {
+                overflow-wrap: anywhere;
+            }
         }
     }
 
