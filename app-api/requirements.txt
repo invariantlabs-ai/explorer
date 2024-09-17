@@ -2,6 +2,7 @@ fastapi
 uvicorn
 sqlalchemy[postgresql]
 alembic
+openai
 pyyaml
 python-jose
 passlib[bcrypt]
