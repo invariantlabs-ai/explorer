@@ -331,6 +331,19 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
 
 @dataset.post("/analyze/{id}")
 async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    """Analyzes all traces in the dataset using invariant analyzer and adds the ranges that correspond to errors as annotations that
+    can be highlighted in the UI.
+    TODO: Right now we run analysis locally, but in the future this will be remote call (so it's fine to block for now).
+
+    Args:
+        request: The HTTP request containing the policy as a string, and a boolean flag that determines whether the existing annotations
+                produced by the analyzer should be overwritten.
+        id: The ID of the dataset to analyze.
+        userinfo: The user's identity information.
+
+    Returns:
+        A dictionary containing the analysis result.
+    """
     user_id = userinfo['sub']
 
     # get all traces of the dataset id
@@ -347,6 +360,7 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
         for trace in traces:
             trace_id = trace["id"]
             trace = load_trace(session, {"id": trace_id}, user_id)
+            # Replace the parameters in the policy string with the parameters in the trace metadata
             analysis_params = {k: v for k, v in trace.extra_metadata.items() if type(k) is str and type(v) is str}
             trace_policy_str = policy_str.format(**analysis_params)
 
