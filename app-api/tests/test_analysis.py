@@ -61,13 +61,3 @@ def test_analysis(host, temp_dataset):
     
     total_errors = response.json()["total_errors"]
     assert total_errors == 3
-
-
-
-
-
-
-
-
-
-
