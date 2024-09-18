@@ -123,7 +123,7 @@ export function Explorer(props) {
         highlights={HighlightedJSON.from_mappings(mappings)}
         onMount={(events) => setEvents(events)}
         decorator={decorator}
-        prelude={<Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
+        prelude={<Metadata trace_id={activeTrace?.id} extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
       />
     </div>
   </>

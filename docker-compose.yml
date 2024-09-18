@@ -48,6 +48,7 @@ services:
     depends_on:
       - database
     environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PROJECTS_DIR=/srv/projects
       - TZ=Europe/Berlin
       - DEV_MODE=${DEV_MODE}

@@ -111,6 +111,9 @@ export function Metadata(props) {
         return null;
     }
 
+    if (props.trace_id) {
+        extra_metadata["trace_id"] = props.trace_id;
+    }
     return <div className='event metadata'>
         {props.header}
         <div className='content'>

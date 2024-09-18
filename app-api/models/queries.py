@@ -34,6 +34,7 @@ def load_trace(session, by, user_id, allow_shared=False, allow_public=False, ret
     else:
         return trace
 
+# TODO: Fix typo in the function name
 def load_annoations(session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key='trace_id')
     return session.query(Annotation, User).filter(query_filter).join(User, User.id == Annotation.user_id).all()
@@ -148,6 +149,7 @@ def trace_to_json(trace, annotations=None, user=None):
 def annotation_to_json(annotation, user=None, **kwargs):
     out = {
         "id": annotation.id,
+        "trace_id": annotation.trace_id,
         "content": annotation.content,
         "address": annotation.address,
         "time_created": annotation.time_created,

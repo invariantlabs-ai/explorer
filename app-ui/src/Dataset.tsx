@@ -180,7 +180,7 @@ function DatasetView() {
       <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={() => navigate("/")}></DeleteDatasetModalContent>
     </Modal>}
     {/* dataset metadata (e.g. time uploaded, uploader, num traces) */}
-    <Metadata extra_metadata={dataset?.extra_metadata}/>
+    <Metadata extra_metadata={{...dataset?.extra_metadata, id: dataset.id}}/>
     <h2>Traces</h2>
     <div className='query-list'>
       {dataset.queries.map(query => {

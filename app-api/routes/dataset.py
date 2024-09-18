@@ -1,10 +1,12 @@
-import hashlib
-import os
-import re
+import copy
 import json
 import datetime
-import traceback
+import uuid
+
 from fastapi import Depends
+
+from invariant.policy import Policy
+from invariant.runtime.input import mask_json_paths
 
 from sqlalchemy.orm import DeclarativeBase
 
@@ -14,7 +16,6 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, or_, and_
 
-import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 
@@ -328,6 +329,88 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
             "extra_metadata": trace.extra_metadata
         } for trace in traces]
 
+@dataset.post("/analyze/{id}")
+async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    """Analyzes all traces in the dataset using invariant analyzer and adds the ranges that correspond to errors as annotations that
+    can be highlighted in the UI.
+    TODO: Right now we run analysis locally, but in the future this will be remote call (so it's fine to block for now).
+
+    Args:
+        request: The HTTP request containing the policy as a string, and a boolean flag that determines whether the existing annotations
+                produced by the analyzer should be overwritten.
+        id: The ID of the dataset to analyze.
+        userinfo: The user's identity information.
+
+    Returns:
+        A dictionary containing the analysis result.
+    """
+    user_id = userinfo['sub']
+
+    # get all traces of the dataset id
+    traces = get_traces(request, {'id': id}, userinfo)
+    
+    payload = await request.json()
+    overwrite = bool(payload.get("overwrite", True))
+    policy_str = payload.get("policy_str", "")
+
+    # analysis stats
+    total_errors = 0
+
+    with Session(db()) as session:
+        for trace in traces:
+            trace_id = trace["id"]
+            trace = load_trace(session, {"id": trace_id}, user_id)
+            # Replace the parameters in the policy string with the parameters in the trace metadata
+            analysis_params = {k: v for k, v in trace.extra_metadata.items() if type(k) is str and type(v) is str}
+            trace_policy_str = policy_str.format(**analysis_params)
+
+            if overwrite:
+                # delete all existing annotations where source is the analyzer
+                annotations = load_annoations(session, trace_id)
+                for annotation, _ in annotations:
+                    if annotation.extra_metadata and annotation.extra_metadata.get("source") == "analyzer":
+                        session.delete(annotation)
+
+            policy = Policy.from_string(trace_policy_str)
+            messages = json.loads(trace.content)
+            res = policy.analyze(messages)
+
+            total_errors += len(res.errors)
+
+            if len(res.errors) > 0:
+                metadata = copy.copy(trace.extra_metadata) if trace.extra_metadata is not None else {}
+                for error in res.errors:
+                    if error.kwargs.get("is_moderated", False):
+                        json_paths = [range.json_path for range in error.ranges]
+                        moderated_messages = mask_json_paths(messages, json_paths, lambda x: "*" * len(x))
+                        metadata["moderated"] = True
+                if metadata.get("moderated", False):
+                    trace.content = json.dumps(moderated_messages)
+                    trace.extra_metadata = metadata
+
+            for error in res.errors:
+                metadata = {"source": "analyzer"}
+                for range in error.ranges:
+                    range_annotation = Annotation(
+                        trace_id=trace_id,
+                        user_id=user_id,
+                        address="messages." + str(range.json_path),
+                        content=str(error),
+                        extra_metadata=metadata)
+                    session.add(range_annotation)
+
+            analyzer_msg = "Invariant analyzer result:\n\n" + str(res)
+            main_annotation = Annotation(
+                trace_id=trace_id,
+                user_id=user_id,
+                address="messages[0].content:L0", # TODO: This is now hardcoded, but should be shown in separate analyzer card
+                content=analyzer_msg,
+                extra_metadata={"source": "analyzer"}
+            )
+            session.add(main_annotation)
+        session.commit()
+
+    return {"result": "success", "total_errors": total_errors}
 
 @dataset.get("/byid/{id}/traces")
 def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
