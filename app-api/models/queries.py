@@ -1,11 +1,13 @@
 import json
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
+from sqlalchemy.sql.expression import cast
+import sqlalchemy.sql.sqltypes as sqltypes
 from sqlalchemy import and_, or_
 from fastapi import HTTPException
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, SharedLinks, SavedQueries
 from util.util import get_gravatar_hash, split
-from lark import Lark, Transformer
 from sqlalchemy.sql import func
+import re
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Trace, User)
@@ -135,7 +137,7 @@ def trace_to_json(trace, annotations=None, user=None):
     out = {
         "id": trace.id,
         "index": trace.index,
-        "messages": json.loads(trace.content),
+        "messages": trace.content,
         "dataset": trace.dataset_id,
         "user_id": trace.user_id,
         **({"user": user} if user is not None else {}),
@@ -181,59 +183,47 @@ def dataset_to_json(dataset, user=None, **kwargs):
     return out
  
 def query_traces(session, dataset, query, count=False, return_search_term=False):    
-    grammar = r"""
-    query: (filter_term WS+)* search?
-    search: (simple_term WS*)+
-    filter_term: WORD OP WORD
-    simple_term: WORD
-    OP: ":" | "==" | ">" | "<" | "<=" | ">="
-    WS: /\s/
-    WORD: /[^\s><=\:]+/
-    """
-    class QueryTransformer(Transformer): 
-        def __init__(self):
-            super().__init__()
-            self.search_terms = []
-            self.filters = []  
-        
-        def simple_term(self, items):
-            self.search_terms.append(items[0].value)
-        
-        def filter_term(self, items):
-            self.filters.append((items[0].value, items[1].value, items[2].value))
-
+    filter_pattern = re.compile(r"([^:\s><=\:]+)(:|<|>|<=|>=)([^:\s><=\:]+)")
+    
     selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
     search_term = None
+
     if query is not None and len(query.strip()) > 0:
         try:
-            parser = Lark(grammar, parser='lalr', start='query')
-            query_parse_tree = parser.parse(query)
-            transformer = QueryTransformer()
-            transformer.transform(query_parse_tree)
+            search_terms = []
+            filters = []
+            for term in query.split(" "):
+                if match := filter_pattern.match(term):
+                    filters.append(match)
+                else:
+                    search_terms.append(term)
 
-            if len(transformer.search_terms) > 0:
-                search_term = " ".join(transformer.search_terms)
-                selected_traces = selected_traces.filter(func.lower(Trace.content).contains(search_term.lower()))
-            for filter in transformer.filters:
-                if filter[0] == 'is' and filter[1] == ':' and filter[2] == 'annotated':
+
+            if len(search_terms) > 0:
+                search_term = " ".join(search_terms)
+                selected_traces = selected_traces.filter(func.lower(cast(Trace.content, sqltypes.String)).contains(search_term.lower()))
+                
+            for filter in filters:
+                lhs, op, rhs = filter.group(1), filter.group(2), filter.group(3)
+                if lhs == 'is' and op == ':' and rhs == 'annotated':
                     selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
-                elif filter[0] == 'not' and filter[1] == ':' and filter[2] == 'annotated':
+                elif lhs == 'not' and op == ':' and rhs == 'annotated':
                     selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
-                elif filter[1] in ['>', '<', '>=', '<=', '=='] and (filter[0] == 'num_messages' or filter[2] == 'num_messages'):
-                    assert ((filter[0] == 'num_messages' and int(filter[2]) >= 0) or
-                            (filter[2] == 'num_messages' and int(filter[1]) >= 0))
-                    op = filter[1]
-                    if filter[2] == 'num_messages':
-                        comp = int(filter[1])
+                elif op in ['>', '<', '>=', '<=', '=='] and (lhs == 'num_messages' or rhs == 'num_messages'):
+                    assert ((lhs == 'num_messages' and int(rhs) >= 0) or
+                            (rhs == 'num_messages' and int(op) >= 0))
+                    op = op
+                    if rhs == 'num_messages':
+                        comp = int(op)
                         op = {'>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '=='}[op]
                     else:
-                        comp = int(filter[2])
+                        comp = int(rhs)
                     criteria = eval(f"Trace.extra_metadata['num_messages'].as_integer() {op} {comp}")
                     selected_traces = selected_traces.filter(criteria)
                 else:
                     raise Exception("Invalid filter")
         except Exception as e:
-            print('Error in query', e) # we still want these searches to go through 
+            print(f'Error in query: >{query}<' , e) # we still want these searches to go through 
 
     out = selected_traces.count() if count else selected_traces.all()
     if return_search_term:
@@ -242,32 +232,33 @@ def query_traces(session, dataset, query, count=False, return_search_term=False)
         return out
     
     
-def search_term_mappings(trace, search_terms):
+def search_term_mappings(trace, search_term):
     mappings = dict()
-    def traverse(o, path=''):
+    def traverse(o, term, path=''):
         if isinstance(o, dict):
             for key in o.keys():
-                traverse(o[key], path=path+f'.{key}')
+                traverse(o[key], term, path=path+f'.{key}')
         elif isinstance(o, list):
             for i in range(len(o)):
-                traverse(o[i], path=path+f'.{i}')
+                traverse(o[i], term, path=path+f'.{i}')
         else:
             s = str(o).lower()
-            for term in search_terms:
-                term = term.lower()
-                if term in s:
-                    begin = 0
-                    while True:
-                        start = s.find(term, begin)
-                        if start == -1:
-                            break
-                        end = start + len(term)
-                        mappings[f"{path}:{start}-{end}"] = {
-                            "content": term,
-                            "source": "search",
-                        }
-                        begin = end
-    content_object = json.loads(trace.content)
-    traverse(content_object, path='messages')
+            if term in s:
+                begin = 0
+                while True:
+                    start = s.find(term, begin)
+                    if start == -1:
+                        break
+                    end = start + len(term)
+                    mappings[f"{path}:{start}-{end}"] = {
+                        "content": term,
+                        "source": "search",
+                    }
+                    begin = end
+                        
+    if search_term is not None:
+        term = search_term.lower()
+        content_object = trace.content
+        traverse(content_object, term, path='messages')
     return mappings
 

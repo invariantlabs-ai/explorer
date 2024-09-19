@@ -195,7 +195,7 @@ function DatasetView() {
         <h3>Delete Entire Dataset</h3>
         Delete this dataset and all associated data. This action cannot be undone.
       </div>
-      <button className='danger' onClick={() => setSelectedDatasetForDelete(dataset)}>
+      <button aria-label="delete" className='danger' onClick={() => setSelectedDatasetForDelete(dataset)}>
         <BsTrash/> Delete
       </button>
       </div>}
@@ -214,7 +214,7 @@ function DatasetView() {
         <h3>Export Dataset</h3>
         Download a copy of the dataset.
       </div>
-      <button className='primary' onClick={() => onDownloadDataset()}>
+      <button aria-label="download" className='primary' onClick={() => onDownloadDataset()}>
         {downloadState !== 'waiting' && <><BsDownload/> Download</>}
         {downloadState === 'waiting' && <><BsMoonStarsFill/> Preparing...</>}
       </button>

@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback, act } from 'react'
 import React from 'react'
 
 function endpoint(url) {
-  const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+/*   const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
   if (isDev) {
     return "https://localhost" + url;
   }
-
+ */
   return url;
 }
 

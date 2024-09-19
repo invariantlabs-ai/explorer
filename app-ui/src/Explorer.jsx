@@ -112,7 +112,7 @@ export function Explorer(props) {
       {props.actions}
       <div className='vr' />
       <button className='inline' onClick={() => openInPlayground(activeTrace?.messages || [])}> <BsTerminal /> Open In Invariant</button>
-      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
+      {props.onShare && <button aria-label='share' className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
     </header>

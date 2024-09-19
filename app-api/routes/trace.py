@@ -183,7 +183,7 @@ async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, De
             index=0,
             user_id=user_id,
             content=content,
-            extra_metadata=str(extra_metadata)
+            extra_metadata=extra_metadata
         )
         
         session.add(trace)

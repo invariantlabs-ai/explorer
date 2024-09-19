@@ -1,0 +1,138 @@
+#/bin/bash
+
+function dev_run_test() {
+    docker run \
+        -e URL='https://127.0.0.1' \
+        --mount type=bind,source=./tests,target=/tests \
+        --network host \
+        explorer-test $@
+    exit $?
+}
+
+function prod_run_test() {
+    # TODO enable HTTPS checking
+    # TODO make sure a user exists in the database
+    echo "Not implemented"
+    exit 1
+}
+
+function ci_env() {
+   # set environment variables
+    source .env
+    export APP_NAME="explorer-test"
+    export DEV_MODE=true
+    export PORT_HTTP=8080
+    export PORT_HTTPS=8443
+    export PORT_API=8001
+}
+
+
+function ci_run_server() {
+    # test if dev environment is running, and refuse to start test environment if it is
+    if [ -n "$(docker ps -q --filter name=explorer-local-traefik)" ]; then
+      echo "Refunsing to start test eviroment. Please stop dev environment first."
+      echo "While different ports are used, running both environments at the same time can cause issues (due to traefik)."
+      exit 1
+    fi
+    
+    if [ -n "$(docker ps -q --filter name=explorer-test-local-traefik)" ]; then
+      echo "test environment is already running"
+      exit 1
+    fi
+    
+    ci_env
+   
+    # reset data
+    rm -rf /tmp/invariant-explorer-test/data
+    mkdir -p /tmp/invariant-explorer-test/data/database
+    mkdir -p /tmp/invariant-explorer-test/data/datasets
+
+    # start wait and stop docker to ensure everything is set up
+    # this avoids several network timing issues and initialization issues
+    docker compose -f docker-compose.test.yml up -d    
+    sleep 5
+    docker compose -f docker-compose.test.yml down
+   
+    # start clean test container
+    docker compose -f docker-compose.test.yml up -d    
+}
+
+function ci_run_test() {
+    # set environment variables
+    ci_env
+
+    # make sure we are signed up (dev user)
+    curl -k -X POST https://127.0.0.1:${PORT_HTTPS}/api/v1/user/signup
+    echo ""
+    
+    sleep 5
+
+    # run test
+    echo "Running tests on https://127.0.0.1:${PORT_HTTPS}..."
+    docker run \
+        -e URL="https://127.0.0.1:${PORT_HTTPS}" \
+        --mount type=bind,source=./tests,target=/tests \
+        --network host \
+        explorer-test $@
+    return $?
+}
+
+function ci() {
+    ci_run_server
+
+    echo "Waiting for service to start..."
+    sleep 30
+
+    ci_run_test $@
+    STATUS=$?
+    
+    # stop service
+    docker compose -f docker-compose.test.yml down
+    exit $STATUS
+}
+
+
+function build_tester() {
+    ci_env
+    docker build -t 'explorer-test' -f ./tests/Dockerfile.test ./tests
+}
+
+function build_test_env() {
+    ci_env
+    docker compose -f docker-compose.test.yml build
+}
+
+
+
+# dispatch behavior based on first argument
+command=$1
+shift; # remove first argument from $@
+case $command in
+  "build-test-env")
+    build_test_env
+    ;;
+  "build-tester")
+    build_tester
+  ;;
+  "dev")
+    dev_run_test $@
+    ;;
+  "dev-local")
+    cd ./tests && pytest $@
+    ;;
+  "prod")
+    prod $@
+    ;;
+  "ci-server")
+    ci_run_server
+    ;;
+  "env-stop")
+    APP_NAME="explorer-test" docker compose -f docker-compose.test.yml down
+    ;;
+  "ci")
+    ci $@
+    ;;
+  *)
+    dev_run_test $@
+    ;;
+esac

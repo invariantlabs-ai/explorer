@@ -121,13 +121,11 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
                     index=i,
                     user_id=user_id,
                     dataset_id=dataset.id,
-                    content=json.dumps(object),
+                    content=object,
                     extra_metadata=trace_metadata
                 )
                 session.add(trace)
                 i = i + 1
-
-        print("metadata", metadata, flush=True)
 
         session.commit()
         return dataset_to_json(dataset)
@@ -231,7 +229,7 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
         dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         selected_traces, search_term = query_traces(session, dataset, query, return_search_term=True)
         return [{'index': trace.index,
-                 'mapping': search_term_mappings(trace, [search_term])} for trace in selected_traces]
+                 'mapping': search_term_mappings(trace, search_term)} for trace in selected_traces]
     
 @dataset.put("/byuser/{username}/{dataset_name}/s")
 async def save_query(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
@@ -372,7 +370,7 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
                         session.delete(annotation)
 
             policy = Policy.from_string(trace_policy_str)
-            messages = json.loads(trace.content)
+            messages = trace.content
             res = policy.analyze(messages)
 
             total_errors += len(res.errors)

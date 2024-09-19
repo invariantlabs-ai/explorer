@@ -16,7 +16,7 @@ function postTrace(trace: string) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ 
-      "content": trace,
+      "content": JSON.parse(trace),
       "extra_metadata": {}
     })
   }).then((res) => {

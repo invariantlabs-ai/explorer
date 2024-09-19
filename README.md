@@ -107,3 +107,13 @@ Then, go to `certs/` and run the following commands:
 ```
 mkcert localhost
 ```
+
+## Testing
+To run tests during development, you can run the following command, while the dev server is running:
+
+```bash
+./test build-tester
+./test dev
+```
+
+For more details see [Testing](https://www.notion.so/Testing-Continuous-Integration-105de9ef425b802d927bfc5ce6e5d23e?pvs=4) on Notion.

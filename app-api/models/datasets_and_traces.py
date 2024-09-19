@@ -60,7 +60,7 @@ class Trace(Base):
     # user that uploaded the trace
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
-    content = mapped_column(String, nullable=False)
+    content = mapped_column(JSON, nullable=False)
     extra_metadata = mapped_column(JSON, nullable=False)
     time_created = mapped_column(DateTime(timezone=True), nullable=False, default=func.now())
     

@@ -1,10 +1,8 @@
 #!/bin/bash
 source .env
 export APP_NAME="explorer"
-export PLATFORM_URL="localhost"
-export PLATFORM_HOST='Host(`localhost`) || Host(`127.0.0.1`)' 
-export PLATFORM_API_HOST='(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))' 
 export DEV_MODE=true
-export APP_NAME=$APP_NAME
-export BASE_URL=localhost
+export PORT_HTTP=80
+export PORT_HTTPS=443
+export PORT_API=8000
 docker compose $@

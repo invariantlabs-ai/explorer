@@ -40,7 +40,6 @@ def signup(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUser
     with Session(db()) as session:
         save_user(session, userinfo)
         session.commit()
-
     return {
         "success": True
     }

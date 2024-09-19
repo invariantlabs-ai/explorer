@@ -619,9 +619,16 @@ export function SingleTrace() {
   let header = <></>
   if (dataset) {
     header = snippetData.isSnippet ? 
-      <h1><Link to={`/u/${snippetData.user}`}>{snippetData.user}</Link> <span className='traceid'># {props.traceId}</span><Time className='time'>{trace?.time_created || ''}</Time>
+      <h1>
+        <Link aria-label='path-user'
+          to={`/u/${snippetData.user}`}>{snippetData.user}
+        </Link>
+        <span className='traceid'># {props.traceId}</span>
+        <Time className='time'>{trace?.time_created || ''}</Time>
       </h1> :
-      <h1>{dataset ? <><Link to={`/user/${trace?.user}`}>{trace?.user} / </Link><Link to={`/user/${trace?.user}/dataset/${dataset.name}`}>{dataset.name}</Link></> : ""}<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
+      <h1>{dataset ? <>
+        <Link aria-label='path-user'  to={`/u/${trace?.user}`}>{trace?.user} / </Link>
+        <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""}<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
 
   return <div className="panel fullscreen app">

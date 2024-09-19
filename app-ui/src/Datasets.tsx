@@ -117,10 +117,10 @@ export function UploadDatasetModalContent(props) {
     <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dataset Name"/>
     <label>File (optional)</label>
     <FileUploadMask file={file}/>
-    <input type="file" onChange={e => setFile(e.target.files?.[0] || null)}/>
+    <input aria-label="file-input"  type="file" onChange={e => setFile(e.target.files?.[0] || null)}/>
     <span className='description'>Before uploading a dataset, make sure it is in the correct format, as expected by the Invariant analysis engine.</span>
     <br/>
-    <button className='primary' disabled={!name || loading} onClick={onSubmit}>
+    <button aria-label='create' className='primary' disabled={!name || loading} onClick={onSubmit}>
       {loading ? 'Uploading...' : 'Create'}
     </button>
     {error && <span className='error'>{error}</span>}
@@ -175,7 +175,7 @@ export function DeleteDatasetModalContent(props) {
     <h2>Are you sure you want to delete {props.dataset.name}?<br/><br/>
     Note that this action is irreversible. All associated data will be lost.</h2>
     {error ? <span className='error'>{error}</span> : <br/>}
-    <button className='danger' disabled={loading} onClick={onDelete}>
+    <button aria-label='confirm delete' className='danger' disabled={loading} onClick={onDelete}>
     {loading ? 'Deleting...' : 'Delete'}
     </button>
   </div>

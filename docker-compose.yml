@@ -1,4 +1,5 @@
 version: '3'
+name: ${APP_NAME}-local
 services:
   traefik:
     image: traefik:v2.0
@@ -19,8 +20,8 @@ services:
       - web
     ports:
       # Open traefik http [80] and https [443] ports.
-      - '80:80'
-      - '443:443'
+      - '${PORT_HTTP}:80'
+      - '${PORT_HTTPS}:443'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Mount the configuration file with the certificates list.
@@ -34,10 +35,10 @@ services:
       # Enable Traefik API handler entrypoint on https.
       - "traefik.http.routers.traefik.entrypoints=websecure"
       # # Instructs Traefik that the current router is dedicated to HTTPS requests only.
-      - "traefik.http.routers.traefik.tls=true"
+      #- "traefik.http.routers.traefik.tls=true"
       # # redirect http to https
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.traefik-http.middlewares=redirect-to-https"
+      #- "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      #- "traefik.http.routers.traefik-http.middlewares=redirect-to-https"
   app-api:
     build:
       context: ./app-api
@@ -45,8 +46,6 @@ services:
     working_dir: /srv/app
     env_file:
       - .env
-    depends_on:
-      - database
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PROJECTS_DIR=/srv/projects
@@ -57,7 +56,7 @@ services:
       - internal
       - web
     ports:
-      - '8000:8000'
+      - '${PORT_API}:8000'
     volumes:
       - type: bind
         source: ./app-api
@@ -65,7 +64,7 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-api.rule=${PLATFORM_API_HOST}"
+      - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
       - "traefik.http.routers.$APP_NAME-api.entrypoints=websecure"
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=web"
@@ -86,8 +85,6 @@ services:
     image: dpage/pgadmin4
     env_file:
       - .env
-    depends_on:
-      - database
     networks:
       - internal
     volumes:
@@ -101,8 +98,6 @@ services:
     image: node:alpine
     entrypoint: "sh -c 'yarn && yarn run dev --host 0.0.0.0 --port 5173'"
     working_dir: /srv/app
-    depends_on:
-      - app-api
     networks:
       - web
     volumes:
@@ -113,7 +108,7 @@ services:
       - APP_NAME=${APP_NAME}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-ui.rule=${PLATFORM_HOST}"
+      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
       - "traefik.http.routers.$APP_NAME-ui.entrypoints=websecure"
       - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
       - "traefik.http.routers.$APP_NAME-ui.tls=true"

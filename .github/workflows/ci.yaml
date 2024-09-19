@@ -1,0 +1,71 @@
+name: Explorer CI
+on: 
+  push:
+    branches:
+      - main
+      - testing
+      - bug_fixes
+jobs:
+  build:
+    name: Checkout & Build
+    timeout-minutes: 10
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Build Test Environnement
+      run: ./test build-test-env
+
+    - name: Build Test Runner
+      run: ./test build-tester
+
+  test:
+    name: Run Tests
+    timeout-minutes: 10
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+    - name: Run CI
+      run: ./test ci
+        
+  artifact:
+    name: Collect Artifact
+    runs-on: self-hosted
+    needs: test
+    if: always() # run despite tests failing
+      
+    steps:
+    - name: tar screenshots
+      run: tar czf screenshots.tar.gz ./tests/screenshots
+    - name: upload screenshots
+      uses: actions/upload-artifact@v4
+      with:
+        name: screenshots
+        path: screenshots.tar.gz 
+    - name: upload rest-result
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ./tests/results/test-results-all.xml
+    - name: test-report
+      uses: pmeier/pytest-results-action@main
+      if: always()
+      with:
+        path: ./tests/results/test-results-all.xml
+
+        # (Optional) Add a summary of the results at the top of the report
+        summary: true
+
+        # (Optional) Select which results should be included in the report.
+        # Follows the same syntax as `pytest -r`
+        display-options: fEX
+
+        # (Optional) Fail the workflow if no JUnit XML was found.
+        fail-on-empty: true
+
+        # (Optional) Title of the test results section in the workflow summary
+        title: Test results
+    
