@@ -2,8 +2,10 @@ import copy
 import json
 import datetime
 import uuid
+import asyncio
 
 from fastapi import Depends
+from fastapi.responses import StreamingResponse
 
 from invariant.policy import Policy
 from invariant.runtime.input import mask_json_paths
@@ -19,6 +21,7 @@ from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.dialects.postgresql import UUID
 from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 
+from models.importers import import_jsonl
 from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
 from models.queries import *
 
@@ -27,18 +30,6 @@ from routes.auth import UserIdentity, AuthenticatedUserIdentity
 
 # dataset routes
 dataset = FastAPI()
-
-def create_dataset(user_id, name, metadata):
-    """Create a dataset with given parameters."""
-    dataset = Dataset(
-        id=uuid.uuid4(),
-        user_id=user_id,
-        name=name,
-        extra_metadata=metadata
-    )
-    dataset.extra_metadata = metadata
-    return dataset
-
 
 def is_duplicate(user_id, name) -> bool:
     """Check if a dataset with the same name already exists."""
@@ -88,46 +79,11 @@ async def upload_file(request: Request, userinfo: Annotated[dict, Depends(Authen
     if is_duplicate(user_id, name):
         raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
-    lines = file.file.readlines()
-    # TODO: Not sure if file_size and num_lines metadata make sense, as more traces could be later uploaded to the dataset
-    metadata = {
-        "file_size": "{:.2f} kB".format(file.size / 1024),
-        "num_lines": len(lines),
-        "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    }
-
-    # save the metadata to the database
     with Session(db()) as session:
-        dataset = create_dataset(user_id, name, metadata)
-        session.add(dataset)
-        
-        i = 0
-        for line in lines:
-            object = json.loads(line)
-            if i == 0 and type(object) is dict and "metadata" in object.keys():
-                metadata = {**metadata, **object["metadata"]}
-                continue
-            else:
-                # extra trace metadata if present
-                if type(object) is list and len(object) > 0 and "metadata" in object[0].keys():
-                    trace_metadata = {**object[0]["metadata"]}
-                    object = object[1:]
-                else:
-                    trace_metadata = {}
-                # make sure to capture the number of messages
-                trace_metadata["num_messages"] = len(object) if type(object) is list else 1
-                trace = Trace(
-                    id=uuid.uuid4(),
-                    index=i,
-                    user_id=user_id,
-                    dataset_id=dataset.id,
-                    content=object,
-                    extra_metadata=trace_metadata
-                )
-                session.add(trace)
-                i = i + 1
-
+        lines = file.file.readlines()
+        dataset = import_jsonl(session, name, user_id, lines)
         session.commit()
+    
         return dataset_to_json(dataset)
 
 ########################################
@@ -409,14 +365,54 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
         session.commit()
 
     return {"result": "success", "total_errors": total_errors}
-
 @dataset.get("/byid/{id}/traces")
 def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
     return get_traces(request, {'id': id}, userinfo)
 
-@dataset.get("/byid/{id}/full")
-def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_all_traces({'id': id}, userinfo)
+class DBJSONEncoder(json.JSONEncoder):
+    """
+    JSON encoder that can handle UUIDs and datetime objects.
+    """
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+"""
+Used to stream out the trace data as JSONL to download the dataset.
+"""
+async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
+    # write out metadata message
+    yield json.dumps(dataset_info) + "\n"
+
+    traces = session.query(Trace).filter(Trace.dataset_id == dataset_id).all()
+    for trace in traces:
+        # load annotations for this trace
+        annotations = load_annoations(session, trace.id)
+        json_dict = trace_to_exported_json(trace, annotations)
+        yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
+
+        # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
+
+
+"""
+Download the dataset in JSONL format.
+"""
+@dataset.get("/byid/{id}/download")
+async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    with Session(db()) as session:
+        dataset, user = load_dataset(session, {'id': id}, userinfo['sub'], allow_public=True, 
+        return_user=True)
+        internal_dataset_info = dataset_to_json(dataset)
+        dataset_info = {
+            "metadata": {**internal_dataset_info["extra_metadata"]},
+        }
+
+        # streaming response, but triggers a download
+        return StreamingResponse(stream_jsonl(session, id, dataset_info, userinfo['sub']), media_type='application/json', headers={'Content-Disposition': 'attachment; filename="' + internal_dataset_info['name'] + '.jsonl"'})
+
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
@@ -425,7 +421,6 @@ def get_traces_by_name(request: Request, username:str, dataset_name:str, userinf
 @dataset.get("/byuser/{username}/{dataset_name}/full")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
     return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
-
 
 
 ########################################

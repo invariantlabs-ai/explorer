@@ -108,8 +108,6 @@ function DatasetView() {
   const [dataset, datasetStatus, datasetError, datasetLoader] = useRemoteResource(Dataset, props.username, props.datasetname)
   // tracks whether the Delete Dataset modal is open
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
-  // tracks whether the dataset is ready for download
-  const [downloadState, setDownloadState] = React.useState('ready')
   // used to navigate to a new page
   const navigate = useNavigate()
   // obtains the active user's information (if signed in)
@@ -128,35 +126,8 @@ function DatasetView() {
 
   // callback for when a user downloads a dataset
   const onDownloadDataset = (event) => {
-    if (downloadState ==='ready') {
-      // indicate that the download is being prepared
-      setDownloadState('waiting')
-      // trigger the download
-      fetch('/api/v1/dataset/byid/' + dataset.id + '/full').then(response => {
-        if (!response.ok) {
-          throw new Error('could net fetch dataset')
-        }
-        // waits for the response to be completed
-        return response.json()}).then(data => {
-          // only once ready, create a link to download the dataset
-          const link = document.createElement('a')
-          var out = ''
-          data.traces.forEach(trace => {
-            out += JSON.stringify(trace) + '\n'
-          })
-          link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(out)
-          link.setAttribute('download', dataset.name + '.jsonl')
-          document.body.appendChild(link)
-          
-          // click link synthetically to trigger actual download
-          link.click()
-          document.body.removeChild(link)
-          setDownloadState('ready')
-      }).catch(err => {
-        setDownloadState('ready')
-        alert('Could not download the dataset.')
-      })
-    }
+    // trigger the download (endpoint is /api/v1/dataset/byid/:id/download)
+    window.open(`/api/v1/dataset/byid/${dataset.id}/download`)
     event.preventDefault()
   }
  
@@ -215,8 +186,7 @@ function DatasetView() {
         Download a copy of the dataset.
       </div>
       <button aria-label="download" className='primary' onClick={() => onDownloadDataset()}>
-        {downloadState !== 'waiting' && <><BsDownload/> Download</>}
-        {downloadState === 'waiting' && <><BsMoonStarsFill/> Preparing...</>}
+        <><BsDownload/> Download</>
       </button>
     </div>
   </div>

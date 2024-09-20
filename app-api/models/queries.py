@@ -61,7 +61,7 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
     # join on user_id to get real user name
     result = session.query(Dataset, User).filter(query_filter).join(User, User.id == Dataset.user_id).first()
     if result is None:
-        return None
+        raise HTTPException(status_code=404, detail="Dataset not found")
     dataset, user = result
     
     if dataset is None:
@@ -162,6 +162,30 @@ def annotation_to_json(annotation, user=None, **kwargs):
         out['user'] = user_to_json(user)
     return out
 
+###
+# Custom JSON serialization for exporting data out of the database (exclude internal IDs and user information)
+###
+
+def trace_to_exported_json(trace, annotations=None, user=None):
+    out = {
+        "index": trace.index,
+        "messages": trace.content,
+        "metadata": trace.extra_metadata
+    }
+    if annotations is not None:
+        out['annotations'] = [annotation_to_exported_json(annotation, user=user) for annotation, user in annotations]
+    return out
+
+
+def annotation_to_exported_json(annotation, user=None, **kwargs):
+    out = {
+        "content": annotation.content,
+        "address": annotation.address,
+        "extra_metadata": annotation.extra_metadata,
+    }
+    out = {**out, **kwargs}
+    return out
+
 def user_to_json(user):
     return {
         "id": user.id,
@@ -171,7 +195,7 @@ def user_to_json(user):
     
 def dataset_to_json(dataset, user=None, **kwargs):
     out = {
-            "id": dataset.id, 
+            "id": dataset.id,
             "name": dataset.name, 
             "extra_metadata": dataset.extra_metadata,
             "is_public": dataset.is_public,

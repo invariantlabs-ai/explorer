@@ -18,7 +18,7 @@ async def test_upload_and_delete_dataset(dataset_name, url, context, delete_by):
                                     multipart={'file': {
                                         'name': dataset_name + '.json',
                                         'mimeType': 'application/octet-stream',
-                                        'buffer': b'[]'
+                                        'buffer': b''
                                         },
                                         'name': dataset_name})
     await expect(response).to_be_ok()
@@ -70,10 +70,11 @@ async def test_reupload_api(url, context, dataset_name, data_webarena_with_metad
         dataset_id = dataset['id']
         
         # download the dataset
-        response = await context.request.get(url + f'/api/v1/dataset/byid/{dataset_id}/full') 
-        downloaded_dataset = await response.json()
+        response = await context.request.get(url + f'/api/v1/dataset/byid/{dataset_id}/download') 
+        jsonl_data = await response.text()
+        downloaded_dataset = [json.loads(line) for line in jsonl_data.split("\n") if line]
 
-        async with util.TemporaryExplorerDataset(url, context, json.dumps(downloaded_dataset)) as dataset_new:
+        async with util.TemporaryExplorerDataset(url, context, "\n".join(jsonl_data.split("\n"))) as dataset:
             pass
     
    

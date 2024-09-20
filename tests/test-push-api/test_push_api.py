@@ -34,7 +34,7 @@ async def test_upload_traces(url, context, dataset_name, data_webarena_with_meta
                                     multipart={'file': {
                                         'name': dataset_name + '.json',
                                         'mimeType': 'application/json',
-                                        'buffer': b'{}'
+                                        'buffer': b''
                                         },
                                         'name': dataset_name})
     await expect(response).to_be_ok()

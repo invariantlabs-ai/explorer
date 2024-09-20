@@ -2,29 +2,44 @@
 
 ## Uploading Trace Datasets (`.jsonl`)
 
-### Metadata
+### Trace Format
 
-Explorer supports two levels of trace metadata: (1) dataset metadata and (2) trace metadata.
+The explorer supports two types of trace formats. (1) raw event lists and (2) annotated event lists. 
 
-#### Dataset Metadata
+#### Raw Event Lists
+
+Raw event lists are just `jsonl` files where each line is a JSON array of events. Each event is a dictionary with at least a `role` and `content` field. 
+
+```json
+[{ "role": "user", "content": "Hello, world!" }, { "role": "assistant", "content": "Hi!" }]
+[{ "role": "user", "content": "How are you?" }, { "role": "assistant", "content": "I'm good, thanks!" }]
+...
+```
+
+To include trace-level metadata in raw event lists, include a metadata JSON object as the first event in a line. 
+
+```json
+[{"metadata": {"key": "value"}}, { "role": "user", "content": "Hello, world!" }, { "role": "assistant", "content": "Hi!" }]
+```
+
+#### Annotated Event Lists
+
+Annotated event lists support the same format as raw event lists, but also include annotations. For this, each row is a JSON object with the fields `messages`, `annotations` (optional) and `metadata` (optional).
+
+```json
+{"messages": [{ "role": "user", "content": "Hello, world!" }, { "role": "assistant", "content": "Hi!" }], "annotations": [{"content": "example annotation", "address": "messages.0.content:5-10"}], "metadata": {"key": "value"}}
+{"messages": [{ "role": "user", "content": "How are you?" }, { "role": "assistant", "content": "I'm good, thanks!" }], "annotations": [], "metadata": {}}
+```
+
+### Dataset Metadata
 
 To provide dataset metadata, simply include a metadata JSON object as the first line of your uploaded `.jsonl` file, with the following fields:
 
-```
+```json
 {"metadata": {...}}
 ```
 
-This metadata object will not be included as a separate trace and will not be displayed in the trace list. It is only used to provide additional information about the dataset.
-
-#### Trace Metadata
-
-To provide trace metadata, include a metadata JSON object as the first message of a trace, similar to the dataset metadata:
-
-```
-{"metadata": {...}}
-```
-
-Again, this metadata object will not be included as trace event, but rather as metadata for the entire trace.
+This is supported for both raw and annotated event lists.
 
 ## Push Trace API (`/api/v1/push/trace`)
 
