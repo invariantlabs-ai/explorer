@@ -3,8 +3,9 @@ on:
   push:
     branches:
       - main
-      - testing
-      - bug_fixes
+  pull_request:
+    branches:
+      - main
 jobs:
   build:
     name: Checkout & Build
