@@ -1,3 +1,5 @@
+[![Explorer CI](https://github.com/invariantlabs-ai/explorer/actions/workflows/ci.yaml/badge.svg)](https://github.com/invariantlabs-ai/explorer/actions/workflows/ci.yaml)
+
 # Invariant Explorer
 
 The explorer project consist of 3 main docker compose services: `app-api`, `app-ui` and a Postgres `database`. 
