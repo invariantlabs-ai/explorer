@@ -102,8 +102,6 @@ function build_test_env() {
     docker compose -f docker-compose.test.yml build
 }
 
-
-
 # dispatch behavior based on first argument
 command=$1
 shift; # remove first argument from $@

@@ -106,12 +106,15 @@ async def annotate_trace(request: Request, id: str, userinfo: Annotated[dict, De
         payload = await request.json()
         content = payload.get("content")
         address = payload.get("address")
+        extra_metadata = payload.get("extra_metadata")
 
         annotation = Annotation(
             trace_id=trace.id,
             user_id=user_id,
             address=address,
-            content=str(content))
+            content=str(content),
+            extra_metadata=extra_metadata
+        )
 
         session.add(annotation)
         session.commit()
