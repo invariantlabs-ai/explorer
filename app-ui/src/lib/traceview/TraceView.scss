@@ -190,7 +190,6 @@ body {
     }
 }
 
-
 .event {
     border-radius: 5pt;
     border: 1pt solid var(--border-color);
@@ -199,17 +198,43 @@ body {
     max-width: 800pt;
 
     &.analysis-result {
+        background-color: rgba(179, 133, 217, 0.1);
+        margin-bottom: 15pt;
+        margin-top: 10pt;
+        border: 1pt solid #5855F6;
+
+        .analysis-result-header {
+            margin-bottom: 10pt;
+
+            img {
+                width: 15pt;
+                position: relative;
+                top: 3pt;
+                margin-right: 5pt;
+            }
+        }
+
+        .num-matches {
+            opacity: 0.6;
+        }
 
         .analysis-error {
             margin: 5pt;
-            padding: 5pt;
+            padding: 5pt 10pt;
             border: 1pt solid var(--border-color);
             border-radius: 5pt;
-            background-color: rgba(179, 133, 217, 0.5);
+            background-color: white;
+            font-size: 10pt;
 
             .analysis-error-text {
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-start;
+
+                svg {
+                    margin-right: 6pt;
+                    position: relative;
+                    top: 2pt;
+                }
             }
         }
     }

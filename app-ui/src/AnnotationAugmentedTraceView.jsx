@@ -161,11 +161,10 @@ export function AnnotationAugmentedTraceView(props) {
         decorator={decorator}
         // extra UI to show at the top of the traceview like metadata
         prelude={
-          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
-        }
-        // extra UI to show the analyzer results
-        analyzer={
-          <AnalysisResult errors={errors} />
+          <>
+            <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
+            {errors.length > 0 && <AnalysisResult errors={errors} />}
+          </>
         }
       />
     </div>
