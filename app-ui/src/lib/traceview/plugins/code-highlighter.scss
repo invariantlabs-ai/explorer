@@ -1,0 +1,26 @@
+div.code-highlighter {
+    // background-color: #f6f6f6;
+    border-radius: 4px;
+    overflow-x: auto;
+    padding: 0pt;
+    padding-bottom: -10pt;
+
+    font-family: monospace;
+    white-space: pre-wrap;
+
+    position: relative;
+
+    span.language {
+        display: block;
+        position: absolute;
+        top: 5pt;
+        right: 5pt;
+        background-color: #0000001c;
+        color: black;
+        opacity: 0.6;
+        font-size: 6pt;
+        padding: 2pt;
+        border-radius: 2pt;
+        font-weight: bold;
+    }
+}

@@ -252,7 +252,7 @@ body {
     }
 
     .content {
-        padding: 5pt;
+        padding: 10pt 5pt;
         // break anywhere if needed, otherwise break at word
         word-break: break-word;
         white-space: pre-wrap;
@@ -269,6 +269,40 @@ body {
         font-family: monospace;
         font-size: 1.1em;
         white-space: pre-wrap;
+        overflow: visible;
+        padding: 0pt;
+
+        .annotated-parent {
+            width: 100%;
+            margin: 5pt;
+        }
+
+        .line {
+            margin-left: -5pt;
+        }
+
+        .default-renderer {
+            // padding-top: 5pt;
+            padding-bottom: 0pt;
+            position: relative;
+
+            .inline-line-editor {
+                position: relative;
+                left: -5pt;
+                width: calc(100% - 15pt);
+            }
+        }
+
+        .plugin {
+            // margin: 10pt;
+            overflow: visible;
+
+            .inline-line-editor {
+                position: relative;
+                left: -5pt;
+                // width: calc(100% - 5pt);
+            }
+        }
     }
 
     .role {
@@ -317,7 +351,7 @@ body {
 
     .tool-call {
         .function-name {
-            padding: 5pt;
+            padding: 10pt 5pt;
             font-family: monospace;
             background-color: rgba(0, 0, 0, 0.01);
             background-size: 5pt 5pt;
@@ -349,10 +383,46 @@ body {
 
     span.line {
         cursor: pointer;
+        padding-left: 5pt;
     }
 
     .annotated-parent {
         font-size: 12pt;
+        position: relative;
+        padding: 0pt;
+        margin: -5pt;
+
+        &:not(:hover) button.plugin-toggle {
+            opacity: 0.0;
+            transition: opacity 0.1s;
+        }
+
+        button.plugin-toggle {
+            position: absolute;
+            text-transform: uppercase;
+            font-weight: bold;
+            opacity: 1.0;
+            z-index: 100;
+            right: 10pt;
+            top: 1.5pt;
+            border-radius: 2pt;
+            padding: 0pt;
+            margin: 0pt;
+            height: 15pt;
+            line-height: 12.5pt;
+            padding-left: 2.5pt;
+            background: none;
+            font-size: 8pt;
+            padding: 1pt 5pt;
+            color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(227, 227, 227, 0.5);
+            backdrop-filter: blur(2pt);
+            -webkit-backdrop-filter: blur(2pt);
+
+            &:hover {
+                background-color: rgba(227, 227, 227, 0.918);
+            }
+        }
     }
 
     span.annotated {
@@ -458,11 +528,19 @@ table.json {
     width: 100%;
     border-collapse: collapse;
 
+    button.plugin-toggle {
+        top: 0pt !important;
+    }
+
     td {
-        padding: 5pt;
+        padding: 10pt 5pt;
         background-color: rgba(0, 0, 0, 0.04);
         border-bottom: 1pt solid var(--border-color);
         border-right: 1pt solid var(--border-color);
+    }
+
+    td.value {
+        padding-top: 15pt;
     }
 
     tr td:last-child {
@@ -496,12 +574,10 @@ div.inline-line-editor {
     border-top: 1pt solid var(--border-color);
     border-bottom: 1pt solid var(--border-color);
     position: relative;
-    left: -5pt;
-    padding-left: 5pt;
     margin-top: 5pt;
     margin-bottom: 10pt;
-    width: 100%;
     padding: 5pt 5pt;
+    padding-left: 10pt;
 }
 
 
