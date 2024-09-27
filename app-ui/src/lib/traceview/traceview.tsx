@@ -413,7 +413,6 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
-
                     {(item: any, index: number) => {
                         return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} events={this.state.events} />
                     }}
