@@ -271,8 +271,6 @@ interface RenderedTraceProps {
     decorator?: TraceDecorator;
     // additional components to show before the trace (in the same scroll container)
     prelude?: React.ReactNode;
-    // a component to show the analyzer results
-    analyzer?: React.ReactNode;
     // callback when the component is mounted
     onMount?: (events: Record<string, BroadcastEvent>) => void
 }
@@ -409,7 +407,6 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
 
             return <div className="traces" ref={this.listRef}>
                 {this.props.prelude}
-                {this.props.analyzer}
                 {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
