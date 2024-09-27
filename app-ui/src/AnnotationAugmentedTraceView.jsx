@@ -7,6 +7,7 @@ import { useUserInfo } from './UserInfo';
 
 import { Time } from './components/Time';
 import { Metadata } from './lib/metadata';
+import { AnalysisResult } from './lib/analysis_result';
 import { openInPlayground } from './lib/playground';
 import { HighlightedJSON } from './lib/traceview/highlights';
 import { RenderedTrace } from './lib/traceview/traceview';
@@ -68,6 +69,51 @@ export function AnnotationAugmentedTraceView(props) {
     </div>
   }
 
+  // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
+  const mappings = props.mappings || {}
+  // collect errors from analyzer annotations
+  const errors = []
+
+  for (let key in annotations) {
+    for (let annotation of annotations[key]) {
+      if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
+          try {
+            const contentJson = JSON.parse(annotation.content);
+            if (contentJson["errors"]) {
+              for (let error of contentJson["errors"]) {
+                errors.push({"type": error["args"][0], "count": error["ranges"].length})
+              }
+            }
+          } catch (error) {
+            continue; // Skip if annotation.content is not valid JSON
+          }
+      }
+    }
+
+    // mappings
+    let substr = key.substring(key.indexOf(":"))
+    if (substr.match(/:\d+-\d+/)) {
+      for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
+        mappings[key] = {"content": annotation.content}
+        if (annotation.extra_metadata) {
+          mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
+        }
+      }
+    }
+  }
+
+  // Filter all annotations with "analyzer" as source from all the keys
+  // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
+  let filtered_annotations = {}
+  for (let key in annotations) {
+    let new_annotations = annotations[key].filter(annotation =>
+      !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
+    );
+    if (new_annotations.length > 0) {
+      filtered_annotations[key] = new_annotations
+    }
+  }
+
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
@@ -75,25 +121,11 @@ export function AnnotationAugmentedTraceView(props) {
         traceId={activeTraceId} />
     </div>,
     hasHighlight: (address, ...args) => {
-      if (annotations && annotations[address] !== undefined) {
-        return "highlighted num-" + annotations[address].length
+      if (filtered_annotations && filtered_annotations[address] !== undefined) {
+          return "highlighted num-" + filtered_annotations[address].length
       }
     },
     extraArgs: [activeTraceId]
-  }
-
-  // add annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
-  let mappings = props.mappings || {}
-  for (let key in annotations) {
-    let substr = key.substring(key.indexOf(":"))
-    if (substr.match(/:\d+-\d+/)) {
-      for (let index in annotations[key]) { // TODO: what do multiple indices here mean{
-        mappings[key] = {"content": annotations[key][index].content}
-        if (annotations[key][index].extra_metadata) {
-          mappings[key]["source"] = annotations[key][index].extra_metadata.source || "unknown"
-        }
-      }
-    }
   }
 
   return <>
@@ -128,7 +160,13 @@ export function AnnotationAugmentedTraceView(props) {
         // extra UI decoration (inline annotation editor)
         decorator={decorator}
         // extra UI to show at the top of the traceview like metadata
-        prelude={<Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />}
+        prelude={
+          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
+        }
+        // extra UI to show the analyzer results
+        analyzer={
+          <AnalysisResult errors={errors} />
+        }
       />
     </div>
   </>

@@ -190,12 +190,29 @@ body {
     }
 }
 
+
 .event {
     border-radius: 5pt;
     border: 1pt solid var(--border-color);
     background-color: white;
     margin: 5pt auto;
     max-width: 800pt;
+
+    &.analysis-result {
+
+        .analysis-error {
+            margin: 5pt;
+            padding: 5pt;
+            border: 1pt solid var(--border-color);
+            border-radius: 5pt;
+            background-color: rgba(179, 133, 217, 0.5);
+
+            .analysis-error-text {
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+    }
 
     &.parser-error {
         border: 1pt solid red;
