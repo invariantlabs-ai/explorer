@@ -25,7 +25,6 @@ jobs:
     - name: Build Test Runner
       run: ./test build-tester
 
-    steps:
     - name: Run CI
       run: ./test ci
         
