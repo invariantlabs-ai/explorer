@@ -328,7 +328,7 @@ export function Traces() {
         && props.traceIndex !== null
         && props.traceIndex !== undefined
         && traces.filter(t => t !== null).map(t => t.index).includes(+props.traceIndex)
-        && flattenedDisplayedIndices.length == 0
+        && (flattenedDisplayedIndices.length == 0 || flattenedDisplayedIndices.includes(+props.traceIndex) )
         ) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
