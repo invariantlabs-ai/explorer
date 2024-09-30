@@ -178,7 +178,7 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
 ########################################
 
 @dataset.get("/byuser/{username}/{dataset_name}/s")
-def serach_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
+def search_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
     user_id = userinfo['sub']
     with Session(db()) as session:
         by = {'User.username': username, 'name': dataset_name}
