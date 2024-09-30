@@ -197,6 +197,7 @@ def serach_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 annotations = load_annoations(session, trace.id)
                 trace_with_match = False
                 for annotation, _ in annotations:
+                    # TODO replace with actual parsing longerm
                     if annotation.content.startswith('Invariant analyzer result'):
                         violations = annotation.content[len('Invariant analyzer result: '):].strip()
                         for line in violations.split('\n'):
@@ -212,6 +213,7 @@ def serach_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 if key == 'Other Traces': continue
                 result[key]['description'] = 'Invariant Analyzer'
 
+                # TODO: replace with permanent solution
                 if key == "Forgot to call a tool":
                     result[key]['severity'] = 1
                     result[key]['icon'] = 'tools'
