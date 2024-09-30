@@ -51,6 +51,7 @@ export interface Trace {
   id: string;
   index: number;
   dataset: string;
+  name?: string;
   messages: any[];
   extra_metadata: string;
   time_created: string;
@@ -351,7 +352,7 @@ export function Traces() {
           traces[t.index] = {...t, fetched: true, name: '#'+t.index} 
           return traces
         })
-        setActiveTrace(traces[t.index])
+        setActiveTrace({...t, fetched: true, name: '#'+t.index})
       })
     }
   }, [traces, activeTrace])
