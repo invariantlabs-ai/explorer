@@ -52,6 +52,13 @@ export function AnnotationAugmentedTraceView(props) {
   // loads and manages annotations as a remote resource (server CRUD)
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId)
 
+  // highlights to show in the traceview (e.g. because of analyzer or search results)
+  const [highlights, setHighlights] = useState(HighlightedJSON.empty())
+  // filtered annotations (without analyzer annotations)
+  const [filtered_annotations, setFilteredAnnotations] = useState({})
+  // errors from analyzer annotations
+  const [errors, setErrors] = useState([])
+
   // expand all messages
   const onExpandAll = () => {
     events.expandAll?.fire()
@@ -69,50 +76,56 @@ export function AnnotationAugmentedTraceView(props) {
     </div>
   }
 
-  // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
-  const mappings = props.mappings || {}
-  // collect errors from analyzer annotations
-  const errors = []
+  // whenever annotations change, update mappings
+  useEffect(() => {
+    // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
+    const mappings = Object.assign({}, props.mappings) || {}
+    // collect errors from analyzer annotations
+    const errors = []
 
-  for (let key in annotations) {
-    for (let annotation of annotations[key]) {
-      if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
-          try {
-            const contentJson = JSON.parse(annotation.content);
-            if (contentJson["errors"]) {
-              for (let error of contentJson["errors"]) {
-                errors.push({"type": error["args"][0], "count": error["ranges"].length})
+    for (let key in annotations) {
+      for (let annotation of annotations[key]) {
+        if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
+            try {
+              const contentJson = JSON.parse(annotation.content);
+              if (contentJson["errors"]) {
+                for (let error of contentJson["errors"]) {
+                  errors.push({"type": error["args"][0], "count": error["ranges"].length})
+                }
               }
+            } catch (error) {
+              continue; // Skip if annotation.content is not valid JSON
             }
-          } catch (error) {
-            continue; // Skip if annotation.content is not valid JSON
-          }
+        }
       }
-    }
 
-    // mappings
-    let substr = key.substring(key.indexOf(":"))
-    if (substr.match(/:\d+-\d+/)) {
-      for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
-        mappings[key] = {"content": annotation.content}
-        if (annotation.extra_metadata) {
-          mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
+      // mappings
+      let substr = key.substring(key.indexOf(":"))
+      if (substr.match(/:\d+-\d+/)) {
+        for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
+          mappings[key] = {"content": annotation.content}
+          if (annotation.extra_metadata) {
+            mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
+          }
         }
       }
     }
-  }
 
-  // Filter all annotations with "analyzer" as source from all the keys
-  // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
-  let filtered_annotations = {}
-  for (let key in annotations) {
-    let new_annotations = annotations[key].filter(annotation =>
-      !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
-    );
-    if (new_annotations.length > 0) {
-      filtered_annotations[key] = new_annotations
+    // Filter all annotations with "analyzer" as source from all the keys
+    // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
+    let filtered_annotations = {}
+    for (let key in annotations) {
+      let new_annotations = annotations[key].filter(annotation =>
+        !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
+      );
+      if (new_annotations.length > 0) {
+        filtered_annotations[key] = new_annotations
+      }
     }
-  }
+    setHighlights(HighlightedJSON.from_mappings(mappings))
+    setErrors(errors)
+    setFilteredAnnotations(filtered_annotations)
+  }, [annotations])
 
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
@@ -154,7 +167,7 @@ export function AnnotationAugmentedTraceView(props) {
         // the trace events
         trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
         // ranges to highlight (e.g. because of analyzer or search results)
-        highlights={HighlightedJSON.from_mappings(mappings)}
+        highlights={highlights}
         // callback to register events for collapsing/expanding all messages
         onMount={(events) => setEvents(events)}
         // extra UI decoration (inline annotation editor)
