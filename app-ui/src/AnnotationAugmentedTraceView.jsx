@@ -127,11 +127,13 @@ export function AnnotationAugmentedTraceView(props) {
     setFilteredAnnotations(filtered_annotations)
   }, [annotations])
 
+  // filter to hide analyzer messages in annotation threads
+  const noAnalyzerMessages = (a) => !a.extra_metadata || a.extra_metadata.source !== "analyzer"
+
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
-      <AnnotationThread {...props}
-        traceId={activeTraceId} />
+      <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} />
     </div>,
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
@@ -191,7 +193,7 @@ function AnnotationThread(props) {
   let threadAnnotations = (annotations || {})[props.address] || []
 
   return <div className='annotation-thread'>
-    {threadAnnotations.map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} />)}
+    {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} />)}
     <AnnotationEditor address={props.address} traceId={props.traceId} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} />
   </div>
 }
