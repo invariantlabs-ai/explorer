@@ -116,7 +116,7 @@ export function TraceView(props: TraceViewProps) {
     // extract props
     const { inputData, handleInputChange, highlights } = props;
     // state for the annotated JSON 
-    const [annotatedJSON, setHighlightedJSON] = useState<HighlightedJSON | null>(null);
+    const [highlightedJson, setHighlightedJSON] = useState<HighlightedJSON | null>(null);
     // current editing mode (editor or rendered trace)
     const [mode, setMode] = useState<"input" | "trace">("trace");
     // provides a continous validation result
@@ -148,23 +148,23 @@ export function TraceView(props: TraceViewProps) {
         </h2>}
         {hasEditor && !sideBySide && <div className={"content"}>
             <div className={"tab" + (mode === "input" ? " active" : "")}>
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={annotatedJSON || HighlightedJSON.empty()} validation={validationResult} />
+                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {hasEditor && sideBySide && <div className="sidebyside">
             <div className="side">
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={annotatedJSON || HighlightedJSON.empty()} validation={validationResult} />
+                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className="traces side">
-                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
         {!hasEditor && <div className="fullscreen">
             <div className={"side traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={annotatedJSON || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
             </div>
         </div>}
     </div>

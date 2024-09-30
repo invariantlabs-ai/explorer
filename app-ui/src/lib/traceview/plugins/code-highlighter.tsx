@@ -171,11 +171,17 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
         }
 
         // if tokens or highlights have changed, update the content 
-        if (oldTokens !== tokens || prevProps.highlights != this.props.highlights || prevProps.highlightContext?.selectedHighlightAnchor !== this.props.highlightContext?.selectedHighlightAnchor) {
-            // exclude changes to the selected highlight anchor, if it does not relate to this components address in any way
-            if (!this.props.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) && !prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) && !(this.props.highlightContext.selectedHighlightAnchor === null && prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address))) {
+        if (oldTokens !== tokens || prevProps.highlights !== this.props.highlights || prevProps.highlightContext?.selectedHighlightAnchor !== this.props.highlightContext?.selectedHighlightAnchor) {
+            // detect changes to selectedHighlightAnchor that are relevant to this component (based on this.props.address)
+            const highlightSelectionChangeRelevant = this.props.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || (this.props.highlightContext.selectedHighlightAnchor === null && prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address))
+            // detect changes of the highlights themselves
+            const highlightsChanged = prevProps.highlights !== this.props.highlights
+            
+            // do not update this component, if only some selection change happened at some other address (other message/event)
+            if (!highlightSelectionChangeRelevant && !highlightsChanged) {
                 return;
             }
+            // otherwise clean the content and update rendered nodes
             this.setState({ content: cleanContent(this.props) });
             await this.updateContent(tokens);
         }
