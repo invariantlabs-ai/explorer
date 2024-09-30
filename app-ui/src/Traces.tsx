@@ -214,7 +214,7 @@ function useSearch() {
     return sharedFetch(`/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${query.query}`)
       .then(data => {
         query.status = 'completed'
-        console.log('completed', query, searchQueue.current)
+        // console.log('completed', query, searchQueue.current)
         // check that this is still the newest query to complete
         if (searchQueue.current.filter(q => q.status === 'completed' && q.date > query.date).length === 0)
         {
@@ -223,7 +223,7 @@ function useSearch() {
           // remove all queries that are older than this
           searchQueue.current = searchQueue.current.filter(q => q.date >= query.date)
         } else {
-          console.log('discarding result for', query)
+          // console.log('discarding result for', query)
         }
         return data
       })
@@ -234,7 +234,6 @@ function useSearch() {
   }
   
   const dispatchSearch = (value) => {
-    console.log('dispatching search', value)
     if (!value || value === '') {
       setDisplayedIndices({'all': {'traces': []}})
       setSearchQuery('')
@@ -319,7 +318,6 @@ export function Traces() {
     if (displayedIndices) {
       const keys = Object.keys(displayedIndices).sort((a, b) => (displayedIndices[b].severity||0)-(displayedIndices[a].severity||0) )
       keys.forEach(key => {
-        console.log(key, displayedIndices[key])
         displayedIndices[key].traces.forEach(index => {
           flattenedDisplayedIndices.push(index)
         })
