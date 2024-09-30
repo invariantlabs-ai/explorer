@@ -174,43 +174,6 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
     return get_dataset({'User.username': username, 'name': dataset_name}, userinfo)
 
 ########################################
-# summarize
-########################################
-
-@dataset.post("/byid/{id}/summarize")
-async def summarize(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    user_id = userinfo['sub']
-    with Session(db()) as session:
-        by = {'id': id}
-        dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
-        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
-        from openai import AsyncOpenAI
-        api_key = os.getenv("OPENAI_API_KEY")
-        client = AsyncOpenAI(api_key=api_key)
-        def to_text(message):
-            if 'role' in message:
-                return f"{message['role']}: {message['content']}"
-            elif 'type' in message:
-                return f"function call {message['type']}"
-        summaries = []
-        for trace in traces:
-            text = "\n".join([to_text(m) for m in trace.content])
-            chat = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{'role': 'system', 'content': 'Provide a 1-sentence summary of the following conversation. Be very concise.'},
-                          {'role': 'user', 'content': text}],
-            )
-            summaries.append(chat)
-        for i, trace in enumerate(traces):
-            summary = await summaries[i]
-            summary = summary.choices[0].message.content
-            emd = deepcopy(trace.extra_metadata)
-            emd['summary'] = summary
-            trace.extra_metadata = emd
-        session.commit()
-
-
-########################################
 # search
 ########################################
 
