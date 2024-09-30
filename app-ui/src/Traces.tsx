@@ -3,7 +3,7 @@
  */
 
 import React, { useCallback, useEffect } from 'react';
-import { BsArrowClockwise, BsCaretDownFill, BsLayoutSidebarInset, BsSave, BsSearch, BsTrash } from 'react-icons/bs';
+import { BsExclamationTriangleFill, BsExclamationDiamondFill, BsInfo, BsTools, BsExclamation, BsExclamationLg, BsArrowClockwise, BsCaretDownFill, BsLayoutSidebarInset, BsSave, BsSearch, BsTrash } from 'react-icons/bs';
 import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from 'react-viewport-list';
@@ -196,7 +196,7 @@ function useSearch() {
   const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, _setSearchQuery] = React.useState<string|null>(searchParams.get('query') || null)
-  const [displayedIndices, setDisplayedIndices] = React.useState<number[]|null>(null)
+  const [displayedIndices, setDisplayedIndices] = React.useState<object>({'all': {'traces': []}})
   const [highlightMappings, setHighlightMappings] = React.useState({} as {[key: number]: any})
   interface SearchQuery {
     query: string,
@@ -212,19 +212,13 @@ function useSearch() {
     query.status = 'searching'
     return sharedFetch(`/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${query.query}`)
       .then(data => {
-        const new_displayed_indices = data.map(d => d.index).sort()
-        const mappings = {}
-        data.forEach(d => {
-          mappings[d.index] = d.mapping
-        })
         query.status = 'completed'
         console.log('completed', query, searchQueue.current)
         // check that this is still the newest query to complete
         if (searchQueue.current.filter(q => q.status === 'completed' && q.date > query.date).length === 0)
         {
-          console.log('setting result for', query)
-          setDisplayedIndices(new_displayed_indices)
-          setHighlightMappings(mappings)
+          setHighlightMappings(data.mappings)
+          setDisplayedIndices(data.result)
           // remove all queries that are older than this
           searchQueue.current = searchQueue.current.filter(q => q.date >= query.date)
         } else {
@@ -241,7 +235,7 @@ function useSearch() {
   const dispatchSearch = (value) => {
     console.log('dispatching search', value)
     if (!value || value === '') {
-      setDisplayedIndices(null)
+      setDisplayedIndices({'all': {'traces': []}})
       setSearchQuery('')
       searchQueue.current = [{query: '', status: 'completed', date: new Date()}]
       return
@@ -319,11 +313,24 @@ export function Traces() {
   
   // when the trace index changes, update the activeTrace
   useEffect(() => {
+    // if search or analyzer was run, get the flattened list of results
+    const flattenedDisplayedIndices = [];
+    if (displayedIndices) {
+      const keys = Object.keys(displayedIndices).sort((a, b) => (displayedIndices[b].severity||0)-(displayedIndices[a].severity||0) )
+      keys.forEach(key => {
+        console.log(key, displayedIndices[key])
+        displayedIndices[key].traces.forEach(index => {
+          flattenedDisplayedIndices.push(index)
+        })
+      })
+    }
+
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
         && traces.filter(t => t !== null).map(t => t.index).includes(+props.traceIndex)
-        && (displayedIndices === null || displayedIndices.includes(+props.traceIndex))) {
+        && flattenedDisplayedIndices.length == 0
+        ) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
       setActiveTrace(null)
@@ -332,8 +339,7 @@ export function Traces() {
       // if the trace index is not in the list of traces, navigate to the first trace
       if (traces) new_index = Math.min(...traces.filter(t => t !== null).map(t => t.index))
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
-      if (displayedIndices) new_index = Math.min(...displayedIndices)
-      // update the URL to the new trace index
+      if (flattenedDisplayedIndices.length > 0) new_index = flattenedDisplayedIndices[0];
       navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
   }, [props.traceIndex, traces, displayedIndices])
@@ -484,25 +490,27 @@ function SearchBox(props) {
 /**
  * Displays the list of traces in a dataset.
  */
-function Sidebar(props) {
+export function Sidebar(props) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
   const displayedIndices = props.displayedIndices
   const {username, datasetname, activeTraceId} = props
   const [visible, setVisible] = React.useState(true)
   const viewportRef = React.useRef(null)
-  const [activeIndices, setActiveIndices] = React.useState<number[]>([]);
+  const [activeIndices, setActiveIndices] = React.useState({});
 
   useEffect(() => {
     if (!props.traces) {
-      setActiveIndices([])
+      setActiveIndices({'all': {'traces': [], 'description': 'all traces'}})
       return;
     }
 
-    if (displayedIndices) {
-      setActiveIndices(displayedIndices.sort((a, b) => a - b))
-    } else {
-      setActiveIndices(props.traces.filter(t => t !== null).map((t, i) => t.index).sort((a, b) => a - b))
+    if (displayedIndices) {      
+      if (Object.keys(displayedIndices).length === 1 && 'all' in displayedIndices && displayedIndices['all']['traces'].length == 0) {
+        setActiveIndices({'all': {'traces': props.traces.filter(t => t !== null).map((t, i) => t.index), 'description': 'all traces'}})
+      } else {
+        setActiveIndices(displayedIndices)
+      }
     }
   }, [displayedIndices, props.traces])
 
@@ -521,7 +529,29 @@ function Sidebar(props) {
       alert("Saved search")
     })
   }
-
+  
+  const viewItems : any[] = [];
+  Object.keys(activeIndices).sort((a, b) => (activeIndices[b].severity||0)-(activeIndices[a].severity||0) ).forEach((key) => {
+    if (key !== 'all' && activeIndices[key].traces.length > 0) {
+      let icon = {'info': <><BsInfo/></>,
+                    'tools': <><BsTools/></>,
+                    'exclamation': <><BsExclamationLg/></>,
+                    'exclamation-large': <><BsExclamationTriangleFill/></>,
+                    'search': <><BsSearch/></>,
+                    'none': null
+      }[activeIndices[key].icon||'none']
+      if (activeIndices[key].severity <= 2) {icon = null;}
+      viewItems.push({type: 'seperator',
+                      name: key,
+                      count: (activeIndices[key].traces || []).length,
+                      icon: icon,
+                      severity: activeIndices[key].severity||0,
+                      description: activeIndices[key].description});
+    }
+    (activeIndices[key].traces || []).sort((a, b) => a-b).forEach((index) => {
+      viewItems.push({type: 'item', index: index, key: key+index, teaser: props.traces[index].extra_metadata['summary'] })
+    })
+  })
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
@@ -529,24 +559,38 @@ function Sidebar(props) {
         <button className='header-short toggle icon' onClick={onSave}><BsSave/></button>
       }
       <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
-      {props.traces && <h1 className='header-long'>{(props.traces.filter(t => t !== null).length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.filter(t => t != null).length + " Traces"}</h1>}
+      {props.traces && <h1 className='header-long'>{props.traces.filter(t => t != null).length + " Traces"}</h1>}
       {!props.traces && <h1 className='header-long'>Loading...</h1>}
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>
       <ViewportList
-        items={activeIndices}
+        items={viewItems}
         viewportRef={viewportRef}
         overscan={10}
       >
-        {(index: number) => {
-          const trace = props.traces[index]
-          const active = trace.index === props.activeTraceIndex
-          return <li key={index} className={'trace ' + (active ? 'active' : '')}>
-            <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
-              Run {trace.name} {trace.num_annotations > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
-            </Link>
-          </li>
+        {(item) => {
+          if (item.type === 'seperator') {
+            return <li key={item.name} className={`seperator seperator-severity-${item.severity||0}`}>
+              {item.icon && <span className='icon'>{item.icon}</span>}
+              <div className='details'>
+                <h1>{item.name} ({item.count})</h1>
+                {item.description && <h2>{item.description}</h2>} 
+              </div>
+              </li>
+          }
+          else if (item.type === 'item') {
+            const index = item.index;
+            const trace = props.traces[index]
+            const active = trace.index === props.activeTraceIndex
+            return <li key={item.key} className={'trace ' + (active ? 'active' : '')}>
+              <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
+                Run {trace.name}
+                {trace.num_annotations > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
+                {/* DISALBED teaser for now on main, item.teaser && <span className='teaser'>{item.teaser}</span>*/}
+              </Link>
+            </li>
+          }
         }}
       </ViewportList>
 
