@@ -13,6 +13,7 @@ import { sharedFetch } from './SharedFetch';
 import { useUserInfo } from './UserInfo';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
+import logo from './assets/invariant.svg';
 
 /**
  * Metadata for a dataset that we receive from the server.
@@ -560,6 +561,9 @@ export function Sidebar(props) {
       <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
       {props.traces && <h1 className='header-long'>{props.traces.filter(t => t != null).length + " Traces"}</h1>}
       {!props.traces && <h1 className='header-long'>Loading...</h1>}
+      <button className='header-short toggle icon img-button' onClick={() => setSearchQuery('is:invariant')}>
+        <img src={logo} style={{width: '1.5em'}}/>
+      </button>
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
     <ul ref={viewportRef}>

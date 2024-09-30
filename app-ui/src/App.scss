@@ -1113,9 +1113,12 @@ button.primary .shortcut {
       }
       
       .header-long {
-        flex: 1 1 70%;
+        flex: 1 1 50%;
       }
 
+      .img-button {
+        padding: 0;
+      }
 
       h1 {
         font-size: 12pt;
