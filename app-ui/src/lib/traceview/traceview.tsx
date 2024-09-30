@@ -1,6 +1,6 @@
 import "./TraceView.scss"
 import Editor from "@monaco-editor/react";
-import { BsCaretRightFill, BsCaretDownFill, BsPersonFill, BsRobot, BsChatFill, BsCheck2, BsExclamationCircleFill } from "react-icons/bs";
+import { BsCaretRightFill, BsCaretDownFill, BsPersonFill, BsRobot, BsChatFill, BsCheck2, BsExclamationCircleFill, BsMagic } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
 import { validate } from "./schema";
@@ -8,19 +8,8 @@ import jsonMap from "json-source-map"
 import React, { useState, useEffect, useRef } from "react";
 
 import { ViewportList } from 'react-viewport-list';
-
-/**
- * A way to provide inline decorations to a rendered trace view.
- */
-export interface TraceDecorator {
-    // component to use as inline editor (instantiated with props: { highlights: GroupedHighlight[], address: string, onClose: () => void })
-    editorComponent: React.ComponentType
-    // returns true, if a given address is highlighted (e.g. hints at highlights being present)
-    hasHighlight?: (address?: string, ...args: any) => boolean
-    
-    // global extra args that are passed to editor and hasHighlight functions
-    extraArgs?: any
-}
+import { Plugins } from "./plugins";
+import { HighlightContext, Line, TraceDecorator } from "./line";
 
 /**
  * Props for the TraceView component.
@@ -292,17 +281,6 @@ interface RenderedTraceState {
         collapseAll: BroadcastEvent,
         expandAll: BroadcastEvent
     }
-}
-
-// context for the highlight state
-interface HighlightContext {
-    // currently selected highlight address
-    selectedHighlightAnchor: string | null
-    // set the selected highlight address
-    setSelection: (address: string | null) => void
-    // decorator configuration of the component to show
-    // when the inline editor is shown
-    decorator?: TraceDecorator
 }
 
 // a broadcast event to allow parent components to call into handlers
@@ -577,7 +555,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                         <MessageHeader message={message} className="seamless" role="Assistant" expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />
                         {!this.state.expanded && <>
                         <div className="tool-calls seamless">
-                            <ToolCallView tool_call={message} highlights={this.props.highlights} highlightContext={this.props.highlightContext} address={this.props.address} />
+                            <ToolCallView tool_call={message} highlights={this.props.highlights} highlightContext={this.props.highlightContext} address={this.props.address} message={message} />
                         </div>
                         </>}
                     </div>
@@ -595,10 +573,12 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                 return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")}>
                     {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />}
                     {!this.state.expanded && <>
-                    {message.content && <div className={"content " + message.role}><Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"}>{message.content}</Annotated></div>}
+                    {message.content && <div className={"content " + message.role}>
+                        <Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message}>{message.content}</Annotated>
+                    </div>}
                     {message.tool_calls && <div className={"tool-calls " + (message.content ? "" : " seamless")}>
                         {message.tool_calls.map((tool_call: any, index: number) => {
-                            return <ToolCallView key={index} tool_call={tool_call} highlights={this.props.highlights.for_path("tool_calls." + index)} highlightContext={this.props.highlightContext} address={this.props.address + ".tool_calls[" + index + "]"} />
+                            return <ToolCallView key={index} tool_call={tool_call} highlights={this.props.highlights.for_path("tool_calls." + index)} highlightContext={this.props.highlightContext} address={this.props.address + ".tool_calls[" + index + "]"} message={message} />
                         })}
                     </div>}
                     </>}
@@ -616,7 +596,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
  * 
  * May occur as a top-level tool call or as part of a message.
  */
-function ToolCallView(props: { tool_call: any, highlights: any, highlightContext?: HighlightContext, address: string }) {
+function ToolCallView(props: { tool_call: any, highlights: any, highlightContext?: HighlightContext, address: string, message?: any }) {
     const tool_call = props.tool_call
     const highlights = props.highlights
 
@@ -643,7 +623,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
 
     return <div className={"tool-call " + (isHighlighted ? "highlight" : "")}>
         <div className="function-name">
-            <Annotated highlights={highlights.for_path("function.name")} highlightContext={props.highlightContext} address={props.address + ".function.name"}>
+            <Annotated highlights={highlights.for_path("function.name")} highlightContext={props.highlightContext} address={props.address + ".function.name"} message={props.message}>
                 {f.name || <span className="error">Could Not Parse Function Name</span>}
             </Annotated>
             <div className="address">
@@ -652,7 +632,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
         </div>
         <div className="arguments">
             <pre>
-                <HighlightedJSONTable tool_call={props.tool_call} highlights={argumentHighlights} highlightContext={props.highlightContext} address={props.address + ".function.arguments"}>{args}</HighlightedJSONTable>
+                <HighlightedJSONTable tool_call={props.tool_call} highlights={argumentHighlights} highlightContext={props.highlightContext} address={props.address + ".function.arguments"} message={props.message}>{args}</HighlightedJSONTable>
             </pre>
         </div>
     </div>
@@ -665,7 +645,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
  * 
  * Used to render the different arguments of a tool call.
  */
-function HighlightedJSONTable(props: { tool_call: any, highlights: any, children: any, highlightContext?: HighlightContext, address: string }) {
+function HighlightedJSONTable(props: { tool_call: any, highlights: any, children: any, highlightContext?: HighlightContext, address: string, message?: any }) {
     const tool_call = props.tool_call
     const highlights = props.highlights
 
@@ -683,7 +663,8 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, children
     } else if (typeof args === "object") {
         keys = Object.keys(args)
     } else {
-        return <AnnotatedStringifiedJSON highlights={highlights} address={props.address}>{args}</AnnotatedStringifiedJSON>
+        return <AnnotatedStringifiedJSON highlights={highlights} address={props.address} message={props.message}>
+        {args}</AnnotatedStringifiedJSON>
     }
 
     if (keys.length === 0) {
@@ -695,7 +676,7 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, children
             {keys.map((key: string, index: number) => {
                 return <tr key={index}>
                     <td className="key">{key}</td>
-                    <td className="value"><AnnotatedStringifiedJSON highlights={highlights.for_path(key)} address={props.address + "." + key} highlightContext={props.highlightContext}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
+                    <td className="value"><AnnotatedStringifiedJSON highlights={highlights.for_path(key)} address={props.address + "." + key} highlightContext={props.highlightContext} message={props.message}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
                 </tr>
             })}
         </tbody>
@@ -720,13 +701,35 @@ function replaceNLs(content: string, key: string) {
     }
 }
 
-function Annotated(props: { highlights: any, children: any, highlightContext?: HighlightContext, address?: string }) {
-    const [contentElements, setContentElements] = useState([] as any)
+function Annotated(props: { highlights: any, children: any, highlightContext?: HighlightContext, address?: string, message?: any }) {
     const parentElement = useRef(null as any);
+    
+    const [contentElements, setContentElements] = useState([] as any)
+    const [plugin, setPlugin] = useState(null as any);
+    const [pluginEnabled, setPluginEnabled] = useState(true);
+
+    // derive the rendering plugin to use for this content
+    useEffect(() => {
+        const content = props.children.toString()
+        // first check if there is a render plugin that can render this content
+        const plugins = Plugins.getPlugins()
+        const match = plugins.find((plugin: any) => plugin.isCompatible(props.address, props.message, content))
+        if (match) {
+            setPlugin(match)
+        } else {
+            // use default rendering
+            setPlugin(null)
+        }
+    }, [props.children])
 
     useEffect(() => {
         const content = props.children.toString()
         const elements: React.ReactNode[] = []
+
+        if (plugin && pluginEnabled) {
+            setContentElements([<plugin.component {...props} content={content} key="plugin-view-0"/>])
+            return
+        }
         
         let highlights_in_text = props.highlights.in_text(JSON.stringify(content, null, 2))
         highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
@@ -758,20 +761,47 @@ function Annotated(props: { highlights: any, children: any, highlightContext?: H
                 }))
             elements.push(<Line key={'line-' + elements.length} highlights={line_highlights} highlightContext={props.highlightContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
-        setContentElements(elements)
-    }, [props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor, props.highlightContext?.decorator])
+        setContentElements(<div className='default-renderer'>{elements}</div>)
+    }, [plugin, pluginEnabled, props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor, props.highlightContext?.decorator])
 
-    return <span ref={parentElement} className="annotated-parent text">{contentElements}</span>
+    return <div ref={parentElement} className="annotated-parent text">
+        {plugin && <button className="plugin-toggle" onClick={() => setPluginEnabled(!pluginEnabled)}>
+            {pluginEnabled ? 'Formatted' : 'Raw'}
+        </button>}
+        {contentElements}
+    </div>
 }
 
-function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highlightContext?: HighlightContext, address: string }) {
-    const [contentElements, setContentElements] = useState([] as any)
+function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highlightContext?: HighlightContext, address: string, message?: any }) {
     const parentElement = useRef(null as any);
+    
+    const [contentElements, setContentElements] = useState([] as any)
+    const [plugin, setPlugin] = useState(null as any);
+    const [pluginEnabled, setPluginEnabled] = useState(true);
+
+    // derive the rendering plugin to use for this content
+    useEffect(() => {
+        const content = props.children.toString()
+        // first check if there is a render plugin that can render this content
+        const plugins = Plugins.getPlugins()
+        const match = plugins.find((plugin: any) => plugin.isCompatible(props.address, props.message, content))
+        if (match) {
+            setPlugin(match)
+        } else {
+            // use default rendering
+            setPlugin(null)
+        }
+    }, [props.children])
 
     useEffect(() => {
         const content = props.children.toString()
         const elements: React.ReactNode[] = []
-       
+
+        if (plugin && pluginEnabled) {
+            setContentElements([<plugin.component {...props} content={content} key="plugin-view-0"/>])
+            return
+        }
+
         let highlights_in_text = props.highlights.in_text(content)
         highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
         let highlights_per_line = HighlightedJSON.by_lines(highlights_in_text, content)
@@ -803,58 +833,13 @@ function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highl
             elements.push(<Line key={'line-' + elements.length} highlights={highlights} highlightContext={props.highlightContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
         setContentElements(elements)
-    }, [props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor])
+    }, [plugin, pluginEnabled, props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor])
    
-    return <span ref={parentElement} className="annotated-parent">
+    return <div ref={parentElement} className="annotated-parent">
+        {plugin && <button className="plugin-toggle" onClick={() => setPluginEnabled(!pluginEnabled)}>
+            {pluginEnabled ? 'Formatted' : 'Raw'}
+        </button>}
         {contentElements}
-    </span>
+    </div>
 }
 
-function Line(props: { children: any, highlightContext?: HighlightContext, address?: string, highlights?: GroupedHighlight[] }) {
-    // const [expanded, setExpanded] = useState(false)
-    const decorator = props.highlightContext?.decorator
-
-    const setExpanded = (state: boolean) => {
-        if (!props.address) {
-            return;
-        }
-
-        if (!state && props.address === props.highlightContext?.selectedHighlightAnchor) {
-            props.highlightContext?.setSelection(null)
-        } else {
-            props.highlightContext?.setSelection(props.address)
-        }
-    }
-    
-    const expanded = props.address === props.highlightContext?.selectedHighlightAnchor
-    const className = "line " + (props.highlights?.length ? "has-highlights" : "")
-    let extraClass = " "
-
-    if (!decorator) {
-        return <span className={className}>{props.children}</span>
-    }
-
-    if (decorator.hasHighlight) {
-        let highlightResult = decorator.hasHighlight(props.address, ...decorator.extraArgs);
-        if (typeof highlightResult === "boolean") {
-            extraClass +=  "highlighted"
-        } else if (typeof highlightResult === "string") {
-            extraClass += highlightResult
-        }
-    }
-
-    if (!expanded) {
-        return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span></span>
-    }
-
-    const InlineComponent: any = decorator.editorComponent
-    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
-    
-    if (content === null) {
-        return <span className={className}>{props.children}</span>
-    }
-    
-    return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
-        {content}
-    </div>}</span>
-}

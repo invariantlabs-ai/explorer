@@ -7,14 +7,11 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
     if not api_token:
         raise ValueError('INVARIANT_API_KEY not set')
 
-    if annotations is not None:
-        raise ValueError('annotations are not supported yet')
-
     is_batched = type(messages) is list and len(messages) > 0 and type(messages[0]) is list
 
     payload = {
         "messages": messages if is_batched else [messages],
-        "annotations": annotations,
+        "annotations": annotations if is_batched else [annotations],
         "dataset": dataset,
         "metadata": metadata if is_batched else [metadata]
     }
@@ -22,7 +19,7 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
     print(payload['messages'])
 
     # curl https://localhost/api/v1/keys/test -H "Authorization: Bearer <API>"
-    r = requests.post('https://explorer.invariantlabs.ai/api/v1/push/trace', json=payload, headers={"Authorization": "Bearer " + api_token}, verify=False)
+    r = requests.post('https://localhost/api/v1/push/trace', json=payload, headers={"Authorization": "Bearer " + api_token}, verify=False)
 
     if r.status_code == 401:
         raise ValueError('Invalid API token. Please make sure your INVARIANT_API_KEY is set correctly, has not expired and is connected to the correct account.')
@@ -32,10 +29,6 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
         raise ValueError('Failed to push trace')
     
     return r.json()
-
-"""
-Based on this an API endpoint documentation in Markdown format:
-"""
 
 if __name__ == '__main__':
     result = push_trace([
@@ -88,3 +81,52 @@ if __name__ == '__main__':
         }
     ])
     assert "id" in result, "Expected id on successful push"
+    
+    result = push_trace([
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "0",
+        "type": "function",
+        "function": {
+          "name": "create",
+          "arguments": {
+            "arg": "reproduce_issue.py\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "0",
+    "content": "[File: /sympy__sympy/reproduce_issue.py (1 lines total)]\n1:\n"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "1",
+        "type": "function",
+        "function": {
+          "name": "edit",
+          "arguments": {
+            "code": "\nfrom sympy import Array, Matrix, __version__\n\nprint(\"SymPy version:\", __version__)\nprint(\"Attempting to create an empty Matrix:\")\nempty_matrix = Matrix([])\nprint(\"Empty Matrix created successfully:\", empty_matrix)\n\nprint(\"Attempting to create an empty Array:\")\ntry:\n    empty_array = Array([])\n    print(\"Empty Array created successfully:\", empty_array)\nexcept Exception as e:\n    print(\"Failed to create an empty Array:\", e)\n\nprint(\"Script completed successfully, no errors.\")\n",
+            "loc": "1:1"
+          }
+        }
+      }
+    ]
+  }
+], dataset=None, metadata={
+        "source": "my agent application",
+        "success": True
+    }, annotations=[
+        {"content": "example annotation", "address": "messages.1.content:5-10"},
+        {"content": "example annotation", "address": "messages.2.tool_calls.0.function.arguments.code:12-19"},
+    ])
+    print(result)
+    print("https://localhost/trace/{}".format(result["id"][0]))

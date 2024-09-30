@@ -61,3 +61,24 @@ async def test_upload_traces(url, context, dataset_name, data_webarena_with_meta
     # delete dataset via UI-API 
     response = await context.request.delete(url + '/api/v1/dataset/byid/' + returned_object['id'])
     await expect(response).to_be_ok()
+
+
+async def test_annotate_trace(url, context, data_abc):
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        id = dataset["id"]
+
+        # get first trace in the dataet
+        response = await context.request.get(url + f'/api/v1/dataset/byid/{id}/traces')
+        trace_id = (await response.json())[0]["id"]
+
+        # annotate trace
+        response = await context.request.post(url + f'/api/v1/trace/{trace_id}/annotate',
+                                             data={"content": "test annotation", "address": "messages[0].content:L0"})
+
+        # get annotations of a trace
+        response = await context.request.get(url + f'/api/v1/trace/{trace_id}/annotations')
+        annotations = await response.json()
+
+        assert len(annotations) == 1
+        assert annotations[0]["content"] == "test annotation"
+        assert annotations[0]["address"] == "messages[0].content:L0"

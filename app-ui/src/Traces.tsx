@@ -351,7 +351,6 @@ export function Traces() {
         if (!change.updated) return;
         const t = change.trace;
         if (!t) return;
-        console.log('updating trace', t.id, t.messages.length)
         // if the trace was updated, replace its spot in the 'traces' object, 
         // to trigger a re-render
         setTraces(traces => {

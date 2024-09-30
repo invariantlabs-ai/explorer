@@ -117,7 +117,8 @@ def import_jsonl(session: Session, name: str, user_id: str, lines: list[str], me
                         trace_id=trace.id,
                         user_id=user_id,
                         address=annotation["address"],
-                        content=annotation["content"]
+                        content=annotation["content"],
+                        extra_metadata=annotation.get("extra_metadata", {})
                     )
                     session.add(annotation)
 

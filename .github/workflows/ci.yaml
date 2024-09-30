@@ -8,11 +8,14 @@ on:
       - main
 jobs:
   build:
-    name: Checkout & Build
+    name: Build & Test
     timeout-minutes: 10
     runs-on: self-hosted
 
     steps:
+    - name: Clean up Docker containers
+      run: docker system prune --all --force
+
     - name: Checkout
       uses: actions/checkout@v1
 
@@ -22,35 +25,27 @@ jobs:
     - name: Build Test Runner
       run: ./test build-tester
 
-  test:
-    name: Run Tests
-    timeout-minutes: 10
-    runs-on: self-hosted
-    needs: build
-
-    steps:
     - name: Run CI
       run: ./test ci
         
-  artifact:
-    name: Collect Artifact
-    runs-on: self-hosted
-    needs: test
-    if: always() # run despite tests failing
-      
-    steps:
     - name: tar screenshots
       run: tar czf screenshots.tar.gz ./tests/screenshots
+      if: always()
+
     - name: upload screenshots
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: screenshots
         path: screenshots.tar.gz 
+
     - name: upload rest-result
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: ./tests/results/test-results-all.xml
+
     - name: test-report
       uses: pmeier/pytest-results-action@main
       if: always()

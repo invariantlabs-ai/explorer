@@ -40,7 +40,9 @@ async def screenshot(request):
             lineno = inspect.getframeinfo(previous_frame).lineno
         except:
             lineno = 0
-        await page.screenshot(path=str(folder / f"line_{lineno}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"))
+        screenshot_path = str(folder / f"line_{lineno}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png")
+        await page.screenshot(path=screenshot_path)
+        return screenshot_path
     yield _screenshot
    
     # teardown after test 
@@ -87,6 +89,11 @@ def data_abc():
     with open('./data/abc.jsonl', 'r') as f:
         return f.read()
 
+@pytest.fixture
+def data_code():
+    with open('./data/code.jsonl', 'r') as f:
+        return f.read()
+    
 
 ####################
 # helper functions #
