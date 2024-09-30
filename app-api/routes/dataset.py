@@ -197,7 +197,7 @@ def serach_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 annotations = load_annoations(session, trace.id)
                 trace_with_match = False
                 for annotation, _ in annotations:
-                    # TODO replace with actual parsing longerm
+                    # TODO replace with actual parsing
                     if annotation.content.startswith('Invariant analyzer result'):
                         violations = annotation.content[len('Invariant analyzer result: '):].strip()
                         for line in violations.split('\n'):
