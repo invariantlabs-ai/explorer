@@ -317,14 +317,14 @@ export function Traces() {
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
-  
+
   // when the trace index changes, update the activeTrace
   useEffect(() => {
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
-        && (displayedIndices === null || displayedIndices.includes(props.traceIndex))) {
+        && traces.filter(t => t !== null).map(t => t.index).includes(parseInt(props.traceIndex))
+        && (displayedIndices === null || displayedIndices.includes(parseInt(props.traceIndex)))) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
       setActiveTrace(null)
