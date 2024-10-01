@@ -747,7 +747,7 @@ function Annotated(props: { highlights: any, children: any, highlightContext?: H
                     </span>)
                 } else {
                     const message_content = content.substring(interval.start - 1, interval.end - 1)
-                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     line.push(<span key={(elements.length) + "-" + (interval.start) + "-" + (interval.end)} className={className}>{message_content}</span>)
                 }
             }
@@ -816,7 +816,7 @@ function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highl
                     </span>)
                 } else {
                     const message_content = props.children.toString().substring(interval.start, interval.end)
-                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     line.push(<span key={(interval.start) + "-" + (interval.end)} className={className}>
                         {message_content}
                     </span>)

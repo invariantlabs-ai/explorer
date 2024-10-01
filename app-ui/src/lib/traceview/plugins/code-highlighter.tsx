@@ -217,7 +217,7 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
                         {c}
                     </span>)
                 } else {
-                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className}>{c}</span>)
                 }
             }

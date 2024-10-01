@@ -323,8 +323,8 @@ export function Traces() {
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(+props.traceIndex)
-        && (displayedIndices === null || displayedIndices.includes(+props.traceIndex))) {
+        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
+        && (displayedIndices === null || displayedIndices.includes(props.traceIndex))) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
       setActiveTrace(null)
@@ -373,7 +373,7 @@ export function Traces() {
       <h3>Loading...</h3>
     </div>
   }
- 
+
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">

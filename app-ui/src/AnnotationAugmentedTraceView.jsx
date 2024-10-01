@@ -125,7 +125,7 @@ export function AnnotationAugmentedTraceView(props) {
     setHighlights(HighlightedJSON.from_mappings(mappings))
     setErrors(errors)
     setFilteredAnnotations(filtered_annotations)
-  }, [annotations])
+  }, [annotations, props.mappings])
 
   // filter to hide analyzer messages in annotation threads
   const noAnalyzerMessages = (a) => !a.extra_metadata || a.extra_metadata.source !== "analyzer"
