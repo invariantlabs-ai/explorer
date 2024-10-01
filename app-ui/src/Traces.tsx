@@ -308,6 +308,7 @@ export function Traces() {
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   
   // load the sharing status of the active trace (link sharing enabled/disabled)
+  console.log((traces && typeof props.traceIndex !== "undefined") ? traces[props.traceIndex] : null)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
   // load the logged in user's information
   const userInfo = useUserInfo()
@@ -323,8 +324,8 @@ export function Traces() {
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(parseInt(props.traceIndex))
-        && (displayedIndices === null || displayedIndices.includes(parseInt(props.traceIndex)))) {
+        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
+        && (displayedIndices === null || displayedIndices.includes(props.traceIndex))) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
       setActiveTrace(null)
