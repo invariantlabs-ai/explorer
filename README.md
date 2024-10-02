@@ -8,7 +8,7 @@ For local development, first [create a certificate](#remove-ssl-warnings-via-sel
 
 ```
 # create an external network
-docker network create external
+docker network create web
 
 # create data folders
 mkdir data
