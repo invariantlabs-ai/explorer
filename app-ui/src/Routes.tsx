@@ -44,7 +44,7 @@ export const routes = [
     loader: async (task: any) => {
       return {"datasetname": task.params.datasetname,
               "username": task.params.username,
-              "traceIndex": parseInt(task.params.traceIndex) || 0
+              "traceIndex": parseInt(task.params.traceIndex)
             }
       }
   },
