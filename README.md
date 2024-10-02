@@ -4,9 +4,12 @@
 
 The explorer project consist of 3 main docker compose services: `app-api`, `app-ui` and a Postgres `database`. 
 
-For local development, just run 
+For local development, first [create a certificate](#remove-ssl-warnings-via-self-signed-certificates) and then run 
 
 ```
+# create an external network
+docker network create external
+
 # create data folders
 mkdir data
 mkdir data/database data/pgadmin
