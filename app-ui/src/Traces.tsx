@@ -183,11 +183,16 @@ function useTraceShared(traceId: string | null | undefined): [boolean | null, (s
   return [shared, setRemoteShared]
 }
 
-// returns the ID of the trace that comes before the given trace in the list of traces
+// returns the ID of the trace that comes before the given trace in the list of traces (or null if there is no such trace)
 function findPreviousTrace(traceId, traces) {
-  const index = traces.indices.indexOf(traceId)
-  if (index > 0) {
-    return traces.indices[index - 1]
+  for (let i = 0; i < traces.length; i++) {
+    if (traces[i] && traces[i].id === traceId) {
+      i = i - 1;
+      while (i > 0 && !traces[i]) {
+        i -= 1
+      }
+      return traces[i].index
+    }
   }
   return null
 }
@@ -308,8 +313,7 @@ export function Traces() {
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   
   // load the sharing status of the active trace (link sharing enabled/disabled)
-  console.log((traces && typeof props.traceIndex !== "undefined") ? traces[props.traceIndex] : null)
-  const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces[props.traceIndex]?.id : null)
   // load the logged in user's information
   const userInfo = useUserInfo()
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
@@ -542,6 +546,7 @@ function Sidebar(props) {
       >
         {(index: number) => {
           const trace = props.traces[index]
+          if (!trace) return <span key={index}>...</span>
           const active = trace.index === props.activeTraceIndex
           return <li key={index} className={'trace ' + (active ? 'active' : '')}>
             <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
