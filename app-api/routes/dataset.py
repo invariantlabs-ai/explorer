@@ -244,7 +244,17 @@ async def update_dataset_by_name(request: Request, username:str, dataset_name:st
 # get all traces of a dataset 
 ########################################
 
-def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
+"""
+Get all traces corresponding to a given filtering parameter 'by'.
+
+Only returns the traces, if the provided user has access to corresponding dataset.
+
+Parameters:
+- by: dictionary of filtering parameters
+- userinfo: user identity information
+- indices: list of trace indices to filter by (optional)
+"""
+def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)], indices: list[int] = None):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
@@ -256,6 +266,10 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+
+        # if indices are provided, filter by them (match on column 'index')
+        if indices is not None:
+            traces = traces.filter(Trace.index.in_(indices))
                 
         # with join, count number of annotations per trace
         traces = traces\
@@ -414,7 +428,20 @@ async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, 
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo)
+    indices = request.query_params.get("indices")
+    indices = [int(i) for i in indices.split(",")] if indices is not None else None
+    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo, indices=indices)
+
+# lightweight version of /traces above that only returns the indices+ids (saving performance on the full join and prevents loading all columns of the traces table)
+@dataset.get("/byuser/{username}/{dataset_name}/indices")
+def get_trace_indices_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    with Session(db()) as session:
+        user_id = userinfo['sub']
+        dataset, user = load_dataset(session, {'User.username': username, 'name': dataset_name}, user_id, allow_public=True, return_user=True)
+        # traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).offset(offset).limit(limit)
+        # only select the index
+        trace_rows = session.query(Trace.index, Trace.id).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).all()
+        return [{'index': row[0], 'id': row[1], 'messages': []} for row in trace_rows]
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):

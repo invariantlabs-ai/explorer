@@ -833,7 +833,7 @@ function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highl
             elements.push(<Line key={'line-' + elements.length} highlights={highlights} highlightContext={props.highlightContext} address={props.address + ":L" + elements.length}>{line}</Line>)
         }
         setContentElements(elements)
-    }, [plugin, pluginEnabled, props.highlights, props.children, props.highlightContext?.selectedHighlightAnchor])
+    }, [plugin, pluginEnabled, props.highlights, props.children, props.highlightContext])
    
     return <div ref={parentElement} className="annotated-parent">
         {plugin && <button className="plugin-toggle" onClick={() => setPluginEnabled(!pluginEnabled)}>

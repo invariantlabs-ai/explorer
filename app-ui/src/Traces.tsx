@@ -60,23 +60,180 @@ export interface Trace {
   user?: string;
   // true if additional data has already been fetched for this trace
   fetched?: boolean;
+  // true if metadata (beyond index and id) has been loaded
+  preloaded?: boolean;
+  // number of annotations for this trace
+  num_annotations?: number;
 }
 
-// hook to load the traces in a dataset
-function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
-  const [traces, setTraces] = React.useState<(Trace|null)[] | null>(null)
+/**
+ * Lightweight representation of all traces in a dataset.
+ * 
+ * This class is used to keep track of all trace indices (+IDs) in a dataset, where additional information
+ * on each trace, like the number of annotations, is only loaded on demand.
+ * 
+ * To learn when more information is available for a specific trace index, register a callback with the `on` method.
+ * 
+ * If a component no longer needs to know about a trace index, it should call the `off` method to unregister its callback.
+ * 
+ * Batched fetching is automatically handled by this class, so that when a trace is not yet loaded, but a component registers
+ * a callback for it, the trace will be fetched as part of the next batch.
+ */
+class LightweightTraces {
+  data: Record<number, Trace> = {}
+  callbacks: Record<number, ((Trace) => void)[]> = {}
+  // currently scheduled indices
+  scheduledIndices: Set<number> = new Set()
+  loadingIndices: Set<number> = new Set()
+  // time of last batch run
+  lastBatchRun: number = new Date().getTime()
+  // batch timeouts
+  lastBatchTimeout: any
+
+  constructor(public n: number, public username: string, public datasetname: string, initialData: Record<number, Trace> | null = null) {
+    if (initialData) {
+      this.data = initialData
+    }
+  }
+
+  /**
+   * Register a callback to be called when the trace at the given index is loaded.
+   * 
+   * @param index The index of the trace to listen for
+   * @param callback The callback to call when the trace is loaded
+   * @returns A function that can be called to unregister the callback
+   */
+  on(index: number, callback: (Trace) => void) {
+    // if the trace is already preloaded, call the callback immediately
+    if (this.data[index]?.preloaded) {
+      callback(this.data[index])
+      return
+    }
+
+    // add the callback to the list of callbacks for this index
+    if (!this.callbacks[index]) {
+      this.callbacks[index] = []
+    }
+    this.callbacks[index].push(callback)
+    this.schedule(index)
+  }
+
+  /**
+   * Schedules the given index to be preloaded. If the index is already scheduled, does nothing.
+   * 
+   * @param index The index of the trace to preload
+   */
+  schedule(index: number) {
+    // if the index is already scheduled, do nothing
+    if (this.scheduledIndices.has(index) || this.loadingIndices.has(index)) {
+      return
+    }
+    if (this.data[index]?.preloaded) {
+      return
+    }
+    // otherwise, add it to the list of scheduled indices (scheduled to be preloaded)
+    this.scheduledIndices.add(index)
+    if (this.scheduledIndices.size > 64) {
+      const indices = Array.from(this.scheduledIndices)
+      this.scheduledIndices.clear()
+      this.lastBatchRun = new Date().getTime()
+      this.batchFetch(indices)
+    } else {
+      // otherwise, make sure it run at the latest in 400ms
+      window.clearTimeout(this.lastBatchTimeout)
+      this.lastBatchTimeout = window.setTimeout(() => {
+        const indices = Array.from(this.scheduledIndices)
+        this.scheduledIndices.clear()
+        this.lastBatchRun = new Date().getTime()
+        this.batchFetch(indices)
+      }, 100)
+    }
+  }
+
+  /**
+   * Asyncronously fetches the traces with the given indices.
+   * 
+   * Automatically notifies all registered callbacks when each trace is loaded and 
+   * removes the index from the list of loading indices.
+   * 
+   * @param indices The indices to fetch
+   */
+  async batchFetch(indices: number[]) {
+    indices.forEach(i => this.loadingIndices.add(i))
+
+    sharedFetch(`/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(',')}`).then(traces => {
+      // update fetched traces 
+      traces.forEach(t => {
+          this.data[t.index] = {...t, name: '#'+t.index, fetched: false, preloaded: true}
+          this.callbacks[t.index]?.forEach(c => c(this.data[t.index]))
+          this.loadingIndices.delete(t.index)
+        })
+    }).catch(e => {
+      console.error(e)
+      alert("Error loading traces")
+    })
+  }
+
+  /** Unschedule the given index from being preloaded */
+  unschedule(index: number) {
+    this.scheduledIndices.delete(index)
+  }
+
+  /** Unregister a callback for the given trace index */
+  off(index: number, callback: (Trace) => void) {
+    if (this.callbacks[index]) {
+      this.callbacks[index] = this.callbacks[index].filter(c => c !== callback)
+      if (this.callbacks[index].length === 0) {
+        this.unschedule(index)
+      }
+    }
+  }
+
+  /** Returns the index of the first trace in the dataset */
+  first(): number {
+    return Math.min(...this.indices())
+  }
+
+  /** Updates the trace at the given index with the new trace data (e.g. when loading the messages of a trace) */
+  update(index: number, trace: Trace) {
+    this.data[index] = Object.assign({}, this.data[index], trace)
+  }
+
+  /** Returns all non-null indices */
+  indices() {
+    // returns all non-null indices
+    return Object.keys(this.data).map(i => parseInt(i)).sort((a, b) => a - b)
+  }
+
+  /** Returns whether the given index is in the dataset */
+  has(traceIndex: number): boolean {
+    return traceIndex < this.n;
+  }
+
+  /** Returns the trace at the given index, or null if it is not in the dataset. */
+  get(index: number): Trace | null {
+    return this.data[index] || null
+  }
+}
+
+// hook to load all traces in a dataset, represented as a LightweightTraces object
+function useTraces(username: string, datasetname: string): [LightweightTraces | null, () => void] {
+  const [traces, setTraces] = React.useState<LightweightTraces|null>(null)
 
   React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
-    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`).then(traces => {
-        const n = Math.max(...traces.map(t => t.index))
-        const traceList = Array.from({ length: n }, (v, i) => null) as (Trace|null)[];
-        traces.forEach(t => {traceList[t.index] = {...t, name: '#'+t.index, fetched: false}})
-        setTraces(traceList)
-    }).catch(e => alert("Error loading traces"))
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/indices`).then(traces => {  
+        const n = traces.reduce((max, t) => Math.max(max, t.index), 0) + 1
+        const traceMap: Record<number, Trace> = {}
+        traces.forEach(t => {traceMap[t.index] = {...t, name: '#'+t.index, fetched: false}})
+        setTraces(new LightweightTraces(n, username, datasetname, traceMap))
+    }).catch(e => {
+      console.error(e)
+      alert("Error loading traces")
+    })
   }
   
-  return [traces, setTraces, refresh]
+  return [traces, refresh]
 }
 
 // makes sure the provided trace has its .messages field populated, by loading the 
@@ -97,7 +254,8 @@ function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
       }
       return null
     }).then(data => {
-      trace.messages = data.messages
+      // load the full trace data into the trace object
+      trace = Object.assign({}, trace, data)
       resolve({
         updated: true,
         trace: trace
@@ -268,7 +426,7 @@ function useSearch() {
         clearTimeout(searchTimeout.current)
         searchTimeout.current = null
       }
-    }, 50)
+    }, 500)
     searchTimeout.current = st
   }
 
@@ -306,14 +464,14 @@ export function Traces() {
   // load the dataset metadata
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
   // load information about the traces in the dataset
-  const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
+  const [traces, refresh] = useTraces(props.username, props.datasetname)
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false)
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   
   // load the sharing status of the active trace (link sharing enabled/disabled)
-  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces[props.traceIndex]?.id : null)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces.get(props.traceIndex)?.id : null)
   // load the logged in user's information
   const userInfo = useUserInfo()
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
@@ -328,15 +486,15 @@ export function Traces() {
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
+        && traces.has(props.traceIndex)
         && (displayedIndices === null || displayedIndices.includes(props.traceIndex))) {
-      setActiveTrace(traces[props.traceIndex])
+          setActiveTrace(traces.get(props.traceIndex))
     } else if (!traces) {
       setActiveTrace(null)
     } else {
       let new_index = 0
       // if the trace index is not in the list of traces, navigate to the first trace
-      if (traces) new_index = Math.min(...traces.filter(t => t !== null).map(t => t.index))
+      if (traces) new_index = traces.first()
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (displayedIndices) new_index = Math.min(...displayedIndices)
       // update the URL to the new trace index
@@ -353,10 +511,7 @@ export function Traces() {
         if (!t) return;
         // if the trace was updated, replace its spot in the 'traces' object, 
         // to trigger a re-render
-        setTraces(traces => {
-          traces[t.index] = {...t, fetched: true, name: '#'+t.index} 
-          return traces
-        })
+        traces.update(t.index, {...t, fetched: true, name: '#'+t.index})
         setActiveTrace({...t, fetched: true, name: '#'+t.index})
       })
     }
@@ -379,6 +534,9 @@ export function Traces() {
     </div>
   }
 
+  // whether the trace view shows any trace
+  const traceVisible = !searching && (displayedIndices == null || displayedIndices.length > 0)
+
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
@@ -392,7 +550,7 @@ export function Traces() {
       traces={traces} 
       username={props.username}
       datasetname={props.datasetname} 
-      activeTraceIndex={activeTrace?.index} 
+      activeTraceIndex={activeTrace != null ? activeTrace.index : null}
       onRefresh={refresh}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -403,7 +561,7 @@ export function Traces() {
     {/* actual trace viewer */}
     {activeTrace && <AnnotationAugmentedTraceView
       // information on the currently selected trace
-      activeTrace={ activeTrace }
+      activeTrace={ traceVisible ? activeTrace : null }
       selectedTraceId={activeTrace?.id}
       // current search highlights
       mappings={highlightMappings[activeTrace.index]}
@@ -489,14 +647,31 @@ function SearchBox(props) {
 /**
  * Displays the list of traces in a dataset.
  */
-function Sidebar(props) {
+function Sidebar(props: {traces: LightweightTraces|null, username: string, datasetname: string, activeTraceIndex: number|null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: number[]|null, searchNow: () => void, searching: boolean}) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
   const displayedIndices = props.displayedIndices
-  const {username, datasetname, activeTraceId} = props
+  const {username, datasetname} = props
   const [visible, setVisible] = React.useState(true)
-  const viewportRef = React.useRef(null)
   const [activeIndices, setActiveIndices] = React.useState<number[]>([]);
+  
+  // ref to HTML element that contains the ViewportList
+  const viewportContainerRef = React.useRef(null)
+  // ref to ViewportRef instance itself
+  const viewport = React.useRef(null as any)
+
+  // initial scroll to active trace completed
+  const [scrolled, setScrolled] = React.useState(false)
+
+  // when the active indices change, scroll to the active trace
+  useEffect(() => {
+    if (props.activeTraceIndex != null && activeIndices.includes(props.activeTraceIndex)) {
+      if (viewport.current && !scrolled) {
+        (viewport.current as any).scrollToIndex({index: activeIndices.indexOf(props.activeTraceIndex), offset: 0})
+        setScrolled(true)
+      }
+    }
+  }, [props.activeTraceIndex, activeIndices, viewport])
 
   useEffect(() => {
     if (!props.traces) {
@@ -507,7 +682,7 @@ function Sidebar(props) {
     if (displayedIndices) {
       setActiveIndices(displayedIndices.sort((a, b) => a - b))
     } else {
-      setActiveIndices(props.traces.filter(t => t !== null).map((t, i) => t.index).sort((a, b) => a - b))
+      setActiveIndices(props.traces.indices())
     }
   }, [displayedIndices, props.traces])
 
@@ -526,7 +701,7 @@ function Sidebar(props) {
       alert("Saved search")
     })
   }
-
+  
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
@@ -534,30 +709,60 @@ function Sidebar(props) {
         <button className='header-short toggle icon' onClick={onSave}><BsSave/></button>
       }
       <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
-      {props.traces && <h1 className='header-long'>{(props.traces.filter(t => t !== null).length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.filter(t => t != null).length + " Traces"}</h1>}
-      {!props.traces && <h1 className='header-long'>Loading...</h1>}
+      <SidebarStatus traces={props.traces} activeIndices={activeIndices} searching={props.searching} />
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
-    <ul ref={viewportRef}>
+    <ul ref={viewportContainerRef}>
       <ViewportList
-        items={activeIndices}
-        viewportRef={viewportRef}
+        items={!props.searching ? activeIndices : []}
+        ref={viewport}
+        viewportRef={viewportContainerRef}
         overscan={10}
       >
         {(index: number) => {
-          const trace = props.traces[index]
-          if (!trace) return <span key={index}>...</span>
-          const active = trace.index === props.activeTraceIndex
-          return <li key={index} className={'trace ' + (active ? 'active' : '')}>
-            <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
-              Run {trace.name} {trace.num_annotations > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
-            </Link>
-          </li>
+          const trace = props.traces?.get(index) || null
+          return <TraceRow key={index} traces={props.traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} />
         }}
       </ViewportList>
 
     </ul>
   </div>
+}
+
+/** Status message on top of the sidebar list of traces */
+function SidebarStatus(props: {traces: LightweightTraces|null, activeIndices: number[], searching: boolean}) {
+  const {traces, activeIndices, searching} = props
+  if (props.traces && !searching) {
+    return <h1 className='header-long'>{(traces?.indices().length != activeIndices.length ? activeIndices.length + " of " : "") + props.traces.indices().length + " Traces"}</h1>
+  } else {
+    return <h1 className='header-long'>{searching ? 'Searching...' : 'Loading...'}</h1>
+  }
+}
+
+/** A single row in the sidebar list of traces */
+function TraceRow(props: {trace: Trace | null, index: number, active: boolean, username: string, datasetname: string, searchQuery: string | null, activeTraceIndex: number | null, traces: LightweightTraces | null}) {
+  const {index, username, datasetname, searchQuery} = props
+  // keep reference to trace
+  const [trace, setTrace] = React.useState(props.trace)
+  // load full trace via LightweightTraces object
+  useEffect(() => {
+    const listener = (trace: Trace) => {
+      setTrace(trace)
+    }
+    props.traces?.on(index, listener)
+    return () => {
+      props.traces?.off(index, listener)
+    }
+  });
+  
+  if (!trace) return <span>...</span>
+
+  const active = trace.index === props.activeTraceIndex
+  return <li className={'trace ' + (active ? 'active' : '')}>
+    <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
+      Run {trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
+    </Link>
+  </li>
 }
 
 /**

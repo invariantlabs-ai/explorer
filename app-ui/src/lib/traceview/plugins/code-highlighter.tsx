@@ -171,14 +171,16 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
         }
 
         // if tokens or highlights have changed, update the content 
-        if (oldTokens !== tokens || prevProps.highlights !== this.props.highlights || prevProps.highlightContext?.selectedHighlightAnchor !== this.props.highlightContext?.selectedHighlightAnchor) {
+        if (oldTokens !== tokens || prevProps.highlights !== this.props.highlights || prevProps.highlightContext !== this.props.highlightContext || prevProps.highlightContext?.decorator !== this.props.highlightContext?.decorator) {
             // detect changes to selectedHighlightAnchor that are relevant to this component (based on this.props.address)
             const highlightSelectionChangeRelevant = this.props.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || (this.props.highlightContext.selectedHighlightAnchor === null && prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address))
             // detect changes of the highlights themselves
             const highlightsChanged = prevProps.highlights !== this.props.highlights
+            // detect changes to the decorator (e.g. whether a line is highlighted or not). the decorator changes when the rendered trace is changed
+            const decoratorChanged = prevProps.highlightContext?.decorator !== this.props.highlightContext?.decorator
             
             // do not update this component, if only some selection change happened at some other address (other message/event)
-            if (!highlightSelectionChangeRelevant && !highlightsChanged) {
+            if (!highlightSelectionChangeRelevant && !highlightsChanged && !decoratorChanged) {
                 return;
             }
             // otherwise clean the content and update rendered nodes
