@@ -1,20 +1,21 @@
+import dataclasses
+import datetime
 import hashlib
+import json
 import os
 import re
-import json
-import datetime
-
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String, Integer, Column, ForeignKey, DateTime, UniqueConstraint, Boolean, JSON
-from sqlalchemy.sql import func
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
-
 import uuid
+
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from invariant.policy import Policy
+from pydantic import BaseModel, ValidationError, field_validator
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String, UniqueConstraint, create_engine)
 from sqlalchemy.dialects.postgresql import UUID
-from fastapi import FastAPI, File, UploadFile, Request, HTTPException
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import DeclarativeBase, Session, mapped_column
+from sqlalchemy.sql import func
+
 
 class Base(DeclarativeBase):
     pass
@@ -134,6 +135,25 @@ class APIKey(Base):
     def generate_key():
         # generate a random 32 character key
         return "inv-" + hashlib.sha256(os.urandom(32)).hexdigest()
+
+class DatasetPolicy(BaseModel):
+    """Describes a policy associated with a Dataset."""
+    id: str
+    content: str
+
+    def to_dict(self) -> dict:
+        """Represents the object as a dictionary."""
+        return self.model_dump()
+
+    @field_validator('content')
+    @classmethod
+    def validate_content(cls, content:str) -> str:
+        """Validates that the policy string is valid."""
+        try:
+            _ = Policy.from_string(content)
+        except Exception as e:
+            raise ValueError('Policy Content must be valid') from e
+        return content
 
 def get_db_url():
     return "postgresql://{}:{}@database:5432/{}".format(os.environ["POSTGRES_USER"],

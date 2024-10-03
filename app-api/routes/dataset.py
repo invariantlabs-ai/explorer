@@ -1,32 +1,30 @@
-import copy
-import json
-import datetime
-import uuid
 import asyncio
+import copy
+import datetime
+import json
+import uuid
+from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
-
 from invariant.policy import Policy
 from invariant.runtime.input import mask_json_paths
-
-from sqlalchemy.orm import DeclarativeBase
-
-from sqlalchemy import String, Integer, Column, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, or_, and_
-
-from sqlalchemy.dialects.postgresql import UUID
-from fastapi import FastAPI, File, UploadFile, Request, HTTPException
-
+from models.datasets_and_traces import Annotation, Dataset, DatasetPolicy
+from models.datasets_and_traces import (SavedQueries, SharedLinks, Trace, User,
+                                        db)
 from models.importers import import_jsonl
-from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
-from models.queries import *
-
-from typing import Annotated
-from routes.auth import UserIdentity, AuthenticatedUserIdentity
+from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
+                            load_dataset, load_trace, query_traces,
+                            search_term_mappings, trace_to_exported_json,
+                            trace_to_json)
+from pydantic import ValidationError
+from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from sqlalchemy import (Column, ForeignKey, Integer, String, and_,
+                        create_engine, or_)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase, Session, mapped_column
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.sql import func
 
 # dataset routes
 dataset = FastAPI()
@@ -439,3 +437,85 @@ def get_all_traces(by: dict,  user: Annotated[dict, Depends(UserIdentity)]):
             annotations = load_annoations(session, trace.id)
             out['traces'].append(trace_to_json(trace, annotations))
         return out
+
+@dataset.post("/{dataset_id}/policy")
+async def create_policy(
+    request: Request,
+    dataset_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Creates a new policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        payload = await request.json()
+
+        policies = dataset.extra_metadata.get("policies", [])
+        try:
+            policies.append(DatasetPolicy(
+                id=str(uuid.uuid4()),
+                content=payload.get("policy")
+            ).to_dict())
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid Policy string") from e
+
+        dataset.extra_metadata["policies"] = policies
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)
+
+@dataset.put("/{dataset_id}/policy/{policy_id}")
+async def update_policy(
+    request: Request,
+    dataset_id: str,
+    policy_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Updates a policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        payload = await request.json()
+
+        policies = dataset.extra_metadata.get("policies", [])
+        existing_policy = next((p for p in policies if p["id"] == policy_id), None)
+        if not existing_policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        try:
+            updated_policy = DatasetPolicy(
+                id=existing_policy["id"],
+                content=payload.get("policy")
+            ).to_dict()
+            policies.remove(existing_policy)
+            policies.append(updated_policy)
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid Policy string") from e
+
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)
+
+@dataset.delete("/{dataset_id}/policy/{policy_id}")
+async def delete_policy(
+    dataset_id: str,
+    policy_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Deletes a policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        policies = dataset.extra_metadata.get("policies", [])
+
+        policy = next((p for p in policies if p["id"] == policy_id), None)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        policies.remove(policy)
+        dataset.extra_metadata["policies"] = policies
+
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)
