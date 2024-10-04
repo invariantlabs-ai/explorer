@@ -47,6 +47,8 @@ export function AnnotationAugmentedTraceView(props) {
   const activeTrace = props.activeTrace || null
   // the trace ID
   const activeTraceId = props.selectedTraceId || null
+  // the trace index
+  const activeTraceIndex = props.selectedTraceIndex;
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({})
   // loads and manages annotations as a remote resource (server CRUD)
@@ -68,6 +70,9 @@ export function AnnotationAugmentedTraceView(props) {
   const onCollapseAll = () => {
     events.collapseAll?.fire()
   }
+
+   // Callback functions to update annotations count on the Sidebad.
+   const { onAnnotationCreate, onAnnotationDelete } = props;
 
   // if no trace ID set
   if (activeTraceId === null) {
@@ -133,7 +138,7 @@ export function AnnotationAugmentedTraceView(props) {
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
-      <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} />
+      <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete} />
     </div>,
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
@@ -190,11 +195,12 @@ export function AnnotationAugmentedTraceView(props) {
 function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
+  const { onAnnotationCreate, onAnnotationDelete } = props
   let threadAnnotations = (annotations || {})[props.address] || []
 
   return <div className='annotation-thread'>
-    {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} />)}
-    <AnnotationEditor address={props.address} traceId={props.traceId} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} />
+     {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} traceIndex={props.traceIndex} onAnnotationDelete={onAnnotationDelete} />)}
+     <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} />
   </div>
 }
 
@@ -211,6 +217,9 @@ function Annotation(props) {
     annotator.delete(props.id).then(() => {
       setComment('')
       annotator.refresh()
+      if (props.onAnnotationDelete) {
+        props.onAnnotationDelete(props.traceIndex);
+      }
     }).catch((error) => {
       alert('Failed to delete annotation: ' + error)
     })
@@ -273,6 +282,9 @@ function AnnotationEditor(props) {
       setSubmitting(false)
       annotator.refresh()
       setContent('')
+      if (props.onAnnotationCreate) {
+        props.onAnnotationCreate(props.traceIndex);
+      }
     }).catch((error) => {
       alert('Failed to save annotation: ' + error)
       setSubmitting(false)

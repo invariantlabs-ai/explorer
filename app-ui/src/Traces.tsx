@@ -104,17 +104,18 @@ class LightweightTraces {
    * @returns A function that can be called to unregister the callback
    */
   on(index: number, callback: (Trace) => void) {
+    // add the callback to the list of callbacks for this index
+    if (!this.callbacks[index]) {
+      this.callbacks[index] = []
+    }
+    this.callbacks[index].push(callback)
+
     // if the trace is already preloaded, call the callback immediately
     if (this.data[index]?.preloaded) {
       callback(this.data[index])
       return
     }
 
-    // add the callback to the list of callbacks for this index
-    if (!this.callbacks[index]) {
-      this.callbacks[index] = []
-    }
-    this.callbacks[index].push(callback)
     this.schedule(index)
   }
 
@@ -197,6 +198,8 @@ class LightweightTraces {
   /** Updates the trace at the given index with the new trace data (e.g. when loading the messages of a trace) */
   update(index: number, trace: Trace) {
     this.data[index] = Object.assign({}, this.data[index], trace)
+    // notify all callbacks for this index
+    this.callbacks[index]?.forEach(c => c(this.data[index]))
   }
 
   /** Returns all non-null indices */
@@ -534,6 +537,24 @@ export function Traces() {
     </div>
   }
 
+  const onAnnotationCreate = (traceIndex: number) => {
+    const trace = traces?.get(traceIndex);
+    if (trace) {
+      trace.num_annotations = (trace.num_annotations ?? 0) + 1;
+      traces?.update(traceIndex, trace);
+    }
+  }
+
+  const onAnnotationDelete = (traceIndex: number) => {
+    const trace = traces?.get(traceIndex);
+    if (trace) {
+      if (trace.num_annotations === undefined || trace.num_annotations === 0) return;
+      trace.num_annotations = trace.num_annotations - 1;
+      traces?.update(traceIndex, trace);
+    }
+  }
+
+
   // whether the trace view shows any trace
   const traceVisible = !searching && (displayedIndices == null || displayedIndices.length > 0)
 
@@ -563,6 +584,7 @@ export function Traces() {
       // information on the currently selected trace
       activeTrace={ traceVisible ? activeTrace : null }
       selectedTraceId={activeTrace?.id}
+      selectedTraceIndex={activeTrace?.index}
       // current search highlights
       mappings={highlightMappings[activeTrace.index]}
       // whether we are still loading the dataset's trace data
@@ -584,6 +606,8 @@ export function Traces() {
       actions={<>
         {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
       </>}
+      onAnnotationCreate={onAnnotationCreate}
+      onAnnotationDelete={onAnnotationDelete}
     />}
     </div>
   </div>
