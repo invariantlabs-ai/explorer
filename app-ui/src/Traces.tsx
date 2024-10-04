@@ -688,7 +688,7 @@ function Sidebar(props: {traces: LightweightTraces|null, username: string, datas
 
   const onRefresh = (e) => {
     setSearchQuery('')
-    props.onRefresh(e)
+    props.onRefresh()
   };
   
   const onSave = (e) => {
