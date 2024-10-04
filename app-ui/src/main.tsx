@@ -32,6 +32,6 @@ window.alert = (message: string) => {
 
 ReactDOM.createRoot(document.getElementById('app-root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router}/>
+    <RouterProvider router={router} />
   </React.StrictMode>,
 )

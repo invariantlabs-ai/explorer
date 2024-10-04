@@ -19,19 +19,19 @@ function createDataset(name: string) {
       })
     }).then(response => {
       if (response.ok) {
-        resolve({success: true})
+        resolve({ success: true })
       } else {
         response.json().then(data => {
           reject(data)
         }).catch(() => {
-          reject({"error": "Unknown error"})
+          reject({ "error": "Unknown error" })
         })
       }
     }).catch(() => {
-      reject({"error": "Network error"})
+      reject({ "error": "Network error" })
     })
   })
-  
+
   return promise
 }
 
@@ -49,19 +49,19 @@ function uploadDataset(name: string, file: File) {
       body: formData
     }).then(response => {
       if (response.ok) {
-        resolve({success: true})
+        resolve({ success: true })
       } else {
         response.json().then(data => {
           reject(data)
         }).catch(() => {
-          reject({"error": "Unknown error"})
+          reject({ "error": "Unknown error" })
         })
       }
     }).catch(() => {
-      reject({"error": "Network error"})
+      reject({ "error": "Network error" })
     })
   })
-  
+
   return promise
 }
 
@@ -110,16 +110,16 @@ export function UploadDatasetModalContent(props) {
       setName(name)
     }
   }, [file])
-  
+
   return <div className='form'>
     <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
     <label>Name</label>
-    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dataset Name"/>
+    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dataset Name" />
     <label>File (optional)</label>
-    <FileUploadMask file={file}/>
-    <input aria-label="file-input"  type="file" onChange={e => setFile(e.target.files?.[0] || null)}/>
+    <FileUploadMask file={file} />
+    <input aria-label="file-input" type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
     <span className='description'>Before uploading a dataset, make sure it is in the correct format, as expected by the Invariant analysis engine.</span>
-    <br/>
+    <br />
     <button aria-label='create' className='primary' disabled={!name || loading} onClick={onSubmit}>
       {loading ? 'Uploading...' : 'Create'}
     </button>
@@ -135,8 +135,8 @@ export function UploadDatasetModalContent(props) {
 function FileUploadMask(props) {
   return <div className='file-upload-mask'>
     <div className='overlay'>
-      {props.file ? <span className='selected'><BsFileBinaryFill/> {props.file.name} ({(props.file.size / 1024 / 1024).toFixed(2)} MB)
-      </span> : <><BsUpload/><em>Choose a file</em> or drop it here to upload</>}
+      {props.file ? <span className='selected'><BsFileBinaryFill /> {props.file.name} ({(props.file.size / 1024 / 1024).toFixed(2)} MB)
+      </span> : <><BsUpload /><em>Choose a file</em> or drop it here to upload</>}
     </div>
   </div>
 }
@@ -172,11 +172,11 @@ export function DeleteDatasetModalContent(props) {
   }
 
   return <div className='form'>
-    <h2>Are you sure you want to delete {props.dataset.name}?<br/><br/>
-    Note that this action is irreversible. All associated data will be lost.</h2>
-    {error ? <span className='error'>{error}</span> : <br/>}
+    <h2>Are you sure you want to delete {props.dataset.name}?<br /><br />
+      Note that this action is irreversible. All associated data will be lost.</h2>
+    {error ? <span className='error'>{error}</span> : <br />}
     <button aria-label='confirm delete' className='danger' disabled={loading} onClick={onDelete}>
-    {loading ? 'Deleting...' : 'Delete'}
+      {loading ? 'Deleting...' : 'Delete'}
     </button>
   </div>
 }
@@ -188,9 +188,9 @@ export function DeleteDatasetModalContent(props) {
 export function DatasetLinkList(props) {
   const userInfo = useUserInfo()
   const datasets = props.datasets || [];
-  
+
   const hasActions = typeof props.hasActions === 'undefined' ? true : props.hasActions
-  
+
   return <>
     <EntityList title={null} actions={null} className={props.className}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
@@ -198,7 +198,7 @@ export function DatasetLinkList(props) {
         <h3>{props.icon}{dataset.user.username}/{dataset.name}</h3>
       </li></Link>)}
     </EntityList>
-</>
+  </>
 }
 
 /**
@@ -213,20 +213,20 @@ export function Datasets() {
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   // tracks whether we are currently showing a delete modal for a particular dataset (null if none)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] = React.useState(null)
-  
+
   return <>
     {/* upload modal */}
     {showUploadModal && <Modal title="Create Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
-      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh}/>
+      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh} />
     </Modal>}
     {/* delete modal */}
     {selectedDatasetForDelete && <Modal title="Delete Dataset" onClose={() => setSelectedDatasetForDelete(null)} hasWindowControls>
-      <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh}/>
+      <DeleteDatasetModalContent dataset={selectedDatasetForDelete} onClose={() => setSelectedDatasetForDelete(null)} onSuccess={refresh} />
     </Modal>}
     <EntityList title="Datasets" actions={<>
-                      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}><BsUpload/> Upload New Dataset</button>}
-                    </>}>
-    <DatasetLinkList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)} onDelete={setSelectedDatasetForDelete}/>
-      </EntityList>
+      {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}><BsUpload /> Upload New Dataset</button>}
+    </>}>
+      <DatasetLinkList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)} onDelete={setSelectedDatasetForDelete} />
+    </EntityList>
   </>
 }

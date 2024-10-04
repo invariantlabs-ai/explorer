@@ -30,7 +30,7 @@ export function Modal(props) {
   }, [props.onClose])
 
   return <div className="app-modal">
-    <div className="modal-background" onClick={props.onClose}/>
+    <div className="modal-background" onClick={props.onClose} />
     <div className="modal-content">
       {props.hasWindowControls && <header className='window-controls'>
         <button onClick={props.onClose}>{props.cancelText || 'Cancel'}</button>

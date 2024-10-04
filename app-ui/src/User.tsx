@@ -10,22 +10,22 @@ function User() {
   // get selected user from loader data (populated by site router)
   const props: any = useLoaderData()
   const username = props.username
-  
+
   const [datasets, refreshDatasets] = useDatasetList()
 
   return <div className="panel entity-list">
-  <header>
+    <header>
       <h1>
-          {username}
+        {username}
       </h1>
       <div className="spacer" />
       <div className="actions">
 
       </div>
-  </header>
-  <h2>Public Datasets</h2>
-  <DatasetLinkList datasets={datasets} />
-</div>
+    </header>
+    <h2>Public Datasets</h2>
+    <DatasetLinkList datasets={datasets} />
+  </div>
 }
 
 // fetches list of public datasets for a user

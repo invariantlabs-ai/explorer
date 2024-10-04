@@ -106,7 +106,7 @@ function Pair(props) {
  */
 export function Metadata(props) {
     const extra_metadata = props.extra_metadata;
-    
+
     if (!extra_metadata) {
         return null;
     }

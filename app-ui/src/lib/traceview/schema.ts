@@ -64,7 +64,7 @@ export function validate(trace: any): { valid: boolean, errors: any[] } {
         return { valid: false, errors: [{ instancePath: "/", message: "Trace must be an array" }] };
     } else {
         let errors = trace.flatMap((event: any, index: number) => {
-            let event_errors  = validate_event(event);
+            let event_errors = validate_event(event);
             event_errors = event_errors.map((error: any) => {
                 error.instancePath = `/${index}${error.instancePath}`;
                 return error;

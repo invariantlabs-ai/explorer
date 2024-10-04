@@ -6,7 +6,7 @@ export interface TraceDecorator {
     editorComponent: React.ComponentType
     // returns true, if a given address is highlighted (e.g. hints at highlights being present)
     hasHighlight?: (address?: string, ...args: any) => boolean
-    
+
     // global extra args that are passed to editor and hasHighlight functions
     extraArgs?: any
 }
@@ -48,7 +48,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
             props.highlightContext?.setSelection(props.address)
         }
     }
-    
+
     const expanded = props.address === props.highlightContext?.selectedHighlightAnchor
     const className = "line " + (props.highlights?.length ? "has-highlights" : "")
     let extraClass = " "
@@ -60,7 +60,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     if (decorator.hasHighlight) {
         let highlightResult = decorator.hasHighlight(props.address, ...decorator.extraArgs);
         if (typeof highlightResult === "boolean") {
-            extraClass +=  "highlighted"
+            extraClass += "highlighted"
         } else if (typeof highlightResult === "string") {
             extraClass += highlightResult
         }
@@ -72,11 +72,11 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
 
     const InlineComponent: any = decorator.editorComponent
     const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
-    
+
     if (content === null) {
         return <span className={className}>{props.children}</span>
     }
-    
+
     return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>

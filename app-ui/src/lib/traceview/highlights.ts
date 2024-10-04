@@ -6,7 +6,7 @@ export interface Highlight {
     start: number
     end: number
     content: any
-    
+
     // specifies whether this highlight is range specific, or marks a higher-level
     // range like an entire object
     specific?: boolean
@@ -59,7 +59,7 @@ export class HighlightedJSON {
         if (!this.highlightsMap) {
             return EMPTY_ANNOTATIONS
         }
-    
+
         if (this.cachedSubs[path]) {
             return this.cachedSubs[path]
         }
@@ -72,11 +72,11 @@ export class HighlightedJSON {
             }
             tree = tree[key]
         }
-        
+
         if (tree.$highlights?.length === 0 && Object.keys(tree).length === 1) {
             return EMPTY_ANNOTATIONS
         }
-        
+
         let sub = new HighlightedJSON(tree)
         this.cachedSubs[path] = sub
         return sub
@@ -156,10 +156,10 @@ export class HighlightedJSON {
                 const pointer = map.pointers[key]
                 // in case, we map to a string, we offset the start and end by 1 to exclude the quotes
                 let isDoubleQuote = object_string[pointer.value.pos] === '"'
-                pointers.push({ 
+                pointers.push({
                     start: pointer.value.pos + (isDoubleQuote ? 1 : 0),
                     end: pointer.valueEnd.pos + (isDoubleQuote ? -1 : 0),
-                    content: key 
+                    content: key
                 })
             }
 
@@ -193,10 +193,10 @@ export class HighlightedJSON {
             const lines = content.split('\n')
 
             if (lines.length === 1) {
-                result[result.length-1].push({ start: front.start, end: front.end, content: front.content })
+                result[result.length - 1].push({ start: front.start, end: front.end, content: front.content })
                 queue.shift()
             } else {
-                result[result.length-1].push({ start: front.start, end: front.start + lines[0].length + 1, content: front.content })
+                result[result.length - 1].push({ start: front.start, end: front.start + lines[0].length + 1, content: front.content })
                 result.push([])
                 front.start += lines[0].length + 1
             }
@@ -273,14 +273,14 @@ function disjunct_overlaps(items: { start: number, end: number, content: any }[]
     // make boundaries unique
     boundaries = Array.from(new Set(boundaries))
     boundaries = boundaries.sort((a, b) => a - b)
-    
+
     // construct fully separated intervals, by querying all intervals between each checkpoint
     const disjunct: GroupedHighlight[] = []
     for (let i = 0; i < boundaries.length - 1; i++) {
         const start = boundaries[i]
         const end = boundaries[i + 1]
         const overlapping = tree.search([start, end]).filter((o: any) => len_overlap([o.start, o.end], [start, end]) > 0)
-        
+
         if (overlapping.length > 0) {
             disjunct.push({ start, end, content: overlapping.map((o: any) => o.content) })
         } else {
@@ -323,7 +323,7 @@ function sourceRangesToMap(ranges: { start: number, end: number, content: string
                 if (!current[part]["$highlights"]) {
                     current[part]["$highlights"] = []
                 }
-                
+
                 let new_range = { start: range.start, end: range.end, content: range.content }
                 current[part]["$highlights"].push(new_range)
             } else {
@@ -381,13 +381,13 @@ function highlightsToMap(highlights: Record<string, any>, prefix = ""): Highligh
     const map: HighlightMap = { $highlights: [] }
     const highlightsPerKey: Record<string, Record<string, any>> = {}
     const directHighlights: { key: string, start: number | null, end: number | null, content: any }[] = []
-    
+
     for (const key in highlights) {
         // group keys by first segment (if it is not already a range), then recurse late
         const parts = key.split('.')
         const firstSegment = parts[0]
         const rest = parts.slice(1).join('.')
-        
+
         if (firstSegment.includes(':')) {
             const [last_prop, range] = firstSegment.split(':')
             let [start, end] = range.split('-')

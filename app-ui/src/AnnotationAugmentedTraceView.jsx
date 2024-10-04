@@ -71,8 +71,8 @@ export function AnnotationAugmentedTraceView(props) {
     events.collapseAll?.fire()
   }
 
-   // Callback functions to update annotations count on the Sidebad.
-   const { onAnnotationCreate, onAnnotationDelete } = props;
+  // Callback functions to update annotations count on the Sidebad.
+  const { onAnnotationCreate, onAnnotationDelete } = props;
 
   // if no trace ID set
   if (activeTraceId === null) {
@@ -91,16 +91,16 @@ export function AnnotationAugmentedTraceView(props) {
     for (let key in annotations) {
       for (let annotation of annotations[key]) {
         if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
-            try {
-              const contentJson = JSON.parse(annotation.content);
-              if (contentJson["errors"]) {
-                for (let error of contentJson["errors"]) {
-                  errors.push({"type": error["args"][0], "count": error["ranges"].length})
-                }
+          try {
+            const contentJson = JSON.parse(annotation.content);
+            if (contentJson["errors"]) {
+              for (let error of contentJson["errors"]) {
+                errors.push({ "type": error["args"][0], "count": error["ranges"].length })
               }
-            } catch (error) {
-              continue; // Skip if annotation.content is not valid JSON
             }
+          } catch (error) {
+            continue; // Skip if annotation.content is not valid JSON
+          }
         }
       }
 
@@ -108,7 +108,7 @@ export function AnnotationAugmentedTraceView(props) {
       let substr = key.substring(key.indexOf(":"))
       if (substr.match(/:\d+-\d+/)) {
         for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
-          mappings[key] = {"content": annotation.content}
+          mappings[key] = { "content": annotation.content }
           if (annotation.extra_metadata) {
             mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
           }
@@ -142,7 +142,7 @@ export function AnnotationAugmentedTraceView(props) {
     </div>,
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
-          return "highlighted num-" + filtered_annotations[address].length
+        return "highlighted num-" + filtered_annotations[address].length
       }
     },
     extraArgs: [activeTraceId]
@@ -199,8 +199,8 @@ function AnnotationThread(props) {
   let threadAnnotations = (annotations || {})[props.address] || []
 
   return <div className='annotation-thread'>
-     {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} traceIndex={props.traceIndex} onAnnotationDelete={onAnnotationDelete} />)}
-     <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} />
+    {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} traceIndex={props.traceIndex} onAnnotationDelete={onAnnotationDelete} />)}
+    <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} />
   </div>
 }
 

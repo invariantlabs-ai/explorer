@@ -21,30 +21,30 @@ const useApiKeys = () => {
 }
 
 // modal content to show when creating a new API key
-function NewAPIKeyModal({apiKey, onClose}) {
+function NewAPIKeyModal({ apiKey, onClose }) {
     const [justCopied, setJustCopied] = React.useState(false)
 
     useEffect(() => {
         if (justCopied) {
-        let timeout = setTimeout(() => setJustCopied(false), 2000)
-        return () => clearTimeout(timeout)
+            let timeout = setTimeout(() => setJustCopied(false), 2000)
+            return () => clearTimeout(timeout)
         }
     }, [justCopied])
-    
+
     const onClick = (e) => {
         e.currentTarget.select()
         navigator.clipboard.writeText(e.currentTarget.value)
         setJustCopied(true)
     }
 
-    return <div className='form' style={{maxWidth: '500pt'}}>
+    return <div className='form' style={{ maxWidth: '500pt' }}>
         {/* <h2>By sharing a trace you can allow others to view the trace and its annotations. Anyone with the generated link will be able to view the trace.</h2> */}
         <h2>Use the API Key below to access the API.</h2>
         <h2>After closing this dialog, you will not be able to see the key again.</h2>
-        <input type='text' value={apiKey} className='link' onClick={onClick} disabled={false} style={{fontSize: "10pt"}} readOnly />
-        <span className='description' style={{color: justCopied ? 'inherit' : 'transparent'}}>{justCopied ? 'Copied to clipboard!' : 'no'}</span>
+        <input type='text' value={apiKey} className='link' onClick={onClick} disabled={false} style={{ fontSize: "10pt" }} readOnly />
+        <span className='description' style={{ color: justCopied ? 'inherit' : 'transparent' }}>{justCopied ? 'Copied to clipboard!' : 'no'}</span>
         <button onClick={onClose} className='primary'>Close</button>
-  </div>
+    </div>
 }
 
 /**
@@ -53,14 +53,14 @@ function NewAPIKeyModal({apiKey, onClose}) {
 export function Settings() {
     const userInfo = useUserInfo()
     const [apiKeys, refresh] = useApiKeys()
-    
+
     const [createdApiKey, setCreatedApiKey] = useState<string | null>(null)
     const [showExpired, setShowExpired] = useState(false)
 
     // create a new API key for the current user
     const onCreateAPIKey = async () => {
         try {
-            const res = await fetch('/api/v1/keys/create', {method: 'POST'})
+            const res = await fetch('/api/v1/keys/create', { method: 'POST' })
             const data = await res.json()
             setCreatedApiKey(data.key)
             refresh()
@@ -72,7 +72,7 @@ export function Settings() {
     // revoke an existing API key by its ID
     const onRevokeAPIKey = async (id: string) => {
         try {
-            const res = await fetch('/api/v1/keys/' + id, {method: 'DELETE'})
+            const res = await fetch('/api/v1/keys/' + id, { method: 'DELETE' })
             const data = await res.json()
             if (!data.success) {
                 alert(data.detail)
@@ -104,7 +104,7 @@ export function Settings() {
             <h2>
                 API Keys
                 <div className='spacer' />
-                <label>Show Expired <input type='checkbox' checked={showExpired} onChange={(e) => setShowExpired(e.target.checked)} /></label> 
+                <label>Show Expired <input type='checkbox' checked={showExpired} onChange={(e) => setShowExpired(e.target.checked)} /></label>
                 <button className='inline primary' onClick={() => onCreateAPIKey()}>New API Key</button>
             </h2>
             <table className='data api-keys'>

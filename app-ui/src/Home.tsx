@@ -1,5 +1,5 @@
 import React from 'react'
-import {useUserInfo} from './UserInfo'
+import { useUserInfo } from './UserInfo'
 import { BsGlobe, BsDatabase, BsJustify } from 'react-icons/bs'
 import { Link, useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
@@ -38,21 +38,21 @@ function useActivity(): [any[], () => void] {
  */
 function Home() {
   const userInfo = useUserInfo()
-  
+
   // fetch datasets and snippets
   const [datasets, refresh] = useDatasetList(8)
-  const [snippets, refreshSnippets] = useSnippetsList() 
+  const [snippets, refreshSnippets] = useSnippetsList()
   // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   // fetch user activity
   const [activity, refreshActivity] = useActivity()
   // used to navigate to a new page
   const navigate = useNavigate()
-  
+
   return <>
     {/* upload modal */}
     {showUploadModal && <Modal title="Create Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
-      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh}/>
+      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh} />
     </Modal>}
     <h2 className='home'>Home</h2>
     {/* user-personal snippets and datasets */}
@@ -81,25 +81,26 @@ function Home() {
     <ul className='box activity'>
       <h2>Activity</h2>
       {activity.map((event, i) =>
-      <div className='item' onClick={() => navigate(
-        {'dataset':  '/u/' + event.user.username + '/' + event.details.name,
-        'trace': '/trace/' + event.details.id,
-        'annotation': '/trace/' + event.details?.trace?.id
-        }[event.type])
-      } key={i}>
-        <li className='event'>
-          <div className='event-info'>
-            <div className='user'>
-              <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
-              <div className='left'>
-                <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
-                <div className='event-time'><Time text={true}>{event.time}</Time></div>
+        <div className='item' onClick={() => navigate(
+          {
+            'dataset': '/u/' + event.user.username + '/' + event.details.name,
+            'trace': '/trace/' + event.details.id,
+            'annotation': '/trace/' + event.details?.trace?.id
+          }[event.type])
+        } key={i}>
+          <li className='event'>
+            <div className='event-info'>
+              <div className='user'>
+                <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
+                <div className='left'>
+                  <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
+                  <div className='event-time'><Time text={true}>{event.time}</Time></div>
+                </div>
               </div>
             </div>
-          </div>
-          <ActivityDetail event={event} />
-        </li>
-      </div>
+            <ActivityDetail event={event} />
+          </li>
+        </div>
       )}
       {activity.length === 0 && <div className='empty'>No activity</div>}
     </ul>
@@ -112,15 +113,15 @@ function ActivityDetail(props) {
 
   if (event.type == "dataset") {
     return <div className='event-detail'>
-      <b><BsDatabase/> {event.details.name}</b>
+      <b><BsDatabase /> {event.details.name}</b>
     </div>
   } else if (event.type == "trace") {
     return <div className='event-detail'>
-      <b><BsJustify/> {event.details.id}</b>
+      <b><BsJustify /> {event.details.id}</b>
     </div>
   } else if (event.type == "annotation") {
     return <div className='event-detail'>
-      In <em style={{fontFamily: 'monospace'}}>{event.details.id}</em>
+      In <em style={{ fontFamily: 'monospace' }}>{event.details.id}</em>
       <div className='content'>
         {event.details.content}
       </div>
