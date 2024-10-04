@@ -1,3 +1,4 @@
+@use 'sass:math';
 $scale: 1.0;
 $content-width: 1000pt;
 $text-color: #2E2E2E;
@@ -127,27 +128,29 @@ body {
 
 // mixin for button
 @mixin button {
-    display: inline-block;
-    padding: 0pt 22px;
-    line-height: 47px;
-    height: 47px;
-    border: none;
-    background-color: $color-button;
-    border-radius: 58.52pt;
-    text-decoration: none;
-    text-align: center;
-    font-size: 18px*$scale;
-    cursor: pointer;
-    color: white;
+    & {
+        display: inline-block;
+        padding: 0pt 22px;
+        line-height: 47px;
+        height: 47px;
+        border: none;
+        background-color: $color-button;
+        border-radius: 58.52pt;
+        text-decoration: none;
+        text-align: center;
+        font-size: 18px*$scale;
+        cursor: pointer;
+        color: white;
 
-    text-align: center;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 24.676px; /* 137.091% */
-    letter-spacing: 0.5px;
+        text-align: center;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 24.676px; /* 137.091% */
+        letter-spacing: 0.5px;
 
-    transition: background-color 0.1s;
-    user-select: none;
+        transition: background-color 0.1s;
+        user-select: none;
+    }
 
     a {
         color: white;
@@ -280,8 +283,8 @@ em {
 }
 
 button {
-    @include button;
     border: none;
+    @include button;
 
     &.primary {
         background-color: $color-button-primary;
@@ -424,7 +427,7 @@ $circle_size: 70px * $scale;
             left: ($circle_size - 2px) * $scale * $i;
         }
         &.x-#{$i}h {
-            left: ($circle_size - 2px) * $scale * $i + $circle_size/2;
+            left: ($circle_size - 2px) * $scale * $i + math.div($circle_size, 2);
         }
     }
 
@@ -433,7 +436,7 @@ $circle_size: 70px * $scale;
             top: ($circle_size - 2px) * $scale * $i;
         }
         &.y-#{$i}h {
-            top: ($circle_size - 2px) * $scale * $i + $circle_size/2;
+            top: ($circle_size - 2px) * $scale * $i + math.div($circle_size, 2);
         }
     }
 }
@@ -446,7 +449,7 @@ $inset_content_padding: 20px;
     background: none !important;
     // padding: $circle_size * $inset $circle_size * $hinset;
     border: none !important;
-    padding-top: $inset * $circle_size * $scale / 4.0;
+    padding-top: math.div($inset * $circle_size * $scale, 4.0);
     padding-left: $hinset * $circle_size * $scale;
     padding-right: $hinset * $circle_size * $scale;
     // padding-bottom: $inset * $circle_size * $scale;
@@ -633,7 +636,7 @@ $arrow_scale: 1.15;
     }
 
     .canvas .circle.pill-#{$i}i {
-        width: $circle_size * $scale * $i - (2px * $scale * $i) + $circle_size/2 - $circle_size * $inset - 8px;
+        width: $circle_size * $scale * $i - (2px * $scale * $i) + math.div($circle_size, 2) - $circle_size * $inset - 8px;
         height: $circle_size * $scale;
         border-radius: 35pt * $scale;
     }
@@ -642,7 +645,7 @@ $arrow_scale: 1.15;
 @for $i from 1 through 9 {
     .canvas .circle.height-#{$i} {
         height: $circle_size * $i - (2px * $i);
-        border-radius: $circle_size / 2;
+        border-radius: math.div($circle_size, 2);
         transform: translateX(1px);
         
 
@@ -655,8 +658,8 @@ $arrow_scale: 1.15;
     }
 
     .canvas .circle.height-#{$i}h {
-        height: $circle_size * $i - (2px * $i) + $circle_size/2;
-        border-radius: $circle_size / 2;
+        height: $circle_size * $i - (2px * $i) + math.div($circle_size, 2);
+        border-radius: math.div($circle_size, 2);
         transform: translateX(1px);
     }
 }
@@ -792,7 +795,9 @@ footer nav ul li a {
 
 @mixin button-blue {
     @include button;
-    background-color: $color-button-blue;
+    & {
+        background-color: $color-button-blue;
+    }
 }
 
 button.blue {
@@ -1849,13 +1854,12 @@ nav.mobile {
     }
 
     li button {
-        @include button;
-        @include button-blue;
         margin-top: 40pt;
         margin-bottom: 0pt;
-
         line-height: 30pt;
         width: 100%;
+        @include button;
+        @include button-blue;
     }
 
     &.open ul {
@@ -2164,7 +2168,7 @@ ul.changing {
 
         @for $i from 1 through 40 {
             &:nth-child(#{$i}) {
-                animation-delay: ($duration / 4.0)  * ($i - 2);
+                animation-delay: math.div($duration, 4.0)  * ($i - 2);
             }
         }
     }
@@ -2464,9 +2468,9 @@ section.panel.about {
 }
 
 a.button {
-    @include button;
     line-height: 34pt;
     text-decoration: none;
+    @include button;
 
     &.discord {
         background-image: url('/theme/images/logos/discord.svg');
@@ -2530,6 +2534,7 @@ section.grey.running {
     align-items: center;
     justify-content: center;
     opacity: 0.8;
+    animation: moving 30s infinite linear;
 
     img {
         // max-height: 25pt;
@@ -2538,8 +2543,6 @@ section.grey.running {
         margin-right: 40pt;
         margin-left: 40pt;
     }
-
-    animation: moving 30s infinite linear;
 }
 
 @keyframes moving {

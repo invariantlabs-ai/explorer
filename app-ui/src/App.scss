@@ -917,14 +917,6 @@ div.panel {
 }
 
 .shortcut {
-  svg {
-    width: 0.7em;
-    height: 0.7em;
-    position: relative;
-    top: -2pt;
-    margin-left: 4pt;
-  }
-
   padding: 4pt;
   border-radius: 20pt;
   padding-top: 3pt;
@@ -939,6 +931,14 @@ div.panel {
   margin-left: 2pt;
   margin-right: -6pt;
   margin-bottom: -1pt;
+
+  svg {
+    width: 0.7em;
+    height: 0.7em;
+    position: relative;
+    top: -2pt;
+    margin-left: 4pt;
+  }
 }
 
 button.primary .shortcut {
