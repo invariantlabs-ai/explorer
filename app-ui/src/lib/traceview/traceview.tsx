@@ -11,6 +11,8 @@ import { ViewportList } from 'react-viewport-list';
 import { Plugins } from "./plugins";
 import { HighlightContext, Line, TraceDecorator } from "./line";
 
+import { MAX_LENGTH } from "./constants";
+
 /**
  * Props for the TraceView component.
  */
@@ -404,6 +406,15 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
     }
 }
 
+function truncate_content(s: string, length: number) {
+    if (s.length <= length) {
+        return s;
+    }
+    const k = Math.floor(length / 2);
+    const truncatedChars = s.length - length;
+    return s.substring(0, k) + '<...truncated ' + truncatedChars + ' characters...>' + s.substring(s.length - length + k);
+}
+
 /**
  * Props for the MessageView component.
  */
@@ -574,7 +585,9 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                     {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />}
                     {!this.state.expanded && <>
                         {message.content && <div className={"content " + message.role}>
-                            <Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message}>{message.content}</Annotated>
+                            <Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message}>
+                                {truncate_content(message.content, MAX_LENGTH)}
+                            </Annotated>
                         </div>}
                         {message.tool_calls && <div className={"tool-calls " + (message.content ? "" : " seamless")}>
                             {message.tool_calls.map((tool_call: any, index: number) => {
@@ -609,15 +622,6 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
 
     const isHighlighted = highlights.rootHighlights.length
 
-    // format args as error message if undefined
-    if (typeof args === "undefined") {
-        args = <span className="error">No .arguments field found</span>
-    } else if (typeof args === "object") {
-        args = JSON.stringify(args, null, 2)
-    } else {
-        args = args.toString()
-    }
-
     // translate highlights on arguments back into JSON source ranges
     const argumentHighlights = highlights.for_path("function.arguments")
 
@@ -632,7 +636,8 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
         </div>
         <div className="arguments">
             <pre>
-                <HighlightedJSONTable tool_call={props.tool_call} highlights={argumentHighlights} highlightContext={props.highlightContext} address={props.address + ".function.arguments"} message={props.message}>{args}</HighlightedJSONTable>
+                <HighlightedJSONTable tool_call={props.tool_call} highlights={argumentHighlights} highlightContext={props.highlightContext} address={props.address + ".function.arguments"} message={props.message}>
+                </HighlightedJSONTable>
             </pre>
         </div>
     </div>
@@ -645,7 +650,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
  * 
  * Used to render the different arguments of a tool call.
  */
-function HighlightedJSONTable(props: { tool_call: any, highlights: any, children: any, highlightContext?: HighlightContext, address: string, message?: any }) {
+function HighlightedJSONTable(props: { tool_call: any, highlights: any, highlightContext?: HighlightContext, address: string, message?: any }) {
     const tool_call = props.tool_call
     const highlights = props.highlights
 
@@ -661,10 +666,17 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, children
     if (typeof args === "undefined") {
         return <span className="error">No .arguments field found</span>
     } else if (typeof args === "object") {
+        args = Object.fromEntries(
+            Object.entries(args).map(([key, value]) => [
+                truncate_content(key, MAX_LENGTH),
+                truncate_content(JSON.stringify(value, null, 2), MAX_LENGTH)
+            ])
+        )
         keys = Object.keys(args)
     } else {
         return <AnnotatedStringifiedJSON highlights={highlights} address={props.address} message={props.message}>
-            {args}</AnnotatedStringifiedJSON>
+            {truncate_content(args, MAX_LENGTH)}
+        </AnnotatedStringifiedJSON>
     }
 
     if (keys.length === 0) {
