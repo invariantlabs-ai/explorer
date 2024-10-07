@@ -14,7 +14,6 @@ class TraceValidationError(ValidationError):
 
 def validate_trace(trace: Trace) -> bool:
     """Validates format of the trace."""
-    input = Input(json.loads(trace.content))
     return True
 
 def validate_annotation(annotation: Annotation, trace: Trace) -> bool:
