@@ -10,8 +10,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ViewportList } from 'react-viewport-list';
 import { Plugins } from "./plugins";
 import { HighlightContext, Line, TraceDecorator } from "./line";
-
-import { MAX_LENGTH } from "./constants";
+import { config } from "../../Config";
 
 /**
  * Props for the TraceView component.
@@ -586,7 +585,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                     {!this.state.expanded && <>
                         {message.content && <div className={"content " + message.role}>
                             <Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message}>
-                                {truncate_content(message.content, MAX_LENGTH)}
+                                {truncate_content(message.content, config("truncation_limit"))}
                             </Annotated>
                         </div>}
                         {message.tool_calls && <div className={"tool-calls " + (message.content ? "" : " seamless")}>
@@ -668,14 +667,14 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, highligh
     } else if (typeof args === "object") {
         args = Object.fromEntries(
             Object.entries(args).map(([key, value]) => [
-                truncate_content(key, MAX_LENGTH),
-                truncate_content(JSON.stringify(value, null, 2), MAX_LENGTH)
+                truncate_content(key, config("truncation_limit")),
+                truncate_content(JSON.stringify(value, null, 2), config("truncation_limit"))
             ])
         )
         keys = Object.keys(args)
     } else {
         return <AnnotatedStringifiedJSON highlights={highlights} address={props.address} message={props.message}>
-            {truncate_content(args, MAX_LENGTH)}
+            {truncate_content(args, config("truncation_limit"))}
         </AnnotatedStringifiedJSON>
     }
 

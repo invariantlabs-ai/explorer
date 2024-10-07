@@ -1,0 +1,2 @@
+# limit at which the content of a message will be truncated (UI and on the API)
+truncation_limit: 1000
