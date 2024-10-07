@@ -338,6 +338,9 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
 
     parse() {
         if (this.state.traceString !== this.props.trace) {
+            if (this.state.selectedHighlightAddress) {
+                this.setState({ selectedHighlightAddress: null })
+            }
             try {
                 let parsed = {}
                 if (typeof this.props.trace === "object") {
