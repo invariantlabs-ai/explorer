@@ -35,6 +35,8 @@ services:
       - web
     environment:
       - APP_NAME=${APP_NAME}
+    volumes:
+      - ./explorer.config.yml:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"

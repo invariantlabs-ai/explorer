@@ -9,7 +9,7 @@ from util.util import get_gravatar_hash, split
 from sqlalchemy.sql import func
 import re
 from util.util import truncate_trace_content
-from util.constants import MAX_LENGTH
+from util.config import config
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Trace, User)
@@ -137,7 +137,7 @@ def save_user(session, userinfo):
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:
-        max_length = MAX_LENGTH
+        max_length = config('server_truncation_limit')
     out = {
         "id": trace.id,
         "index": trace.index,
