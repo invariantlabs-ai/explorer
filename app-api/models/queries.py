@@ -137,7 +137,7 @@ def save_user(session, userinfo):
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:
-        max_length = config('truncation_limit')
+        max_length = config('server_truncation_limit')
     out = {
         "id": trace.id,
         "index": trace.index,
