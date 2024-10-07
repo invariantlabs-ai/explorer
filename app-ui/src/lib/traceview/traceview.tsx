@@ -405,7 +405,10 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
     }
 }
 
-function truncate_content(s: string, length: number) {
+function truncate_content(s: any, length: number) {
+    if (typeof s !== "string") {
+        return s;
+    }
     if (s.length <= length) {
         return s;
     }
@@ -668,7 +671,7 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, highligh
         args = Object.fromEntries(
             Object.entries(args).map(([key, value]) => [
                 truncate_content(key, config("truncation_limit")),
-                truncate_content(JSON.stringify(value, null, 2), config("truncation_limit"))
+                truncate_content(value, config("truncation_limit"))
             ])
         )
         keys = Object.keys(args)
