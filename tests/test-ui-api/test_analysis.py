@@ -10,17 +10,23 @@ from util import * # needed for pytest fixtures
 
 pytest_plugins = ('pytest_asyncio',)
 
-async def test_analysis(url, context, data_abc):
+
+@pytest.mark.parametrize("analysis_host", ["modal", "local"])
+async def test_analysis(url, context, data_abc, analysis_host):
     policy_str = """
     raise PolicyViolation("found ABC") if:
         (msg: Message)
         "ABC" in msg.content
     """
 
+    # TODO: Skip modal tests for now since not everyone may have the API keys set up
+    if analysis_host == "modal":
+        return
+
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # run analysis
         response = await context.request.post(url + '/api/v1/dataset/analyze/' + dataset['id'],
-                                              data={"policy_str": policy_str})
+                                              data={"policy_str": policy_str, "analysis_host": analysis_host})
         await expect(response).to_be_ok()
         result = await response.json()
         assert result['total_errors'] == 3

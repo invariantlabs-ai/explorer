@@ -48,6 +48,8 @@ services:
       - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
+      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
       - TZ=Europe/Berlin
       - DEV_MODE=${DEV_MODE}

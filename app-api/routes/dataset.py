@@ -2,21 +2,13 @@ import asyncio
 import copy
 import datetime
 import json
+import modal
 import uuid
 from typing import Annotated
-
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from invariant.policy import Policy
+from invariant.policy import AnalysisResult, Policy
 from invariant.runtime.input import mask_json_paths
-from models.datasets_and_traces import Annotation, Dataset, DatasetPolicy
-from models.datasets_and_traces import (SavedQueries, SharedLinks, Trace, User,
-                                        db)
-from models.importers import import_jsonl
-from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
-                            load_dataset, load_trace, query_traces,
-                            search_term_mappings, trace_to_exported_json,
-                            trace_to_json)
 from pydantic import ValidationError
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import (Column, ForeignKey, Integer, String, and_,
@@ -25,6 +17,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Session, mapped_column
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func
+from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy, 
+                                        SavedQueries, SharedLinks, Trace, User, db)
+from models.importers import import_jsonl
+from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
+                            load_dataset, load_trace, query_traces,
+                            search_term_mappings, trace_to_exported_json,
+                            trace_to_json)
 
 # dataset routes
 dataset = FastAPI()
@@ -316,30 +315,65 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
     traces = get_traces(request, {'id': id}, userinfo)
     
     payload = await request.json()
-    overwrite = bool(payload.get("overwrite", True))
+    overwrite = payload.get("overwrite", True)
+    skip_analyzed = payload.get("skip_analyzed", True)
     policy_str = payload.get("policy_str", "")
+    analysis_host = payload.get("analysis_host", "local")
+    batch_size = payload.get("batch_size", None)
 
     # analysis stats
     total_errors = 0
 
+    if analysis_host == "modal":
+        modal_func = modal.Function.lookup("invariant-analyzer", "run_analysis")
+
     with Session(db()) as session:
-        for trace in traces:
-            trace_id = trace["id"]
-            trace = load_trace(session, {"id": trace_id}, user_id)
+        traces = [load_trace(session, {"id": trace["id"]}, user_id) for trace in traces]
+        all_messages = []
+        for idx, trace in enumerate(traces):
             # Replace the parameters in the policy string with the parameters in the trace metadata
             analysis_params = {k: v for k, v in trace.extra_metadata.items() if type(k) is str and type(v) is str}
-            trace_policy_str = policy_str.format(**analysis_params)
 
+            annotations = load_annoations(session, trace.id)
+            if skip_analyzed and len(annotations) > 0:
+                continue
             if overwrite:
                 # delete all existing annotations where source is the analyzer
-                annotations = load_annoations(session, trace_id)
                 for annotation, _ in annotations:
                     if annotation.extra_metadata and annotation.extra_metadata.get("source") == "analyzer":
                         session.delete(annotation)
 
-            policy = Policy.from_string(trace_policy_str)
-            messages = trace.content
-            res = policy.analyze(messages)
+            all_messages.append((idx, trace.content, analysis_params))
+
+        if analysis_host == "modal":
+            step = len(all_messages) if batch_size is None else batch_size
+            results = []
+            for i in range(0, len(all_messages), step):
+                batch_results = await asyncio.gather(*[modal_func.remote.aio(policy_str, messages, analysis_params) 
+                                                       for _, messages, analysis_params in all_messages[i:i+step]])
+                results.extend(batch_results)
+            new_results = []
+            # Some results might not be valid if the analysis failed (e.g. timeout or other errors)
+            for r in results:
+                try:
+                    new_results.append(AnalysisResult.model_validate_json(r))
+                except ValidationError as e:
+                    print("Got validation error: ", str(e))
+                    new_results.append(None)
+            results = new_results
+        elif analysis_host == "local":
+            results = []
+            for _, messages, analysis_params in all_messages:
+                policy = Policy.from_string(policy_str)
+                results.append(policy.analyze(messages, **analysis_params))
+        else:
+            raise ValueError(f"Invalid analysis host: {analysis_host}")
+
+        for i, res in enumerate(results):
+            if res is None:
+                continue
+            idx, messages, _ = all_messages[i]
+            trace = traces[idx]
 
             total_errors += len(res.errors)
 
@@ -351,26 +385,25 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
                         moderated_messages = mask_json_paths(messages, json_paths, lambda x: "*" * len(x))
                         metadata["moderated"] = True
                 if metadata.get("moderated", False):
-                    trace.content = json.dumps(moderated_messages)
+                    trace.content = moderated_messages
                     trace.extra_metadata = metadata
 
             for error in res.errors:
                 metadata = {"source": "analyzer"}
-                for range in error.ranges:
+                for rng in error.ranges:
                     range_annotation = Annotation(
-                        trace_id=trace_id,
+                        trace_id=trace.id,
                         user_id=user_id,
-                        address="messages." + str(range.json_path),
-                        content=str(error),
+                        address="messages." + str(rng.json_path),
+                        content=error.model_dump_json(),
                         extra_metadata=metadata)
                     session.add(range_annotation)
 
-            analyzer_msg = "Invariant analyzer result:\n\n" + str(res)
             main_annotation = Annotation(
-                trace_id=trace_id,
+                trace_id=trace.id,
                 user_id=user_id,
                 address="messages[0].content:L0", # TODO: This is now hardcoded, but should be shown in separate analyzer card
-                content=analyzer_msg,
+                content=res.model_dump_json(),
                 extra_metadata={"source": "analyzer"}
             )
             session.add(main_annotation)

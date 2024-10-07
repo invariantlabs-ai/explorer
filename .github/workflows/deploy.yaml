@@ -1,0 +1,14 @@
+name: Pre-Production Deployment
+on: 
+  workflow_run:
+    workflows: ["Explorer CI"]
+    branches: ["main"]
+    types: 
+      - completed
+jobs:
+  deploy:
+    name: Deploy to Pre-Production
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Pre-Production Deployment
+      run: "curl -X POST -H \"Deployment-Token: ${{ secrets.PREVIEW_DEPLOYMENT_TOKEN }}\" https://preview-explorer.invariantlabs.ai/deployment/trigger"

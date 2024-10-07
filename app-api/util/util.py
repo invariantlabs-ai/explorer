@@ -34,7 +34,9 @@ def split(text, pattern):
     result = [t for t in generator()]
     return result
 
-def truncate_string(s: str, max_length: int):
+def truncate_string(s, max_length: int):
+    if type(s) is not str:
+        return s
     k = len(s) - max_length
     if k <= 0:
         return s
@@ -49,14 +51,17 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
         return messages
     messages = copy.deepcopy(messages)
     for msg in messages:
-        if "content" in msg:
+        if msg.get("content", None) is not None:
             msg["content"] = truncate_string(msg["content"], max_length)
-        if "tool_calls" in msg:
+        if msg.get("tool_calls", None) is not None:
             for tool_call in msg["tool_calls"]:
-                if "function" in tool_call and "arguments" in tool_call["function"]:
-                    tool_call["function"]["arguments"] = {
-                        truncate_string(name, max_length): truncate_string(value, max_length)
-                        for name, value in tool_call["function"]["arguments"].items()
+                if tool_call.get("function", None) is not None and tool_call["function"].get("arguments", None) is not None:
+                    if type(tool_call["function"]["arguments"]) is str:
+                        tool_call["function"]["arguments"] = truncate_string(tool_call["function"]["arguments"], max_length)
+                    else:
+                        tool_call["function"]["arguments"] = {
+                            truncate_string(name, max_length): truncate_string(value, max_length)
+                            for name, value in tool_call["function"]["arguments"].items()
                     }
     return messages
 
