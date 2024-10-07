@@ -562,6 +562,16 @@ export function Traces() {
   // whether there are any traces to show
   const hasTraces = (traces?.indices().length || 0) > 0
 
+  // derive correct empty view to use
+  let emptyView: any | null = null
+  if (!(hasTraces || !isUserOwned)) {
+    if (!traces) {
+      emptyView = () => <div className='empty'>Loading...</div>
+    } else {
+      emptyView = EmptyDatasetInstructions
+    }
+  }
+
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
@@ -590,7 +600,7 @@ export function Traces() {
         selectedTraceId={activeTrace?.id}
         selectedTraceIndex={activeTrace?.index}
         // shown when no trace is selected
-        empty={(hasTraces || !isUserOwned) ? null : EmptyDatasetInstructions}
+        empty={emptyView}
         // current search highlights
         mappings={activeTrace ? highlightMappings[activeTrace.index] : null}
         // whether we are still loading the dataset's trace data
