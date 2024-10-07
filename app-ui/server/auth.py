@@ -8,8 +8,12 @@ from keycloak import KeycloakOpenID # pip require python-keycloak
 import os
 from typing import Annotated
 
+is_preview_deployment = os.getenv("PREVIEW") == "1"
 base_url = "https://" + os.getenv("APP_NAME") + ".invariantlabs.ai"
 client_id = "invariant-" + os.getenv("APP_NAME")
+
+if is_preview_deployment:
+    client_id = client_id.replace("preview-", "")
 
 keycloak_openid = KeycloakOpenID(
     server_url="https://auth.invariantlabs.ai/",
@@ -17,6 +21,7 @@ keycloak_openid = KeycloakOpenID(
     realm_name="invariant-public",
     client_secret_key="GDq4AqlO9jWiZJ5HgIIdfhgxHyhVZnTG"
 )
+
 
 AUTHORIZATION_URL = "https://auth.invariantlabs.ai/realms/invariant/protocol/openid-connect/auth",
 TOKEN_URL = "https://auth.invariantlabs.ai/realms/invariant/protocol/openid-connect/token",

@@ -7,6 +7,11 @@ RUN chmod 500 nsolid_setup_deb.sh
 RUN ./nsolid_setup_deb.sh 20
 RUN apt-get install nodejs -y
 
+# install python server requirements
+WORKDIR /app/app-ui/server
+COPY server/requirements.txt /app/app-ui/server/requirements.txt
+RUN pip install -r requirements.txt
+
 # build the app
 WORKDIR /app/app-ui
 COPY package.json /app/app-ui/package.json
@@ -23,11 +28,9 @@ COPY index.html /app/app-ui/index.html
 COPY tsconfig.node.json /app/app-ui/tsconfig.node.json
 COPY .eslintrc.cjs /app/app-ui/.eslintrc.cjs
 
-RUN yarn run build
+ARG PREVIEW=0
+RUN VITE_PREVIEW=$PREVIEW yarn run build
 
 WORKDIR /app/app-ui/server
-COPY server/requirements.txt /app/app-ui/server/requirements.txt
-RUN pip install -r requirements.txt
-
 COPY server /app/app-ui/server
 CMD ["uvicorn", "serve:app", "--host", "0.0.0.0", "--port", "8000"]

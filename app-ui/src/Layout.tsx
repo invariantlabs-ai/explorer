@@ -9,6 +9,7 @@ import { useSnippetsList } from './lib/snippets';
 import { CompactSnippetList } from './Snippets';
 import { DatasetLinkList } from './Datasets';
 import { SignUp } from './SignUp';
+import { DeploymentInfo } from './components/DeploymentInfo';
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -160,7 +161,8 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
                 <img src={logo} alt='Invariant logo' className='logo' onClick={() => navigate('/')} />
                 Invariant Explorer
             </h1>
-            <div className='spacer' />
+            <DeploymentInfo/>
+            <div className='spacer'/>
             {!userInfo?.loggedIn && <button className='inline' onClick={() => window.location.href = '/login'}>Sign In</button>}
             <div className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
                 {userInfo?.loggedIn && <>
