@@ -666,8 +666,7 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, children
     } else if (typeof args === "object") {
         keys = Object.keys(args)
     } else {
-        return <AnnotatedStringifiedJSON highlights={highlights} address={props.address} message={props.message}>
-            {args}</AnnotatedStringifiedJSON>
+        return <div className='direct'><AnnotatedStringifiedJSON highlights={highlights} address={props.address} message={props.message} highlightContext={props.highlightContext}>{args}</AnnotatedStringifiedJSON></div>
     }
 
     if (keys.length === 0) {
@@ -678,7 +677,7 @@ function HighlightedJSONTable(props: { tool_call: any, highlights: any, children
         <tbody>
             {keys.map((key: string, index: number) => {
                 return <tr key={index}>
-                    <td className="key">{key}</td>
+                    <td className="key"><div>{key}</div></td>
                     <td className="value"><AnnotatedStringifiedJSON highlights={highlights.for_path(key)} address={props.address + "." + key} highlightContext={props.highlightContext} message={props.message}>{typeof args[key] === "object" ? JSON.stringify(args[key], null, 2) : args[key]}</AnnotatedStringifiedJSON></td>
                 </tr>
             })}
