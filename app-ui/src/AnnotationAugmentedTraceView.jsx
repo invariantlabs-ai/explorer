@@ -41,6 +41,19 @@ class Annotations extends RemoteResource {
 
 /**
  * Components that renders agent traces with the ability for user's to add comments ("annotation").
+ * 
+ * @param {Object} props
+ * @param {Object} props.activeTrace - the trace to render
+ * @param {string} props.selectedTraceId - the trace ID
+ * @param {number} props.selectedTraceIndex - the trace index
+ * @param {Object} props.mappings - the mappings to highlight in the traceview
+ * @param {Function} props.onShare - callback to share the trace
+ * @param {boolean} props.sharingEnabled - whether the trace is shared
+ * @param {Function} props.onAnnotationCreate - callback to update annotations count on the Sidebar
+ * @param {Function} props.onAnnotationDelete - callback to update annotations count on the Sidebar
+ * @param {React.Component} props.header - the header component (e.g. <user>/<dataset>/<trace> links)
+ * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
+ * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
 export function AnnotationAugmentedTraceView(props) {
   // the rendered trace
@@ -73,13 +86,6 @@ export function AnnotationAugmentedTraceView(props) {
 
   // Callback functions to update annotations count on the Sidebad.
   const { onAnnotationCreate, onAnnotationDelete } = props;
-
-  // if no trace ID set
-  if (activeTraceId === null) {
-    return <div className='explorer panel'>
-      <div className='empty'>No Trace Selected</div>
-    </div>
-  }
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -153,6 +159,7 @@ export function AnnotationAugmentedTraceView(props) {
       {props.header}
       <div className='spacer' />
       <div className='vr' />
+      {activeTrace && <>
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
       <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
@@ -168,27 +175,45 @@ export function AnnotationAugmentedTraceView(props) {
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
+      </>}
     </header>
     <div className='explorer panel traceview'>
-      <RenderedTrace
-        // the trace events
-        trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
-        // ranges to highlight (e.g. because of analyzer or search results)
-        highlights={highlights}
-        // callback to register events for collapsing/expanding all messages
-        onMount={(events) => setEvents(events)}
-        // extra UI decoration (inline annotation editor)
-        decorator={decorator}
-        // extra UI to show at the top of the traceview like metadata
-        prelude={
-          <>
-            <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
-            {errors.length > 0 && <AnalysisResult errors={errors} />}
-          </>
-        }
-      />
+      <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents}/>
     </div>
   </>
+}
+
+/**
+ * Show the rendered trace or an `props.empty` component if no trace is selected.
+ */
+function TraceViewContent(props) {
+  const { activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
+  const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
+  
+  // if no trace ID set
+  if (activeTraceId === null) {
+    return <div className='explorer panel'>
+      <EmptyComponent/>
+    </div>
+  }
+
+  return <RenderedTrace
+      // the trace events
+      trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
+      // ranges to highlight (e.g. because of analyzer or search results)
+      highlights={highlights}
+      // callback to register events for collapsing/expanding all messages
+      onMount={(events) => setEvents(events)}
+      // extra UI decoration (inline annotation editor)
+      decorator={decorator}
+      // extra UI to show at the top of the traceview like metadata
+      prelude={
+        <>
+          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
+          {errors.length > 0 && <AnalysisResult errors={errors} />}
+        </>
+      }
+    />
 }
 
 // AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
