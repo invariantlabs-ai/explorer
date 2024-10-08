@@ -1,29 +1,26 @@
-import asyncio
 import copy
 import datetime
 import json
-import modal
 import uuid
 from typing import Annotated
 from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from invariant.policy import AnalysisResult, Policy
 from invariant.runtime.input import mask_json_paths
-from pydantic import ValidationError
-from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from sqlalchemy import (Column, ForeignKey, Integer, String, and_,
-                        create_engine, or_)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, Session, mapped_column
-from sqlalchemy.orm.attributes import flag_modified
-from sqlalchemy.sql import func
-from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy, 
-                                        SavedQueries, SharedLinks, Trace, User, db)
+from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
+                                        SavedQueries, SharedLinks, Trace, User,
+                                        db)
 from models.importers import import_jsonl
 from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
                             load_dataset, load_trace, query_traces,
                             search_term_mappings, trace_to_exported_json,
                             trace_to_json)
+from pydantic import ValidationError
+from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.sql import func
 
 # dataset routes
 dataset = FastAPI()
@@ -508,14 +505,27 @@ async def create_policy(
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can create a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to create policy for this dataset")
         payload = await request.json()
+
+        # Validate payload
+        if not payload:
+            raise HTTPException(status_code=400, detail="Request should not be empty")
+        if not payload.get("name"):
+            raise HTTPException(status_code=400, detail="Name must be provided and non-empty")
+        if not payload.get("policy"):
+            raise HTTPException(status_code=400, detail="Policy content must be provided and non-empty")
+
 
         policies = dataset.extra_metadata.get("policies", [])
         try:
             policies.append(DatasetPolicy(
                 id=str(uuid.uuid4()),
-                content=payload.get("policy")
+                name=payload.get("name"),
+                content=payload.get("policy"),
             ).to_dict())
         except ValidationError as e:
             raise HTTPException(status_code=400, detail="Invalid Policy string") from e
@@ -524,6 +534,7 @@ async def create_policy(
         flag_modified(dataset, 'extra_metadata')
         session.commit()
         return dataset_to_json(dataset)
+
 
 @dataset.put("/{dataset_id}/policy/{policy_id}")
 async def update_policy(
@@ -536,20 +547,34 @@ async def update_policy(
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can update a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to update policy for this dataset")
         payload = await request.json()
+
+        # Validate payload
+        if not payload:
+            raise HTTPException(status_code=400, detail="Request should not be empty")
+        if "name" in payload and not payload["name"]:
+            raise HTTPException(status_code=400, detail="Name must be non-empty if provided")
+        if "policy" in payload and not payload["policy"]:
+            raise HTTPException(status_code=400, detail="Policy must be non-empty if provided")
 
         policies = dataset.extra_metadata.get("policies", [])
         existing_policy = next((p for p in policies if p["id"] == policy_id), None)
         if not existing_policy:
-            raise HTTPException(status_code=404, detail="Policy not found")
+            raise HTTPException(status_code=404, detail="Policy to update not found")
+
         try:
+            # Update the name and policy content if provided in the payload.
             updated_policy = DatasetPolicy(
                 id=existing_policy["id"],
-                content=payload.get("policy")
+                name=payload.get("name", existing_policy["name"]),
+                content=payload.get("policy", existing_policy["content"])
             ).to_dict()
-            policies.remove(existing_policy)
             policies.append(updated_policy)
+            policies.remove(existing_policy)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail="Invalid Policy string") from e
 
@@ -567,7 +592,10 @@ async def delete_policy(
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=False, return_user=False)
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can delete a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to delete policy for this dataset")
         policies = dataset.extra_metadata.get("policies", [])
 
         policy = next((p for p in policies if p["id"] == policy_id), None)

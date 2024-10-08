@@ -617,6 +617,7 @@ label {
 
 .entity-list .actions {
   white-space: nowrap;
+  margin-top: 20pt;
 
   button:not(:first-of-type) {
     margin-left: 5pt;
@@ -1485,6 +1486,88 @@ table.api-keys {
       background-color: white;
   }
   
+}
+
+/* Tab styles for the Dataset page. */
+.dataset-tab-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dataset-tab-group button {
+  padding: 10px 30px;
+  font-size: 13pt;
+  font-weight: bold;
+  border: 1pt solid rgba(0, 0, 0, 0.1);
+  border-radius: 8pt;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  color: inherit;
+  background-color: white;
+}
+
+.dataset-tab-group button:hover {
+  background-color: #d1d1d157;
+}
+
+.dataset-tab-group button.active {
+  background-color: #d1d1d157;
+}
+
+.new-policy-button {
+  margin-top: -10pt;
+  float: right;
+}
+
+.policy-editor-form {
+  height: 400pt;
+  width: 550pt;
+
+  input {
+    background-color: #ebebeb;
+    display: block;
+    padding: 5pt;
+    font-size: 24pt;
+    border-radius: 5pt;
+    border: none;
+    margin-bottom: 5pt;
+    width: 535pt;
+  }
+
+  label {
+    font-size: 16pt;
+    opacity: 0.5;
+    margin-top: 1lvh;
+    margin-bottom: 5pt;
+  }
+
+  .error {
+    color: #ED707B;
+    font-size: 18pt;
+    border-left: 2pt solid #ED707B;
+    padding-left: 10pt;
+    display: block;
+    margin-bottom: 15pt;
+    margin-top: 0pt;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+.policy-editor {
+  margin-bottom: 20pt;
+}
+
+.no-policies {
+  margin-top: 30pt;
+  text-align: center;
+}
+
+.policy-label {
+  margin-bottom: 0pt !important;
 }
 
 .deployment-info {

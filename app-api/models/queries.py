@@ -70,6 +70,9 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
         raise HTTPException(status_code=401, detail="Unauthorized get")
+    # If the dataset is public but the requestor is not the owner, remove the policies from the dataset response.
+    if dataset.is_public and str(dataset.user_id) != user_id:
+        dataset.extra_metadata.pop('policies', None)
     if return_user:
         return dataset, user
     else:

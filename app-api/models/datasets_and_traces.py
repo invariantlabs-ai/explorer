@@ -1,19 +1,15 @@
-import dataclasses
 import datetime
 import hashlib
-import json
 import os
-import re
 import uuid
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from invariant.policy import Policy
-from pydantic import BaseModel, ValidationError, field_validator
-from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
-                        String, UniqueConstraint, create_engine)
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import (JSON, Boolean, DateTime, ForeignKey, Integer, String,
+                        UniqueConstraint, create_engine)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, Session, mapped_column
+from sqlalchemy.orm import DeclarativeBase, mapped_column
 from sqlalchemy.sql import func
 
 
@@ -136,10 +132,15 @@ class APIKey(Base):
         # generate a random 32 character key
         return "inv-" + hashlib.sha256(os.urandom(32)).hexdigest()
 
+
 class DatasetPolicy(BaseModel):
     """Describes a policy associated with a Dataset."""
     id: str
+    name: str
     content: str
+    # The timestamp when the policy was created or last updated (whichever is later).
+    last_updated_time: str = Field(
+        default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     def to_dict(self) -> dict:
         """Represents the object as a dictionary."""
@@ -147,7 +148,7 @@ class DatasetPolicy(BaseModel):
 
     @field_validator('content')
     @classmethod
-    def validate_content(cls, content:str) -> str:
+    def validate_content(cls, content: str) -> str:
         """Validates that the policy string is valid."""
         try:
             _ = Policy.from_string(content)

@@ -1,14 +1,16 @@
-from playwright.async_api import expect
-import asyncio # even if not used, required for pytest-asyncio
-import pytest
 import os
 # add tests folder (parent) to sys.path
 import sys
+
+import pytest
+from playwright.async_api import expect
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from util import * # needed for pytest fixtures
+import tempfile
+
 import util
-import tempfile 
 from pytest_lazy_fixtures import lf
+from util import *  # needed for pytest fixtures
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -120,6 +122,7 @@ async def test_create_delete_dataset(context, url, dataset_name, content, screen
     # delete dataset 
     await page.goto(url) 
     await page.locator(f"text={dataset_name}").click()
+    await page.get_by_role("button", name="settings").click()
     await page.get_by_label("delete").click()
     await screenshot(page)
     await page.get_by_label("confirm delete").click()
@@ -140,6 +143,7 @@ async def test_reupload_ui(context, url, data_webarena_with_metadata, screenshot
 
         # download dataset
         async with page.expect_download() as download:
+            await page.get_by_role("button", name="settings").click()
             await page.get_by_label("download").click()
             download = await download.value
             with tempfile.TemporaryDirectory() as tmpdirname:
@@ -191,4 +195,62 @@ async def test_share_trace(context, url, data_webarena_with_metadata, screenshot
         assert username.lower().strip() == path_username.lower().strip()
         path_dataset = await page.get_by_label("path-dataset").inner_text()
         assert path_dataset == dataset['name']
-  
+
+
+async def test_policy(context, url, data_webarena_with_metadata, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_webarena_with_metadata) as dataset:
+        page = await context.new_page()
+        # Go to home page.
+        await page.goto(url)
+
+        # Go to dataset page.
+        await page.locator(f"text={dataset['name']}").click()
+
+        # View policies.
+        await page.locator("text=Policies").click()
+        await page.wait_for_selector("div.no-policies")
+        no_policies_found_text = await page.locator("div.no-policies").inner_text()
+        assert "No policies found for the dataset" in no_policies_found_text
+        await screenshot(page)
+
+        # Create policy.
+        await page.get_by_role("button", name="New Policy").click()
+        policy_name_input = await page.get_by_placeholder("Policy Name").all()
+        await policy_name_input[0].fill("Test Policy")
+        policy_code_input = await page.locator("div.view-lines").all()
+        await policy_code_input[0].click()
+        await page.keyboard.type("""
+            from invariant.detectors import secrets
+
+            raise PolicyViolation("found secrets", msg) if:
+                (msg: Message)
+                any(secrets(msg))
+            """)
+        await screenshot(page)
+        await page.get_by_role("button", name="Create").click()
+        await screenshot(page)
+
+        # Edit policy.
+        await page.get_by_role("button", name="Edit").click()
+        await screenshot(page)
+        policy_name_input = await page.locator('input[value="Test Policy"]').all()
+        await policy_name_input[0].fill("Updated Test Policy")
+        policy_code_input = await page.locator("div.view-lines").all()
+        await policy_code_input[0].click()
+        await page.keyboard.type("""
+            # Updated policy code.
+            """)
+        await screenshot(page)
+        await page.get_by_role("button", name="Update").click()
+        await screenshot(page)
+
+        # Delete policy.
+        await page.get_by_label("delete").click()
+        await screenshot(page)
+        await page.get_by_label("confirm delete").click()
+
+        # No policies on the page now.
+        await page.wait_for_selector("div.no-policies")
+        await screenshot(page)
+        no_policies_found_text = await page.locator("div.no-policies").inner_text()
+        assert "No policies found for the dataset" in no_policies_found_text
