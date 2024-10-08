@@ -46,13 +46,13 @@ def delete_trace(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIde
         return {"message": "deleted"}
 
 @trace.get("/{id}")
-def get_trace(request: Request, id: str, annotated:bool=False, userinfo: Annotated[dict, Depends(UserIdentity)] = None):
+def get_trace(request: Request, id: str, annotated:bool=False, max_length: int = None, userinfo: Annotated[dict, Depends(UserIdentity)] = None):
     # may be None for anonymous users
     user_id = userinfo["sub"]
-    
+
     with Session(db()) as session:
         trace, user = load_trace(session, id, user_id, allow_public=True, allow_shared=True, return_user=True)
-        return trace_to_json(trace, load_annoations(session, id), user=user.username)
+        return trace_to_json(trace, load_annoations(session, id), user=user.username, max_length=max_length)
         
 @trace.get("/{id}/shared")
 def get_trace_sharing(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
