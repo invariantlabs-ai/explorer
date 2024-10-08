@@ -1,3 +1,4 @@
+import React from "react"
 import { GroupedHighlight } from "./highlights";
 
 /** A way to provide inline decorations to a rendered trace view. */
@@ -67,7 +68,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     }
 
     if (!expanded) {
-        return <span id='unexpanded' className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span></span>
+        return <span id='unexpanded' className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan></span>
     }
 
     const InlineComponent: any = decorator.editorComponent
@@ -77,7 +78,32 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         return <span className={className}>{props.children}</span>
     }
 
-    return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
+    return <span className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
+}
+
+/**
+ * Like a <span>...</span> but only triggers the onActualClick handler when the span 
+ * is clicked and the user did not just select text.
+ * 
+ * If a user selects text, the click event is not triggered.
+ */
+function SelectableSpan(props: { children: any, onActualClick: () => void }) {
+    const handler = (e: React.MouseEvent) => {
+        const selection = window.getSelection()
+        if (selection && selection.toString().length > 0) {
+            return
+        }
+
+        // when shift or alt key is pressed, do not trigger
+        if (e.shiftKey || e.altKey) {
+            return
+        }
+        
+        // set super short interval to not trigger on double click
+        props.onActualClick()
+    }
+
+    return <span onClick={handler}>{props.children}</span>
 }

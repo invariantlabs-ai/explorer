@@ -13,6 +13,7 @@ import { sharedFetch } from './SharedFetch';
 import { useUserInfo } from './UserInfo';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
+import { EmptyDatasetInstructions } from './components/EmptyDataset';
 
 /**
  * Metadata for a dataset that we receive from the server.
@@ -498,7 +499,7 @@ export function Traces() {
     } else {
       let new_index = 0
       // if the trace index is not in the list of traces, navigate to the first trace
-      if (traces) new_index = traces.first()
+      if (traces && traces.first() != Infinity) new_index = traces.first()
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (displayedIndices) new_index = Math.min(...displayedIndices)
       // update the URL to the new trace index
@@ -555,9 +556,21 @@ export function Traces() {
     }
   }
 
-
   // whether the trace view shows any trace
   const traceVisible = !searching && (displayedIndices == null || displayedIndices.length > 0)
+
+  // whether there are any traces to show
+  const hasTraces = (traces?.indices().length || 0) > 0
+
+  // derive correct empty view to use
+  let emptyView: any | null = null
+  if (!(hasTraces || !isUserOwned)) {
+    if (!traces) {
+      emptyView = () => <div className='empty'>Loading...</div>
+    } else {
+      emptyView = EmptyDatasetInstructions
+    }
+  }
 
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
@@ -568,7 +581,7 @@ export function Traces() {
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
     <div className='sidebyside'>
       {/* trace explorer sidebar */}
-      <Sidebar
+      {hasTraces && <Sidebar // only show the sidebar if there are traces to show
         traces={traces}
         username={props.username}
         datasetname={props.datasetname}
@@ -579,15 +592,17 @@ export function Traces() {
         displayedIndices={displayedIndices}
         searchNow={searchNow}
         searching={searching}
-      />
+      />}
       {/* actual trace viewer */}
-      {activeTrace && <AnnotationAugmentedTraceView
+      {<AnnotationAugmentedTraceView
         // information on the currently selected trace
         activeTrace={traceVisible ? activeTrace : null}
         selectedTraceId={activeTrace?.id}
         selectedTraceIndex={activeTrace?.index}
+        // shown when no trace is selected
+        empty={emptyView}
         // current search highlights
-        mappings={highlightMappings[activeTrace.index]}
+        mappings={activeTrace ? highlightMappings[activeTrace.index] : null}
         // whether we are still loading the dataset's trace data
         loading={!traces}
         // header components to show in the explorer
@@ -595,8 +610,8 @@ export function Traces() {
           <h1>
             <Link to='/'>/</Link>
             <Link to={`/u/${props.username}`}>{props.username}</Link>/
-            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
-            <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link>
+            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>
+            {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link></>}
           </h1>
         }
         // callback for when the user presses the 'Share' button
