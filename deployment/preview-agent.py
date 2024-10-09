@@ -90,6 +90,7 @@ async def redeploy():
         f.write(process.stdout.read())
     
     yield process.stdout.read().decode()
+    yield process.stderr.read().decode()
     process.wait()
 
     if process.returncode != 0:

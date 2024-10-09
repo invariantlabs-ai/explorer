@@ -35,6 +35,10 @@ services:
     container_name: "${APP_NAME}-app-ui"
     build:
       context: ./app-ui
+      # expose project root as additional context to enable copying-in of
+      # the explorer.config.yml file during the Dockerfile build
+      additional_contexts:
+        configs: .
       dockerfile: Dockerfile.prod
       args:
         - APP_NAME=${APP_NAME}
