@@ -84,7 +84,7 @@ async def redeploy():
     
     # dump production database
     yield '\nDumping production database...\n'
-    process = subprocess.Popen('docker exec -t explorer-database-1 bash -c "pg_dump -U postgres -h localhost invariantmonitor"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+    process = subprocess.Popen('docker exec -t explorer-database bash -c "pg_dump -U postgres -h localhost invariantmonitor"', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     # write to prod.sql
     with open('prod.sql', 'wb') as f:
         f.write(process.stdout.read())
