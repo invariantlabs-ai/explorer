@@ -1,3 +1,4 @@
+import React from "react"
 import { GroupedHighlight } from "./highlights";
 
 /** A way to provide inline decorations to a rendered trace view. */
@@ -6,7 +7,7 @@ export interface TraceDecorator {
     editorComponent: React.ComponentType
     // returns true, if a given address is highlighted (e.g. hints at highlights being present)
     hasHighlight?: (address?: string, ...args: any) => boolean
-    
+
     // global extra args that are passed to editor and hasHighlight functions
     extraArgs?: any
 }
@@ -48,7 +49,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
             props.highlightContext?.setSelection(props.address)
         }
     }
-    
+
     const expanded = props.address === props.highlightContext?.selectedHighlightAnchor
     const className = "line " + (props.highlights?.length ? "has-highlights" : "")
     let extraClass = " "
@@ -60,24 +61,49 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     if (decorator.hasHighlight) {
         let highlightResult = decorator.hasHighlight(props.address, ...decorator.extraArgs);
         if (typeof highlightResult === "boolean") {
-            extraClass +=  "highlighted"
+            extraClass += "highlighted"
         } else if (typeof highlightResult === "string") {
             extraClass += highlightResult
         }
     }
 
     if (!expanded) {
-        return <span id='unexpanded' className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span></span>
+        return <span id='unexpanded' className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan></span>
     }
 
     const InlineComponent: any = decorator.editorComponent
     const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
-    
+
     if (content === null) {
         return <span className={className}>{props.children}</span>
     }
-    
-    return <span className={className + extraClass}><span onClick={() => setExpanded(!expanded)}>{props.children}</span>{expanded && <div className="inline-line-editor">
+
+    return <span className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
+}
+
+/**
+ * Like a <span>...</span> but only triggers the onActualClick handler when the span 
+ * is clicked and the user did not just select text.
+ * 
+ * If a user selects text, the click event is not triggered.
+ */
+function SelectableSpan(props: { children: any, onActualClick: () => void }) {
+    const handler = (e: React.MouseEvent) => {
+        const selection = window.getSelection()
+        if (selection && selection.toString().length > 0) {
+            return
+        }
+
+        // when shift or alt key is pressed, do not trigger
+        if (e.shiftKey || e.altKey) {
+            return
+        }
+        
+        // set super short interval to not trigger on double click
+        props.onActualClick()
+    }
+
+    return <span onClick={handler}>{props.children}</span>
 }

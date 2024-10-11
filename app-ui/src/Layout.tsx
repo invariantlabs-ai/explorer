@@ -9,6 +9,7 @@ import { useSnippetsList } from './lib/snippets';
 import { CompactSnippetList } from './Snippets';
 import { DatasetLinkList } from './Datasets';
 import { SignUp } from './SignUp';
+import { DeploymentInfo } from './components/DeploymentInfo';
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -49,24 +50,24 @@ function useAnimatedClassState(initialState: boolean) {
 /**
  * Content of the site-wide sidebar (navigation, user info, etc).
  */
-function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void, children: React.ReactNode}) {
-    const {userInfo, sidebarOpen, setSidebarOpen} = props;
+function SidebarContent(props: { userInfo?: any, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void, children: React.ReactNode }) {
+    const { userInfo, sidebarOpen, setSidebarOpen } = props;
 
     const [datasets, refresh] = useDatasetList(4);
 
     return <div className={"sidebar " + (sidebarOpen ? 'open' : '')}>
-        <div className='sidebar-background' onClick={() => setSidebarOpen(false)}/>
+        <div className='sidebar-background' onClick={() => setSidebarOpen(false)} />
         <ul className='sidebar-content' onClick={(e) => setTimeout(() => setSidebarOpen(false), 0)}>
             <button className='top close' onClick={() => setSidebarOpen(false)}>
-                <BsX/>
+                <BsX />
             </button>
             {props.children}
             {userInfo?.loggedIn && <>
-            <h2><Link to='/datasets'>Recent Datasets</Link></h2>
-            <DatasetLinkList datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)}/>
-            <h2><Link to='/snippets'>Recent Snippets</Link></h2>
-            <CompactSnippetList limit={4}/>
-            <h2></h2>
+                <h2><Link to='/datasets'>Recent Datasets</Link></h2>
+                <DatasetLinkList datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)} />
+                <h2><Link to='/snippets'>Recent Snippets</Link></h2>
+                <CompactSnippetList limit={4} />
+                <h2></h2>
             </>}
             {/* unicode copyright */}
             <p className='secondary'>&copy; 2024 Invariant Labs</p>
@@ -85,7 +86,7 @@ function SidebarContent(props: {userInfo?: any, sidebarOpen: boolean, setSidebar
 function Sidebar(props) {
     const [sidebarDomIncluded, sidebarOpen, setSidebarOpen] = useAnimatedClassState(false);
     const userInfo = useUserInfo();
-    
+
     // on open, register escape key listener
     useEffect(() => {
         if (sidebarOpen) {
@@ -103,10 +104,10 @@ function Sidebar(props) {
             document.body.style.overflow = 'auto';
         }
     }, [sidebarOpen, setSidebarOpen]);
-    
+
     return <>
         <button className='top' onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <BsList/>
+            <BsList />
         </button>
         {sidebarDomIncluded && <SidebarContent userInfo={userInfo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}>{props.children}</SidebarContent>}
     </>
@@ -115,7 +116,7 @@ function Sidebar(props) {
 /**
  * Site-wide layout (header, sidebar, content).
  */
-function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean}) {
+function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean }) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
     const navigate = useNavigate();
@@ -128,62 +129,63 @@ function Layout(props: {children: React.ReactNode, fullscreen?: boolean, needsLo
             <Sidebar>
                 <li className='logo'>
                     <h1>
-                        <img src={logo} alt='Invariant logo' className='logo'/>
+                        <img src={logo} alt='Invariant logo' className='logo' />
                         Invariant Explorer
                     </h1>
                 </li>
                 {!userInfo?.loggedIn && <>
-                <li><a href='/login'>
-                    <BsPerson/>
-                    Sign In
-                </a></li></>}
+                    <li><a href='/login'>
+                        <BsPerson />
+                        Sign In
+                    </a></li></>}
                 <li><a href='/'>
-                    <BsHouse/>
+                    <BsHouse />
                     Home
                 </a></li>
                 {userInfo?.loggedIn && <>
-                <li><a href='/datasets'>
-                    <BsDatabase/>
-                    Datasets
-                </a></li>
-                <li><a href='/snippets'>
-                    <BsCodeSlash/>
-                    Snippets
-                </a></li>
-                <li><a href='/settings'>
-                    <BsGear/>
-                    Settings
-                </a></li>
+                    <li><a href='/datasets'>
+                        <BsDatabase />
+                        Datasets
+                    </a></li>
+                    <li><a href='/snippets'>
+                        <BsCodeSlash />
+                        Snippets
+                    </a></li>
+                    <li><a href='/settings'>
+                        <BsGear />
+                        Settings
+                    </a></li>
                 </>}
             </Sidebar>
             <h1 onClick={() => navigate('/')} className='title' title='Invariant Explorer'>
-                <img src={logo} alt='Invariant logo' className='logo' onClick={() => navigate('/')}/>
+                <img src={logo} alt='Invariant logo' className='logo' onClick={() => navigate('/')} />
                 Invariant Explorer
             </h1>
+            <DeploymentInfo/>
             <div className='spacer'/>
             {!userInfo?.loggedIn && <button className='inline' onClick={() => window.location.href = '/login'}>Sign In</button>}
             <div className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
                 {userInfo?.loggedIn && <>
-                <div className='avatar'>
-                    <img src={"https://www.gravatar.com/avatar/" + userInfo?.image_url_hash} />
-                </div>
-                {userInfo ? <p>{userInfo?.name}</p> : <p>Loading...</p>}
-                <div className='popover'>
-                    <ul>
-                        <li className='disabled'>{userInfo?.email}</li>
-                        <li><a href='/settings'>Account</a></li>
-                        <li><a href='/logout'>Log Out</a></li>
-                    </ul>
-                </div>
+                    <div className='avatar'>
+                        <img src={"https://www.gravatar.com/avatar/" + userInfo?.image_url_hash} />
+                    </div>
+                    {userInfo ? <p>{userInfo?.name}</p> : <p>Loading...</p>}
+                    <div className='popover'>
+                        <ul>
+                            <li className='disabled'>{userInfo?.email}</li>
+                            <li><a href='/settings'>Account</a></li>
+                            <li><a href='/logout'>Log Out</a></li>
+                        </ul>
+                    </div>
                 </>}
             </div>
         </header>
         <div className={'content ' + (props.fullscreen ? 'fullscreen' : '')}>
-        {needsLogin && <div className='empty'>
-            <p>You must be signed in to view this page.</p>
-        </div>}
-        {needsSignup && <SignUp/>}
-        {!needsSignup && !needsLogin && props.children}
+            {needsLogin && <div className='empty'>
+                <p>You must be signed in to view this page.</p>
+            </div>}
+            {needsSignup && <SignUp />}
+            {!needsSignup && !needsLogin && props.children}
         </div>
     </>;
 }

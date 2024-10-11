@@ -20,7 +20,7 @@ body {
     padding: 5pt;
     padding-top: 10pt;
     border: 1pt solid var(--border-color);
-    
+
     .tab-group {
         background-color: rgba(0, 0, 0, 0.01);
         border: 1pt solid var(--border-color);
@@ -175,7 +175,7 @@ body {
     .error {
         color: red;
         height: 100%;
-        
+
         h3 {
             font-weight: bold;
             margin-bottom: 10pt;
@@ -317,14 +317,14 @@ body {
         font-size: 0.7em;
         position: relative;
         cursor: pointer;
-        
+
         svg {
             display: inline-block;
             position: relative;
             top: 1pt;
             margin-right: 2pt;
         }
-        
+
         svg:last-of-type {
             margin-right: 3pt;
         }
@@ -365,6 +365,12 @@ body {
 
         .arguments {
             padding: 0pt;
+
+            // for direct argument values (not shown in a table)
+            .direct {
+                margin-left: 5pt;
+                margin-right: 5pt;
+            }
         }
 
         &.highlight {
@@ -382,7 +388,7 @@ body {
     }
 
     span.line {
-        cursor: pointer;
+        cursor: select;
         padding-left: 5pt;
     }
 
@@ -488,7 +494,7 @@ body {
     }
 
     div.light.highlight {
-        opacity: 0.4; 
+        opacity: 0.4;
     }
 }
 
@@ -537,10 +543,11 @@ table.json {
         background-color: rgba(0, 0, 0, 0.04);
         border-bottom: 1pt solid var(--border-color);
         border-right: 1pt solid var(--border-color);
+        vertical-align: top;
     }
 
-    td.value {
-        padding-top: 15pt;
+    td.value div {
+        margin-top: 0pt;
     }
 
     tr td:last-child {
@@ -618,7 +625,8 @@ div.inline-line-editor {
             border-radius: 0pt;
         }
 
-        a, a:visited {
+        a,
+        a:visited {
             text-align: center;
             display: block;
             margin: 5pt;
@@ -646,7 +654,8 @@ div.inline-line-editor {
         margin-right: 2pt;
     }
 
-    a, a:visited {
+    a,
+    a:visited {
         text-decoration: none;
         color: inherit;
     }

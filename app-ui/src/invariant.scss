@@ -1,3 +1,4 @@
+@use 'sass:math';
 $scale: 1.0;
 $content-width: 1000pt;
 $text-color: #2E2E2E;
@@ -31,7 +32,7 @@ body {
     position: relative;
     overflow-x: hidden;
 
-    -webkit-font-smoothing: antialiased!important;
+    -webkit-font-smoothing: antialiased !important;
     text-rendering: optimizeLegibility;
 }
 
@@ -113,7 +114,7 @@ body {
     align-items: center;
     padding: 0pt 10pt;
     flex-direction: row;
-    
+
     width: $content-width;
     max-width: calc(100vw - 40pt);
 }
@@ -127,32 +128,35 @@ body {
 
 // mixin for button
 @mixin button {
-    display: inline-block;
-    padding: 0pt 22px;
-    line-height: 47px;
-    height: 47px;
-    border: none;
-    background-color: $color-button;
-    border-radius: 58.52pt;
-    text-decoration: none;
-    text-align: center;
-    font-size: 18px*$scale;
-    cursor: pointer;
-    color: white;
+    & {
+        display: inline-block;
+        padding: 0pt 22px;
+        line-height: 47px;
+        height: 47px;
+        border: none;
+        background-color: $color-button;
+        border-radius: 58.52pt;
+        text-decoration: none;
+        text-align: center;
+        font-size: 18px*$scale;
+        cursor: pointer;
+        color: white;
 
-    text-align: center;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 24.676px; /* 137.091% */
-    letter-spacing: 0.5px;
+        text-align: center;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 24.676px;
+        /* 137.091% */
+        letter-spacing: 0.5px;
 
-    transition: background-color 0.1s;
-    user-select: none;
+        transition: background-color 0.1s;
+        user-select: none;
+    }
 
     a {
         color: white;
     }
-    
+
     &:hover {
         background-color: #8E8D9F;
     }
@@ -171,7 +175,8 @@ body {
     padding-right: 50px;
 }
 
-header nav:not(.mobile), footer nav {
+header nav:not(.mobile),
+footer nav {
     padding-top: 4pt;
     flex: 1;
     text-align: right;
@@ -185,7 +190,7 @@ header nav:not(.mobile), footer nav {
             display: inline-block;
             font-size: 18px*$scale;
             margin: 0pt (29.5px * 0.5);
-            
+
             a {
                 text-decoration: none;
                 color: $text-color;
@@ -198,7 +203,8 @@ header nav:not(.mobile), footer nav {
     }
 }
 
-header hgroup a, footer hgroup a {
+header hgroup a,
+footer hgroup a {
     display: flex;
     align-items: center;
     text-decoration: none;
@@ -225,7 +231,7 @@ main {
     .content-width {
         flex-direction: column;
     }
-    
+
 }
 
 // phone layout
@@ -280,8 +286,8 @@ em {
 }
 
 button {
-    @include button;
     border: none;
+    @include button;
 
     &.primary {
         background-color: $color-button-primary;
@@ -311,7 +317,9 @@ button {
         padding-left: 35pt * $scale;
     }
 
-    &:disabled, &:disabled:hover, &:disabled:active {
+    &:disabled,
+    &:disabled:hover,
+    &:disabled:active {
         opacity: 0.7;
         cursor: default;
     }
@@ -321,7 +329,9 @@ input.button {
     @include button;
 }
 
-button.with-arrow, input.button.with-arrow, a.button.with-arrow {
+button.with-arrow,
+input.button.with-arrow,
+a.button.with-arrow {
     @include button-arrow;
 }
 
@@ -329,7 +339,7 @@ button.with-arrow, input.button.with-arrow, a.button.with-arrow {
 section.panel {
     width: 850pt;
     max-width: calc(100vw - 80pt);
-    background: linear-gradient(111deg, #F6F6F6 0%, #EEEEEE 100%); 
+    background: linear-gradient(111deg, #F6F6F6 0%, #EEEEEE 100%);
     border-radius: 73.03px;
     min-height: 200pt;
     margin: 50pt 0pt;
@@ -360,7 +370,7 @@ section.panel h2 {
     margin-top: 50pt;
 }
 
-section.panel > img {
+section.panel>img {
     margin: 60pt 30pt;
     width: calc(100% - 60pt);
 }
@@ -423,8 +433,9 @@ $circle_size: 70px * $scale;
         &.x-#{$i} {
             left: ($circle_size - 2px) * $scale * $i;
         }
+
         &.x-#{$i}h {
-            left: ($circle_size - 2px) * $scale * $i + $circle_size/2;
+            left: ($circle_size - 2px) * $scale * $i + math.div($circle_size, 2);
         }
     }
 
@@ -432,8 +443,9 @@ $circle_size: 70px * $scale;
         &.y-#{$i} {
             top: ($circle_size - 2px) * $scale * $i;
         }
+
         &.y-#{$i}h {
-            top: ($circle_size - 2px) * $scale * $i + $circle_size/2;
+            top: ($circle_size - 2px) * $scale * $i + math.div($circle_size, 2);
         }
     }
 }
@@ -446,7 +458,7 @@ $inset_content_padding: 20px;
     background: none !important;
     // padding: $circle_size * $inset $circle_size * $hinset;
     border: none !important;
-    padding-top: $inset * $circle_size * $scale / 4.0;
+    padding-top: math.div($inset * $circle_size * $scale, 4.0);
     padding-left: $hinset * $circle_size * $scale;
     padding-right: $hinset * $circle_size * $scale;
     // padding-bottom: $inset * $circle_size * $scale;
@@ -458,7 +470,7 @@ $inset_content_padding: 20px;
         overflow: hidden;
         padding: $inset_content_padding;
         z-index: 10;
-    
+
         p {
             padding: 10pt;
             line-height: 1.0;
@@ -480,7 +492,8 @@ $inset_content_padding: 20px;
     display: none;
 }
 
-.canvas.nogrid::before, .canvas.nograd::before {
+.canvas.nogrid::before,
+.canvas.nograd::before {
     display: none;
 }
 
@@ -518,7 +531,7 @@ $inset_content_padding: 20px;
     position: relative;
     top: 50%;
     transform: translateY(-50%);
-    
+
     b {
         font-weight: 500;
     }
@@ -526,7 +539,7 @@ $inset_content_padding: 20px;
 
 .canvas .circle.multiline {
     text-align: left;
-    
+
     p:first-child {
         margin-top: 20pt;
     }
@@ -633,7 +646,7 @@ $arrow_scale: 1.15;
     }
 
     .canvas .circle.pill-#{$i}i {
-        width: $circle_size * $scale * $i - (2px * $scale * $i) + $circle_size/2 - $circle_size * $inset - 8px;
+        width: $circle_size * $scale * $i - (2px * $scale * $i) + math.div($circle_size, 2) - $circle_size * $inset - 8px;
         height: $circle_size * $scale;
         border-radius: 35pt * $scale;
     }
@@ -642,9 +655,9 @@ $arrow_scale: 1.15;
 @for $i from 1 through 9 {
     .canvas .circle.height-#{$i} {
         height: $circle_size * $i - (2px * $i);
-        border-radius: $circle_size / 2;
+        border-radius: math.div($circle_size, 2);
         transform: translateX(1px);
-        
+
 
         h1 {
             position: absolute;
@@ -655,8 +668,8 @@ $arrow_scale: 1.15;
     }
 
     .canvas .circle.height-#{$i}h {
-        height: $circle_size * $i - (2px * $i) + $circle_size/2;
-        border-radius: $circle_size / 2;
+        height: $circle_size * $i - (2px * $i) + math.div($circle_size, 2);
+        border-radius: math.div($circle_size, 2);
         transform: translateX(1px);
     }
 }
@@ -695,12 +708,18 @@ $arrow_scale: 1.15;
     }
 }
 
-.canvas .circle.down.blue, .canvas .circle.down.blue-dark, 
-.canvas .circle.left.blue, .canvas .circle.left.blue-dark,
-.canvas .circle.right.blue, .canvas .circle.right.blue-dark,
-.canvas .circle.up.blue, .canvas .circle.up.blue-dark,
-.canvas .circle.up.green, .canvas .circle.down.green,
-.canvas .circle.left.green, .canvas .circle.right.green {
+.canvas .circle.down.blue,
+.canvas .circle.down.blue-dark,
+.canvas .circle.left.blue,
+.canvas .circle.left.blue-dark,
+.canvas .circle.right.blue,
+.canvas .circle.right.blue-dark,
+.canvas .circle.up.blue,
+.canvas .circle.up.blue-dark,
+.canvas .circle.up.green,
+.canvas .circle.down.green,
+.canvas .circle.left.green,
+.canvas .circle.right.green {
     background-image: url('/theme/images/arrow-right-dark.svg');
 }
 
@@ -773,7 +792,8 @@ footer {
             justify-content: center;
             margin-top: 0pt;
 
-            p, a {
+            p,
+            a {
                 width: 100%;
                 justify-content: center;
                 text-align: center;
@@ -792,7 +812,10 @@ footer nav ul li a {
 
 @mixin button-blue {
     @include button;
-    background-color: $color-button-blue;
+
+    & {
+        background-color: $color-button-blue;
+    }
 }
 
 button.blue {
@@ -853,7 +876,9 @@ section.dark section {
         padding-right: 0pt;
     }
 
-    h1, h2, button {
+    h1,
+    h2,
+    button {
         margin-top: 20pt;
         white-space: nowrap;
     }
@@ -925,7 +950,9 @@ section.dark section {
             width: 100%;
         }
 
-        h2, h3, button {
+        h2,
+        h3,
+        button {
             margin-top: 10pt;
         }
     }
@@ -1001,7 +1028,7 @@ section.dark section {
 .banner {
     display: block;
     margin-top: 2pt;
-    
+
     text-decoration: none !important;
     background-color: $color-primary;
     border-radius: 20pt;
@@ -1043,7 +1070,7 @@ section.dark section {
     display: flex;
     max-width: 100%;
     margin-bottom: 50pt;
-    
+
     flex-flow: row wrap;
     justify-content: flex-start;
     align-items: center;
@@ -1115,7 +1142,8 @@ section.dark section {
             font-size: 22px;
             font-style: normal;
             font-weight: 400;
-            line-height: 30px; /* 136.364% */
+            line-height: 30px;
+            /* 136.364% */
             letter-spacing: 0.22px;
 
             overflow: hidden;
@@ -1142,7 +1170,8 @@ section.dark section {
                 font-size: 24.795px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 31.788px; /* 128.205% */
+                line-height: 31.788px;
+                /* 128.205% */
                 letter-spacing: 0.496px;
             }
 
@@ -1152,7 +1181,8 @@ section.dark section {
                 font-size: 20px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 30px; /* 150% */
+                line-height: 30px;
+                /* 150% */
                 letter-spacing: 0.14px;
             }
         }
@@ -1161,6 +1191,7 @@ section.dark section {
     // if only one fits
     @media (max-width: calc(2 * (400px + 20pt) + 32pt)) {
         max-width: auto;
+
         &.previews {
             width: 100%;
             justify-content: center;
@@ -1177,7 +1208,8 @@ section.dark section {
                 font-size: 24.795px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 31.788px; /* 128.205% */
+                line-height: 31.788px;
+                /* 128.205% */
                 letter-spacing: 0.496px;
             }
 
@@ -1187,7 +1219,8 @@ section.dark section {
                 font-size: 20px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 30px; /* 150% */
+                line-height: 30px;
+                /* 150% */
                 letter-spacing: 0.14px;
             }
         }
@@ -1208,13 +1241,14 @@ section.dark section {
             text-align: center;
             width: 100%;
         }
-        
+
         h1 {
             font-family: "NeueMontreal";
             font-size: 65px;
             font-style: normal;
             font-weight: 400;
-            line-height: 63px; /* 96.923% */
+            line-height: 63px;
+            /* 96.923% */
             letter-spacing: 0.65px;
         }
 
@@ -1224,7 +1258,8 @@ section.dark section {
             font-size: 48px;
             font-style: normal;
             font-weight: 400;
-            line-height: 49px; /* 102.083% */
+            line-height: 49px;
+            /* 102.083% */
             letter-spacing: 0.48px;
         }
 
@@ -1234,7 +1269,8 @@ section.dark section {
             font-size: 34px;
             font-style: normal;
             font-weight: 400;
-            line-height: 36px; /* 105.882% */
+            line-height: 36px;
+            /* 105.882% */
             letter-spacing: 1.02px;
         }
 
@@ -1244,12 +1280,13 @@ section.dark section {
             font-size: 30px;
             font-style: normal;
             font-weight: 400;
-            line-height: 36px; /* 105.882% */
+            line-height: 36px;
+            /* 105.882% */
             letter-spacing: 1.02px;
             margin-left: 0pt;
         }
 
-        h3.abstract{
+        h3.abstract {
             font-style: normal;
             font-size: 28px;
             margin-top: 20pt;
@@ -1264,12 +1301,14 @@ section.dark section {
             font-size: 25px;
             font-style: normal;
             font-weight: bold;
-            line-height: 30px; /* 120% */
+            line-height: 30px;
+            /* 120% */
             letter-spacing: 0.75px;
             margin-top: 30pt;
         }
 
-        p, ul {
+        p,
+        ul {
             color: #0C0C13;
             font-family: "NeueMontreal";
             font-size: 25px;
@@ -1316,7 +1355,8 @@ section.dark section {
             margin-top: 20pt;
             margin-bottom: 20pt;
 
-            button, a.button {
+            button,
+            a.button {
                 display: inline-block;
                 margin: 0pt 5pt;
             }
@@ -1363,7 +1403,9 @@ section.dark section {
         position: relative;
     }
 
-    article p img:not(.textwidth), article figure img:not(.textwidth), article figure video {
+    article p img:not(.textwidth),
+    article figure img:not(.textwidth),
+    article figure video {
         margin: 30pt 0pt;
         width: 700pt;
         transform: translateX(-50%);
@@ -1375,14 +1417,17 @@ section.dark section {
         border: 1px solid #74747415;
     }
 
-    article img.masked, article p img.masked {
+    article img.masked,
+    article p img.masked {
         padding: 0pt;
         margin: 10pt 0pt;
         border-radius: 10px;
         overflow: hidden;
     }
 
-    article p img.textwidth, article figure img.textwidth, article figure video.textwidth {
+    article p img.textwidth,
+    article figure img.textwidth,
+    article figure video.textwidth {
         width: 100%;
         max-width: 100%;
         margin: 10pt 0pt;
@@ -1405,7 +1450,9 @@ section.dark section {
     }
 
     article.full {
-        a, a:visited {
+
+        a,
+        a:visited {
             &:not(.button) {
                 text-decoration: underline;
                 color: inherit;
@@ -1438,7 +1485,8 @@ section.dark section {
             line-height: 1.5;
         }
 
-        em, i {
+        em,
+        i {
             color: $text-color;
             font-style: italic;
         }
@@ -1460,7 +1508,8 @@ section.dark section {
                 font-size: 48px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 52px; /* 94.545% */
+                line-height: 52px;
+                /* 94.545% */
                 letter-spacing: 0.55px;
             }
 
@@ -1470,21 +1519,24 @@ section.dark section {
                 font-size: 22px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 29px; /* 131.818% */
+                line-height: 29px;
+                /* 131.818% */
                 letter-spacing: 0.66px;
             }
-            
+
             h4.date {
                 margin-top: 15pt;
             }
 
-            p, ul {
+            p,
+            ul {
                 color: #0C0C13;
                 font-family: "NeueMontreal";
                 font-size: 22px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 30px; /* 136.364% */
+                line-height: 30px;
+                /* 136.364% */
                 letter-spacing: 0.95px;
             }
         }
@@ -1522,7 +1574,8 @@ section.dark section {
                 font-size: 38px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 40px; /* 109.677% */
+                line-height: 40px;
+                /* 109.677% */
                 letter-spacing: 0.31px;
             }
 
@@ -1541,7 +1594,8 @@ section.dark section {
                 font-size: 24px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 28px; /* 116.667% */
+                line-height: 28px;
+                /* 116.667% */
                 letter-spacing: 0.24px;
             }
 
@@ -1551,7 +1605,8 @@ section.dark section {
                 font-size: 22px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 29px; /* 131.818% */
+                line-height: 29px;
+                /* 131.818% */
                 letter-spacing: 0.66px;
             }
 
@@ -1559,15 +1614,17 @@ section.dark section {
                 margin-top: 15pt;
             }
 
-            p, ul {
+            p,
+            ul {
                 color: #0C0C13;
                 font-family: "NeueMontreal";
                 font-size: 19px;
                 font-style: normal;
                 font-weight: 400;
-                line-height: 24px; /* 110.526% */
+                line-height: 24px;
+                /* 110.526% */
                 letter-spacing: 0.95px;
-                
+
                 text-align: justify;
             }
         }
@@ -1585,7 +1642,7 @@ h2.site {
     width: 100%;
     padding: 0pt 10pt;
     margin-bottom: 10pt;
-    
+
     font-size: 65px;
     text-align: center;
     display: block;
@@ -1593,7 +1650,8 @@ h2.site {
     line-height: 1.2;
 }
 
-h3.subsite, article h3.subsite {
+h3.subsite,
+article h3.subsite {
     text-align: center;
     width: 400pt;
     max-width: calc(100vw - 40pt);
@@ -1615,14 +1673,16 @@ h3.subsite.career {
         margin-bottom: 5px;
     }
 
-    h3.subsite, article h3.subsite {
+    h3.subsite,
+    article h3.subsite {
         color: #2E2E2E;
         text-align: center;
         font-family: "NeueMontreal";
         font-size: 19px;
         font-style: normal;
         font-weight: 400;
-        line-height: 23px; /* 121.053% */
+        line-height: 23px;
+        /* 121.053% */
         letter-spacing: 0.57px;
         max-width: calc(100vw - 20pt);
 
@@ -1642,22 +1702,25 @@ h3.subsite.career {
         font-size: 31px;
         font-style: normal;
         font-weight: 400;
-        line-height: 34px; /* 109.677% */
+        line-height: 34px;
+        /* 109.677% */
         letter-spacing: 0.31px;
 
         margin-bottom: 15px;
     }
 
-    h3.subsite, article h3.subsite {
+    h3.subsite,
+    article h3.subsite {
         color: #2E2E2E;
         text-align: center;
         font-size: 19px;
         font-style: normal;
         font-weight: 400;
-        line-height: 23px; /* 121.053% */
+        line-height: 23px;
+        /* 121.053% */
         letter-spacing: 0.57px;
         max-width: calc(100vw - 0pt);
-        
+
         margin: auto;
         width: 80%;
         margin-bottom: 40pt;
@@ -1740,6 +1803,7 @@ nav.mobile {
     nav.full {
         display: none;
     }
+
     nav.mobile {
         display: block;
     }
@@ -1763,6 +1827,7 @@ svg.hero-animated {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -1802,10 +1867,12 @@ button.hamburger {
     }
 
     &:not(.open):hover {
+
         // move them slighly apart
         .line-1 {
             transform: translateY(-4pt);
         }
+
         .line-2 {
             transform: translateY(4pt);
         }
@@ -1849,13 +1916,12 @@ nav.mobile {
     }
 
     li button {
-        @include button;
-        @include button-blue;
         margin-top: 40pt;
         margin-bottom: 0pt;
-
         line-height: 30pt;
         width: 100%;
+        @include button;
+        @include button-blue;
     }
 
     &.open ul {
@@ -1904,10 +1970,12 @@ nav.mobile {
         left: -200%;
         opacity: 0;
     }
+
     0.1% {
         left: 0;
         opacity: 0;
     }
+
     to {
         left: 0;
         opacity: 1;
@@ -1919,10 +1987,12 @@ nav.mobile {
         left: 0;
         opacity: 1;
     }
+
     99.9% {
         left: 0;
         opacity: 0;
     }
+
     to {
         left: -200%;
         opacity: 0;
@@ -1978,16 +2048,16 @@ article.about {
                 padding: 0;
                 line-height: 1.5;
             }
-            
+
             div {
-            color: #0C0C13;
-            font-family: "NeueMontreal";
-            font-size: 20px;
-            font-style: normal;
-            font-weight: 400;
-            letter-spacing: 0.75px;
-            line-height: 1.2;
-            width: 230px;
+                color: #0C0C13;
+                font-family: "NeueMontreal";
+                font-size: 20px;
+                font-style: normal;
+                font-weight: 400;
+                letter-spacing: 0.75px;
+                line-height: 1.2;
+                width: 230px;
             }
         }
     }
@@ -2006,7 +2076,7 @@ section.grey {
 section.dark {
     section.panel:not(.sidebyside) {
         max-width: calc(100vw - 140pt);
-        
+
         h2 {
             font-size: 47px;
             padding-top: 20pt;
@@ -2033,7 +2103,7 @@ section.dark {
         section.panel:not(.sidebyside) {
             max-width: calc(100vw - 80pt);
             border-radius: 32.5px;
-            
+
             h2 {
                 font-size: 23.5px;
             }
@@ -2058,75 +2128,370 @@ div.logos {
 }
 
 div.highlight {
-    .hll { background-color: #ffffcc }
-    .c { color: #3D7B7B; font-style: italic } /* Comment */
+    .hll {
+        background-color: #ffffcc
+    }
+
+    .c {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment */
     // .err { border: 1px solid #FF0000 } /* Error */
-    .k { color: $color-primary; font-weight: bold } /* Keyword */
-    .o { color: #666666 } /* Operator */
-    .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
-    .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
-    .cp { color: #9C6500 } /* Comment.Preproc */
-    .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
-    .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
-    .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
-    .gd { color: #A00000 } /* Generic.Deleted */
-    .ge { font-style: italic } /* Generic.Emph */
-    .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
-    .gr { color: #E40000 } /* Generic.Error */
-    .gh { color: #000080; font-weight: bold } /* Generic.Heading */
-    .gi { color: #008400 } /* Generic.Inserted */
-    .go { color: #717171 } /* Generic.Output */
-    .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
-    .gs { font-weight: bold } /* Generic.Strong */
-    .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
-    .gt { color: #0044DD } /* Generic.Traceback */
-    .kc { color: $color-primary; font-weight: bold } /* Keyword.Constant */
-    .kd { color: $color-primary; font-weight: bold } /* Keyword.Declaration */
-    .kn { color: $color-primary; font-weight: bold } /* Keyword.Namespace */
-    .kp { color: $color-primary } /* Keyword.Pseudo */
-    .kr { color: $color-primary; font-weight: bold } /* Keyword.Reserved */
-    .kt { color: #B00040 } /* Keyword.Type */
-    .m { color: #666666 } /* Literal.Number */
-    .s { color: #FF669D } /* Literal.String */
-    .na { color: #687822 } /* Name.Attribute */
-    .nb { color: $color-primary } /* Name.Builtin */
-    .nc { color: #0000FF; font-weight: bold } /* Name.Class */
-    .no { color: #880000 } /* Name.Constant */
-    .nd { color: #AA22FF } /* Name.Decorator */
-    .ni { color: #717171; font-weight: bold } /* Name.Entity */
-    .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
-    .nf { color: #0000FF } /* Name.Function */
-    .nl { color: #767600 } /* Name.Label */
-    .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
-    .nt { color: $color-primary; font-weight: bold } /* Name.Tag */
-    .nv { color: #19177C } /* Name.Variable */
-    .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
-    .w { color: #bbbbbb } /* Text.Whitespace */
-    .mb { color: #666666 } /* Literal.Number.Bin */
-    .mf { color: #666666 } /* Literal.Number.Float */
-    .mh { color: #666666 } /* Literal.Number.Hex */
-    .mi { color: #666666 } /* Literal.Number.Integer */
-    .mo { color: #666666 } /* Literal.Number.Oct */
-    .sa { color: #FF669D } /* Literal.String.Affix */
-    .sb { color: #FF669D } /* Literal.String.Backtick */
-    .sc { color: #FF669D } /* Literal.String.Char */
-    .dl { color: #FF669D } /* Literal.String.Delimiter */
-    .sd { color: #FF669D; font-style: italic } /* Literal.String.Doc */
-    .s2 { color: #FF669D } /* Literal.String.Double */
-    .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
-    .sh { color: #FF669D } /* Literal.String.Heredoc */
-    .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
-    .sx { color: $color-primary } /* Literal.String.Other */
-    .sr { color: #A45A77 } /* Literal.String.Regex */
-    .s1 { color: #FF669D } /* Literal.String.Single */
-    .ss { color: #19177C } /* Literal.String.Symbol */
-    .bp { color: $color-primary } /* Name.Builtin.Pseudo */
-    .fm { color: #0000FF } /* Name.Function.Magic */
-    .vc { color: #19177C } /* Name.Variable.Class */
-    .vg { color: #19177C } /* Name.Variable.Global */
-    .vi { color: #19177C } /* Name.Variable.Instance */
-    .vm { color: #19177C } /* Name.Variable.Magic */
-    .il { color: #666666 } /* Literal.Number.Integer.Long */
+    .k {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Keyword */
+    .o {
+        color: #666666
+    }
+
+    /* Operator */
+    .ch {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment.Hashbang */
+    .cm {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment.Multiline */
+    .cp {
+        color: #9C6500
+    }
+
+    /* Comment.Preproc */
+    .cpf {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment.PreprocFile */
+    .c1 {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment.Single */
+    .cs {
+        color: #3D7B7B;
+        font-style: italic
+    }
+
+    /* Comment.Special */
+    .gd {
+        color: #A00000
+    }
+
+    /* Generic.Deleted */
+    .ge {
+        font-style: italic
+    }
+
+    /* Generic.Emph */
+    .ges {
+        font-weight: bold;
+        font-style: italic
+    }
+
+    /* Generic.EmphStrong */
+    .gr {
+        color: #E40000
+    }
+
+    /* Generic.Error */
+    .gh {
+        color: #000080;
+        font-weight: bold
+    }
+
+    /* Generic.Heading */
+    .gi {
+        color: #008400
+    }
+
+    /* Generic.Inserted */
+    .go {
+        color: #717171
+    }
+
+    /* Generic.Output */
+    .gp {
+        color: #000080;
+        font-weight: bold
+    }
+
+    /* Generic.Prompt */
+    .gs {
+        font-weight: bold
+    }
+
+    /* Generic.Strong */
+    .gu {
+        color: #800080;
+        font-weight: bold
+    }
+
+    /* Generic.Subheading */
+    .gt {
+        color: #0044DD
+    }
+
+    /* Generic.Traceback */
+    .kc {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Keyword.Constant */
+    .kd {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Keyword.Declaration */
+    .kn {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Keyword.Namespace */
+    .kp {
+        color: $color-primary
+    }
+
+    /* Keyword.Pseudo */
+    .kr {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Keyword.Reserved */
+    .kt {
+        color: #B00040
+    }
+
+    /* Keyword.Type */
+    .m {
+        color: #666666
+    }
+
+    /* Literal.Number */
+    .s {
+        color: #FF669D
+    }
+
+    /* Literal.String */
+    .na {
+        color: #687822
+    }
+
+    /* Name.Attribute */
+    .nb {
+        color: $color-primary
+    }
+
+    /* Name.Builtin */
+    .nc {
+        color: #0000FF;
+        font-weight: bold
+    }
+
+    /* Name.Class */
+    .no {
+        color: #880000
+    }
+
+    /* Name.Constant */
+    .nd {
+        color: #AA22FF
+    }
+
+    /* Name.Decorator */
+    .ni {
+        color: #717171;
+        font-weight: bold
+    }
+
+    /* Name.Entity */
+    .ne {
+        color: #CB3F38;
+        font-weight: bold
+    }
+
+    /* Name.Exception */
+    .nf {
+        color: #0000FF
+    }
+
+    /* Name.Function */
+    .nl {
+        color: #767600
+    }
+
+    /* Name.Label */
+    .nn {
+        color: #0000FF;
+        font-weight: bold
+    }
+
+    /* Name.Namespace */
+    .nt {
+        color: $color-primary;
+        font-weight: bold
+    }
+
+    /* Name.Tag */
+    .nv {
+        color: #19177C
+    }
+
+    /* Name.Variable */
+    .ow {
+        color: #AA22FF;
+        font-weight: bold
+    }
+
+    /* Operator.Word */
+    .w {
+        color: #bbbbbb
+    }
+
+    /* Text.Whitespace */
+    .mb {
+        color: #666666
+    }
+
+    /* Literal.Number.Bin */
+    .mf {
+        color: #666666
+    }
+
+    /* Literal.Number.Float */
+    .mh {
+        color: #666666
+    }
+
+    /* Literal.Number.Hex */
+    .mi {
+        color: #666666
+    }
+
+    /* Literal.Number.Integer */
+    .mo {
+        color: #666666
+    }
+
+    /* Literal.Number.Oct */
+    .sa {
+        color: #FF669D
+    }
+
+    /* Literal.String.Affix */
+    .sb {
+        color: #FF669D
+    }
+
+    /* Literal.String.Backtick */
+    .sc {
+        color: #FF669D
+    }
+
+    /* Literal.String.Char */
+    .dl {
+        color: #FF669D
+    }
+
+    /* Literal.String.Delimiter */
+    .sd {
+        color: #FF669D;
+        font-style: italic
+    }
+
+    /* Literal.String.Doc */
+    .s2 {
+        color: #FF669D
+    }
+
+    /* Literal.String.Double */
+    .se {
+        color: #AA5D1F;
+        font-weight: bold
+    }
+
+    /* Literal.String.Escape */
+    .sh {
+        color: #FF669D
+    }
+
+    /* Literal.String.Heredoc */
+    .si {
+        color: #A45A77;
+        font-weight: bold
+    }
+
+    /* Literal.String.Interpol */
+    .sx {
+        color: $color-primary
+    }
+
+    /* Literal.String.Other */
+    .sr {
+        color: #A45A77
+    }
+
+    /* Literal.String.Regex */
+    .s1 {
+        color: #FF669D
+    }
+
+    /* Literal.String.Single */
+    .ss {
+        color: #19177C
+    }
+
+    /* Literal.String.Symbol */
+    .bp {
+        color: $color-primary
+    }
+
+    /* Name.Builtin.Pseudo */
+    .fm {
+        color: #0000FF
+    }
+
+    /* Name.Function.Magic */
+    .vc {
+        color: #19177C
+    }
+
+    /* Name.Variable.Class */
+    .vg {
+        color: #19177C
+    }
+
+    /* Name.Variable.Global */
+    .vi {
+        color: #19177C
+    }
+
+    /* Name.Variable.Instance */
+    .vm {
+        color: #19177C
+    }
+
+    /* Name.Variable.Magic */
+    .il {
+        color: #666666
+    }
+
+    /* Literal.Number.Integer.Long */
 }
 
 $duration: 10s;
@@ -2144,7 +2509,7 @@ ul.changing {
     line-height: 1.0;
     position: relative;
     min-height: 37pt;
-    
+
     em {
         opacity: 0.0;
     }
@@ -2164,7 +2529,7 @@ ul.changing {
 
         @for $i from 1 through 40 {
             &:nth-child(#{$i}) {
-                animation-delay: ($duration / 4.0)  * ($i - 2);
+                animation-delay: math.div($duration, 4.0) * ($i - 2);
             }
         }
     }
@@ -2174,18 +2539,23 @@ ul.changing {
     0% {
         opacity: 0;
     }
+
     10% {
         opacity: 1;
     }
+
     20% {
         opacity: 1;
     }
+
     30% {
         opacity: 0;
     }
+
     35% {
         opacity: 0;
     }
+
     100% {
         opacity: 0;
     }
@@ -2196,18 +2566,23 @@ ul.changing {
     0% {
         opacity: 1;
     }
+
     10% {
         opacity: 1;
     }
+
     20% {
         opacity: 1;
     }
+
     30% {
         opacity: 0;
     }
+
     35% {
         opacity: 0;
     }
+
     100% {
         opacity: 0;
     }
@@ -2248,7 +2623,7 @@ section.panel.about {
             }
         }
     }
-    
+
     .img {
         max-height: 280pt;
         max-width: 50%;
@@ -2258,7 +2633,7 @@ section.panel.about {
         justify-content: flex-end;
         // padding-right: 0pt;
         // padding-left: 60pt;
-        
+
         img {
             width: 100%;
         }
@@ -2381,7 +2756,8 @@ section.panel.about {
         display: none;
     }
 
-    .content__gdpr, .content__gdprLegal {
+    .content__gdpr,
+    .content__gdprLegal {
         font-size: 8pt;
     }
 
@@ -2411,14 +2787,17 @@ section.panel.about {
         padding: 10pt;
     }
 
-    #close-success, #mce-success-response {
+    #close-success,
+    #mce-success-response {
         line-height: 35pt;
         text-align: center;
     }
 }
 
 .modal-content.completed {
-    #mc_embed_signup_scroll>div:not(#close-success), #mc_embed_signup_scroll>h2 {
+
+    #mc_embed_signup_scroll>div:not(#close-success),
+    #mc_embed_signup_scroll>h2 {
         display: none;
     }
 
@@ -2433,7 +2812,8 @@ section.panel.about {
         background: transparent;
     }
 
-    #mc_embed_signup, #mc_embed_signup_scroll {
+    #mc_embed_signup,
+    #mc_embed_signup_scroll {
         background: none;
     }
 }
@@ -2464,9 +2844,9 @@ section.panel.about {
 }
 
 a.button {
-    @include button;
     line-height: 34pt;
     text-decoration: none;
+    @include button;
 
     &.discord {
         background-image: url('/theme/images/logos/discord.svg');
@@ -2516,13 +2896,13 @@ section.grey.running {
 .running {
     display: block;
     width: 500pt;
-    margin-left: 200pt; 
+    margin-left: 200pt;
 }
 
 .anchor {
     display: block;
     position: relative;
-    
+
     margin: 0pt auto;
 
     display: flex;
@@ -2530,6 +2910,7 @@ section.grey.running {
     align-items: center;
     justify-content: center;
     opacity: 0.8;
+    animation: moving 30s infinite linear;
 
     img {
         // max-height: 25pt;
@@ -2538,14 +2919,13 @@ section.grey.running {
         margin-right: 40pt;
         margin-left: 40pt;
     }
-
-    animation: moving 30s infinite linear;
 }
 
 @keyframes moving {
     from {
         left: 0%;
     }
+
     to {
         left: 25%;
     }
@@ -2572,7 +2952,7 @@ section.gallery {
 div.fade {
     position: relative;
     width: 100vw;
-    
+
     .fade-left {
         position: absolute;
         top: 0;

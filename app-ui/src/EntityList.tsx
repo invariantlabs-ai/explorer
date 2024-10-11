@@ -1,5 +1,5 @@
 import React from 'react'
-import {UserInfo, useUserInfo} from './UserInfo'
+import { UserInfo, useUserInfo } from './UserInfo'
 import { BsFileBinaryFill, BsPencilFill, BsTrash, BsUpload, BsGlobe, BsDownload, BsClockHistory } from 'react-icons/bs'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -11,7 +11,7 @@ function EntityList(props) {
     {(props.title || props.actios) && <header>
       {props.title && <>
         <h1>{props.title}</h1>
-        <div className="spacer"/>
+        <div className="spacer" />
       </>}
       {props.actions && <div className="actions">
         {props.actions}
@@ -23,4 +23,4 @@ function EntityList(props) {
   </div>
 }
 
-export {EntityList}
+export { EntityList }

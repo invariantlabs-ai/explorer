@@ -1,0 +1,21 @@
+FROM python:3.11-bullseye
+
+# install rsync and docker client, docker compose
+RUN apt-get update && apt-get install -y rsync
+
+# install docker client inside container (docker.sock is mounted in compose file)
+RUN apt-get update && \
+    apt-get -qy full-upgrade && \
+    apt-get install -qy curl && \
+    apt-get install -qy curl && \
+    curl -sSL https://get.docker.com/ | sh
+
+# install pexpect, fastapi, uvicorn for the preview agent
+RUN pip install pexpect fastapi uvicorn
+
+COPY preview /preview-agent/preview
+COPY preview-agent.py /preview-agent/preview-agent.py
+
+WORKDIR /root/www/staging-explorer
+RUN mkdir -p data/database
+CMD ["python", "/preview-agent/preview-agent.py"]

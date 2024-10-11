@@ -41,16 +41,38 @@ class Annotations extends RemoteResource {
 
 /**
  * Components that renders agent traces with the ability for user's to add comments ("annotation").
+ * 
+ * @param {Object} props
+ * @param {Object} props.activeTrace - the trace to render
+ * @param {string} props.selectedTraceId - the trace ID
+ * @param {number} props.selectedTraceIndex - the trace index
+ * @param {Object} props.mappings - the mappings to highlight in the traceview
+ * @param {Function} props.onShare - callback to share the trace
+ * @param {boolean} props.sharingEnabled - whether the trace is shared
+ * @param {Function} props.onAnnotationCreate - callback to update annotations count on the Sidebar
+ * @param {Function} props.onAnnotationDelete - callback to update annotations count on the Sidebar
+ * @param {React.Component} props.header - the header component (e.g. <user>/<dataset>/<trace> links)
+ * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
+ * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
 export function AnnotationAugmentedTraceView(props) {
   // the rendered trace
   const activeTrace = props.activeTrace || null
   // the trace ID
   const activeTraceId = props.selectedTraceId || null
+  // the trace index
+  const activeTraceIndex = props.selectedTraceIndex;
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({})
   // loads and manages annotations as a remote resource (server CRUD)
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId)
+
+  // highlights to show in the traceview (e.g. because of analyzer or search results)
+  const [highlights, setHighlights] = useState(HighlightedJSON.empty())
+  // filtered annotations (without analyzer annotations)
+  const [filtered_annotations, setFilteredAnnotations] = useState({})
+  // errors from analyzer annotations
+  const [errors, setErrors] = useState([])
 
   // expand all messages
   const onExpandAll = () => {
@@ -62,67 +84,71 @@ export function AnnotationAugmentedTraceView(props) {
     events.collapseAll?.fire()
   }
 
-  // if no trace ID set
-  if (activeTraceId === null) {
-    return <div className='explorer panel'>
-      <div className='empty'>No Trace Selected</div>
-    </div>
-  }
+  // Callback functions to update annotations count on the Sidebad.
+  const { onAnnotationCreate, onAnnotationDelete } = props;
 
-  // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
-  const mappings = props.mappings || {}
-  // collect errors from analyzer annotations
-  const errors = []
+  // whenever annotations change, update mappings
+  useEffect(() => {
+    // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
+    const mappings = Object.assign({}, props.mappings) || {}
+    // collect errors from analyzer annotations
+    const errors = []
 
-  for (let key in annotations) {
-    for (let annotation of annotations[key]) {
-      if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
+    for (let key in annotations) {
+      for (let annotation of annotations[key]) {
+        if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
           try {
             const contentJson = JSON.parse(annotation.content);
             if (contentJson["errors"]) {
               for (let error of contentJson["errors"]) {
-                errors.push({"type": error["args"][0], "count": error["ranges"].length})
+                errors.push({ "type": error["args"][0], "count": error["ranges"].length })
               }
             }
           } catch (error) {
             continue; // Skip if annotation.content is not valid JSON
           }
+        }
       }
-    }
 
-    // mappings
-    let substr = key.substring(key.indexOf(":"))
-    if (substr.match(/:\d+-\d+/)) {
-      for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
-        mappings[key] = {"content": annotation.content}
-        if (annotation.extra_metadata) {
-          mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
+      // mappings
+      let substr = key.substring(key.indexOf(":"))
+      if (substr.match(/:\d+-\d+/)) {
+        for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
+          mappings[key] = { "content": annotation.content }
+          if (annotation.extra_metadata) {
+            mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
+          }
         }
       }
     }
-  }
 
-  // Filter all annotations with "analyzer" as source from all the keys
-  // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
-  let filtered_annotations = {}
-  for (let key in annotations) {
-    let new_annotations = annotations[key].filter(annotation =>
-      !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
-    );
-    if (new_annotations.length > 0) {
-      filtered_annotations[key] = new_annotations
+    // Filter all annotations with "analyzer" as source from all the keys
+    // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
+    let filtered_annotations = {}
+    for (let key in annotations) {
+      let new_annotations = annotations[key].filter(annotation =>
+        !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
+      );
+      if (new_annotations.length > 0) {
+        filtered_annotations[key] = new_annotations
+      }
     }
-  }
+    setHighlights(HighlightedJSON.from_mappings(mappings))
+    setErrors(errors)
+    setFilteredAnnotations(filtered_annotations)
+  }, [annotations, props.mappings])
+
+  // filter to hide analyzer messages in annotation threads
+  const noAnalyzerMessages = (a) => !a.extra_metadata || a.extra_metadata.source !== "analyzer"
 
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
     editorComponent: (props) => <div className="comment-insertion-point">
-      <AnnotationThread {...props}
-        traceId={activeTraceId} />
+      <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete} />
     </div>,
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
-          return "highlighted num-" + filtered_annotations[address].length
+        return "highlighted num-" + filtered_annotations[address].length
       }
     },
     extraArgs: [activeTraceId]
@@ -133,6 +159,7 @@ export function AnnotationAugmentedTraceView(props) {
       {props.header}
       <div className='spacer' />
       <div className='vr' />
+      {activeTrace && <>
       <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
       <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
       <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
@@ -148,38 +175,57 @@ export function AnnotationAugmentedTraceView(props) {
       {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
+      </>}
     </header>
     <div className='explorer panel traceview'>
-      <RenderedTrace
-        // the trace events
-        trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
-        // ranges to highlight (e.g. because of analyzer or search results)
-        highlights={HighlightedJSON.from_mappings(mappings)}
-        // callback to register events for collapsing/expanding all messages
-        onMount={(events) => setEvents(events)}
-        // extra UI decoration (inline annotation editor)
-        decorator={decorator}
-        // extra UI to show at the top of the traceview like metadata
-        prelude={
-          <>
-            <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
-            {errors.length > 0 && <AnalysisResult errors={errors} />}
-          </>
-        }
-      />
+      <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents}/>
     </div>
   </>
+}
+
+/**
+ * Show the rendered trace or an `props.empty` component if no trace is selected.
+ */
+function TraceViewContent(props) {
+  const { activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
+  const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
+  
+  // if no trace ID set
+  if (activeTraceId === null) {
+    return <div className='explorer panel'>
+      <EmptyComponent/>
+    </div>
+  }
+
+  return <RenderedTrace
+      // the trace events
+      trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
+      // ranges to highlight (e.g. because of analyzer or search results)
+      highlights={highlights}
+      // callback to register events for collapsing/expanding all messages
+      onMount={(events) => setEvents(events)}
+      // extra UI decoration (inline annotation editor)
+      decorator={decorator}
+      // extra UI to show at the top of the traceview like metadata
+      prelude={
+        <>
+          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
+          {errors.length > 0 && <AnalysisResult errors={errors} />}
+        </>
+      }
+    />
 }
 
 // AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
 function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, props.traceId)
+  const { onAnnotationCreate, onAnnotationDelete } = props
   let threadAnnotations = (annotations || {})[props.address] || []
 
   return <div className='annotation-thread'>
-    {threadAnnotations.map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} />)}
-    <AnnotationEditor address={props.address} traceId={props.traceId} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} />
+    {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} traceIndex={props.traceIndex} onAnnotationDelete={onAnnotationDelete} />)}
+    <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} />
   </div>
 }
 
@@ -196,6 +242,9 @@ function Annotation(props) {
     annotator.delete(props.id).then(() => {
       setComment('')
       annotator.refresh()
+      if (props.onAnnotationDelete) {
+        props.onAnnotationDelete(props.traceIndex);
+      }
     }).catch((error) => {
       alert('Failed to delete annotation: ' + error)
     })
@@ -258,6 +307,9 @@ function AnnotationEditor(props) {
       setSubmitting(false)
       annotator.refresh()
       setContent('')
+      if (props.onAnnotationCreate) {
+        props.onAnnotationCreate(props.traceIndex);
+      }
     }).catch((error) => {
       alert('Failed to save annotation: ' + error)
       setSubmitting(false)

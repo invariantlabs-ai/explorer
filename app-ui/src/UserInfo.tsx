@@ -26,7 +26,7 @@ let USER_INFO_CACHE = {
   data: null
 }
 
-export function useUserInfo(cached=true): UserInfo | null {
+export function useUserInfo(cached = true): UserInfo | null {
   const [userInfo, setUserInfo] = React.useState(null as UserInfo | null)
 
   React.useEffect(() => {
@@ -45,11 +45,11 @@ export function useUserInfo(cached=true): UserInfo | null {
             ...data,
             loggedIn: true
           };
-          setUserInfo(info)
-          USER_INFO_CACHE = {
-            lastFetch: Date.now(),
-            data: info
-          }
+        setUserInfo(info)
+        USER_INFO_CACHE = {
+          lastFetch: Date.now(),
+          data: info
+        }
       })
       .catch(() => setUserInfo(ANON))
   }, [])

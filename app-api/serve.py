@@ -21,12 +21,6 @@ from metrics.active_users import install_active_user_monitoring_middleware
 
 v1 = fastapi.FastAPI()
 
-# make sure we always get full stack traces in the logs
-@v1.exception_handler(Exception)
-async def custom_http_exception_handler(request, exc):
-    traceback.print_exception(exc)
-    return await http_exception_handler(request, exc)
-
 # install the API routes
 v1.mount("/user", user)
 v1.mount("/dataset", dataset)

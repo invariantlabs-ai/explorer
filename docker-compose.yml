@@ -48,10 +48,13 @@ services:
       - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
+      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
       - TZ=Europe/Berlin
       - DEV_MODE=${DEV_MODE}
       - APP_NAME=${APP_NAME}
+      - CONFIG_FILE=/config/explorer.config.yml
     networks:
       - internal
       - web
@@ -61,6 +64,7 @@ services:
       - type: bind
         source: ./app-api
         target: /srv/app
+      - ./explorer.config.yml:/config/explorer.config.yml
 
     labels:
       - "traefik.enable=true"
@@ -104,8 +108,10 @@ services:
       - type: bind
         source: ./app-ui
         target: /srv/app
+      - ./explorer.config.yml:/config/explorer.config.yml
     environment:
       - APP_NAME=${APP_NAME}
+      - VITE_CONFIG_FILE=/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"

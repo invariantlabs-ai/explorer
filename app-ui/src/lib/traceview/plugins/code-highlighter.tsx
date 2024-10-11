@@ -30,7 +30,7 @@ class StyledContent {
     // offset in the content in terms of lines
     line_offset: number = 0;
 
-    constructor(public tokens: Token[][] = []) {}
+    constructor(public tokens: Token[][] = []) { }
 
     style(variant: any) {
         const fontStyles = {
@@ -58,7 +58,7 @@ class StyledContent {
         let result: React.ReactNode[] = [];
         // disallow negative start
         start = Math.max(start, 0);
-        
+
         // ensure subsequent calls to this function are always in order and never jump back in the content (streaming assumption)
         if (start < this.offset) {
             throw new Error('Cannot access content before the current offset (' + this.offset + ', ' + start + ')');
@@ -70,7 +70,7 @@ class StyledContent {
         // this is not the most efficient way to do this, but it is simple
         for (let i = this.line_offset; i < this.tokens.length; i++) {
             let line = this.tokens[i];
-            
+
             for (let token of line) {
                 let token_start = token.offset;
                 let token_end = token.offset + token.content.length;
@@ -141,7 +141,7 @@ function createSharedHighlighter(): Promise<any> {
 class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { nodes: any, content: string, tokens: Token[][], language: string }> {
     constructor(props) {
         super(props);
-        this.state = { 
+        this.state = {
             nodes: [<span key='loading'>Loading...</span>],
             content: cleanContent(props),
             tokens: [],
@@ -160,8 +160,8 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
         let update = false;
         // if needed, re-tokenize the content
         if (prevProps.content !== this.props.content) {
-            this.setState({ 
-                content: cleanContent(this.props), 
+            this.setState({
+                content: cleanContent(this.props),
                 language: LANGUAGE_CLASSIFIER.derive_highlighting_language(this.props.content) as string,
                 nodes: [<span key='loading'>Loading...</span>]
             });
@@ -171,11 +171,19 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
         }
 
         // if tokens or highlights have changed, update the content 
-        if (oldTokens !== tokens || prevProps.highlights != this.props.highlights || prevProps.highlightContext?.selectedHighlightAnchor !== this.props.highlightContext?.selectedHighlightAnchor) {
-            // exclude changes to the selected highlight anchor, if it does not relate to this components address in any way
-            if (!this.props.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) && !prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) && !(this.props.highlightContext.selectedHighlightAnchor === null && prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address))) {
+        if (oldTokens !== tokens || prevProps.highlights !== this.props.highlights || prevProps.highlightContext !== this.props.highlightContext || prevProps.highlightContext?.decorator !== this.props.highlightContext?.decorator) {
+            // detect changes to selectedHighlightAnchor that are relevant to this component (based on this.props.address)
+            const highlightSelectionChangeRelevant = this.props.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address) || (this.props.highlightContext.selectedHighlightAnchor === null && prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(this.props.address))
+            // detect changes of the highlights themselves
+            const highlightsChanged = prevProps.highlights !== this.props.highlights
+            // detect changes to the decorator (e.g. whether a line is highlighted or not). the decorator changes when the rendered trace is changed
+            const decoratorChanged = prevProps.highlightContext?.decorator !== this.props.highlightContext?.decorator
+
+            // do not update this component, if only some selection change happened at some other address (other message/event)
+            if (!highlightSelectionChangeRelevant && !highlightsChanged && !decoratorChanged) {
                 return;
             }
+            // otherwise clean the content and update rendered nodes
             this.setState({ content: cleanContent(this.props) });
             await this.updateContent(tokens);
         }
@@ -205,13 +213,13 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
             for (const interval of highlights) {
                 // additionally highlight NLs with unicode character
                 let c = tokenized_content.consume(interval.start - 1, interval.end - 1)
-                
+
                 if (interval.content === null) {
                     line.push(<span key={(elements.length) + '-' + (line.length) + "-" + interval.start + "-" + interval.end} className="unannotated">
                         {c}
                     </span>)
                 } else {
-                    let className = "annotated" + " " + "source-" + interval.content[0]["source"]
+                    let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className}>{c}</span>)
                 }
             }
@@ -224,10 +232,10 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
                         end: a.end - 1,
                         content: a.content
                     })
-            })
+                })
             elements.push(<Line key={'line-' + elements.length} highlights={line_highlights} highlightContext={this.props.highlightContext} address={this.props.address + ":L" + elements.length}>{line}{'\n'}</Line>)
         }
-        
+
         this.setState({ nodes: elements });
     }
 
@@ -261,7 +269,7 @@ register_plugin({
  * @param props the component properties for which we want to extract the cleaned content
  * 
  */
-function cleanContent(props: {content: string}) {
+function cleanContent(props: { content: string }) {
     let content = props.content;
 
     // remove ``` block if directly at the beginning
@@ -290,7 +298,7 @@ class LanguageClassifier {
     // we rely on a set of very characteristic tokens/strings for each language
     KEY_TOKENS = {
         "python": ['#', 'import', '[', ']', 'def', 'class', 'return', '"""', "'''", 'print', 'for', 'in', 'if', 'else', 'elif', 'import', 'from', 'as', 'try:', 'except', 'finally', 'raise', 'assert'],
-        "typescript": ['//', '{', '}',  '[', ']', '=>', 'function', 'return', 'if', 'else', 'for', 'in', 'import', 'from', 'as', 'try', 'catch', 'finally', 'throw', 'assert', 'console', 'window', 'let', 'const'],
+        "typescript": ['//', '{', '}', '[', ']', '=>', 'function', 'return', 'if', 'else', 'for', 'in', 'import', 'from', 'as', 'try', 'catch', 'finally', 'throw', 'assert', 'console', 'window', 'let', 'const'],
         "plaintext": ["You are", "you", "he", "she"],
         "markdown": ["# ", "## ", "### ", "#### ", "##### ", "###### ", "- ", "* ", "**"]
     };
@@ -322,7 +330,7 @@ class LanguageClassifier {
      * @returns the distribution of key tokens if return_distribution is true
      * 
      */
-    derive_highlighting_language(content: string, return_distribution=false): string | Record<string, number> {
+    derive_highlighting_language(content: string, return_distribution = false): string | Record<string, number> {
         // if it is a markdown block with tag, we can use the tag to classify
         if (content.trim().startsWith('```')) {
             const tag = content.trim().split('\n')[0].replace('```', '');
@@ -352,7 +360,7 @@ class LanguageClassifier {
         const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
         // pair with their count
         const pairs: [string, number][] = sorted.map((language) => [language, counts[language]]);
-        
+
         // get the most and second most occurring language
         const max_language = pairs[0][0];
         const max = pairs[0][1];
@@ -373,7 +381,7 @@ class LanguageClassifier {
             }
             return 'plaintext';
         }
-        
+
         // return distribution if requested
         if (return_distribution) {
             // return counts, but truncate to 2 decimal places

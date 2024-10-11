@@ -2,7 +2,7 @@
  * Page components for displaying single and all dataset traces.
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { act, useCallback, useEffect } from 'react';
 import { BsExclamationTriangleFill, BsExclamationDiamondFill, BsInfo, BsTools, BsExclamation, BsExclamationLg, BsArrowClockwise, BsCaretDownFill, BsLayoutSidebarInset, BsSave, BsSearch, BsTrash } from 'react-icons/bs';
 import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
@@ -14,6 +14,7 @@ import { useUserInfo } from './UserInfo';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import logo from './assets/invariant.svg';
+import { EmptyDatasetInstructions } from './components/EmptyDataset';
 
 /**
  * Metadata for a dataset that we receive from the server.
@@ -29,7 +30,7 @@ export interface DatasetData {
 /**
  * Hook to load the dataset metadata for a given user and dataset name.
  */
-function useDataset(username:string, datasetname: string): [DatasetData | null, string | null] {
+function useDataset(username: string, datasetname: string): [DatasetData | null, string | null] {
   const [dataset, setDataset] = React.useState(null)
   const [error, setError] = React.useState(null as string | null);
 
@@ -52,6 +53,7 @@ export interface Trace {
   id: string;
   index: number;
   dataset: string;
+  name?: string;
   messages: any[];
   extra_metadata: string;
   time_created: string;
@@ -60,35 +62,200 @@ export interface Trace {
   user?: string;
   // true if additional data has already been fetched for this trace
   fetched?: boolean;
+  // true if metadata (beyond index and id) has been loaded
+  preloaded?: boolean;
+  // number of annotations for this trace
+  num_annotations?: number;
 }
 
-// hook to load the traces in a dataset
-function useTraces(username: string, datasetname: string): [any | null, (traces: any) => void, () => void] {
-  const [traces, setTraces] = React.useState<(Trace|null)[] | null>(null)
+/**
+ * Lightweight representation of all traces in a dataset.
+ * 
+ * This class is used to keep track of all trace indices (+IDs) in a dataset, where additional information
+ * on each trace, like the number of annotations, is only loaded on demand.
+ * 
+ * To learn when more information is available for a specific trace index, register a callback with the `on` method.
+ * 
+ * If a component no longer needs to know about a trace index, it should call the `off` method to unregister its callback.
+ * 
+ * Batched fetching is automatically handled by this class, so that when a trace is not yet loaded, but a component registers
+ * a callback for it, the trace will be fetched as part of the next batch.
+ */
+class LightweightTraces {
+  data: Record<number, Trace> = {}
+  callbacks: Record<number, ((Trace) => void)[]> = {}
+  // currently scheduled indices
+  scheduledIndices: Set<number> = new Set()
+  loadingIndices: Set<number> = new Set()
+  // time of last batch run
+  lastBatchRun: number = new Date().getTime()
+  // batch timeouts
+  lastBatchTimeout: any
+
+  constructor(public n: number, public username: string, public datasetname: string, initialData: Record<number, Trace> | null = null) {
+    if (initialData) {
+      this.data = initialData
+    }
+  }
+
+  /**
+   * Register a callback to be called when the trace at the given index is loaded.
+   * 
+   * @param index The index of the trace to listen for
+   * @param callback The callback to call when the trace is loaded
+   * @returns A function that can be called to unregister the callback
+   */
+  on(index: number, callback: (Trace) => void) {
+    // add the callback to the list of callbacks for this index
+    if (!this.callbacks[index]) {
+      this.callbacks[index] = []
+    }
+    this.callbacks[index].push(callback)
+
+    // if the trace is already preloaded, call the callback immediately
+    if (this.data[index]?.preloaded) {
+      callback(this.data[index])
+      return
+    }
+
+    this.schedule(index)
+  }
+
+  /**
+   * Schedules the given index to be preloaded. If the index is already scheduled, does nothing.
+   * 
+   * @param index The index of the trace to preload
+   */
+  schedule(index: number) {
+    // if the index is already scheduled, do nothing
+    if (this.scheduledIndices.has(index) || this.loadingIndices.has(index)) {
+      return
+    }
+    if (this.data[index]?.preloaded) {
+      return
+    }
+    // otherwise, add it to the list of scheduled indices (scheduled to be preloaded)
+    this.scheduledIndices.add(index)
+    if (this.scheduledIndices.size > 64) {
+      const indices = Array.from(this.scheduledIndices)
+      this.scheduledIndices.clear()
+      this.lastBatchRun = new Date().getTime()
+      this.batchFetch(indices)
+    } else {
+      // otherwise, make sure it run at the latest in 400ms
+      window.clearTimeout(this.lastBatchTimeout)
+      this.lastBatchTimeout = window.setTimeout(() => {
+        const indices = Array.from(this.scheduledIndices)
+        this.scheduledIndices.clear()
+        this.lastBatchRun = new Date().getTime()
+        this.batchFetch(indices)
+      }, 100)
+    }
+  }
+
+  /**
+   * Asyncronously fetches the traces with the given indices.
+   * 
+   * Automatically notifies all registered callbacks when each trace is loaded and 
+   * removes the index from the list of loading indices.
+   * 
+   * @param indices The indices to fetch
+   */
+  async batchFetch(indices: number[]) {
+    indices.forEach(i => this.loadingIndices.add(i))
+
+    sharedFetch(`/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(',')}`).then(traces => {
+      // update fetched traces 
+      traces.forEach(t => {
+        this.data[t.index] = { ...t, name: '#' + t.index, fetched: false, preloaded: true }
+        this.callbacks[t.index]?.forEach(c => c(this.data[t.index]))
+        this.loadingIndices.delete(t.index)
+      })
+    }).catch(e => {
+      console.error(e)
+      alert("Error loading traces")
+    })
+  }
+
+  /** Unschedule the given index from being preloaded */
+  unschedule(index: number) {
+    this.scheduledIndices.delete(index)
+  }
+
+  /** Unregister a callback for the given trace index */
+  off(index: number, callback: (Trace) => void) {
+    if (this.callbacks[index]) {
+      this.callbacks[index] = this.callbacks[index].filter(c => c !== callback)
+      if (this.callbacks[index].length === 0) {
+        this.unschedule(index)
+      }
+    }
+  }
+
+  /** Returns the index of the first trace in the dataset */
+  first(): number {
+    return Math.min(...this.indices())
+  }
+
+  /** Updates the trace at the given index with the new trace data (e.g. when loading the messages of a trace) */
+  update(index: number, trace: Trace) {
+    this.data[index] = Object.assign({}, this.data[index], trace)
+    // notify all callbacks for this index
+    this.callbacks[index]?.forEach(c => c(this.data[index]))
+  }
+
+  /** Returns all non-null indices */
+  indices() {
+    // returns all non-null indices
+    return Object.keys(this.data).map(i => parseInt(i)).sort((a, b) => a - b)
+  }
+
+  /** Returns whether the given index is in the dataset */
+  has(traceIndex: number): boolean {
+    return traceIndex < this.n;
+  }
+
+  /** Returns the trace at the given index, or null if it is not in the dataset. */
+  get(index: number): Trace | null {
+    return this.data[index] || null
+  }
+
+  /** Returns the list of traces matching the predicate. */
+  filter(predicate: (Trace) => boolean): Trace[] {
+    return this.indices().map(i => this.data[i]).filter(predicate)
+  }
+}
+
+// hook to load all traces in a dataset, represented as a LightweightTraces object
+function useTraces(username: string, datasetname: string): [LightweightTraces | null, () => void] {
+  const [traces, setTraces] = React.useState<LightweightTraces | null>(null)
 
   React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
-    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/traces`).then(traces => {
-        const n = Math.max(...traces.map(t => t.index))
-        const traceList = Array.from({ length: n }, (v, i) => null) as (Trace|null)[];
-        traces.forEach(t => {traceList[t.index] = {...t, name: '#'+t.index, fetched: false}})
-        setTraces(traceList)
-    }).catch(e => alert("Error loading traces"))
+    sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/indices`).then(traces => {
+      const n = traces.reduce((max, t) => Math.max(max, t.index), 0) + 1
+      const traceMap: Record<number, Trace> = {}
+      traces.forEach(t => { traceMap[t.index] = { ...t, name: '#' + t.index, fetched: false } })
+      setTraces(new LightweightTraces(n, username, datasetname, traceMap))
+    }).catch(e => {
+      console.error(e)
+      alert("Error loading traces")
+    })
   }
-  
-  return [traces, setTraces, refresh]
+
+  return [traces, refresh]
 }
 
 // makes sure the provided trace has its .messages field populated, by loading the 
 // trace content from the server if necessary
-function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
+function fetchTrace(trace: Trace): Promise<{ updated: boolean, trace: Trace }> {
   if (trace.messages.length != 0) {
     return Promise.resolve({
       updated: false,
       trace: trace
     })
   }
-  trace.messages = [{"role": "system", "content": "Loading..."}]
+  trace.messages = [{ "role": "system", "content": "Loading..." }]
 
   return new Promise((resolve, reject) => {
     fetch(`/api/v1/trace/${trace.id}`).then(response => {
@@ -97,13 +264,14 @@ function fetchTrace(trace: Trace): Promise<{updated: boolean, trace: Trace}> {
       }
       return null
     }).then(data => {
-      trace.messages = data.messages
+      // load the full trace data into the trace object
+      trace = Object.assign({}, trace, data)
       resolve({
         updated: true,
         trace: trace
       })
     }).catch(e => {
-      trace.messages = [{"role": "system", "content": "Error loading trace"}]
+      trace.messages = [{ "role": "system", "content": "Error loading trace" }]
       reject({
         updated: false,
         trace: trace
@@ -122,7 +290,7 @@ function ShareModalContent(props) {
       return () => clearTimeout(timeout)
     }
   }, [justCopied])
-  
+
   const onClick = (e) => {
     e.currentTarget.select()
     navigator.clipboard.writeText(e.currentTarget.value)
@@ -131,13 +299,13 @@ function ShareModalContent(props) {
 
   const link = window.location.origin + "/trace/" + props.traceId
 
-  return <div className='form' style={{maxWidth: '500pt'}}>
+  return <div className='form' style={{ maxWidth: '500pt' }}>
     {/* <h2>By sharing a trace you can allow others to view the trace and its annotations. Anyone with the generated link will be able to view the trace.</h2> */}
     <h2>Share this trace with others, so they can view the trace and its annotations.</h2>
     <h2>Only the selected trace <span className='traceid'>#{props.traceId}</span> will be shared with others.</h2>
     <label>Link Sharing</label>
-    <input type='text' value={props.sharingEnabled ? link : 'Not Enabled'} className='link' onClick={onClick} disabled={!props.sharingEnabled}/>
-    <span className='description' style={{color: justCopied ? 'inherit' : 'transparent'}}>{justCopied ? 'Link Copied!' : 'no'}</span>
+    <input type='text' value={props.sharingEnabled ? link : 'Not Enabled'} className='link' onClick={onClick} disabled={!props.sharingEnabled} />
+    <span className='description' style={{ color: justCopied ? 'inherit' : 'transparent' }}>{justCopied ? 'Link Copied!' : 'no'}</span>
     <button className={'share inline ' + (!props.sharingEnabled ? 'primary' : '')} onClick={() => props.setSharingEnabled(!props.sharingEnabled)}>{props.sharingEnabled ? 'Disable' : 'Enable'} Sharing</button>
   </div>
 }
@@ -177,37 +345,68 @@ function useTraceShared(traceId: string | null | undefined): [boolean | null, (s
   }, [traceId])
 
   if (!traceId) {
-    return [false, () => {}]
+    return [false, () => { }]
   }
 
   return [shared, setRemoteShared]
 }
 
-// returns the ID of the trace that comes before the given trace in the list of traces
+// returns the ID of the trace that comes before the given trace in the list of traces (or null if there is no such trace)
 function findPreviousTrace(traceId, traces) {
-  const index = traces.indices.indexOf(traceId)
-  if (index > 0) {
-    return traces.indices[index - 1]
+  for (let i = 0; i < traces.length; i++) {
+    if (traces[i] && traces[i].id === traceId) {
+      i = i - 1;
+      while (i > 0 && !traces[i]) {
+        i -= 1
+      }
+      return traces[i].index
+    }
   }
   return null
 }
 
+// type for the set of traces returned by search
+interface DisplayedTracesRHS {
+  'traces': number[]
+  'description'?: string
+  'severity'?: number
+  'icon'?: string
+}
+type DisplayedTracesT = Record<string, DisplayedTracesRHS>
+
+// flattens the displayed indices into a single list of trace indices
+// MAY contain duplicates
+function flattenDisplayedIndices(displayedIndices: DisplayedTracesT|null): number[] {
+  const flattenedDisplayedIndices : number[] = [];
+  if (displayedIndices) {
+    const keys = Object.keys(displayedIndices).sort((a, b) => (displayedIndices[b].severity||0)-(displayedIndices[a].severity||0) )
+    keys.forEach(key => {
+      displayedIndices[key].traces.forEach(index => {
+        flattenedDisplayedIndices.push(index)
+      })
+    })
+  }
+  return flattenedDisplayedIndices;
+}
+
+
+
 // hook for interacting with the search functionality
 function useSearch() {
-  const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
+  const props: { username: string, datasetname: string, traceIndex: number | null } = useLoaderData() as any
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, _setSearchQuery] = React.useState<string|null>(searchParams.get('query') || null)
-  const [displayedIndices, setDisplayedIndices] = React.useState<object>({'all': {'traces': []}})
+  const [displayedIndices, setDisplayedIndices] = React.useState<DisplayedTracesT>({'all': {'traces': []}})
   const [highlightMappings, setHighlightMappings] = React.useState({} as {[key: number]: any})
   interface SearchQuery {
     query: string,
-    status: 'waiting'|'searching'|'completed',
+    status: 'waiting' | 'searching' | 'completed',
     date: Date
   }
   const searchQueue = React.useRef<SearchQuery[]>([])
-  const searchTimeout = React.useRef<number|null|undefined>(null)
+  const searchTimeout = React.useRef<number | null | undefined>(null)
   const searching = searchQueue.current.filter(q => q.status === 'searching').length > 0 || searchTimeout.current !== null
-  
+
   const search = (query) => {
     if (query.status !== 'waiting') return;
     query.status = 'searching'
@@ -232,21 +431,23 @@ function useSearch() {
         throw e
       })
   }
-  
+
   const dispatchSearch = (value) => {
     if (!value || value === '') {
       setDisplayedIndices({'all': {'traces': []}})
       setSearchQuery('')
-      searchQueue.current = [{query: '', status: 'completed', date: new Date()}]
+      searchQueue.current = [{ query: '', status: 'completed', date: new Date() }]
       return
     }
     // add current search objective to the queue
-    searchQueue.current.push({query: value,
-                              status: 'waiting',
-                              date: new Date()})
+    searchQueue.current.push({
+      query: value,
+      status: 'waiting',
+      date: new Date()
+    })
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current)
-      searchTimeout.current = null 
+      searchTimeout.current = null
     }
     const st = setTimeout(() => {
       // get latest (rightmost) query that is waiting & search it
@@ -256,24 +457,24 @@ function useSearch() {
         clearTimeout(searchTimeout.current)
         searchTimeout.current = null
       }
-    }, 50)
+    }, 500)
     searchTimeout.current = st
   }
 
-  const setSearchQuery = (value: string|null) => {
+  const setSearchQuery = (value: string | null) => {
     _setSearchQuery(value)
     if (value === null || value === '') {
       searchParams.delete('query')
       setSearchParams(searchParams)
     } else {
-      setSearchParams({...searchParams, query: value})
+      setSearchParams({ ...searchParams, query: value })
     }
   };
-  
+
   const searchNow = () => {
     dispatchSearch(searchQuery)
   }
-  
+
   useEffect(() => {
     dispatchSearch(searchQuery)
   }, [searchQuery])
@@ -288,20 +489,20 @@ function useSearch() {
  */
 export function Traces() {
   // extract user and dataset name from loader data (populated by site router)
-  const props: {username: string, datasetname: string, traceIndex: number|null} = useLoaderData() as any
+  const props: { username: string, datasetname: string, traceIndex: number | null } = useLoaderData() as any
   // used to navigate to a different trace
   const navigate = useNavigate()
   // load the dataset metadata
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
   // load information about the traces in the dataset
-  const [traces, setTraces, refresh] = useTraces(props.username, props.datasetname)
+  const [traces, refresh] = useTraces(props.username, props.datasetname)
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false)
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
-  
+
   // load the sharing status of the active trace (link sharing enabled/disabled)
-  const [sharingEnabled, setSharingEnabled] = useTraceShared(traces && props.traceIndex ? traces[props.traceIndex]?.id : null)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces.get(props.traceIndex)?.id : null)
   // load the logged in user's information
   const userInfo = useUserInfo()
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
@@ -310,25 +511,17 @@ export function Traces() {
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
-  
+
   // when the trace index changes, update the activeTrace
   useEffect(() => {
     // if search or analyzer was run, get the flattened list of results
-    const flattenedDisplayedIndices = [];
-    if (displayedIndices) {
-      const keys = Object.keys(displayedIndices).sort((a, b) => (displayedIndices[b].severity||0)-(displayedIndices[a].severity||0) )
-      keys.forEach(key => {
-        displayedIndices[key].traces.forEach(index => {
-          flattenedDisplayedIndices.push(index)
-        })
-      })
-    }
+    const flattenedDisplayedIndices : number[] = flattenDisplayedIndices(displayedIndices);
 
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(+props.traceIndex)
-        && (flattenedDisplayedIndices.length == 0 || flattenedDisplayedIndices.includes(+props.traceIndex) )
+        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
+        && (flattenedDisplayedIndices.length == 0 || flattenedDisplayedIndices.includes(props.traceIndex) )
         ) {
       setActiveTrace(traces[props.traceIndex])
     } else if (!traces) {
@@ -336,13 +529,13 @@ export function Traces() {
     } else {
       let new_index = 0
       // if the trace index is not in the list of traces, navigate to the first trace
-      if (traces) new_index = Math.min(...traces.filter(t => t !== null).map(t => t.index))
+      if (traces && traces.first() != Infinity) new_index = traces.first()
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (flattenedDisplayedIndices.length > 0) new_index = flattenedDisplayedIndices[0];
       navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
     }
   }, [props.traceIndex, traces, displayedIndices])
-  
+
   useEffect(() => {
     // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
     if (traces && activeTrace && !activeTrace.fetched) {
@@ -352,11 +545,8 @@ export function Traces() {
         if (!t) return;
         // if the trace was updated, replace its spot in the 'traces' object, 
         // to trigger a re-render
-        setTraces(traces => {
-          traces[t.index] = {...t, fetched: true, name: '#'+t.index} 
-          return traces
-        })
-        setActiveTrace(traces[t.index])
+        traces.update(t.index, { ...t, fetched: true, name: '#' + t.index })
+        setActiveTrace({ ...t, fetched: true, name: '#' + t.index })
       })
     }
   }, [traces, activeTrace])
@@ -377,55 +567,93 @@ export function Traces() {
       <h3>Loading...</h3>
     </div>
   }
- 
+
+  const onAnnotationCreate = (traceIndex: number) => {
+    const trace = traces?.get(traceIndex);
+    if (trace) {
+      trace.num_annotations = (trace.num_annotations ?? 0) + 1;
+      traces?.update(traceIndex, trace);
+    }
+  }
+
+  const onAnnotationDelete = (traceIndex: number) => {
+    const trace = traces?.get(traceIndex);
+    if (trace) {
+      if (trace.num_annotations === undefined || trace.num_annotations === 0) return;
+      trace.num_annotations = trace.num_annotations - 1;
+      traces?.update(traceIndex, trace);
+    }
+  }
+
+  // whether the trace view shows any trace
+  const traceVisible = !searching && (displayedIndices == null || Object.keys(displayedIndices).length > 1)
+
+  // whether there are any traces to show
+  const hasTraces = (traces?.indices().length || 0) > 0
+
+  // derive correct empty view to use
+  let emptyView: any | null = null
+  if (!(hasTraces || !isUserOwned)) {
+    if (!traces) {
+      emptyView = () => <div className='empty'>Loading...</div>
+    } else {
+      emptyView = EmptyDatasetInstructions
+    }
+  }
+
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} />
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
-    {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{id: activeTrace?.id}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
+    {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
     <div className='sidebyside'>
-    {/* trace explorer sidebar */}
-    <Sidebar 
-      traces={traces} 
-      username={props.username}
-      datasetname={props.datasetname} 
-      activeTraceIndex={activeTrace?.index} 
-      onRefresh={refresh}
-      searchQuery={searchQuery}
-      setSearchQuery={setSearchQuery}
-      displayedIndices={displayedIndices}
-      searchNow={searchNow}
-      searching={searching}
-    />
-    {/* actual trace viewer */}
-    {activeTrace && <AnnotationAugmentedTraceView
-      // information on the currently selected trace
-      activeTrace={ activeTrace }
-      selectedTraceId={activeTrace?.id}
-      // current search highlights
-      mappings={highlightMappings[activeTrace.index]}
-      // whether we are still loading the dataset's trace data
-      loading={!traces}
-      // header components to show in the explorer
-      header={
-        <h1>
-          <Link to='/'>/</Link>
-          <Link to={`/u/${props.username}`}>{props.username}</Link>/
-          <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
-          <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link>
-        </h1>
-      }
-      // callback for when the user presses the 'Share' button
-      onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
-      // whether link sharing is enabled for the current trace
-      sharingEnabled={sharingEnabled}
-      // extra trace action buttons to show
-      actions={<>
-        {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
-      </>}
-    />}
+      {/* trace explorer sidebar */}
+      {hasTraces && <Sidebar // only show the sidebar if there are traces to show
+        traces={traces}
+        username={props.username}
+        datasetname={props.datasetname}
+        activeTraceIndex={activeTrace != null ? activeTrace.index : null}
+        onRefresh={refresh}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        displayedIndices={displayedIndices}
+        searchNow={searchNow}
+        searching={searching}
+      />}
+      {/* actual trace viewer */}
+      {<AnnotationAugmentedTraceView
+        // information on the currently selected trace
+        activeTrace={traceVisible ? activeTrace : null}
+        selectedTraceId={activeTrace?.id}
+        selectedTraceIndex={activeTrace?.index}
+        // shown when no trace is selected
+        empty={emptyView}
+        // current search highlights
+        mappings={activeTrace ? highlightMappings[activeTrace.index] : null}
+        // whether we are still loading the dataset's trace data
+        loading={!traces}
+        // header components to show in the explorer
+        header={
+          <h1>
+            <Link to='/'>/</Link>
+            <Link to={`/u/${props.username}`}>{props.username}</Link>/
+            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>
+            {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link></>}
+          </h1>
+        }
+        // callback for when the user presses the 'Share' button
+        onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
+        // whether link sharing is enabled for the current trace
+        sharingEnabled={sharingEnabled}
+        // extra trace action buttons to show
+        actions={<>
+          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+        </>}
+        onAnnotationCreate={onAnnotationCreate}
+        onAnnotationDelete={onAnnotationDelete}
+      />}
     </div>
   </div>
 }
@@ -434,169 +662,215 @@ export function Traces() {
  * Displays a search box and search filters.
  */
 function SearchBox(props) {
-    const searchQuery=props.searchQuery
-    const setSearchQuery=props.setSearchQuery
+  const searchQuery = props.searchQuery
+  const setSearchQuery = props.setSearchQuery
 
-    const update = (e) => {
-        if (e.key === 'Enter') {
-            props.searchNow()
-        } else if (e.key === 'Escape') {
-            //reset()
-            e.target.value = ''
-            setSearchQuery('')
-        } else {
-            setSearchQuery(e.target.value)
-        }
+  const update = (e) => {
+    if (e.key === 'Enter') {
+      props.searchNow()
+    } else if (e.key === 'Escape') {
+      //reset()
+      e.target.value = ''
+      setSearchQuery('')
+    } else {
+      setSearchQuery(e.target.value)
     }
-    
-    const clickSelect = (e) => {
-        const dropdown = e.target.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
-        if (dropdown) {
-            dropdown.classList.toggle('search-select-dropdown-show')
-        }
-    }
-    
-    const addFilter = (e, filter) => {
-        setSearchQuery(filter + ' ' + searchQuery)
-        const dropdown = e.target.parentElement.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
-        if (dropdown) {
-            dropdown.classList.toggle('search-select-dropdown-show')
-        }
-    }
+  }
 
-    return <>
-     <div className='search'>
-        <button className='search-select' onClick={clickSelect}>
-            <BsCaretDownFill />
-        </button>
-         <div className='search-select-dropdown'>
-         <ul>
-            <li onClick={(e)=>{addFilter(e, 'is:annotated')}} >Has annotation</li>
-            <li onClick={(e)=>{addFilter(e, 'not:annotated')}} >No annotation</li>
-            <li onClick={(e)=>{addFilter(e, 'num_messages>10')}} >At least 10 messages</li>
-         </ul>
-         </div>
-        <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
-        <button className='search-submit' onClick={()=>{ props.searchNow() }}>
-            {!props.searching && <BsSearch />}
-            {props.searching && <ClockLoader size={'15px'} />}
-        </button>
+  const clickSelect = (e) => {
+    const dropdown = e.target.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
+    if (dropdown) {
+      dropdown.classList.toggle('search-select-dropdown-show')
+    }
+  }
+
+  const addFilter = (e, filter) => {
+    setSearchQuery(filter + ' ' + searchQuery)
+    const dropdown = e.target.parentElement.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
+    if (dropdown) {
+      dropdown.classList.toggle('search-select-dropdown-show')
+    }
+  }
+
+  return <>
+    <div className='search'>
+      <button className='search-select' onClick={clickSelect}>
+        <BsCaretDownFill />
+      </button>
+      <div className='search-select-dropdown'>
+        <ul>
+          <li onClick={(e) => { addFilter(e, 'is:annotated') }} >Has annotation</li>
+          <li onClick={(e) => { addFilter(e, 'not:annotated') }} >No annotation</li>
+          <li onClick={(e) => { addFilter(e, 'num_messages>10') }} >At least 10 messages</li>
+        </ul>
+      </div>
+      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
+      <button className='search-submit' onClick={() => { props.searchNow() }}>
+        {!props.searching && <BsSearch />}
+        {props.searching && <ClockLoader size={'15px'} />}
+      </button>
     </div>
-    </>
+  </>
 }
 
 /**
  * Displays the list of traces in a dataset.
  */
-export function Sidebar(props) {
+
+function Sidebar(props: { traces: LightweightTraces | null, username: string, datasetname: string, activeTraceIndex: number | null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: DisplayedTracesT | null, searchNow: () => void, searching: boolean }) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
   const displayedIndices = props.displayedIndices
-  const {username, datasetname, activeTraceId} = props
+  const { username, datasetname, traces } = props
   const [visible, setVisible] = React.useState(true)
-  const viewportRef = React.useRef(null)
-  const [activeIndices, setActiveIndices] = React.useState({});
+  const [activeIndices, setActiveIndices] = React.useState<DisplayedTracesT>({});
+
+  // ref to HTML element that contains the ViewportList
+  const viewportContainerRef = React.useRef(null)
+  // ref to ViewportRef instance itself
+  const viewport = React.useRef(null as any)
+
+  // initial scroll to active trace completed
+  const [scrolled, setScrolled] = React.useState(false)
+
+  // when the active indices change, scroll to the active trace
+  useEffect(() => {
+    const flattenedActiveIndices : number[] = flattenDisplayedIndices(activeIndices);
+    if (props.activeTraceIndex != null && flattenedActiveIndices.includes(props.activeTraceIndex)) {
+      if (viewport.current && !scrolled) {
+        (viewport.current as any).scrollToIndex({ index: flattenedActiveIndices.indexOf(props.activeTraceIndex), offset: 0 })
+        setScrolled(true)
+      }
+    }
+  }, [props.activeTraceIndex, activeIndices, viewport])
 
   useEffect(() => {
-    if (!props.traces) {
+    if (!traces) {
       setActiveIndices({'all': {'traces': [], 'description': 'all traces'}})
       return;
     }
 
     if (displayedIndices) {      
       if (Object.keys(displayedIndices).length === 1 && 'all' in displayedIndices && displayedIndices['all']['traces'].length == 0) {
-        setActiveIndices({'all': {'traces': props.traces.filter(t => t !== null).map((t, i) => t.index), 'description': 'all traces'}})
+        setActiveIndices({'all': {'traces': traces.filter(t => t !== null).map((t, i) => t.index), 'description': 'all traces'}})
       } else {
         setActiveIndices(displayedIndices)
       }
     }
-  }, [displayedIndices, props.traces])
+  }, [displayedIndices, traces])
 
   const onRefresh = (e) => {
     setSearchQuery('')
-    props.onRefresh(e)
+    props.onRefresh()
   };
-  
+
   const onSave = (e) => {
     fetch(`/api/v1/dataset/byuser/${username}/${datasetname}/s`, {
       'method': 'PUT',
-      'body': JSON.stringify({query: searchQuery,
-                              name: 'Search: ' + searchQuery
+      'body': JSON.stringify({
+        query: searchQuery,
+        name: 'Search: ' + searchQuery
       })
     }).then(() => {
       alert("Saved search")
     })
   }
   
-  const viewItems : any[] = [];
+  const viewItems : React.ReactNode[] = [];
   Object.keys(activeIndices).sort((a, b) => (activeIndices[b].severity||0)-(activeIndices[a].severity||0) ).forEach((key) => {
     if (key !== 'all' && activeIndices[key].traces.length > 0) {
-      let icon = {'info': <><BsInfo/></>,
+      let icon : React.ReactNode = {'info': <><BsInfo/></>,
                     'tools': <><BsTools/></>,
                     'exclamation': <><BsExclamationLg/></>,
                     'exclamation-large': <><BsExclamationTriangleFill/></>,
                     'search': <><BsSearch/></>,
                     'none': null
       }[activeIndices[key].icon||'none']
-      if (activeIndices[key].severity <= 2) {icon = null;}
-      viewItems.push({type: 'seperator',
-                      name: key,
-                      count: (activeIndices[key].traces || []).length,
-                      icon: icon,
-                      severity: activeIndices[key].severity||0,
-                      description: activeIndices[key].description});
+      if (activeIndices[key].severity||0 <= 2) {icon = null;}
+      viewItems.push(<TraceBlockHeader name={key} count={activeIndices[key].traces.length} description={activeIndices[key].description||''} icon={icon||null} severity={activeIndices[key].severity||0} />)
+      if (traces) {
+        (activeIndices[key].traces || []).sort((a, b) => a-b).forEach((index) => {
+          const trace = traces.get(index) || null
+          return <TraceRow key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} />
+        })
+      }
     }
-    (activeIndices[key].traces || []).sort((a, b) => a-b).forEach((index) => {
-      viewItems.push({type: 'item', index: index, key: key+index, teaser: props.traces[index].extra_metadata['summary'] })
-    })
   })
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
-      { searchQuery && 
-        <button className='header-short toggle icon' onClick={onSave}><BsSave/></button>
+      {searchQuery &&
+        <button className='header-short toggle icon' onClick={onSave}><BsSave /></button>
       }
       <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
-      {props.traces && <h1 className='header-long'>{props.traces.filter(t => t != null).length + " Traces"}</h1>}
-      {!props.traces && <h1 className='header-long'>Loading...</h1>}
+      <SidebarStatus traces={traces} searching={props.searching} />
       <button className='header-short toggle icon img-button' onClick={() => setSearchQuery('is:invariant')}>
         <img src={logo} style={{width: '1.5em'}}/>
       </button>
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
     </header>
-    <ul ref={viewportRef}>
+    <ul ref={viewportContainerRef}>
       <ViewportList
-        items={viewItems}
-        viewportRef={viewportRef}
+        items={!props.searching ? [...viewItems.keys()] : []}
+        ref={viewport}
+        viewportRef={viewportContainerRef}
         overscan={10}
       >
-        {(item) => {
-          if (item.type === 'seperator') {
-            return <li key={item.name} className={`seperator seperator-severity-${item.severity||0}`}>
-              {item.icon && <span className='icon'>{item.icon}</span>}
-              <div className='details'>
-                <h1>{item.name} ({item.count})</h1>
-                {item.description && <h2>{item.description}</h2>} 
-              </div>
-              </li>
+        {(index: number) => {
+          viewItems[index]
           }
-          else if (item.type === 'item') {
-            const index = item.index;
-            const trace = props.traces[index]
-            const active = trace.index === props.activeTraceIndex
-            return <li key={item.key} className={'trace ' + (active ? 'active' : '')}>
-              <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
-                Run {trace.name}
-                {trace.num_annotations > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
-                {/* DISALBED teaser for now on main, item.teaser && <span className='teaser'>{item.teaser}</span>*/}
-              </Link>
-            </li>
-          }
-        }}
+        }
       </ViewportList>
 
     </ul>
   </div>
+}
+
+/** Status message on top of the sidebar list of traces */
+function SidebarStatus(props: { traces: LightweightTraces | null, searching: boolean }) {
+  const { traces, searching } = props
+  if (traces && !searching) {
+    return <h1 className='header-long'>{traces.indices().length + " Traces"}</h1>
+  } else {
+    return <h1 className='header-long'>{searching ? 'Searching...' : 'Loading...'}</h1>
+  }
+}
+
+/** A single row in the sidebar list of traces */
+function TraceRow(props: { trace: Trace | null, index: number, active: boolean, username: string, datasetname: string, searchQuery: string | null, activeTraceIndex: number | null, traces: LightweightTraces | null }) {
+  const { index, username, datasetname, searchQuery, traces } = props
+  // keep reference to trace
+  const [trace, setTrace] = React.useState(props.trace)
+  // load full trace via LightweightTraces object
+  useEffect(() => {
+    const listener = (trace: Trace) => {
+      setTrace(trace)
+    }
+    traces?.on(index, listener)
+    return () => {
+      traces?.off(index, listener)
+    }
+  });
+
+  if (!trace) return <span>...</span>
+
+  const active = trace.index === props.activeTraceIndex
+  return <li className={'trace ' + (active ? 'active' : '')}>
+    <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
+      Run {trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
+    </Link>
+  </li>
+}
+
+function TraceBlockHeader(props: {name: string, count: number, description: string, icon: React.ReactNode|null, severity: number}) {
+  const {name, count, description, icon, severity} = props
+  return <li key={name} className={`seperator seperator-severity-${severity||0}`}>
+    {icon && <span className='icon'>{icon}</span>}
+    <div className='details'>
+      <h1>{name} ({count})</h1>
+      {description && <h2>{description}</h2>} 
+    </div>
+    </li>
 }
 
 /**
@@ -604,18 +878,18 @@ export function Sidebar(props) {
  */
 export function SingleTrace() {
   // extract the trace ID from the loader data (populated by site router)
-  const props: {traceId: string} = useLoaderData() as any
+  const props: { traceId: string } = useLoaderData() as any
   // the loaded trace data
   const [trace, setTrace] = React.useState(null as Trace | null)
   // the loaded dataset data
-  const [dataset, setDataset] = React.useState(null as {name: string} | null)
+  const [dataset, setDataset] = React.useState(null as { name: string } | null)
   // if an error occurs, this will be set to the error message
   const [error, setError] = React.useState(null as string | null)
   // whether link sharing is enabled for the current trace
   const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
   const [showShareModal, setShowShareModal] = React.useState(false)
   // only set if we are showing a snippet trace (a trace without dataset)
-  const [snippetData, setSnippetData] = React.useState({isSnippet: false, user: null} as {isSnippet: boolean, user: string | null})
+  const [snippetData, setSnippetData] = React.useState({ isSnippet: false, user: null } as { isSnippet: boolean, user: string | null })
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
   // load the logged in user's information
@@ -647,23 +921,23 @@ export function SingleTrace() {
     if (!trace) {
       return
     }
-    
+
     if (trace.dataset) {
       // depending on permissions, this may not be available
       sharedFetch(`/api/v1/dataset/byid/${trace?.dataset}`).then(data => {
         setDataset(data)
-      }).catch(e => {})
+      }).catch(e => { })
     } else {
       // otherwise use trace.user, if available and hide index
-      setDataset({name: trace?.user || ''})
-      setSnippetData({isSnippet: true, user: trace?.user || ''})
+      setDataset({ name: trace?.user || '' })
+      setSnippetData({ isSnippet: true, user: trace?.user || '' })
     }
   }, [trace])
 
   // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>
   if (dataset) {
-    header = snippetData.isSnippet ? 
+    header = snippetData.isSnippet ?
       <h1>
         <Link aria-label='path-user'
           to={`/u/${snippetData.user}`}>{snippetData.user}
@@ -672,7 +946,7 @@ export function SingleTrace() {
         <Time className='time'>{trace?.time_created || ''}</Time>
       </h1> :
       <h1>{dataset ? <>
-        <Link aria-label='path-user'  to={`/u/${trace?.user}`}>{trace?.user} / </Link>
+        <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
         <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""}<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
   }
 
@@ -683,19 +957,19 @@ export function SingleTrace() {
     {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
     </Modal>}
-    {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{id: props.traceId}} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
+    {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{ id: props.traceId }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
     {!error && <div className='sidebyside'>
-    <AnnotationAugmentedTraceView
-      activeTrace={trace}
-      loading={!trace}
-      header={header}
-      selectedTraceId={props.traceId}
-      onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
-      sharingEnabled={sharingEnabled}
-      actions={<>
-        {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
-      </>}
-    />
+      <AnnotationAugmentedTraceView
+        activeTrace={trace}
+        loading={!trace}
+        header={header}
+        selectedTraceId={props.traceId}
+        onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
+        sharingEnabled={sharingEnabled}
+        actions={<>
+          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+        </>}
+      />
     </div>}
   </div>
 }

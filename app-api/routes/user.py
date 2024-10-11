@@ -97,22 +97,6 @@ def events(request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], l
                 "details": annotation_to_json(annotation, trace=trace_to_json(trace))
             })
             
-        # newly shared trace ( will also include sniipets, as we don't joint to dataset)
-        traces = session.query(Trace, User, SharedLinks)\
-            .join(User, User.id == Trace.user_id)\
-            .join(SharedLinks, Trace.id == SharedLinks.trace_id)\
-            .filter(and_(Trace.user_id != user_id))\
-            .order_by(SharedLinks.time_created.desc())\
-            .limit(limit).all()
-        for trace, user, shared_link in traces:
-            events.append({
-                "time": shared_link.time_created,
-                "text": "shared a trace",
-                "type": "trace",
-                "user": user_to_json(user),
-                "details": trace_to_json(trace)
-            })
-            
         # sort events by time
         events = sorted(events, key=lambda e: e['time'], reverse=True)
         # take the top <limit> events

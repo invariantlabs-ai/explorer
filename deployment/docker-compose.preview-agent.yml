@@ -1,0 +1,34 @@
+name: preview-explorer-deployment-agents
+services:
+  deployment-agent:
+    # image: python:3.11-bullseye
+    build:
+      context: .
+      dockerfile: Dockerfile.preview-agent
+    
+    working_dir: /root/www/staging-explorer
+    networks:
+      - web
+    volumes:
+      # access to the system's docker service
+      - /var/run/docker.sock:/var/run/docker.sock
+      # access to the preview-explorer clone location (replicates paths from host in container)
+      - ../:/root/www/staging-explorer
+      # access to the preview-agent script
+      - type: bind
+        source: ./preview-agent.py
+        target: /srv/app/preview-agent.py
+    environment:
+      - PREVIEW_SCRIPT_PATH=/preview-agent/preview
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-deployment-agent.rule=Host(`preview-explorer.${BASE_URL}`) && PathPrefix(`/deployment`)"
+      - "traefik.http.routers.$APP_NAME-deployment-agent.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-deployment-agent.loadbalancer.server.port=8000"
+      - "traefik.http.routers.$APP_NAME-deployment-agent.tls.certresolver=le"
+      - "traefik.http.routers.$APP_NAME-deployment-agent.tls=true"
+      - "traefik.docker.network=web"
+
+networks:
+  web:
+    external: true

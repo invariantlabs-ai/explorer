@@ -8,7 +8,7 @@ import { useUserInfo } from '../UserInfo'
  */
 export function traceDelete(id: string): Promise<Response> {
   return fetch(`/api/v1/trace/${id}`, {
-      method: 'DELETE'
+    method: 'DELETE'
   })
 }
 
@@ -72,8 +72,8 @@ export function useSnippetsList(limit: number | null = null): [any[], () => void
     sharedFetch('/api/v1/trace/snippets?limit=' + (limit || '')).then(response => {
       setSnippets(response)
     }).catch(() => {
-        setSnippets([])
-        alert('Failed to fetch user snippets')
+      setSnippets([])
+      alert('Failed to fetch user snippets')
     })
   }
 

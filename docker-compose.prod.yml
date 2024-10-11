@@ -1,6 +1,7 @@
 version: '3'
 services:    
   app-api:
+    container_name: "${APP_NAME}-app-api"
     extends:
       file: docker-compose.yml
       service: app-api
@@ -8,6 +9,8 @@ services:
       - database
     environment:
       - APP_NAME=${APP_NAME}
+      - PREVIEW=${PREVIEW}
+      - POSTGRES_HOST=${APP_NAME}-database
     networks:
       - web
       - internal
@@ -21,20 +24,34 @@ services:
       - "traefik.http.routers.$APP_NAME-api.tls.certresolver=le"
   
   database:
+    container_name: "${APP_NAME}-database"
     extends:
       file: docker-compose.yml
       service: database
+    networks:
+      - internal
 
   app-ui:
+    container_name: "${APP_NAME}-app-ui"
     build:
       context: ./app-ui
+      # expose project root as additional context to enable copying-in of
+      # the explorer.config.yml file during the Dockerfile build
+      additional_contexts:
+        configs: .
       dockerfile: Dockerfile.prod
+      args:
+        - APP_NAME=${APP_NAME}
+        - PREVIEW=${PREVIEW}
     depends_on:
       - app-api
     networks:
       - web
     environment:
       - APP_NAME=${APP_NAME}
+      - PREVIEW=${PREVIEW}
+    volumes:
+      - ./explorer.config.yml:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"

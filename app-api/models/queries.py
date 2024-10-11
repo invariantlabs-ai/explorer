@@ -8,6 +8,8 @@ from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, Sha
 from util.util import get_gravatar_hash, split
 from sqlalchemy.sql import func
 import re
+from util.util import truncate_trace_content
+from util.config import config
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Trace, User)
@@ -68,6 +70,9 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
         raise HTTPException(status_code=401, detail="Unauthorized get")
+    # If the dataset is public but the requestor is not the owner, remove the policies from the dataset response.
+    if dataset.is_public and str(dataset.user_id) != user_id:
+        dataset.extra_metadata.pop('policies', None)
     if return_user:
         return dataset, user
     else:
@@ -133,11 +138,13 @@ def save_user(session, userinfo):
                                       set_={k:user[k] for k in user if k != 'id'})
     session.execute(stmt)
 
-def trace_to_json(trace, annotations=None, user=None):
+def trace_to_json(trace, annotations=None, user=None, max_length=None):
+    if max_length is None:
+        max_length = config('server_truncation_limit')
     out = {
         "id": trace.id,
         "index": trace.index,
-        "messages": trace.content,
+        "messages": truncate_trace_content(trace.content, max_length),
         "dataset": trace.dataset_id,
         "user_id": trace.user_id,
         **({"user": user} if user is not None else {}),

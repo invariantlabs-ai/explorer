@@ -1,32 +1,26 @@
 import copy
-import json
 import datetime
+import json
 import uuid
-import asyncio
-
-from fastapi import Depends
-from fastapi.responses import StreamingResponse
-
-from invariant.policy import Policy
-from invariant.runtime.input import mask_json_paths
-
-from sqlalchemy.orm import DeclarativeBase
-
-from sqlalchemy import String, Integer, Column, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, or_, and_
-
-from sqlalchemy.dialects.postgresql import UUID
-from fastapi import FastAPI, File, UploadFile, Request, HTTPException
-
-from models.importers import import_jsonl
-from models.datasets_and_traces import Dataset, db, Trace, Annotation, User
-from models.queries import *
-
 from typing import Annotated
-from routes.auth import UserIdentity, AuthenticatedUserIdentity
+from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
+from fastapi.responses import StreamingResponse
+from invariant.policy import AnalysisResult, Policy
+from invariant.runtime.input import mask_json_paths
+from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
+                                        SavedQueries, SharedLinks, Trace, User,
+                                        db)
+from models.importers import import_jsonl
+from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
+                            load_dataset, load_trace, query_traces,
+                            search_term_mappings, trace_to_exported_json,
+                            trace_to_json)
+from pydantic import ValidationError
+from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.sql import func
 
 # dataset routes
 dataset = FastAPI()
@@ -317,7 +311,17 @@ async def update_dataset_by_name(request: Request, username:str, dataset_name:st
 # get all traces of a dataset 
 ########################################
 
-def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
+"""
+Get all traces corresponding to a given filtering parameter 'by'.
+
+Only returns the traces, if the provided user has access to corresponding dataset.
+
+Parameters:
+- by: dictionary of filtering parameters
+- userinfo: user identity information
+- indices: list of trace indices to filter by (optional)
+"""
+def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)], indices: list[int] = None):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
@@ -329,6 +333,10 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+
+        # if indices are provided, filter by them (match on column 'index')
+        if indices is not None:
+            traces = traces.filter(Trace.index.in_(indices))
                 
         # with join, count number of annotations per trace
         traces = traces\
@@ -375,30 +383,65 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
     traces = get_traces(request, {'id': id}, userinfo)
     
     payload = await request.json()
-    overwrite = bool(payload.get("overwrite", True))
+    overwrite = payload.get("overwrite", True)
+    skip_analyzed = payload.get("skip_analyzed", True)
     policy_str = payload.get("policy_str", "")
+    analysis_host = payload.get("analysis_host", "local")
+    batch_size = payload.get("batch_size", None)
 
     # analysis stats
     total_errors = 0
 
+    if analysis_host == "modal":
+        modal_func = modal.Function.lookup("invariant-analyzer", "run_analysis")
+
     with Session(db()) as session:
-        for trace in traces:
-            trace_id = trace["id"]
-            trace = load_trace(session, {"id": trace_id}, user_id)
+        traces = [load_trace(session, {"id": trace["id"]}, user_id) for trace in traces]
+        all_messages = []
+        for idx, trace in enumerate(traces):
             # Replace the parameters in the policy string with the parameters in the trace metadata
             analysis_params = {k: v for k, v in trace.extra_metadata.items() if type(k) is str and type(v) is str}
-            trace_policy_str = policy_str.format(**analysis_params)
 
+            annotations = load_annoations(session, trace.id)
+            if skip_analyzed and len(annotations) > 0:
+                continue
             if overwrite:
                 # delete all existing annotations where source is the analyzer
-                annotations = load_annoations(session, trace_id)
                 for annotation, _ in annotations:
                     if annotation.extra_metadata and annotation.extra_metadata.get("source") == "analyzer":
                         session.delete(annotation)
 
-            policy = Policy.from_string(trace_policy_str)
-            messages = trace.content
-            res = policy.analyze(messages)
+            all_messages.append((idx, trace.content, analysis_params))
+
+        if analysis_host == "modal":
+            step = len(all_messages) if batch_size is None else batch_size
+            results = []
+            for i in range(0, len(all_messages), step):
+                batch_results = await asyncio.gather(*[modal_func.remote.aio(policy_str, messages, analysis_params) 
+                                                       for _, messages, analysis_params in all_messages[i:i+step]])
+                results.extend(batch_results)
+            new_results = []
+            # Some results might not be valid if the analysis failed (e.g. timeout or other errors)
+            for r in results:
+                try:
+                    new_results.append(AnalysisResult.model_validate_json(r))
+                except ValidationError as e:
+                    print("Got validation error: ", str(e))
+                    new_results.append(None)
+            results = new_results
+        elif analysis_host == "local":
+            results = []
+            for _, messages, analysis_params in all_messages:
+                policy = Policy.from_string(policy_str)
+                results.append(policy.analyze(messages, **analysis_params))
+        else:
+            raise ValueError(f"Invalid analysis host: {analysis_host}")
+
+        for i, res in enumerate(results):
+            if res is None:
+                continue
+            idx, messages, _ = all_messages[i]
+            trace = traces[idx]
 
             total_errors += len(res.errors)
 
@@ -410,26 +453,25 @@ async def analyze_dataset_by_id(request: Request, id: str, userinfo: Annotated[d
                         moderated_messages = mask_json_paths(messages, json_paths, lambda x: "*" * len(x))
                         metadata["moderated"] = True
                 if metadata.get("moderated", False):
-                    trace.content = json.dumps(moderated_messages)
+                    trace.content = moderated_messages
                     trace.extra_metadata = metadata
 
             for error in res.errors:
                 metadata = {"source": "analyzer"}
-                for range in error.ranges:
+                for rng in error.ranges:
                     range_annotation = Annotation(
-                        trace_id=trace_id,
+                        trace_id=trace.id,
                         user_id=user_id,
-                        address="messages." + str(range.json_path),
-                        content=str(error),
+                        address="messages." + str(rng.json_path),
+                        content=error.model_dump_json(),
                         extra_metadata=metadata)
                     session.add(range_annotation)
 
-            analyzer_msg = "Invariant analyzer result:\n\n" + str(res)
             main_annotation = Annotation(
-                trace_id=trace_id,
+                trace_id=trace.id,
                 user_id=user_id,
                 address="messages[0].content:L0", # TODO: This is now hardcoded, but should be shown in separate analyzer card
-                content=analyzer_msg,
+                content=res.model_dump_json(),
                 extra_metadata={"source": "analyzer"}
             )
             session.add(main_annotation)
@@ -487,7 +529,20 @@ async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, 
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo)
+    indices = request.query_params.get("indices")
+    indices = [int(i) for i in indices.split(",")] if indices is not None else None
+    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo, indices=indices)
+
+# lightweight version of /traces above that only returns the indices+ids (saving performance on the full join and prevents loading all columns of the traces table)
+@dataset.get("/byuser/{username}/{dataset_name}/indices")
+def get_trace_indices_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+    with Session(db()) as session:
+        user_id = userinfo['sub']
+        dataset, user = load_dataset(session, {'User.username': username, 'name': dataset_name}, user_id, allow_public=True, return_user=True)
+        # traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).offset(offset).limit(limit)
+        # only select the index
+        trace_rows = session.query(Trace.index, Trace.id).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).all()
+        return [{'index': row[0], 'id': row[1], 'messages': []} for row in trace_rows]
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
@@ -510,3 +565,116 @@ def get_all_traces(by: dict,  user: Annotated[dict, Depends(UserIdentity)]):
             annotations = load_annoations(session, trace.id)
             out['traces'].append(trace_to_json(trace, annotations))
         return out
+
+@dataset.post("/{dataset_id}/policy")
+async def create_policy(
+    request: Request,
+    dataset_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Creates a new policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can create a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to create policy for this dataset")
+        payload = await request.json()
+
+        # Validate payload
+        if not payload:
+            raise HTTPException(status_code=400, detail="Request should not be empty")
+        if not payload.get("name"):
+            raise HTTPException(status_code=400, detail="Name must be provided and non-empty")
+        if not payload.get("policy"):
+            raise HTTPException(status_code=400, detail="Policy content must be provided and non-empty")
+
+
+        policies = dataset.extra_metadata.get("policies", [])
+        try:
+            policies.append(DatasetPolicy(
+                id=str(uuid.uuid4()),
+                name=payload.get("name"),
+                content=payload.get("policy"),
+            ).to_dict())
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid Policy string") from e
+
+        dataset.extra_metadata["policies"] = policies
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)
+
+
+@dataset.put("/{dataset_id}/policy/{policy_id}")
+async def update_policy(
+    request: Request,
+    dataset_id: str,
+    policy_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Updates a policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can update a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to update policy for this dataset")
+        payload = await request.json()
+
+        # Validate payload
+        if not payload:
+            raise HTTPException(status_code=400, detail="Request should not be empty")
+        if "name" in payload and not payload["name"]:
+            raise HTTPException(status_code=400, detail="Name must be non-empty if provided")
+        if "policy" in payload and not payload["policy"]:
+            raise HTTPException(status_code=400, detail="Policy must be non-empty if provided")
+
+        policies = dataset.extra_metadata.get("policies", [])
+        existing_policy = next((p for p in policies if p["id"] == policy_id), None)
+        if not existing_policy:
+            raise HTTPException(status_code=404, detail="Policy to update not found")
+
+        try:
+            # Update the name and policy content if provided in the payload.
+            updated_policy = DatasetPolicy(
+                id=existing_policy["id"],
+                name=payload.get("name", existing_policy["name"]),
+                content=payload.get("policy", existing_policy["content"])
+            ).to_dict()
+            policies.append(updated_policy)
+            policies.remove(existing_policy)
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid Policy string") from e
+
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)
+
+@dataset.delete("/{dataset_id}/policy/{policy_id}")
+async def delete_policy(
+    dataset_id: str,
+    policy_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Deletes a policy for a dataset."""
+    user_id = userinfo["sub"]
+
+    with Session(db()) as session:
+        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        # Only the owner of the dataset can delete a policy for the dataset.
+        if str(dataset.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Not allowed to delete policy for this dataset")
+        policies = dataset.extra_metadata.get("policies", [])
+
+        policy = next((p for p in policies if p["id"] == policy_id), None)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        policies.remove(policy)
+        dataset.extra_metadata["policies"] = policies
+
+        flag_modified(dataset, 'extra_metadata')
+        session.commit()
+        return dataset_to_json(dataset)

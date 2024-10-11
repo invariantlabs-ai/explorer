@@ -617,6 +617,7 @@ label {
 
 .entity-list .actions {
   white-space: nowrap;
+  margin-top: 20pt;
 
   button:not(:first-of-type) {
     margin-left: 5pt;
@@ -902,6 +903,7 @@ div.panel {
     position: absolute;
     top: 41pt;
     right: 0pt;
+    left: 0pt;
     z-index: 1;
     background: transparent;
     background-color: transparent;
@@ -917,14 +919,6 @@ div.panel {
 }
 
 .shortcut {
-  svg {
-    width: 0.7em;
-    height: 0.7em;
-    position: relative;
-    top: -2pt;
-    margin-left: 4pt;
-  }
-
   padding: 4pt;
   border-radius: 20pt;
   padding-top: 3pt;
@@ -939,6 +933,14 @@ div.panel {
   margin-left: 2pt;
   margin-right: -6pt;
   margin-bottom: -1pt;
+
+  svg {
+    width: 0.7em;
+    height: 0.7em;
+    position: relative;
+    top: -2pt;
+    margin-left: 4pt;
+  }
 }
 
 button.primary .shortcut {
@@ -1542,4 +1544,178 @@ table.api-keys {
       background-color: white;
   }
   
+}
+
+/* Tab styles for the Dataset page. */
+.dataset-tab-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dataset-tab-group button {
+  padding: 10px 30px;
+  font-size: 13pt;
+  font-weight: bold;
+  border: 1pt solid rgba(0, 0, 0, 0.1);
+  border-radius: 8pt;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  color: inherit;
+  background-color: white;
+}
+
+.dataset-tab-group button:hover {
+  background-color: #d1d1d157;
+}
+
+.dataset-tab-group button.active {
+  background-color: #d1d1d157;
+}
+
+.new-policy-button {
+  margin-top: -10pt;
+  float: right;
+}
+
+.policy-editor-form {
+  height: 400pt;
+  width: 550pt;
+
+  input {
+    background-color: #ebebeb;
+    display: block;
+    padding: 5pt;
+    font-size: 24pt;
+    border-radius: 5pt;
+    border: none;
+    margin-bottom: 5pt;
+    width: 535pt;
+  }
+
+  label {
+    font-size: 16pt;
+    opacity: 0.5;
+    margin-top: 1lvh;
+    margin-bottom: 5pt;
+  }
+
+  .error {
+    color: #ED707B;
+    font-size: 18pt;
+    border-left: 2pt solid #ED707B;
+    padding-left: 10pt;
+    display: block;
+    margin-bottom: 15pt;
+    margin-top: 0pt;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+.policy-editor {
+  margin-bottom: 20pt;
+}
+
+.no-policies {
+  margin-top: 30pt;
+  text-align: center;
+}
+
+.policy-label {
+  margin-bottom: 0pt !important;
+}
+
+.deployment-info {
+  background-color: $color-primary;
+  color: white;
+  line-height: 17pt;
+  transform: scale(0.95);
+  font-size: 8pt;
+  border-radius: 10pt;
+  padding: 1pt 6pt;
+  font-weight: 800;
+  position: relative;
+  font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  top: 1pt;
+  font-weight: bold;
+
+  &:hover {
+    cursor: pointer;
+    background-color: lighten($color-primary, 10%);
+  }
+
+  &:active {
+    background-color: darken($color-primary, 10%);
+  }
+}
+
+// shown when an empty dataset is opened
+div.empty.instructions {
+  width: calc(100% - 10pt);
+  height: auto;
+  margin: auto;
+  color: $text-color;
+  opacity: 1.0;
+  text-align: center;
+
+  h3 {
+    opacity: 1.0;
+    font-weight: bold;
+    color: $text-color;
+    font-size: 22pt;
+  }
+
+  >p {
+    margin: 0pt 30pt;
+  }
+
+  .options {
+    display: flex;
+    margin-top: 30pt;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+
+    >div {
+      background-color: white;
+      border-radius: 5pt;
+      border: 1pt solid $border-color;
+      margin: 10pt;
+      padding: 30pt 20pt;
+      width: 400pt;
+      text-align: left;
+
+      button {
+        margin-top: 20pt !important;
+        display: block;
+        margin: auto;
+      }
+
+      h2 {
+        border: none;
+        font-weight: bold;
+        text-align: center;
+        font-size: 18pt;
+      }
+
+      p {
+        color: $text-color;
+        opacity: 0.9;
+        font-size: 14pt;
+      }
+
+      pre {
+        border-radius: 5pt;
+        text-align: left;
+        display: block;
+        overflow-x: auto;
+        padding: 10pt;
+        background-color: #f1f1f1;
+      }
+    }
+  }
 }
