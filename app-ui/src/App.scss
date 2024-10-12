@@ -112,7 +112,6 @@ header.top {
 
       li {
         margin-left: 10pt;
-        
 
         a {
           display: block;
@@ -462,6 +461,7 @@ div.panel {
   ul {
     margin-top: 10pt;
     padding: 0pt;
+    width: 100%;
 
     li {
       list-style-type: none;
@@ -1004,6 +1004,58 @@ button.primary .shortcut {
         }
       }
 
+      li.seperator:first-of-type {
+        margin-top: 0pt;
+      }
+      li.seperator-severity-0 { background-color: lighten($color-primary, 27.5%); }
+      li.seperator-severity-1 { background-color: lighten($color-primary, 25%); }
+      li.seperator-severity-2 { background-color: lighten($color-primary, 22.5%); }
+      li.seperator-severity-3 { background-color: lighten($color-primary, 20%); }
+      li.seperator-severity-4 { background-color: lighten($color-primary, 17.5%); }
+      li.seperator-severity-5 { background-color: lighten($color-primary, 15%); }
+      li.seperator {
+        //background-color: lighten($color-primary, 15%);
+        color: white;//$color-button-primary;
+        box-shadow: 0pt 0pt 1pt 0pt $color-primary;
+        border-radius: 3pt;
+        border-bottom: none;
+        padding: 5pt;
+        position: sticky;
+        top: 0;
+        margin-top: 20pt;
+        
+        .details {
+          margin: 10pt 5pt;
+          padding: 0;
+        }
+
+        h1 {
+          font-size: 14pt;
+          line-height: 18pt;
+        }
+        h2 {
+          font-size: 10pt;
+          line-height: 10pt;
+        }
+        span.icon {
+          position: absolute;
+          top: 10%;
+          right: 0;
+          margin: 10pt;
+          background-color: white;
+          min-width: 20pt;
+          min-height: 20pt;
+          color: $color-button-primary;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 10pt;
+          * {
+            flex: 1;
+          }
+        }
+      }
+
       li.empty {
         padding: 10pt;
         font-size: 12pt;
@@ -1063,9 +1115,12 @@ button.primary .shortcut {
       }
       
       .header-long {
-        flex: 1 1 70%;
+        flex: 1 1 50%;
       }
 
+      .img-button {
+        padding: 0;
+      }
 
       h1 {
         font-size: 12pt;
@@ -1427,7 +1482,7 @@ table.api-keys {
 }
 
 .search {
-  flex: 1 1 60%;
+  flex: 1 1 50%;
   display: flex;
   flex-direction: row;
   font-size:0; /* whitespace remover */
@@ -1471,10 +1526,13 @@ table.api-keys {
   }
   
   .search-text {
-      flex: 8;
+    flex: 0 1 80%;
+    padding: 0;
+    margin: 0;
   }
   .search-submit, .search-select {
       flex: 1;
+      width: 100%;
       padding: 0;
       margin: 0;
   }

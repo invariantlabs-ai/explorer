@@ -21,6 +21,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func
+import re
 
 # dataset routes
 dataset = FastAPI()
@@ -172,14 +173,85 @@ def get_dataset_by_name(request: Request, username:str, dataset_name:str, userin
 ########################################
 
 @dataset.get("/byuser/{username}/{dataset_name}/s")
-def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
+def search_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
     user_id = userinfo['sub']
     with Session(db()) as session:
         by = {'User.username': username, 'name': dataset_name}
         dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
-        selected_traces, search_term = query_traces(session, dataset, query, return_search_term=True)
-        return [{'index': trace.index,
-                 'mapping': search_term_mappings(trace, search_term)} for trace in selected_traces]
+
+        mappings = {} 
+        result = {}
+        result['Other Traces'] = {'traces': [],
+                                  'description': 'Traces without Analyzer results',
+                                  'severity': 0}
+
+        if query.strip() == 'is:invariant': 
+            pattern = re.compile(r"[a-zA-Z]+\((.*)\)")
+            traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
+            for trace in traces:
+                annotations = load_annoations(session, trace.id)
+                trace_with_match = False
+                for annotation, _ in annotations:
+                    # TODO replace with actual parsing
+                    if annotation.content.startswith('Invariant analyzer result'):
+                        violations = annotation.content[len('Invariant analyzer result: '):].strip()
+                        for line in violations.split('\n'):
+                            line = line.strip()
+                            if match := pattern.match(line):
+                                trace_with_match = True
+                                title = match.group(1).split(',')[0]
+                                if title not in result: result[title] = {'traces': []}
+                                result[title]['traces'].append(trace.index)
+                if not trace_with_match:
+                    result['Other Traces']['traces'].append(trace.index)
+            for key in result.keys():
+                if key == 'Other Traces': continue
+                result[key]['description'] = 'Invariant Analyzer'
+
+                # TODO: replace with permanent solution
+                if key == "Forgot to call a tool":
+                    result[key]['severity'] = 1
+                    result[key]['icon'] = 'tools'
+                elif key == "Wrong tool arguments":
+                    result[key]['severity'] = 3
+                    result[key]['icon'] = 'tools'
+                elif key == "Infinite loop":
+                    result[key]['icon'] = 'exclamation'
+                    result[key]['severity'] = 4
+                elif key == "Missing information in the response":
+                    result[key]['severity'] = 1
+                    result[key]['icon'] = 'info'
+                elif key == "Moderated content":
+                    result[key]['severity'] = 1
+                    result[key]['icon'] = 'info'
+                elif key == "Secret code in the discord message":
+                    result[key]['severity'] = 5
+                    result[key]['icon'] = 'exclamation-large'
+                elif key == "URL sent to discord":
+                    result[key]['severity'] = 2
+                    result[key]['icon'] = 'info'
+                elif key == "User message contains URL":
+                    result[key]['severity'] = 1
+                    result[key]['icon'] = 'exclamation'
+                elif key == "Hallucination":
+                    result[key]['severity'] = 4
+                    result[key]['icon'] = 'exclamation'
+                elif key == "Wrong tool argument format":
+                    result[key]['severity'] = 2
+                    result[key]['icon'] = 'tools'
+                elif key == "Action plan flawed":
+                    result[key]['severity'] = 2
+                    result[key]['icon'] = 'tools'
+                
+        else:
+            selected_traces, search_term = query_traces(session, dataset, query, return_search_term=True)
+            for trace in selected_traces:
+                mappings[trace.index] = search_term_mappings(trace, search_term)
+            result[query] = {}
+            result[query]['traces'] = list(sorted([trace.index for trace in selected_traces]))
+            result[query]['description'] = 'search result'
+
+        return {'result': result, 'mappings': mappings}
     
 @dataset.put("/byuser/{username}/{dataset_name}/s")
 async def save_query(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
