@@ -516,14 +516,15 @@ export function Traces() {
   useEffect(() => {
     // if search or analyzer was run, get the flattened list of results
     const flattenedDisplayedIndices : number[] = flattenDisplayedIndices(displayedIndices);
+    console.log('flattened displayed indices', flattenedDisplayedIndices, props.traceIndex)
 
     if (traces
         && props.traceIndex !== null
         && props.traceIndex !== undefined
-        && traces.filter(t => t !== null).map(t => t.index).includes(props.traceIndex)
+        && traces.has(props.traceIndex)
         && (flattenedDisplayedIndices.length == 0 || flattenedDisplayedIndices.includes(props.traceIndex) )
         ) {
-      setActiveTrace(traces[props.traceIndex])
+      setActiveTrace(traces.get(props.traceIndex))
     } else if (!traces) {
       setActiveTrace(null)
     } else {
@@ -751,8 +752,10 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
     }
 
     if (displayedIndices) {      
+      console.log('updating active indices', displayedIndices)
       if (Object.keys(displayedIndices).length === 1 && 'all' in displayedIndices && displayedIndices['all']['traces'].length == 0) {
         setActiveIndices({'all': {'traces': traces.filter(t => t !== null).map((t, i) => t.index), 'description': 'all traces'}})
+        console.log('setting active indices to all', activeIndices)
       } else {
         setActiveIndices(displayedIndices)
       }
@@ -777,25 +780,25 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
   }
   
   const viewItems : React.ReactNode[] = [];
-  Object.keys(activeIndices).sort((a, b) => (activeIndices[b].severity||0)-(activeIndices[a].severity||0) ).forEach((key) => {
-    if (key !== 'all' && activeIndices[key].traces.length > 0) {
-      let icon : React.ReactNode = {'info': <><BsInfo/></>,
-                    'tools': <><BsTools/></>,
-                    'exclamation': <><BsExclamationLg/></>,
-                    'exclamation-large': <><BsExclamationTriangleFill/></>,
-                    'search': <><BsSearch/></>,
-                    'none': null
-      }[activeIndices[key].icon||'none']
-      if (activeIndices[key].severity||0 <= 2) {icon = null;}
-      viewItems.push(<TraceBlockHeader name={key} count={activeIndices[key].traces.length} description={activeIndices[key].description||''} icon={icon||null} severity={activeIndices[key].severity||0} />)
-      if (traces) {
+  if (traces) {
+    Object.keys(activeIndices).sort((a, b) => (activeIndices[b].severity||0)-(activeIndices[a].severity||0) ).forEach((key) => {
+      if (key !== 'all' && activeIndices[key].traces.length > 0) {
+        let icon : React.ReactNode = {'info': <><BsInfo/></>,
+                      'tools': <><BsTools/></>,
+                      'exclamation': <><BsExclamationLg/></>,
+                      'exclamation-large': <><BsExclamationTriangleFill/></>,
+                      'search': <><BsSearch/></>,
+                      'none': null
+        }[activeIndices[key].icon||'none']
+        if (activeIndices[key].severity||0 <= 2) {icon = null;}
+        viewItems.push(<TraceBlockHeader name={key} count={activeIndices[key].traces.length} description={activeIndices[key].description||''} icon={icon||null} severity={activeIndices[key].severity||0} />)
+      }
         (activeIndices[key].traces || []).sort((a, b) => a-b).forEach((index) => {
           const trace = traces.get(index) || null
-          return <TraceRow key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} />
+          viewItems.push(<TraceRow key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} />)
         })
-      }
-    }
-  })
+    })
+  }
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
@@ -817,7 +820,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
         overscan={10}
       >
         {(index: number) => {
-          viewItems[index]
+          return viewItems[index]
           }
         }
       </ViewportList>
