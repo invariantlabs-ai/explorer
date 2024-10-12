@@ -516,7 +516,6 @@ export function Traces() {
   useEffect(() => {
     // if search or analyzer was run, get the flattened list of results
     const flattenedDisplayedIndices : number[] = flattenDisplayedIndices(displayedIndices);
-    console.log('flattened displayed indices', flattenedDisplayedIndices, props.traceIndex)
 
     if (traces
         && props.traceIndex !== null
@@ -587,7 +586,7 @@ export function Traces() {
   }
 
   // whether the trace view shows any trace
-  const traceVisible = !searching && (displayedIndices == null || Object.keys(displayedIndices).length > 1)
+  const traceVisible = !searching && (displayedIndices != null)
 
   // whether there are any traces to show
   const hasTraces = (traces?.indices().length || 0) > 0
@@ -752,10 +751,8 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
     }
 
     if (displayedIndices) {      
-      console.log('updating active indices', displayedIndices)
       if (Object.keys(displayedIndices).length === 1 && 'all' in displayedIndices && displayedIndices['all']['traces'].length == 0) {
-        setActiveIndices({'all': {'traces': traces.filter(t => t !== null).map((t, i) => t.index), 'description': 'all traces'}})
-        console.log('setting active indices to all', activeIndices)
+        setActiveIndices({'all': {'traces': traces.indices(), 'description': 'all traces'}})
       } else {
         setActiveIndices(displayedIndices)
       }
