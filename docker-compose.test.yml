@@ -1,4 +1,3 @@
-version: '3'
 name: ${APP_NAME}-test
 services:
   traefik:
@@ -47,6 +46,20 @@ services:
         target: /srv/datasets
     networks:
       - web
+      - internal
+  rabbitmq:
+    extends:
+      file: docker-compose.yml
+      service: rabbitmq
+    container_name: "${APP_NAME}-rabbitmq"
+    networks:
+      - internal
+  celery:
+    extends:
+      file: docker-compose.yml
+      service: celery
+    container_name: "${APP_NAME}-celery"
+    networks:
       - internal
 
 networks:
