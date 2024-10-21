@@ -1,4 +1,3 @@
-version: '3'
 name: ${APP_NAME}-local
 services:
   traefik:
@@ -56,6 +55,9 @@ services:
       - DEV_MODE=${DEV_MODE}
       - APP_NAME=${APP_NAME}
       - CONFIG_FILE=/config/explorer.config.yml
+    depends_on:
+      - rabbitmq
+      - celery
     networks:
       - internal
       - web
@@ -66,7 +68,6 @@ services:
         source: ./app-api
         target: /srv/app
       - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
@@ -74,7 +75,28 @@ services:
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=web"
       - "traefik.http.routers.$APP_NAME-api.tls=true"
-  
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: "${APP_NAME}-local-rabbitmq"
+    ports:
+      - "5672:5672" # Port used to connect to RabbitMQ and send/receive messages.
+      - "15672:15672" # Port for the RabbitMQ Management Plugin which provides a web-based UI for managing RabbitMQ.
+    networks:
+      - internal
+
+  celery:
+    build:
+      context: ./app-api
+      dockerfile: ../app-api/Dockerfile.celery
+    container_name: "${APP_NAME}-local-celery"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+    networks:
+      - internal
+
   database:
     image: postgres:16
     env_file:
