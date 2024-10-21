@@ -35,14 +35,15 @@ services:
     container_name: "${APP_NAME}-app-ui"
     build:
       context: ./app-ui
-      # expose project root as additional context to enable copying-in of
-      # the explorer.config.yml file during the Dockerfile build
+      # expose ./configs as additional context to enable copying-in of
+      # the respective explorer.config.yml file during the Dockerfile build
       additional_contexts:
-        configs: .
+        configs: configs
       dockerfile: Dockerfile.prod
       args:
         - APP_NAME=${APP_NAME}
         - PREVIEW=${PREVIEW}
+        - CONFIG_FILE_NAME=${CONFIG_FILE_NAME}
     depends_on:
       - app-api
     networks:
@@ -51,7 +52,7 @@ services:
       - APP_NAME=${APP_NAME}
       - PREVIEW=${PREVIEW}
     volumes:
-      - ./explorer.config.yml:/config/explorer.config.yml
+      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"

@@ -1,0 +1,6 @@
+# limit at which the content of a message will be truncated (UI and on the API)
+truncation_limit: 10000
+server_truncation_limit: 100000
+
+# the name of this deployment instance (e.g. prod, local, preview, <custom name>)
+instance_name: local

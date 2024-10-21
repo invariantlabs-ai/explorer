@@ -28,7 +28,8 @@ COPY index.html /app/app-ui/index.html
 COPY tsconfig.node.json /app/app-ui/tsconfig.node.json
 COPY .eslintrc.cjs /app/app-ui/.eslintrc.cjs
 
-COPY --from=configs explorer.config.yml /config/explorer.config.yml
+ARG CONFIG_FILE_NAME=explorer.prod.yml
+COPY --from=configs $CONFIG_FILE_NAME /config/explorer.config.yml
 
 ARG PREVIEW=0
 RUN VITE_PREVIEW=$PREVIEW yarn run build

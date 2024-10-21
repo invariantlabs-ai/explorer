@@ -10,6 +10,7 @@ from routes.dataset import dataset
 from routes.trace import trace
 from routes.apikeys import apikeys
 from routes.push import push
+from util.config import config
 
 from sqlalchemy.orm import Session
 from fastapi.exception_handlers import http_exception_handler

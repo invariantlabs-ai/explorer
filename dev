@@ -5,4 +5,5 @@ export DEV_MODE=true
 export PORT_HTTP=80
 export PORT_HTTPS=443
 export PORT_API=8000
+export CONFIG_FILE_NAME="explorer.dev.yml"
 docker compose $@

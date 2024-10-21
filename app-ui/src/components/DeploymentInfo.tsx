@@ -1,5 +1,14 @@
 import { useState } from "react";
 import { Modal } from "../Modal";
+import { config } from "../Config";
+
+export function DeploymentName() {
+    let name = config('instance_name');
+    if (name == "prod") {
+        return <></>
+    }
+    return <div className="deployment-info">{name}</div>
+}
 
 /**
  * Shows a clickable "PREVIEW" badge that opens a modal dialog explaining the user is browsing a preview deployment.
@@ -10,7 +19,7 @@ export function DeploymentInfo() {
     const [userPopoverVisible, setUserPopoverVisible] = useState(false);
 
     if (import.meta.env.VITE_PREVIEW != '1') {
-        return null;
+        return <DeploymentName/>
     }
 
     return <>

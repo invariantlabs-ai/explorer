@@ -64,7 +64,7 @@ services:
       - type: bind
         source: ./app-api
         target: /srv/app
-      - ./explorer.config.yml:/config/explorer.config.yml
+      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
 
     labels:
       - "traefik.enable=true"
@@ -108,7 +108,7 @@ services:
       - type: bind
         source: ./app-ui
         target: /srv/app
-      - ./explorer.config.yml:/config/explorer.config.yml
+      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
     environment:
       - APP_NAME=${APP_NAME}
       - VITE_CONFIG_FILE=/config/explorer.config.yml
