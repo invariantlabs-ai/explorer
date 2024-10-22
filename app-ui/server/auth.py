@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from keycloak import KeycloakOpenID # pip require python-keycloak
 import os
 from typing import Annotated
-from util.config import config
+from config import config
 
 is_preview_deployment = os.getenv("PREVIEW") == "1"
 base_url = "https://" + os.getenv("APP_NAME") + ".invariantlabs.ai"
