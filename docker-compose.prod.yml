@@ -46,13 +46,12 @@ services:
         - CONFIG_FILE_NAME=${CONFIG_FILE_NAME}
     depends_on:
       - app-api
-    environment:
-      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
     networks:
       - web
     environment:
       - APP_NAME=${APP_NAME}
       - PREVIEW=${PREVIEW}
+      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
     volumes:
       - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
     labels:
