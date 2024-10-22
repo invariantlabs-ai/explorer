@@ -55,7 +55,7 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
             msg["content"] = truncate_string(msg["content"], max_length)
         if msg.get("tool_calls", None) is not None:
             for tool_call in msg["tool_calls"]:
-                if type(tool_call) is dict and tool_call.get("function", None) is not None and tool_call["function"].get("arguments", None) is not None:
+                if type(tool_call) is dict and tool_call.get("function", None) is not None and tool_call.get("function", {}).get("arguments", None) is not None:
                     if type(tool_call["function"]["arguments"]) is str:
                         tool_call["function"]["arguments"] = truncate_string(tool_call["function"]["arguments"], max_length)
                     else:
