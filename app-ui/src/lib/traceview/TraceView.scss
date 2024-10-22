@@ -389,7 +389,10 @@ body {
 
     span.line {
         cursor: select;
-        padding-left: 5pt;
+        padding: 2pt;
+        display: block;
+        height: auto;
+        line-height: 1.4em;
     }
 
     .annotated-parent {
