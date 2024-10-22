@@ -46,6 +46,8 @@ services:
         - CONFIG_FILE_NAME=${CONFIG_FILE_NAME}
     depends_on:
       - app-api
+    environment:
+      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
     networks:
       - web
     environment:
