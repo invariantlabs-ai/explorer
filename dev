@@ -1,9 +1,11 @@
 #!/bin/bash
-source .env
+set -e
 export APP_NAME="explorer"
 export DEV_MODE=true
+export CONFIG_FILE_NAME="explorer.dev.yml"
+export PREVIEW=0
 export PORT_HTTP=80
 export PORT_HTTPS=443
 export PORT_API=8000
-export CONFIG_FILE_NAME="explorer.dev.yml"
+export KEYCLOAK_CLIENT_ID_SECRET=dev-does-not-use-keycloak
 docker compose $@

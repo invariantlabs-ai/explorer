@@ -51,6 +51,7 @@ services:
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
+      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
       - TZ=Europe/Berlin
       - DEV_MODE=${DEV_MODE}
       - APP_NAME=${APP_NAME}
