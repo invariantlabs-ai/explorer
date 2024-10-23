@@ -10,6 +10,7 @@ import { CompactSnippetList } from './Snippets';
 import { DatasetLinkList } from './Datasets';
 import { SignUp } from './SignUp';
 import { DeploymentInfo } from './components/DeploymentInfo';
+import { config } from './Config';
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -115,14 +116,29 @@ function Sidebar(props) {
 
 /**
  * Site-wide layout (header, sidebar, content).
+ * 
+ * @param props.children The main content of the page.
+ * @param props.fullscreen Whether the content should take up the full screen width.
+ * @param props.needsLogin Whether the page requires the user to be logged in. If you 
+ *                         specify 'false', the page will never require login. If you 
+ *                         specify 'true', the page will always require login. If you 
+ *                         don't specify, the page will require login if the instance is private.
+ *                         This is not a security feature, as the API will still enforce
+ *                         permissions, but it is a convenience feature to prevent users
+ *                         from seeing empty UI for inaccessible content.
  */
 function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean }) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
     const navigate = useNavigate();
 
-    const needsSignup = (userInfo && userInfo?.loggedIn && !userInfo?.signedUp);
-    const needsLogin = props.needsLogin && (!userInfo || !userInfo.loggedIn);
+    const isPrivateInstance = config("private");
+    const needsLoginNotSet = typeof props.needsLogin === "undefined";
+    const pageRequiresLogin = props.needsLogin || (needsLoginNotSet && isPrivateInstance);
+    const userIsLoggedIn = userInfo && userInfo.loggedIn;
+    
+    const pageShouldRedirectToSignup = (userInfo && userInfo?.loggedIn && !userInfo?.signedUp);
+    const pageShouldRedirectToLogin = pageRequiresLogin && !userIsLoggedIn;
 
     return <>
         <header className='top'>
@@ -181,11 +197,11 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             </div>
         </header>
         <div className={'content ' + (props.fullscreen ? 'fullscreen' : '')}>
-            {needsLogin && <div className='empty'>
-                <p>You must be signed in to view this page.</p>
+            {pageShouldRedirectToLogin && <div className='empty'>
+                <p>Please sign in to view this page.</p>
             </div>}
-            {needsSignup && <SignUp />}
-            {!needsSignup && !needsLogin && props.children}
+            {pageShouldRedirectToSignup && <SignUp />}
+            {!pageShouldRedirectToSignup && !pageShouldRedirectToLogin && props.children}
         </div>
     </>;
 }

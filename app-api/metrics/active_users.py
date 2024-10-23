@@ -63,8 +63,11 @@ ACTIVE_ANONYMOUS_USERS = max_live_set()
 def install_active_user_monitoring_middleware(app):
     @app.middleware("http")
     async def count_active_users(request: Request, call_next):
-
-        userinfo = await UserIdentity(request)
+        try:
+            userinfo = await UserIdentity(request)
+        except Exception as e:
+            userinfo = {}
+        
         userid = userinfo.get("sub") or request.headers.get("x-forwarded-for", "anonymous")
         
         # ignore the /metrics endpoint

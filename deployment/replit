@@ -1,11 +1,11 @@
 #/bin/bash
 # stop on error
 set -e
-export APP_NAME=preview-explorer
+export APP_NAME=replit
 # in preview we deploy as if it was prod
-export CONFIG_FILE_NAME="explorer.prod.yml"
-export PREVIEW=1
+export CONFIG_FILE_NAME="explorer.replit.yml"
+export PREVIEW=0
 export DEV_MODE=false
 export BASE_URL=invariantlabs.ai
-export KEYCLOAK_CLIENT_ID_SECRET=GDq4AqlO9jWiZJ5HgIIdfhgxHyhVZnTG
+export KEYCLOAK_CLIENT_ID_SECRET=jAEdfT95AjDfKz6R0V0x1TqzmoOVXaMM
 docker compose -f docker-compose.prod.yml $@

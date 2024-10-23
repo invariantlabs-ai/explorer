@@ -8,6 +8,7 @@ import { PoliciesView } from './Policies'
 import { RemoteResource, useRemoteResource } from './RemoteResource'
 import { useUserInfo } from './UserInfo'
 import { Metadata } from './lib/metadata'
+import { config } from './Config'
 
 
 interface Query {
@@ -154,7 +155,7 @@ function DatasetView() {
     <header>
       <h1>
         <Link to={userInfo?.id == dataset?.user.username ? '/' : ('/u/' + dataset.user.username)}>{dataset.user.username || 'Datasets'}</Link> / {dataset?.name}
-        {dataset.is_public && <span className='badge'>Public</span>}
+        {dataset.is_public && <span className='badge'>Shared</span>}
       </h1>
     </header>
     {/* dataset metadata (e.g. time uploaded, uploader, num traces) */}
@@ -204,16 +205,7 @@ function DatasetView() {
               <BsTrash /> Delete
             </button>
           </div>}
-          {dataset?.user?.id == userInfo?.id && <div className='box full setting'>
-            <div>
-              <h3>Publish</h3>
-              Make this dataset public. This will allow other users to view and annotate the data ({dataset.is_public ? 'currently public' : 'currently private'}).
-            </div>
-            <button className={!dataset.is_public ? 'primary' : ''}
-              onClick={() => onPublicChange({ target: { checked: !dataset.is_public } })}>
-              <BsGlobe /> {dataset.is_public ? 'Make Private' : 'Publish'}
-            </button>
-          </div>}
+          <PublicControls dataset={dataset} datasetLoader={datasetLoader} onPublicChange={onPublicChange} userInfo={userInfo} />
           <div className='box full setting'>
             <div>
               <h3>Export Dataset</h3>
@@ -227,6 +219,28 @@ function DatasetView() {
       </>
     )}
     <br />
+  </div>
+}
+
+/**
+ * Controls for making a dataset public or private.
+ */
+export function PublicControls({ dataset, datasetLoader, onPublicChange, userInfo }) {
+  const isPrivateInstance = config('private');
+  
+  const description = isPrivateInstance ? `Share this dataset with all other users of this explorer instance (logged-in users only).` : `Share this dataset to the public web and allow other users to view and annotate the data.`;
+  const positiveLabel = isPrivateInstance ? 'Share with Instance' : 'Publish';
+  const negativeLabel = 'Make Private';
+
+  return dataset?.user?.id == userInfo?.id && <div className='box full setting'>
+    <div>
+      <h3>Access</h3>
+      {description} {dataset.is_public ? 'Currently shared' : 'Currently private'}.
+    </div>
+    <button className={!dataset.is_public ? 'primary' : ''}
+      onClick={() => onPublicChange({ target: { checked: !dataset.is_public } })}>
+      <BsGlobe /> {dataset.is_public ? 'Make Private' : positiveLabel}
+    </button>
   </div>
 }
 

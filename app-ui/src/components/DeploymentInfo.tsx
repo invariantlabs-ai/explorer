@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { Modal } from "../Modal";
 import { config } from "../Config";
+import { BsLockFill } from "react-icons/bs";
+
+const DEPLOYMENT_COLORS = {
+    "local": "#f0ad4e",
+    "preview": "auto",
+    "replit": "#ed4f01"
+}
 
 export function DeploymentName() {
+    const isPrivateInstance = config('private');
     let name = config('instance_name');
     if (name == "prod") {
         return <></>
     }
-    return <div className="deployment-info">{name}</div>
+    return <div className="deployment-info" style={{backgroundColor: DEPLOYMENT_COLORS[name]}}>
+        {isPrivateInstance && <BsLockFill/>}
+        {name.toUpperCase()}
+    </div>
 }
 
 /**

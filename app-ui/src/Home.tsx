@@ -74,7 +74,7 @@ function Home() {
     </div>}
     {/* public datasets */}
     <div className='box'>
-      <h2>Public Datasets</h2>
+      <h2>Shared Datasets</h2>
       <DatasetLinkList datasets={datasets.filter(dataset => dataset.is_public)} icon={<BsGlobe />} />
     </div>
     {/* user activity */}

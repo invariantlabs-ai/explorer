@@ -6,14 +6,14 @@ truncation_limit: 10000
 server_truncation_limit: 100000
 
 # the name of this deployment instance (e.g. prod, local, preview, <custom name>)
-instance_name: prod
+instance_name: replit
 
 ## authentication setup (Keycloak)
 
 # realm name for authentication
-authentication_realm: invariant-public
+authentication_realm: invariant-replit
 # prefix of the client ID used to identify the authentication client (e.g. invariant- will be expanded to invariant-$APP_NAME)
 authentication_client_id_prefix: invariant
 
 # whether this is a private instance or not (private instances do not offer a public homepage or any form of anonymous access)
-private: false
+private: true

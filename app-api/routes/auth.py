@@ -70,43 +70,6 @@ def install_authorization_endpoints(app):
         response.delete_cookie("jwt")
         return response
 
-# middleware that ensure that a JWT is present in the request
-# if it is not present, it will redirect to /login
-def require_authorization(exceptions, redirect=False, exception_handlers=None):
-    """
-    Add this to a fastapi app as a middleware, to ensure that a JWT is present and validated for all requests.
-
-    exceptions: list of paths that should not require a JWT
-    redirect: if True, redirect to /login if no JWT is present, otherwise return 401.
-    """
-    # same but for JWT
-    async def check_jwt(request: Request, call_next):
-        # check for DEV_MODE
-        if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
-            request.state.userinfo = {
-                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-                "email": "dev@mail.com",
-                "preferred_username": "developer",
-                "name": "Developer"
-            }
-            return await call_next(request)
-
-        if (request.url.path in exceptions + ["/login"]) or any([handler(request) for handler in (exception_handlers or [])]):
-            response = await call_next(request)
-            return response
-        try:
-            token = json.loads(request.cookies.get("jwt"))
-            userinfo = await keycloak_openid.a_userinfo(token["access_token"])
-            request.state.userinfo = userinfo
-        except Exception as e:
-            print("authentication failed", e, "for", request.url.path)
-            if redirect:
-                return RedirectResponse(url="/login")
-            else:
-                return Response(status_code=401, content="Unauthorized.")
-        return await call_next(request)
-    return check_jwt
-
 """
 This middleware will write back the refreshed token to the response, if it was refreshed during the request.
 """
@@ -150,6 +113,8 @@ async def UserIdentity(request: Request):
 
         request.state.userinfo = userinfo
         
+        assert userinfo["sub"] is not None, "a logged-in user must have a sub"
+        
         return {
             "sub": userinfo["sub"],
             "email": userinfo["email"],
@@ -158,6 +123,13 @@ async def UserIdentity(request: Request):
         }
     except Exception as e:
         # otherwise, this is an anonymous user
+
+        # on private instances, we don't allow anonymous access beyond /login and /user/info
+        is_private_instance = config('private')
+        if is_private_instance and (request.url.path != "/login" and request.url.path != "/api/v1/user/info"):
+            raise HTTPException(status_code=401, detail="Private instance, login required")
+
+        # on public instances, we allow anonymous access to some endpoints
         return {
             "sub": None,
             "email": '',

@@ -11,6 +11,7 @@ import User from './User.tsx'
 import { Snippets } from './Snippets.tsx'
 import { Settings } from './Settings.tsx'
 import { Datasets } from './Datasets.tsx'
+import { config } from './Config.ts'
 
 export const routes = [
   {
@@ -66,7 +67,7 @@ export const routes = [
   {
     path: '/trace/:traceId',
     label: 'Dataset',
-    element: <Layout fullscreen><SingleTrace /></Layout>,
+    element: <Layout needsLogin={false} fullscreen><SingleTrace /></Layout>,
     loader: async (task: any) => {
       return {
         "traceId": task.params.traceId

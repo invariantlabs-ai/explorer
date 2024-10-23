@@ -1650,6 +1650,12 @@ table.api-keys {
   &:active {
     background-color: darken($color-primary, 10%);
   }
+
+  svg {
+    position: relative;
+    top: 1pt;
+    margin-right: 1pt;
+  }
 }
 
 // shown when an empty dataset is opened
