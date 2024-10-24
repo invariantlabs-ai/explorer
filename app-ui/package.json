@@ -27,6 +27,7 @@
     "react-router-dom": "^6.23.0",
     "react-select": "^5.8.0",
     "react-spinners": "^0.14.1",
+    "react-tooltip": "^5.28.0",
     "react-viewport-list": "^7.1.2",
     "shiki": "^1.18.0",
     "sort-by": "^1.2.0",

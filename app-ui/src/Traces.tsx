@@ -650,7 +650,7 @@ export function Traces() {
         sharingEnabled={sharingEnabled}
         // extra trace action buttons to show
         actions={<>
-          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)} data-tooltip-id="button-tooltip" data-tooltip-content="delete trace"><BsTrash /></button>}
         </>}
         onAnnotationCreate={onAnnotationCreate}
         onAnnotationDelete={onAnnotationDelete}
@@ -800,14 +800,24 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
       {searchQuery &&
-        <button className='header-short toggle icon' onClick={onSave}><BsSave /></button>
+        <button className='header-short toggle icon' onClick={onSave}
+          data-tooltip-id="button-tooltip" data-tooltip-content="save search">
+          <BsSave />
+        </button>
       }
-      <button className='header-short toggle icon' onClick={onRefresh}><BsArrowClockwise /></button>
+      <button className='header-short toggle icon' onClick={onRefresh}
+        data-tooltip-id="button-tooltip" data-tooltip-content="refresh">
+        <BsArrowClockwise />
+      </button>
       <SidebarStatus traces={traces} searching={props.searching} />
-      <button className='header-short toggle icon img-button' onClick={() => setSearchQuery('is:invariant')}>
+      <button className='header-short toggle icon img-button' onClick={() => setSearchQuery('is:invariant')}
+         data-tooltip-id="button-tooltip" data-tooltip-content="search 'is:invariant'">
         <img src={logo} style={{width: '1.5em'}}/>
       </button>
-      <button className='header-short toggle icon' onClick={() => setVisible(!visible)}><BsLayoutSidebarInset /></button>
+      <button className='header-short toggle icon' onClick={() => setVisible(!visible)}
+         data-tooltip-id="button-tooltip" data-tooltip-content="fold sidebar">
+        <BsLayoutSidebarInset />
+      </button>
     </header>
     <ul ref={viewportContainerRef}>
       <ViewportList
@@ -967,9 +977,10 @@ export function SingleTrace() {
         onShare={sharingEnabled != null && trace?.user_id == userInfo?.id ? () => setShowShareModal(true) : null}
         sharingEnabled={sharingEnabled}
         actions={<>
-          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true)}><BsTrash /></button>}
+          {isUserOwned && <button className='danger icon inline' onClick={() => setShowDeleteModal(true) }><BsTrash /></button>}
         </>}
       />
+
     </div>}
   </div>
 }

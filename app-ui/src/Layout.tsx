@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
+import {Tooltip} from 'react-tooltip';
+
 import logo from './assets/invariant.svg';
 import { useUserInfo } from './UserInfo';
 import { Link, useLoaderData, useNavigate } from 'react-router-dom';
@@ -203,6 +205,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             {pageShouldRedirectToSignup && <SignUp />}
             {!pageShouldRedirectToSignup && !pageShouldRedirectToLogin && props.children}
         </div>
+        <Tooltip id="button-tooltip" place="top"/>
     </>;
 }
 
