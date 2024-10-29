@@ -3,6 +3,7 @@ import os
 import sys
 
 import pytest
+import time
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -215,6 +216,8 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
 
         # Create policy.
         await page.get_by_role("button", name="New Policy").click()
+        # Wait for the monaco editor to load.
+        time.sleep(2)
         policy_name_input = await page.get_by_placeholder("Policy Name").all()
         await policy_name_input[0].fill("Test Policy")
         policy_code_input = await page.locator("div.view-lines").all()
@@ -232,6 +235,8 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
 
         # Edit policy.
         await page.get_by_role("button", name="Edit").click()
+        # Wait for the monaco editor to load.
+        time.sleep(2)
         await screenshot(page)
         policy_name_input = await page.locator('input[value="Test Policy"]').all()
         await policy_name_input[0].fill("Updated Test Policy")
