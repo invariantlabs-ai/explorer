@@ -269,7 +269,7 @@ def query_traces(session, dataset, query, count=False):
                         lhs = Trace.extra_metadata[lhs]
                         lhs = getattr(lhs, type_cast)()
                     except Exception as e:
-                        raise Exception("can not fetch filter LHS from ") from e
+                        raise Exception("can not fetch filter LHS from metadata") from e
 
                     # execute the operator
                     if op == '==' or op == '=':
