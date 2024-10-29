@@ -244,48 +244,48 @@ def query_traces(session, dataset, query, count=False):
                     
                     # parse the filter we got
                     lhs, op, rhs = match.group(1), match.group(2), match.group(3)
-                    if op == '=': op = '=='
-                    assert op in ['>', '<', '>=', '<=', '==' , '%']
 
+                    # discover the type of the rhs
+                    rhs_type = 'str'
+                    if op != '%':
+                        try:
+                            rhs = float(rhs)
+                            rhs_type = 'float'
+                        except:
+                            pass
+                        try:
+                            rhs = int(rhs)
+                            rhs_type = 'int'
+                        except:
+                            pass
+                    
+                    if rhs_type == 'str':
+                        rhs = str(rhs)
+                  
+                    # retrieve the lhs from the metadata 
+                    # and based on the type of rhs also cast the lhs
                     try:
-                        # discover the type of the rhs
-                        rhs_type = 'str'
-                        if op != '%':
-                            try:
-                                rhs = float(rhs)
-                                rhs_type = 'float'
-                            except:
-                                pass
-                            try:
-                                rhs = int(rhs)
-                                rhs_type = 'int'
-                            except:
-                                pass
-                        
-                        if rhs_type == 'str':
-                            rhs = str(rhs)
-                      
-                        # retrieve the lhs from the metadata 
-                        # and based on the type of rhs also cast the lhs
                         type_cast = {'int': 'as_integer', 'float': 'as_float', 'str': 'as_string'}[rhs_type]
                         lhs = Trace.extra_metadata[lhs]
                         lhs = getattr(lhs, type_cast)()
+                    except Exception as e:
+                        raise Exception("can not fetch filter LHS from ") from e
 
-                        # execute the operator
-                        if op == '==':
-                            criteria = lhs == rhs
-                        elif op == '>':
-                            criteria = lhs > rhs
-                        elif op == '<':
-                            criteria = lhs < rhs
-                        elif op == '>=':
-                            criteria = lhs >= rhs
-                        elif op == '<=':
-                            criteria = lhs <= rhs
-                        elif op == '%': # contains/fuzzy search
-                            criteria = func.lower(lhs).contains(rhs.lower())
-                    except:
-                        raise Exception("Invalid filter")
+                    # execute the operator
+                    if op == '==' or op == '=':
+                        criteria = lhs == rhs
+                    elif op == '>':
+                        criteria = lhs > rhs
+                    elif op == '<':
+                        criteria = lhs < rhs
+                    elif op == '>=':
+                        criteria = lhs >= rhs
+                    elif op == '<=':
+                        criteria = lhs <= rhs
+                    elif op == '%': # contains/fuzzy search
+                        criteria = func.lower(lhs).contains(rhs.lower())
+                    else:
+                        raise Exception("Invalid operator")
 
                     # apply the filter
                     # if we have multiple filters, we want to apply them all (i.e. AND)
