@@ -8,7 +8,6 @@ from models.datasets_and_traces import Dataset, db, Trace, Annotation, User, Sha
 from util.util import get_gravatar_hash, split
 from sqlalchemy.sql import func
 import re
-import ast
 from util.util import truncate_trace_content
 from util.config import config
 
@@ -82,7 +81,7 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
 # returns the collections of a dataset
 def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
     # get number of traces with at least one annotation
-    num_annotated = query_traces(session, dataset, "is:annotated", count=True)
+    num_annotated, _, _ = query_traces(session, dataset, "is:annotated", count=True)
     queries = [
         {
             "id": "all",
@@ -109,7 +108,7 @@ def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
    
     savedqueries = session.query(SavedQueries).filter(SavedQueries.user_id == user_id).filter(SavedQueries.dataset_id == dataset.id).all() 
     for query in savedqueries:
-        count = query_traces(session, dataset, query.query, count=True)
+        count, _, _ = query_traces(session, dataset, query.query, count=True)
         queries.append(
              {
                 "id": query.id,
@@ -214,7 +213,7 @@ def dataset_to_json(dataset, user=None, **kwargs):
         out["user"] = user_to_json(user)
     return out
  
-def query_traces(session, dataset, query, count=False, return_search_term=False):    
+def query_traces(session, dataset, query, count=False):    
     filter_pattern = re.compile(r"(is|not|meta):([^:\s]+)")
     meta_filter_pattern = re.compile(r"([^\s><=\:]+)(<|>|<=|>=|=|==|%)([^\s><=]+)")
     selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
@@ -264,12 +263,12 @@ def query_traces(session, dataset, query, count=False, return_search_term=False)
                                 pass
                         
                         if rhs_type == 'str':
-                            rhs = str(ast.literal_eval(rhs))
+                            rhs = str(rhs)
                       
                         # retrieve the lhs from the metadata 
                         # and based on the type of rhs also cast the lhs
-                        cast = {'int': 'as_integer', 'float': 'as_float', 'str': 'as_string'}[rhs_type]
-                        lhs = eval(f"Trace.extra_metadata['{lhs}'].{cast}()")
+                        type_cast = {'int': 'as_integer', 'float': 'as_float', 'str': 'as_string'}[rhs_type]
+                        lhs = eval(f"Trace.extra_metadata['{lhs}'].{type_cast}()")
 
                         # execute the operator
                         if op == '==':
@@ -296,11 +295,7 @@ def query_traces(session, dataset, query, count=False, return_search_term=False)
             print(f'Error in query: >{query}<' , e) # we still want these searches to go through 
 
     out = selected_traces.count() if count else selected_traces.all()
-    if return_search_term:
-        return out, search_term
-    else:
-        return out
-    
+    return out, search_term, filters
     
 def search_term_mappings(trace, search_term):
     mappings = dict()
