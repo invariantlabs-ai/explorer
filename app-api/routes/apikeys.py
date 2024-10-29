@@ -1,5 +1,6 @@
 import re
 import datetime
+import os
 
 from fastapi import Depends
 from fastapi import FastAPI, Request, HTTPException
@@ -94,6 +95,14 @@ The resulting user identity looks like a UserIdentity object, but limited to the
 """
 async def APIIdentity(request: Request):
     try:
+        # check for DEV_MODE
+        if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get("referer", []):
+            return {
+                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+                "username": "developer",
+                "apikey": "with DEV_MODE true"
+            }
+
         apikey = request.headers.get("Authorization")
         bearer_token = re.match(r"Bearer (.+)", apikey)
         if bearer_token is None:

@@ -83,7 +83,7 @@ async def write_back_refreshed_token(request: Request, call_next):
 
 async def UserIdentity(request: Request):
     # check for DEV_MODE
-    if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
+    if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get("referer", []):
         return {
             "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
             "email": "dev@mail.com",

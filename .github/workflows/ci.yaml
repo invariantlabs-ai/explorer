@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build & Test
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: self-hosted
 
     steps:

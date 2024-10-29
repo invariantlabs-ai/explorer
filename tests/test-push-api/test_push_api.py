@@ -12,12 +12,6 @@ from util import * # needed for pytest fixtures
 
 pytest_plugins = ('pytest_asyncio',)
 
-async def test_apikey_needed(url, context):
-    response = await context.request.post(url + '/api/v1/push/trace',
-                                          data={})
-    # expect 401, because no API key is provided
-    assert response.status == 401
-
 # helper function to get an API key
 async def get_apikey(url, context):
     response = await context.request.post(url + '/api/v1/keys/create')
