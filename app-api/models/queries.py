@@ -81,7 +81,7 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
 # returns the collections of a dataset
 def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
     # get number of traces with at least one annotation
-    num_annotated = query_traces(session, dataset, "is:annotated", count=True)
+    num_annotated, _, _ = query_traces(session, dataset, "is:annotated", count=True)
     queries = [
         {
             "id": "all",
@@ -108,7 +108,7 @@ def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
    
     savedqueries = session.query(SavedQueries).filter(SavedQueries.user_id == user_id).filter(SavedQueries.dataset_id == dataset.id).all() 
     for query in savedqueries:
-        count = query_traces(session, dataset, query.query, count=True)
+        count, _, _ = query_traces(session, dataset, query.query, count=True)
         queries.append(
              {
                 "id": query.id,
@@ -213,9 +213,9 @@ def dataset_to_json(dataset, user=None, **kwargs):
         out["user"] = user_to_json(user)
     return out
  
-def query_traces(session, dataset, query, count=False, return_search_term=False):    
-    filter_pattern = re.compile(r"([^:\s><=\:]+)(:|<|>|<=|>=)([^:\s><=\:]+)")
-    
+def query_traces(session, dataset, query, count=False):    
+    filter_pattern = re.compile(r"(is|not|meta):([^:\s]+)")
+    meta_filter_pattern = re.compile(r"([^\s><=\:]+)(<|>|<=|>=|=|==|%)([^\s><=]+)")
     selected_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
     search_term = None
 
@@ -229,27 +229,66 @@ def query_traces(session, dataset, query, count=False, return_search_term=False)
                 else:
                     search_terms.append(term)
 
-
             if len(search_terms) > 0:
                 search_term = " ".join(search_terms)
                 selected_traces = selected_traces.filter(func.lower(cast(Trace.content, sqltypes.String)).contains(search_term.lower()))
                 
             for filter in filters:
-                lhs, op, rhs = filter.group(1), filter.group(2), filter.group(3)
-                if lhs == 'is' and op == ':' and rhs == 'annotated':
+                filter_type, filter_term = filter.group(1), filter.group(2)
+                if filter_type == 'is' and filter_term == 'annotated':
                     selected_traces = selected_traces.join(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) > 0)
-                elif lhs == 'not' and op == ':' and rhs == 'annotated':
+                elif filter_type == 'no' and filter_term == 'annotated':
                     selected_traces = selected_traces.outerjoin(Annotation, Trace.id == Annotation.trace_id).group_by(Trace.id).having(func.count(Annotation.id) == 0)
-                elif op in ['>', '<', '>=', '<=', '=='] and (lhs == 'num_messages' or rhs == 'num_messages'):
-                    assert ((lhs == 'num_messages' and int(rhs) >= 0) or
-                            (rhs == 'num_messages' and int(op) >= 0))
-                    op = op
-                    if rhs == 'num_messages':
-                        comp = int(op)
-                        op = {'>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '=='}[op]
+                elif (match := meta_filter_pattern.match(filter_term)) and filter_type == 'meta':
+                    # we are in the setting where the user wants to filter by metadata
+                    
+                    # parse the filter we got
+                    lhs, op, rhs = match.group(1), match.group(2), match.group(3)
+
+                    # discover the type of the rhs
+                    rhs_type = 'str'
+                    if op != '%':
+                        try:
+                            rhs = float(rhs)
+                            rhs_type = 'float'
+                        except:
+                            pass
+                        try:
+                            rhs = int(rhs)
+                            rhs_type = 'int'
+                        except:
+                            pass
+                    
+                    if rhs_type == 'str':
+                        rhs = str(rhs)
+                  
+                    # retrieve the lhs from the metadata 
+                    # and based on the type of rhs also cast the lhs
+                    try:
+                        type_cast = {'int': 'as_integer', 'float': 'as_float', 'str': 'as_string'}[rhs_type]
+                        lhs = Trace.extra_metadata[lhs]
+                        lhs = getattr(lhs, type_cast)()
+                    except Exception as e:
+                        raise Exception("can not fetch filter LHS from metadata") from e
+
+                    # execute the operator
+                    if op == '==' or op == '=':
+                        criteria = lhs == rhs
+                    elif op == '>':
+                        criteria = lhs > rhs
+                    elif op == '<':
+                        criteria = lhs < rhs
+                    elif op == '>=':
+                        criteria = lhs >= rhs
+                    elif op == '<=':
+                        criteria = lhs <= rhs
+                    elif op == '%': # contains/fuzzy search
+                        criteria = func.lower(lhs).contains(rhs.lower())
                     else:
-                        comp = int(rhs)
-                    criteria = eval(f"Trace.extra_metadata['num_messages'].as_integer() {op} {comp}")
+                        raise Exception("Invalid operator")
+
+                    # apply the filter
+                    # if we have multiple filters, we want to apply them all (i.e. AND)
                     selected_traces = selected_traces.filter(criteria)
                 else:
                     raise Exception("Invalid filter")
@@ -257,11 +296,7 @@ def query_traces(session, dataset, query, count=False, return_search_term=False)
             print(f'Error in query: >{query}<' , e) # we still want these searches to go through 
 
     out = selected_traces.count() if count else selected_traces.all()
-    if return_search_term:
-        return out, search_term
-    else:
-        return out
-    
+    return out, search_term, filters
     
 def search_term_mappings(trace, search_term):
     mappings = dict()

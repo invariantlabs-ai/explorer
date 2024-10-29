@@ -244,12 +244,20 @@ def search_dataset_by_name(request: Request, username:str, dataset_name:str, use
                     result[key]['icon'] = 'tools'
                 
         else:
-            selected_traces, search_term = query_traces(session, dataset, query, return_search_term=True)
+            selected_traces, search_term, filter_terms = query_traces(session, dataset, query)
             for trace in selected_traces:
                 mappings[trace.index] = search_term_mappings(trace, search_term)
+                
             result[query] = {}
             result[query]['traces'] = list(sorted([trace.index for trace in selected_traces]))
-            result[query]['description'] = 'search result'
+            has_search_term = search_term is not None and len(search_term) > 0 
+            has_filter = len(filter_terms) > 0
+            if has_search_term and has_filter:
+                result[query]['description'] = 'filtered search result'
+            elif has_search_term:
+                result[query]['description'] = 'search result'
+            elif has_filter:
+                result[query]['description'] = 'filtered result'
 
         return {'result': result, 'mappings': mappings}
     
