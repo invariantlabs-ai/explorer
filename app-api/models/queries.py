@@ -268,7 +268,8 @@ def query_traces(session, dataset, query, count=False):
                         # retrieve the lhs from the metadata 
                         # and based on the type of rhs also cast the lhs
                         type_cast = {'int': 'as_integer', 'float': 'as_float', 'str': 'as_string'}[rhs_type]
-                        lhs = eval(f"Trace.extra_metadata['{lhs}'].{type_cast}()")
+                        lhs = Trace.extra_metadata[lhs]
+                        lhs = getattr(lhs, type_cast)()
 
                         # execute the operator
                         if op == '==':
