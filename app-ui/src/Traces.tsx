@@ -162,6 +162,7 @@ class LightweightTraces {
    * @param indices The indices to fetch
    */
   async batchFetch(indices: number[]) {
+    if (indices.length === 0) return; // nothing to do
     indices.forEach(i => this.loadingIndices.add(i))
 
     sharedFetch(`/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(',')}`).then(traces => {
@@ -701,7 +702,6 @@ function SearchBox(props) {
         <ul>
           <li onClick={(e) => { addFilter(e, 'is:annotated') }} >Has annotation</li>
           <li onClick={(e) => { addFilter(e, 'not:annotated') }} >No annotation</li>
-          <li onClick={(e) => { addFilter(e, 'num_messages>10') }} >At least 10 messages</li>
         </ul>
       </div>
       <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />

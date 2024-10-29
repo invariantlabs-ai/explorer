@@ -245,6 +245,7 @@ def search_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 
         else:
             selected_traces, search_term = query_traces(session, dataset, query, return_search_term=True)
+            print(len(selected_traces))
             for trace in selected_traces:
                 mappings[trace.index] = search_term_mappings(trace, search_term)
             result[query] = {}
