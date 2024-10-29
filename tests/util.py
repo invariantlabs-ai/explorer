@@ -1,6 +1,7 @@
 from playwright.async_api import async_playwright, expect
 import pytest
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 import inspect
@@ -13,7 +14,13 @@ def url():
         return os.environ["URL"]
     else:
         return "https://127.0.0.0:443"
-    
+
+@pytest.fixture
+def api_server_http_endpoint():
+    if "API_SERVER_HTTP_ENDPOINT" in os.environ:
+        return os.environ["API_SERVER_HTTP_ENDPOINT"]
+    sys.exit("API_SERVER_HTTP_ENDPOINT is not set, exiting.")
+
 @pytest.fixture
 def name():
     return f"test-{str(uuid4())}"

@@ -16,10 +16,10 @@ pytest_plugins = ("pytest_asyncio",)
 
 
 @pytest.fixture(name="invariant_client")
-def fixture_invariant_client():
+def fixture_invariant_client(api_server_http_endpoint):
     """Fixture to create Client instance."""
     return Client(
-        api_url="http://localhost:8000",
+        api_url=api_server_http_endpoint,
         api_key="<test-api-key>",  # When DEV_MODE is true, this is not used.
     )
 
@@ -171,8 +171,12 @@ async def test_create_request_and_push_trace_without_dataset(
     assert len(response.id) == 2
     assert response.dataset is None
 
-    trace_response_1 = await context.request.get(f"{url}/api/v1/trace/{response.id[0]}")
-    trace_response_2 = await context.request.get(f"{url}/api/v1/trace/{response.id[1]}")
+    trace_response_1 = await context.request.get(
+        f"{url}/api/v1/trace/{response.id[0]}"
+    )
+    trace_response_2 = await context.request.get(
+        f"{url}/api/v1/trace/{response.id[1]}"
+    )
     await expect(trace_response_1).to_be_ok()
     await expect(trace_response_2).to_be_ok()
     trace_1 = await trace_response_1.json()

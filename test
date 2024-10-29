@@ -1,8 +1,14 @@
 #/bin/bash
 
 function dev_run_test() {
+    # Env variable set in dev.
+    PORT_API=8000
+    # API_SERVER_HTTP_ENDPOINT is used in some tests where calls to the HTTP explorer backend API are needed.
+    # Example: calls via SDK to the HTTPS endpoint don't work with a self-signed certificate hence we use the
+    # HTTP endpoint in the tests.
     docker run \
         -e URL='https://127.0.0.1' \
+        -e API_SERVER_HTTP_ENDPOINT="http://127.0.0.1:${PORT_API}" \
         --mount type=bind,source=./tests,target=/tests \
         --network host \
         explorer-test $@
@@ -55,7 +61,7 @@ function ci_run_server() {
     docker compose -f docker-compose.test.yml down
    
     # start clean test container
-    docker compose -f docker-compose.test.yml up -d    
+    docker compose -f docker-compose.test.yml up -d
 }
 
 function ci_run_test() {
@@ -70,8 +76,12 @@ function ci_run_test() {
 
     # run test
     echo "Running tests on https://127.0.0.1:${PORT_HTTPS}..."
+    # API_SERVER_HTTP_ENDPOINT is used in some tests where calls to the HTTP explorer backend API are needed.
+    # Example: calls via SDK to the HTTPS endpoint don't work with a self-signed certificate hence we use the
+    # HTTP endpoint in the tests.
     docker run \
         -e URL="https://127.0.0.1:${PORT_HTTPS}" \
+        -e API_SERVER_HTTP_ENDPOINT="http://127.0.0.1:${PORT_API}" \
         --mount type=bind,source=./tests,target=/tests \
         --network host \
         explorer-test $@
