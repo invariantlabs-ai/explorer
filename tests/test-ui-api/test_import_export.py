@@ -63,6 +63,33 @@ async def test_upload_data(dataset_name, url, context, data_webarena_with_metada
     returned_object = await response.json()
     assert returned_object['name'] == dataset_name
     await util.async_delete_dataset_by_id(url, context, returned_object['id']) 
+
+async def test_reupload_dataset_with_same_name_fails(dataset_name, url, context, data_abc):
+    """Tests that uploading a dataset with the same name as an existing dataset fails."""
+    response = await context.request.post(url + '/api/v1/dataset/upload',
+                                    multipart={'file': {
+                                        'name': dataset_name + '.json',
+                                        'mimeType': 'application/octet-stream',
+                                        'buffer': data_abc.encode('utf-8')
+                                        },
+                                        'name': dataset_name})
+    await expect(response).to_be_ok()
+    returned_object = await response.json()
+    assert returned_object['name'] == dataset_name
+
+    # Create another dataset with the same name.
+    response = await context.request.post(url + '/api/v1/dataset/upload',
+                                    multipart={'file': {
+                                        'name': dataset_name + '.json',
+                                        'mimeType': 'application/octet-stream',
+                                        'buffer': data_abc.encode('utf-8')
+                                        },
+                                        'name': dataset_name})
+    # This should result in an error.
+    assert response.status == 400
+    assert "Dataset with the same name already exists" in await response.text()
+
+    await util.async_delete_dataset_by_id(url, context, returned_object['id']) 
        
 async def test_reupload_api(url, context, dataset_name, data_webarena_with_metadata):
     

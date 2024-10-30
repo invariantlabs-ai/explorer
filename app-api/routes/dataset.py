@@ -1,6 +1,9 @@
+"""Defines routes for APIs related to dataset."""
+
 import copy
 import datetime
 import json
+import re
 import uuid
 from typing import Annotated
 from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
@@ -18,10 +21,10 @@ from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
 from pydantic import ValidationError
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func
-import re
 
 # dataset routes
 dataset = FastAPI()
@@ -37,48 +40,72 @@ def is_duplicate(user_id, name) -> bool:
 
 
 @dataset.post("/create")
-async def create(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+async def create(
+    request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
+    """Create a dataset."""
     user_id = userinfo["sub"]
     if user_id is None:
-        raise HTTPException(status_code=401, detail="Must be authenticated to create a dataset")
+        raise HTTPException(
+            status_code=401, detail="Must be authenticated to create a dataset"
+        )
 
     data = await request.json()
     name = data.get("name")
     if name is None:
         raise HTTPException(status_code=400, detail="Name must be provided")
-    if is_duplicate(user_id, name):
-        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
     metadata = data.get("metadata", dict())
     metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     with Session(db()) as session:
         dataset = Dataset(
-            id=uuid.uuid4(),
-            user_id=user_id,
-            name=name,
-            extra_metadata=metadata
+            id=uuid.uuid4(), user_id=user_id, name=name, extra_metadata=metadata
         )
         dataset.extra_metadata = metadata
         session.add(dataset)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            if "_user_id_name_uc" in str(e.orig):
+                raise HTTPException(
+                    status_code=400, detail="Dataset with the same name already exists"
+                ) from e
+            raise HTTPException(
+                status_code=400, detail="An integrity error occurred"
+            ) from e
         return dataset_to_json(dataset)
 
 @dataset.post("/upload")
-async def upload_file(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)], file: UploadFile = File(...)):
+async def upload_file(
+    request: Request,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    file: UploadFile = File(...),
+):
+    """Create a dataset via file upload."""
     # get name from the form
     name = (await request.form()).get("name")
     user_id = userinfo["sub"]
     if user_id is None:
-        raise HTTPException(status_code=401, detail="Must be authenticated to upload a dataset")
-    if is_duplicate(user_id, name):
-        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
+        raise HTTPException(
+            status_code=401, detail="Must be authenticated to upload a dataset"
+        )
 
     with Session(db()) as session:
         lines = file.file.readlines()
         dataset = import_jsonl(session, name, user_id, lines)
-        session.commit()
-    
+        try:
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            if "_user_id_name_uc" in str(e.orig):
+                raise HTTPException(
+                    status_code=400, detail="Dataset with the same name already exists"
+                ) from e
+            raise HTTPException(
+                status_code=400, detail="An integrity error occurred"
+            ) from e
         return dataset_to_json(dataset)
 
 ########################################
