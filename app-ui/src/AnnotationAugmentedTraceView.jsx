@@ -76,14 +76,13 @@ export function AnnotationAugmentedTraceView(props) {
   // Callback functions to update annotations count on the Sidebad.
   const { onAnnotationCreate, onAnnotationDelete } = props;
 
-  // record is the trace expanded to decide show "expand all" or "collapse all" button
+  // record if the trace is expanded to decide show "expand all" or "collapse all" button
   const [is_all_expanded,setAllExpand] = useState(true);
 
   // expand all messages
   const onExpandAll = () => {
     setAllExpand(true);
     events.expandAll?.fire();
-
   }
 
   // collapse all messages
@@ -171,16 +170,16 @@ export function AnnotationAugmentedTraceView(props) {
       <div className='vr' />
       {activeTrace && <>
       {is_all_expanded?(
-        <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="collapse all"><BsArrowsCollapse /></button>        
+        <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>        
       ) : (
-        <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="expand all"><BsArrowsExpand /></button>
+        <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
       )}
       <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
         <button className='inline icon' onClick={(e) => {
           e.stopPropagation()
         }}
         data-tooltip-id="button-tooltip" 
-        data-tooltip-content="download"
+        data-tooltip-content="Download"
         >
           <BsDownload />
         </button>

@@ -205,7 +205,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             {pageShouldRedirectToSignup && <SignUp />}
             {!pageShouldRedirectToSignup && !pageShouldRedirectToLogin && props.children}
         </div>
-        <Tooltip id="button-tooltip" place="top"/>
+        <Tooltip id="button-tooltip" place="bottom"/>
     </>;
 }
 
