@@ -29,14 +29,15 @@ from sqlalchemy.sql import func
 # dataset routes
 dataset = FastAPI()
 
-def is_duplicate(user_id, name) -> bool:
-    """Check if a dataset with the same name already exists."""
-    with Session(db()) as session:
-        dataset = session.query(Dataset).filter(and_(Dataset.user_id == user_id, Dataset.name == name)).first()
-        if dataset is not None:
-            return True
-            # raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
-    return False
+def handle_dataset_creation_integrity_error(error: IntegrityError):
+    """Handle integrity error for dataset creation."""
+    if "_user_id_name_uc" in str(error.orig):
+        raise HTTPException(
+            status_code=400, detail="Dataset with the same name already exists"
+        ) from error
+    raise HTTPException(
+        status_code=400, detail="An integrity error occurred"
+    ) from error
 
 
 @dataset.post("/create")
@@ -68,13 +69,7 @@ async def create(
             session.commit()
         except IntegrityError as e:
             session.rollback()
-            if "_user_id_name_uc" in str(e.orig):
-                raise HTTPException(
-                    status_code=400, detail="Dataset with the same name already exists"
-                ) from e
-            raise HTTPException(
-                status_code=400, detail="An integrity error occurred"
-            ) from e
+            handle_dataset_creation_integrity_error(e)
         return dataset_to_json(dataset)
 
 @dataset.post("/upload")
@@ -99,13 +94,7 @@ async def upload_file(
             session.commit()
         except IntegrityError as e:
             session.rollback()
-            if "_user_id_name_uc" in str(e.orig):
-                raise HTTPException(
-                    status_code=400, detail="Dataset with the same name already exists"
-                ) from e
-            raise HTTPException(
-                status_code=400, detail="An integrity error occurred"
-            ) from e
+            handle_dataset_creation_integrity_error(e)
         return dataset_to_json(dataset)
 
 ########################################
