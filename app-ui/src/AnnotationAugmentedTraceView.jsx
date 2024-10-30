@@ -73,19 +73,28 @@ export function AnnotationAugmentedTraceView(props) {
   const [filtered_annotations, setFilteredAnnotations] = useState({})
   // errors from analyzer annotations
   const [errors, setErrors] = useState([])
+  // Callback functions to update annotations count on the Sidebad.
+  const { onAnnotationCreate, onAnnotationDelete } = props;
+
+  // record if the trace is expanded to decide show "expand all" or "collapse all" button
+  const [is_all_expanded,setAllExpand] = useState(true);
 
   // expand all messages
   const onExpandAll = () => {
-    events.expandAll?.fire()
+    setAllExpand(true);
+    events.expandAll?.fire();
   }
 
   // collapse all messages
   const onCollapseAll = () => {
+    setAllExpand(false);
     events.collapseAll?.fire()
   }
 
-  // Callback functions to update annotations count on the Sidebad.
-  const { onAnnotationCreate, onAnnotationDelete } = props;
+  // whenever activeTrace changed, the trace is defaultly expanded, set the button to be collapse
+  useEffect(()=>{
+    setAllExpand(true);
+  },[activeTrace])
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -160,12 +169,18 @@ export function AnnotationAugmentedTraceView(props) {
       <div className='spacer' />
       <div className='vr' />
       {activeTrace && <>
-      <button className="inline icon" onClick={onCollapseAll}><BsArrowsCollapse /></button>
-      <button className="inline icon" onClick={onExpandAll}><BsArrowsExpand /></button>
+      {is_all_expanded?(
+        <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>        
+      ) : (
+        <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
+      )}
       <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
         <button className='inline icon' onClick={(e) => {
           e.stopPropagation()
-        }}>
+        }}
+        data-tooltip-id="button-tooltip" 
+        data-tooltip-content="Download"
+        >
           <BsDownload />
         </button>
       </a>
@@ -196,7 +211,6 @@ function TraceViewContent(props) {
       <EmptyComponent/>
     </div>
   }
-
   return <RenderedTrace
       // the trace events
       trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
