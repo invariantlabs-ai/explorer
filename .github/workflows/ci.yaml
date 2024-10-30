@@ -7,7 +7,7 @@ on:
     branches:
       - main
 jobs:
-  build:
+  test:
     name: Build & Test
     timeout-minutes: 30
     runs-on: self-hosted
@@ -15,9 +15,6 @@ jobs:
     steps:
     - name: Stop all running docker containers
       run: docker stop $(docker ps -a -q)
-
-    - name: Clean up Docker containers
-      run: docker system prune --all --force
 
     - name: Checkout
       uses: actions/checkout@v1
