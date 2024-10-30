@@ -13,6 +13,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
+    - name: Stop all running docker containers
+      run: docker stop $(docker ps -a -q)
+
     - name: Clean up Docker containers
       run: docker system prune --all --force
 
