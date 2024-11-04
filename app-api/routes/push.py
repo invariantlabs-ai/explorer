@@ -9,7 +9,7 @@ from invariant.runtime.input import Input
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from routes.apikeys import APIIdentity
-from models.datasets_and_traces import db, Trace, Annotation
+from models.datasets_and_traces import db, Dataset, Trace, Annotation
 from models.queries import load_trace, load_dataset
 from typing import Annotated
 from fastapi import Request, Depends
@@ -34,7 +34,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     
     messages = payload.get("messages")
     annotations = payload.get("annotations")
-    dataset = payload.get("dataset", None)
+    dataset_name = payload.get("dataset", None)
     metadata = payload.get("metadata")
 
     try:
@@ -45,7 +45,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         # check other properties
         assert annotations is None or type(annotations) == list, "annotations must be a list of annotations"
-        assert dataset is None or type(dataset) == str, "dataset must be a string"
+        assert dataset_name is None or type(dataset_name) == str, "dataset name must be a string"
         assert metadata is None or type(metadata) == list, "metadata must be a list of metadata"
         
         # make sure if present that messages, annotations, and metadata are all the same length
@@ -65,19 +65,41 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     with Session(db()) as session:
         next_index = 0
         dataset_id = None
-        
-        if dataset is not None:
-            # resolve dataset by name and user
-            dataset = load_dataset(session, {'User.username': userinfo.get("username"), 'name': dataset}, str(userid), allow_public=False, return_user=False)
-            # make sure dataset exists and is accessible to user
-            if dataset is None: raise HTTPException(status_code=404, detail="Dataset not found")
 
-            # determine next index
-            next_index = (session.query(Trace.index).filter(Trace.dataset_id == dataset.id).order_by(Trace.index.desc()).first() or (0,))[0] + 1
+        if dataset_name is not None:
+            # Resolve dataset by name and user.
+            try:
+                dataset = load_dataset(
+                    session,
+                    {"User.username": userinfo.get("username"), "name": dataset_name},
+                    str(userid),
+                    allow_public=False,
+                    return_user=False,
+                )
+                # Determine the next index for the traces.
+                next_index = (
+                    session.query(Trace.index)
+                    .filter(Trace.dataset_id == dataset.id)
+                    .order_by(Trace.index.desc())
+                    .first()
+                    or (0,)
+                )[0] + 1
+            except HTTPException as e:
+                # If the dataset is not found, create the dataset.
+                if e.status_code == 404 and e.detail == "Dataset not found":
+                    dataset = Dataset(
+                        id=uuid.uuid4(),
+                        user_id=str(userid),
+                        name=dataset_name,
+                        extra_metadata=dict(),
+                    )
+                    session.add(dataset)
+                    next_index = 1
+                else:
+                    raise e
             dataset_id = dataset.id
 
         result_ids = []
-
         for i, msg in enumerate(messages):
             message_content = msg
             message_metadata = metadata[i]
@@ -123,5 +145,5 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         
         return {
             "id": result_ids,
-            **({"dataset": dataset.name} if dataset else {})
+            **({"dataset": dataset.name} if dataset_id else {})
         }

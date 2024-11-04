@@ -2,6 +2,7 @@
 
 import os
 import sys
+import uuid
 from typing import Dict, List
 
 import pytest
@@ -171,12 +172,8 @@ async def test_create_request_and_push_trace_without_dataset(
     assert len(response.id) == 2
     assert response.dataset is None
 
-    trace_response_1 = await context.request.get(
-        f"{url}/api/v1/trace/{response.id[0]}"
-    )
-    trace_response_2 = await context.request.get(
-        f"{url}/api/v1/trace/{response.id[1]}"
-    )
+    trace_response_1 = await context.request.get(f"{url}/api/v1/trace/{response.id[0]}")
+    trace_response_2 = await context.request.get(f"{url}/api/v1/trace/{response.id[1]}")
     await expect(trace_response_1).to_be_ok()
     await expect(trace_response_2).to_be_ok()
     trace_1 = await trace_response_1.json()
@@ -198,7 +195,7 @@ async def test_create_request_and_push_trace_without_dataset(
     "include_annotations, include_metadata",
     [(True, True), (True, False), (False, True), (False, False)],
 )
-async def test_create_request_and_push_trace_with_dataset(
+async def test_create_request_and_push_trace_with_existing_dataset(
     context,
     url,
     data_abc,
@@ -246,3 +243,57 @@ async def test_create_request_and_push_trace_with_dataset(
             push_traces_metadata,
             include_metadata,
         )
+
+
+@pytest.mark.parametrize(
+    "include_annotations, include_metadata",
+    [(True, True), (True, False), (False, True), (False, False)],
+)
+async def test_create_request_and_push_trace_while_creating_dataset(
+    context,
+    url,
+    invariant_client,
+    push_traces_messages,
+    push_traces_annotations,
+    include_annotations,
+    push_traces_metadata,
+    include_metadata,
+):  # pylint: disable=too-many-arguments disable=too-many-locals
+    """Test creating request and pushing traces while creating corresponding datasets."""
+    annotations = push_traces_annotations if include_annotations else None
+    metadata = push_traces_metadata if include_metadata else None
+    # This dataset doesn't exist and will be created as part of the push traces request.
+    dataset_name = "test_dataset" + str(uuid.uuid4())
+    response = invariant_client.create_request_and_push_trace(
+        messages=push_traces_messages,
+        annotations=annotations,
+        metadata=metadata,
+        dataset=dataset_name,
+    )
+
+    assert len(response.id) == 2
+    assert response.dataset == dataset_name
+
+    trace_response_1 = await context.request.get(f"{url}/api/v1/trace/{response.id[0]}")
+    trace_response_2 = await context.request.get(f"{url}/api/v1/trace/{response.id[1]}")
+    await expect(trace_response_1).to_be_ok()
+    await expect(trace_response_2).to_be_ok()
+    trace_1 = await trace_response_1.json()
+    trace_2 = await trace_response_2.json()
+
+    validate_trace_responses(
+        trace_1,
+        trace_2,
+        push_traces_messages,
+        push_traces_annotations,
+        include_annotations,
+        push_traces_metadata,
+        include_metadata,
+    )
+
+    # Clean up the dataset created.
+    dataset_id = trace_1["dataset"]
+    dataset_delete_response = await context.request.delete(
+        f"{url}/api/v1/dataset/byid/{dataset_id}"
+    )
+    await expect(dataset_delete_response).to_be_ok()
