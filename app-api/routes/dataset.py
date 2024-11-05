@@ -19,6 +19,7 @@ from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
                             search_term_mappings, trace_to_exported_json,
                             trace_to_json)
 from pydantic import ValidationError
+from routes.apikeys import APIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -703,3 +704,81 @@ async def delete_policy(
         flag_modified(dataset, 'extra_metadata')
         session.commit()
         return dataset_to_json(dataset)
+
+@dataset.get("/metadata/{dataset_name}")
+async def get_metadata(
+    dataset_name: str, userinfo: Annotated[dict, Depends(APIIdentity)]
+):
+    """Get metadata for a dataset."""
+    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
+    user_id = userinfo.get("sub")
+
+    with Session(db()) as session:
+        dataset_response = load_dataset(
+            session, {"name": dataset_name}, user_id, allow_public=True, return_user=False
+        )
+        metadata_response = dataset_response.extra_metadata
+        metadata_response.pop("policies", None)
+        return {
+            **metadata_response,
+        }
+
+
+@dataset.put("/metadata/{dataset_name}")
+async def update_metadata(
+    dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
+):
+    """Update metadata for a dataset."""
+    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
+    user_id = userinfo.get("sub")
+
+    payload = await request.json()
+
+    # Validate payload.
+    # Only allow updating the benchmark and accuracy_score fields.
+    # If the benchmark field is provided, it must be a non-empty string.
+    # If the accuracy_score field is provided, it must be a non-negative float or int.
+    if "benchmark" not in payload and "accuracy_score" not in payload:
+        raise HTTPException(
+            status_code=400,
+            detail="Request must contain at least one of 'benchmark' or 'accuracy_score'",
+        )
+    if "benchmark" in payload and (
+        not isinstance(payload["benchmark"], str) or not payload["benchmark"].strip()
+    ):
+        raise HTTPException(
+            status_code=400, detail="Benchmark must be a non-empty string if provided"
+        )
+    if "accuracy_score" in payload and (
+        not isinstance(payload["accuracy_score"], (int, float))
+        or payload["accuracy_score"] < 0
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Accuracy score must be a non-negative float or int if provided",
+        )
+
+    with Session(db()) as session:
+        dataset_response = load_dataset(
+            session, {"name": dataset_name}, user_id, allow_public=True, return_user=False
+        )
+        if str(dataset_response.user_id) != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Not allowed to update metadata for this dataset",
+            )
+
+        if "benchmark" in payload:
+            dataset_response.extra_metadata["benchmark"] = payload["benchmark"]
+        if "accuracy_score" in payload:
+            dataset_response.extra_metadata["accuracy_score"] = payload[
+                "accuracy_score"
+            ]
+
+        flag_modified(dataset_response, "extra_metadata")
+        session.commit()
+        metadata_response = dataset_response.extra_metadata
+        metadata_response.pop("policies", None)
+        return {
+            **metadata_response,
+        }
