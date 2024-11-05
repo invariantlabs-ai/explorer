@@ -138,12 +138,12 @@ async def test_update_metadata(context, url, data_abc):
             context,
             url,
             dataset["name"],
-            data={"benchmark": "random", "accuracy_score": 123},
+            data={"benchmark": "random", "accuracy": 12.3},
         )
         expected_metadata = {
             **dataset.get("extra_metadata", {}),
             "benchmark": "random",
-            "accuracy_score": 123,
+            "accuracy": 12.3,
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -156,12 +156,12 @@ async def test_update_metadata(context, url, data_abc):
             context,
             url,
             dataset["name"],
-            data={"benchmark": "random2", "accuracy_score": 1234},
+            data={"benchmark": "random2", "accuracy": 5},
         )
         expected_metadata = {
             **dataset.get("extra_metadata", {}),
             "benchmark": "random2",
-            "accuracy_score": 1234,
+            "accuracy": 5,
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -171,7 +171,7 @@ async def test_update_metadata_for_non_existent_dataset_fails(context, url):
     """Tests that updating metadata of a non-existent dataset fails."""
     update_metadata_response = await context.request.put(
         f"{url}/api/v1/dataset/metadata/some_dataset",
-        data={"benchmark": "random", "accuracy_score": 123},
+        data={"benchmark": "random", "accuracy": 123},
     )
     assert update_metadata_response.status == 404
 
@@ -182,7 +182,7 @@ async def test_update_metadata_created_by_different_user_fails(url, context, dat
         # A different user tries to update the metadata for the dataset.
         update_metadata_response = await context.request.put(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",
-            data={"benchmark": "random", "accuracy_score": 123},
+            data={"benchmark": "random", "accuracy": 123},
             headers={"referer": "noauth=user1"},
         )
         assert update_metadata_response.status == 401
@@ -193,7 +193,7 @@ async def test_update_metadata_created_by_different_user_fails(url, context, dat
         # A different user tries to update the metadata for the dataset.
         update_metadata_response = await context.request.put(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",
-            data={"benchmark": "random", "accuracy_score": 123},
+            data={"benchmark": "random", "accuracy": 123},
             headers={"referer": "noauth=user1"},
         )
         assert update_metadata_response.status == 403
@@ -208,7 +208,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
 
     assert update_metadata_response.status == 400
     assert (
-        "Request must contain at least one of 'benchmark' or 'accuracy_score'"
+        "Request must contain at least one of 'benchmark' or 'accuracy'"
         in await update_metadata_response.text()
     )
 
@@ -218,7 +218,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Request must contain at least one of 'benchmark' or 'accuracy_score'"
+        "Request must contain at least one of 'benchmark' or 'accuracy'"
         in await update_metadata_response.text()
     )
 
@@ -242,10 +242,10 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         in await update_metadata_response.text()
     )
 
-    # Update metadata with invalid accuracy_score type.
+    # Update metadata with invalid accuracy type.
     update_metadata_response = await context.request.put(
         f"{url}/api/v1/dataset/metadata/some_dataset",
-        data={"accuracy_score": "random-text"},
+        data={"accuracy": "random-text"},
     )
     assert update_metadata_response.status == 400
     assert (
@@ -253,9 +253,9 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         in await update_metadata_response.text()
     )
 
-    # Update metadata with negative accuracy_score.
+    # Update metadata with negative accuracy.
     update_metadata_response = await context.request.put(
-        f"{url}/api/v1/dataset/metadata/some_dataset", data={"accuracy_score": -5}
+        f"{url}/api/v1/dataset/metadata/some_dataset", data={"accuracy": -5}
     )
     assert update_metadata_response.status == 400
     assert (

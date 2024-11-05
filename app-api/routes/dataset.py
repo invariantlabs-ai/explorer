@@ -735,13 +735,13 @@ async def update_metadata(
     payload = await request.json()
 
     # Validate payload.
-    # Only allow updating the benchmark and accuracy_score fields.
+    # Only allow updating the benchmark and accuracy fields.
     # If the benchmark field is provided, it must be a non-empty string.
-    # If the accuracy_score field is provided, it must be a non-negative float or int.
-    if "benchmark" not in payload and "accuracy_score" not in payload:
+    # If the accuracy field is provided, it must be a non-negative float or int.
+    if "benchmark" not in payload and "accuracy" not in payload:
         raise HTTPException(
             status_code=400,
-            detail="Request must contain at least one of 'benchmark' or 'accuracy_score'",
+            detail="Request must contain at least one of 'benchmark' or 'accuracy'",
         )
     if "benchmark" in payload and (
         not isinstance(payload["benchmark"], str) or not payload["benchmark"].strip()
@@ -749,9 +749,9 @@ async def update_metadata(
         raise HTTPException(
             status_code=400, detail="Benchmark must be a non-empty string if provided"
         )
-    if "accuracy_score" in payload and (
-        not isinstance(payload["accuracy_score"], (int, float))
-        or payload["accuracy_score"] < 0
+    if "accuracy" in payload and (
+        not isinstance(payload["accuracy"], (int, float))
+        or payload["accuracy"] < 0
     ):
         raise HTTPException(
             status_code=400,
@@ -770,9 +770,9 @@ async def update_metadata(
 
         if "benchmark" in payload:
             dataset_response.extra_metadata["benchmark"] = payload["benchmark"]
-        if "accuracy_score" in payload:
-            dataset_response.extra_metadata["accuracy_score"] = payload[
-                "accuracy_score"
+        if "accuracy" in payload:
+            dataset_response.extra_metadata["accuracy"] = payload[
+                "accuracy"
             ]
 
         flag_modified(dataset_response, "extra_metadata")
