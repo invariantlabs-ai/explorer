@@ -142,6 +142,7 @@ case $command in
     ci $@
     ;;
   *)
-    dev_run_test $@
+    echo "unsuppored command: $command"
+    exit 1
     ;;
 esac

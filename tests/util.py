@@ -26,10 +26,14 @@ def name():
     return f"test-{str(uuid4())}"
 
 @pytest.fixture
-async def context(request):
+async def context(request, slow_mo=250):
+    if "playwright" in request.keywords:
+        kwargs = request.keywords["playwright"].kwargs
+        if "slow_mo" in kwargs:
+            slow_mo = kwargs["slow_mo"]
     playwright = await async_playwright().start()
     # launch a chrome browser that ignores certificate errors
-    browser = await playwright.firefox.launch(headless=True, slow_mo=250)
+    browser = await playwright.firefox.launch(headless=True, slow_mo=slow_mo)
     context = await browser.new_context(ignore_https_errors=True)
     return context
 

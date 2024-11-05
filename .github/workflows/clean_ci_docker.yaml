@@ -1,0 +1,16 @@
+name: Clean Explorer CI
+on:
+  schedule:
+    - cron: '22 2 * * 6' # At 02:22, only on Saturday
+jobs:
+  clean-docker:
+      name: Remove Docker Images
+      timeout-minutes: 10
+      runs-on: self-hosted
+      steps:
+       - name: Stop all running docker containers
+         run: docker stop $(docker ps -a -q)
+
+       - name: Clean up Docker containers
+         run: docker system prune --all --force
+
