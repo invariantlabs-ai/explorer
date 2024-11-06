@@ -9,6 +9,7 @@ import { RemoteResource, useRemoteResource } from './RemoteResource'
 import { useUserInfo } from './UserInfo'
 import { Metadata } from './lib/metadata'
 import { config } from './Config'
+import { useTelemetry } from './telemetry'
 
 
 interface Query {
@@ -112,12 +113,17 @@ function DatasetView() {
   const navigate = useNavigate()
   // obtains the active user's information (if signed in)
   const userInfo = useUserInfo()
-
+  // telemetry
+  const telemetry = useTelemetry();
   // state to track the selected tab
-  const [selectedTab, setSelectedTab] = React.useState('traces');
+  const [selectedTab, _setSelectedTab] = React.useState('traces');
+  const setSelectedTab = telemetry.wrap(_setSelectedTab, 'dataset.select-tab');
 
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
+    // log event
+    telemetry.capture('dataset.public-change', { public: e.target.checked })
+    // update the dataset's public status
     datasetLoader.update(null, { content: e.target.checked })
       .then(() => {
         datasetLoader.refresh()
@@ -145,8 +151,10 @@ function DatasetView() {
       return undefined;
     }
 
-    // We don't want to show the policies as part of the Metadata component.
-    const { policies, ...filteredMetadata } = metadata;
+    // 1. we don't want to show the policies as part of the Metadata component.
+    // 2. we don't show the featureset as part of the Metadata component.
+    const { policies, featureset, ...filteredMetadata } = metadata;
+
     return filteredMetadata;
   }
 

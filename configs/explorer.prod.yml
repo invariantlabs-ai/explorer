@@ -17,3 +17,6 @@ authentication_client_id_prefix: invariant
 
 # whether this is a private instance or not (private instances do not offer a public homepage or any form of anonymous access)
 private: false
+
+# whether telemetry is enabled for this instance
+telemetry: true

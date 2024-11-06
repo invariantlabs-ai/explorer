@@ -15,6 +15,7 @@ import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import logo from './assets/invariant.svg';
 import { EmptyDatasetInstructions } from './components/EmptyDataset';
+import { useTelemetry } from './telemetry';
 
 /**
  * Metadata for a dataset that we receive from the server.
@@ -23,7 +24,7 @@ export interface DatasetData {
   id: string
   name: string
   num_traces: number
-  extra_metadata: string
+  extra_metadata: Record<string, any>
   user_id: string
 }
 
@@ -44,6 +45,16 @@ function useDataset(username: string, datasetname: string): [DatasetData | null,
   }, [username, datasetname])
 
   return [dataset, error]
+}
+
+class FeatureSet {
+  constructor(public flags: Record<string, boolean>) { 
+    this.flags = flags || {}
+  }
+
+  has(flag: string): boolean {
+    return this.flags[flag] || true
+  }
 }
 
 /**
@@ -315,6 +326,7 @@ function ShareModalContent(props) {
 // the current user does not have permission to view sharing status)
 function useTraceShared(traceId: string | null | undefined): [boolean | null, (shared: boolean) => void] {
   const [shared, setShared] = React.useState(false as boolean | null)
+  const telemetry = useTelemetry()
 
   React.useEffect(() => {
     if (!traceId) { return }
@@ -337,11 +349,17 @@ function useTraceShared(traceId: string | null | undefined): [boolean | null, (s
     if (shared) {
       fetch(`/api/v1/trace/${traceId}/shared`, {
         method: 'PUT'
-      }).then(() => setShared(true)).catch(e => alert("Error sharing trace"))
+      }).then(() => {
+        setShared(true)
+        telemetry?.capture('traceview.shared')
+      }).catch(e => alert("Error sharing trace"))
     } else {
       fetch(`/api/v1/trace/${traceId}/shared`, {
         method: 'DELETE'
-      }).then(() => setShared(false)).catch(e => alert("Error unsharing trace"))
+      }).then(() => {
+        setShared(false)
+        telemetry?.capture('traceview.unshared')
+      }).catch(e => alert("Error unsharing trace"))
     }
   }, [traceId])
 
@@ -495,6 +513,8 @@ export function Traces() {
   const navigate = useNavigate()
   // load the dataset metadata
   const [dataset, datasetLoadingError] = useDataset(props.username, props.datasetname)
+  // feature set enabled for this dataset
+  const featureSet = new FeatureSet(dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {})
   // load information about the traces in the dataset
   const [traces, refresh] = useTraces(props.username, props.datasetname)
   // trigger whether share modal is shown
@@ -537,8 +557,8 @@ export function Traces() {
     }
   }, [props.traceIndex, traces, displayedIndices])
 
+  // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
   useEffect(() => {
-    // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
     if (traces && activeTrace && !activeTrace.fetched) {
       fetchTrace(activeTrace).then(change => {
         if (!change.updated) return;
@@ -704,7 +724,7 @@ function SearchBox(props) {
           <li onClick={(e) => { addFilter(e, 'not:annotated') }} >No annotation</li>
         </ul>
       </div>
-      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
+      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder={"Search"} />
       <button className='search-submit' onClick={() => { props.searchNow() }}>
         {!props.searching && <BsSearch />}
         {props.searching && <ClockLoader size={'15px'} />}
@@ -732,6 +752,9 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
 
   // initial scroll to active trace completed
   const [scrolled, setScrolled] = React.useState(false)
+
+  // get telemetry instance
+  const telemetry = useTelemetry()
 
   // when the active indices change, scroll to the active trace
   useEffect(() => {
@@ -775,6 +798,11 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
       alert("Saved search")
     })
   }
+
+  const onInvariantGrouping = (e) => {
+    setSearchQuery('is:invariant');
+    telemetry.capture('traceview.search-invariant-grouping', { query: 'is:invariant' })
+  }
   
   const viewItems : React.ReactNode[] = [];
   if (traces) {
@@ -798,7 +826,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
   }
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
-      <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} />
+      <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching}/>
       {searchQuery &&
         <button className='header-short toggle icon' onClick={onSave}
           data-tooltip-id="button-tooltip" data-tooltip-content="Save Search">
@@ -810,7 +838,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
         <BsArrowClockwise />
       </button>
       <SidebarStatus traces={traces} searching={props.searching} />
-      <button className='header-short toggle icon img-button' onClick={() => setSearchQuery('is:invariant')}
+      <button className='header-short toggle icon img-button' onClick={onInvariantGrouping}
          data-tooltip-id="button-tooltip" data-tooltip-content="Group Traces by Analyzer">
         <img src={logo} style={{width: '1.5em'}}/>
       </button>
@@ -851,6 +879,9 @@ function TraceRow(props: { trace: Trace | null, index: number, active: boolean, 
   const { index, username, datasetname, searchQuery, traces } = props
   // keep reference to trace
   const [trace, setTrace] = React.useState(props.trace)
+  // use the telemetry hook to log user interactions
+  const telemetry = useTelemetry()
+  
   // load full trace via LightweightTraces object
   useEffect(() => {
     const listener = (trace: Trace) => {
@@ -866,7 +897,7 @@ function TraceRow(props: { trace: Trace | null, index: number, active: boolean, 
 
   const active = trace.index === props.activeTraceIndex
   return <li className={'trace ' + (active ? 'active' : '')}>
-    <Link to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
+    <Link onClick={() => telemetry?.capture('select-trace', { name: trace.name })} to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
       Run {trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
     </Link>
   </li>

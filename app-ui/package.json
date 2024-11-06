@@ -19,6 +19,7 @@
     "json-source-map": "^0.6.1",
     "localforage": "^1.10.0",
     "match-sorter": "^6.3.4",
+    "posthog-js": "^1.181.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.1.0",

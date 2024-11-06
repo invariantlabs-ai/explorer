@@ -1,5 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { sharedFetch } from './SharedFetch'
+import { usePostHog } from 'posthog-js/react'
+import { HAS_CONSENT, SUPPORTS_TELEMETRY } from './telemetry'
 
 export interface UserInfo {
   id: string
@@ -28,6 +30,7 @@ let USER_INFO_CACHE = {
 
 export function useUserInfo(cached = true): UserInfo | null {
   const [userInfo, setUserInfo] = React.useState(null as UserInfo | null)
+  const posthog = usePostHog()
 
   React.useEffect(() => {
     // check if there is a cached value not older than 5 minutes
@@ -53,6 +56,20 @@ export function useUserInfo(cached = true): UserInfo | null {
       })
       .catch(() => setUserInfo(ANON))
   }, [])
+
+  // once logged in, identify the user in posthog
+  useEffect(() => {
+    // first make sure we set 'consent' in localStorage
+    if (!HAS_CONSENT && userInfo?.loggedIn && SUPPORTS_TELEMETRY) {
+      window.localStorage.setItem('consent', 'true')
+      // reload
+      window.location.reload()
+    }
+
+    if (userInfo?.loggedIn) {
+      posthog?.identify(userInfo.id, {})
+    }
+  }, [userInfo?.id])
 
   return userInfo;
 }

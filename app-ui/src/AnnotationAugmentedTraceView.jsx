@@ -11,6 +11,7 @@ import { AnalysisResult } from './lib/analysis_result';
 import { openInPlayground } from './lib/playground';
 import { HighlightedJSON } from './lib/traceview/highlights';
 import { RenderedTrace } from './lib/traceview/traceview';
+import { useTelemetry } from './telemetry';
 
 import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash, BsViewList } from "react-icons/bs";
 
@@ -79,16 +80,33 @@ export function AnnotationAugmentedTraceView(props) {
   // record if the trace is expanded to decide show "expand all" or "collapse all" button
   const [is_all_expanded,setAllExpand] = useState(true);
 
+  // get telemetry object
+  const telemetry = useTelemetry()
+
   // expand all messages
   const onExpandAll = () => {
     setAllExpand(true);
+    telemetry.capture('traceview.expand-all')
     events.expandAll?.fire();
   }
 
   // collapse all messages
   const onCollapseAll = () => {
     setAllExpand(false);
+    telemetry.capture('traceview.collapse-all')
     events.collapseAll?.fire()
+  }
+
+  // open in playground
+  const onOpenInPlayground = () => {
+    openInPlayground(activeTrace?.messages || []);
+    telemetry.capture('traceview.open-in-playground')
+  }
+
+  // on share
+  const onShare = () => {
+    props.onShare();
+    telemetry.capture('traceview.share-modal-opened')
   }
 
   // whenever activeTrace changed, the trace is defaultly expanded, set the button to be collapse
@@ -177,6 +195,7 @@ export function AnnotationAugmentedTraceView(props) {
       <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
         <button className='inline icon' onClick={(e) => {
           e.stopPropagation()
+          telemetry.capture('traceview.download')
         }}
         data-tooltip-id="button-tooltip" 
         data-tooltip-content="Download"
@@ -186,8 +205,8 @@ export function AnnotationAugmentedTraceView(props) {
       </a>
       {props.actions}
       <div className='vr' />
-      <button className='inline' onClick={() => openInPlayground(activeTrace?.messages || [])}> <BsTerminal /> Open In Invariant</button>
-      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={props.onShare}>
+      <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>
+      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
       </>}
@@ -251,10 +270,13 @@ function Annotation(props) {
   const [submitting, setSubmitting] = useState(false)
   const user = props?.user
   const userInfo = useUserInfo()
+  
+  const telemetry = useTelemetry()
 
   const onDelete = () => {
     annotator.delete(props.id).then(() => {
       setComment('')
+      telemetry.capture('annotation.deleted')
       annotator.refresh()
       if (props.onAnnotationDelete) {
         props.onAnnotationDelete(props.traceIndex);
@@ -267,6 +289,7 @@ function Annotation(props) {
   const onUpdate = () => {
     annotator.update(props.id, { content: comment }).then(() => {
       setSubmitting(false)
+      telemetry.capture('annotation.updated')
       annotator.refresh()
       setEditing(false)
     }).catch((error) => {
@@ -307,6 +330,8 @@ function AnnotationEditor(props) {
   const [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const textareaRef = useRef(null)
   const userInfo = useUserInfo()
+  
+  const telemetry = useTelemetry()
 
   const onSave = () => {
     if (!userInfo?.loggedIn) {
@@ -319,6 +344,7 @@ function AnnotationEditor(props) {
 
     annotator.create({ address: props.address, content: content }).then(() => {
       setSubmitting(false)
+      telemetry.capture('annotation.created')
       annotator.refresh()
       setContent('')
       if (props.onAnnotationCreate) {

@@ -78,7 +78,7 @@ header.top {
       position: relative;
       left: 0pt;
       transition: left 0.1s;
-      
+
       button {
         position: absolute;
         top: 5pt;
@@ -130,7 +130,8 @@ header.top {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         margin-bottom: -5pt;
 
-        a, a:visited {
+        a,
+        a:visited {
           text-decoration: none;
           color: inherit;
         }
@@ -169,7 +170,7 @@ header.top {
         margin-left: 10pt;
         margin-top: 5pt;
         margin-right: 10pt;
-        
+
         svg {
           margin-right: 8pt;
           position: relative;
@@ -200,6 +201,7 @@ header.top {
       .sidebar-background {
         background-color: rgba(0, 0, 0, 0.0);
       }
+
       ul {
         left: -250pt;
       }
@@ -268,11 +270,11 @@ header.top {
       transform: scale(0.8);
 
       img {
-          border-radius: 4pt;
-          overflow: hidden;
-          width: 25pt;
-          height: 25pt;
-          margin-top: 2pt;
+        border-radius: 4pt;
+        overflow: hidden;
+        width: 25pt;
+        height: 25pt;
+        margin-top: 2pt;
       }
     }
 
@@ -318,7 +320,8 @@ header.top {
             background-color: var(--color-highlight);
           }
 
-          a, a:visited {
+          a,
+          a:visited {
             display: block;
             color: rgb(28, 28, 28);
             text-decoration: none;
@@ -796,7 +799,7 @@ div.empty {
     flex-direction: row;
     font-size: 12pt;
     margin-right: 10pt;
-  
+
     label {
       margin-right: 5pt;
       font-size: 12pt;
@@ -826,7 +829,7 @@ div.empty {
       text-decoration: none;
       color: $text-color;
     }
-    
+
     button {
       margin-top: -50pt;
       width: 30pt;
@@ -836,6 +839,7 @@ div.empty {
       float: right;
       display: flexbox;
       justify-content: center;
+
       * {
         padding: 0pt;
         margin: 0pt;
@@ -849,7 +853,7 @@ div.empty {
     .count {
       float: right;
     }
-    
+
     .icon {
       min-height: 30pt;
     }
@@ -908,7 +912,7 @@ div.panel {
     background: transparent;
     background-color: transparent;
     width: calc(100vw - 0pt);
-    
+
     h1 {
       white-space: pre;
       text-overflow: ellipsis;
@@ -964,14 +968,14 @@ button.primary .shortcut {
     margin-top: 45pt;
     border-radius: 5pt;
     width: 250pt;
-    
+
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     position: relative;
     transition: margin-left 0.2s;
     height: calc(100vh - 100pt);
-    
+
     ul {
       overflow-y: auto;
       padding: 0pt;
@@ -1007,15 +1011,34 @@ button.primary .shortcut {
       li.seperator:first-of-type {
         margin-top: 0pt;
       }
-      li.seperator-severity-0 { background-color: lighten($color-primary, 27.5%); }
-      li.seperator-severity-1 { background-color: lighten($color-primary, 25%); }
-      li.seperator-severity-2 { background-color: lighten($color-primary, 22.5%); }
-      li.seperator-severity-3 { background-color: lighten($color-primary, 20%); }
-      li.seperator-severity-4 { background-color: lighten($color-primary, 17.5%); }
-      li.seperator-severity-5 { background-color: lighten($color-primary, 15%); }
+
+      li.seperator-severity-0 {
+        background-color: lighten($color-primary, 27.5%);
+      }
+
+      li.seperator-severity-1 {
+        background-color: lighten($color-primary, 25%);
+      }
+
+      li.seperator-severity-2 {
+        background-color: lighten($color-primary, 22.5%);
+      }
+
+      li.seperator-severity-3 {
+        background-color: lighten($color-primary, 20%);
+      }
+
+      li.seperator-severity-4 {
+        background-color: lighten($color-primary, 17.5%);
+      }
+
+      li.seperator-severity-5 {
+        background-color: lighten($color-primary, 15%);
+      }
+
       li.seperator {
         //background-color: lighten($color-primary, 15%);
-        color: white;//$color-button-primary;
+        color: white; //$color-button-primary;
         box-shadow: 0pt 0pt 1pt 0pt $color-primary;
         border-radius: 3pt;
         border-bottom: none;
@@ -1023,7 +1046,7 @@ button.primary .shortcut {
         position: sticky;
         top: 0;
         margin-top: 20pt;
-        
+
         .details {
           margin: 10pt 5pt;
           padding: 0;
@@ -1033,10 +1056,12 @@ button.primary .shortcut {
           font-size: 14pt;
           line-height: 18pt;
         }
+
         h2 {
           font-size: 10pt;
           line-height: 10pt;
         }
+
         span.icon {
           position: absolute;
           top: 10%;
@@ -1050,6 +1075,7 @@ button.primary .shortcut {
           justify-content: center;
           align-items: center;
           border-radius: 10pt;
+
           * {
             flex: 1;
           }
@@ -1099,7 +1125,7 @@ button.primary .shortcut {
         cursor: pointer;
       }
     }
-  
+
     header {
       flex-direction: row;
       align-items: flex-end;
@@ -1108,12 +1134,12 @@ button.primary .shortcut {
       position: relative;
       border-bottom: 1pt solid $border-color;
       flex-wrap: wrap;
-      height:auto;
-      
+      height: auto;
+
       .header-short {
         flex: 0 1 10%;
       }
-      
+
       .header-long {
         flex: 1 1 50%;
       }
@@ -1143,7 +1169,7 @@ button.primary .shortcut {
         opacity: 0.0;
       }
     }
-  } 
+  }
 
   .explorer {
     margin-top: 40pt;
@@ -1195,6 +1221,16 @@ button.share {
   border: 1pt solid #e1e4e8;
   width: 400pt;
   margin: auto;
+  border-radius: 5pt;
+
+  p>a {
+    color: $color-primary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 
   .signup-actions {
     position: static;
@@ -1203,6 +1239,10 @@ button.share {
     flex-direction: row;
     justify-content: flex-end;
     align-items: center;
+
+    a.button {
+      line-height: 35pt;;
+    }
 
     button {
       margin-left: 5pt;
@@ -1256,6 +1296,7 @@ button.share {
   span:nth-of-type(1) {
     display: inline;
   }
+
   span:nth-of-type(2) {
     display: none;
   }
@@ -1264,6 +1305,7 @@ button.share {
     span:nth-of-type(1) {
       display: none;
     }
+
     span:nth-of-type(2) {
       display: inline;
     }
@@ -1283,10 +1325,10 @@ header.toolbar h1 .time {
 
 header.top .sidebar {
   .sidebar-content .entity-list {
-    span.description { 
+    span.description {
       margin-left: 4pt;
     }
-    
+
     ul {
       box-shadow: none !important;
     }
@@ -1330,63 +1372,63 @@ header.top .sidebar {
   border: 1pt solid $border-color;
 
   h2 {
-      font-size: 12pt;
-      font-weight: bold;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      line-height: 20pt;
-      margin-right: -7pt;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    line-height: 20pt;
+    margin-right: -7pt;
 
-      a {
-          color: inherit;
-          text-decoration: none;
+    a {
+      color: inherit;
+      text-decoration: none;
 
-          &:hover {
-              text-decoration: underline;
-          }
+      &:hover {
+        text-decoration: underline;
       }
+    }
 
-      button {
-          font-size: 10pt;
-          height: 25pt;
-          padding: 4pt;
-          border-radius: 4pt;
-          margin-top: -2pt;
-      }
+    button {
+      font-size: 10pt;
+      height: 25pt;
+      padding: 4pt;
+      border-radius: 4pt;
+      margin-top: -2pt;
+    }
 
-      input {
-        margin-right: 10pt;
-      }
+    input {
+      margin-right: 10pt;
+    }
   }
 
   ul {
-      padding: 0pt;
+    padding: 0pt;
+    margin: 0pt;
+    list-style-type: none;
+
+    li {
+      height: 10pt;
+      padding: 5pt 0pt !important;
       margin: 0pt;
-      list-style-type: none;
+      line-height: 20pt;
 
-      li {
-          height: 10pt;
-          padding: 5pt 0pt !important;
-          margin: 0pt;
-          line-height: 20pt;
-          
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
 
 
-          h3 {
-              padding: 0pt;
-              margin: 0pt;
-          }
-
-          &:hover {
-              text-decoration: underline;
-          }
+      h3 {
+        padding: 0pt;
+        margin: 0pt;
       }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   &.full {
@@ -1442,7 +1484,7 @@ table.data {
 
   td.actions {
     text-align: right;
-    
+
     button {
       font-size: 10pt;
       height: 30pt;
@@ -1485,65 +1527,75 @@ table.api-keys {
   flex: 1 1 50%;
   display: flex;
   flex-direction: row;
-  font-size:0; /* whitespace remover */
+  font-size: 0;
+  /* whitespace remover */
   margin: 5pt;
   overflow: hidden;
-  border: 2pt solid #ccc;
+  border: 1pt solid #ccc;
   border-radius: 10pt;
-  
-  & > * {
-      display: inline-block;
-      background-color: white;
-      color: black;
-      border: 0px;
-      height: 50px;
-      border-radius: 0;
-      position: relative;
+  border-radius: 5pt;
+
+  &>* {
+    display: inline-block;
+    background-color: white;
+    color: black;
+    border: 0px;
+    height: 50px;
+    border-radius: 0;
+    position: relative;
   }
-  
+
   .search-select-dropdown {
-      position: absolute;
-      top: 50px;
-      left: 5px;
-      width: calc(100% - 10px);
-      border: 2pt solid #ccc;
-      height: auto;
-      z-index: 1;
-      display: none;
-      
-      ul {
-          flex: 1;
-          li {
-              font-size: 10pt;
-              height: 20px;
-          }
+    position: absolute;
+    top: 50px;
+    left: 5px;
+    width: calc(100% - 10px);
+    border: 2pt solid #ccc;
+    height: auto;
+    z-index: 1;
+    display: none;
+
+    ul {
+      flex: 1;
+
+      li {
+        font-size: 10pt;
+        height: 20px;
       }
+    }
   }
-  
+
   .search-select-dropdown-show {
-      display: flex;
-      flex-direction: column;
+    display: flex;
+    flex-direction: column;
   }
-  
+
   .search-text {
     flex: 0 1 80%;
     padding: 0;
     margin: 0;
+    outline: none;
   }
-  .search-submit, .search-select {
-      flex: 1;
-      width: 100%;
-      padding: 0;
-      margin: 0;
+
+  .search-text:disabled::placeholder {
+    opacity: 0.5;
+  }
+
+  .search-submit,
+  .search-select {
+    flex: 1;
+    width: 100%;
+    padding: 0;
+    margin: 0;
   }
 
   .search-select:active,
   .search-select:hover,
   .search-submit:active,
   .search-submit:hover {
-      background-color: white;
+    background-color: white;
   }
-  
+
 }
 
 /* Tab styles for the Dataset page. */
@@ -1638,7 +1690,7 @@ table.api-keys {
   padding: 1pt 6pt;
   font-weight: 800;
   position: relative;
-  font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   top: 1pt;
   font-weight: bold;
 
@@ -1724,4 +1776,87 @@ div.empty.instructions {
       }
     }
   }
+}
+
+.consent-banner {
+  background: #fff;
+  padding: 0px;
+  position: fixed;
+  border: 1px solid #ccc;
+  bottom: 10pt;
+  right: 10pt;
+  max-width: 100vw;
+  width: 250pt;
+  border-radius: 5pt;
+  z-index: 1000;
+  padding-left: 0pt;
+  padding-right: 0pt;
+  font-size: 12pt;
+
+  &.agreed {
+    background: none;
+    border: none;
+  }
+
+  button.icon {
+    width: 36pt;
+    opacity: 0.2;
+
+    &:hover {
+      opacity: 0.5;
+    }
+    
+    svg {
+      position: relative;
+      left: -5pt;
+    }
+  }
+
+  em a {
+    text-decoration: none;
+    color: $color-primary;
+  }
+
+  p {
+    padding: 0pt 10pt;
+    margin-top: 10pt;
+  }
+
+  pre.highlight:hover {
+    background-color: #dddddd;
+    cursor: pointer;
+  }
+
+  ul {
+    li {
+      margin: 0pt;
+      margin-left: -15pt;
+    }
+  }
+
+  pre {
+    white-space: pre-wrap;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 10pt;
+    background-color: #f1f1f1;
+    
+    padding: 5pt 10pt;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    margin-top: 15pt;
+    margin-left: auto;
+    max-width: 300pt;
+  }
+}
+
+p.footer-links {
+  font-size: 10pt;
+  white-space: pre-wrap;
+}
+
+#button-tooltip {
+  z-index: 9999999;
 }

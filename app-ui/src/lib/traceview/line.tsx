@@ -1,5 +1,6 @@
 import React from "react"
 import { GroupedHighlight } from "./highlights";
+import { useTelemetry } from "../../telemetry";
 
 /** A way to provide inline decorations to a rendered trace view. */
 export interface TraceDecorator {
@@ -7,7 +8,6 @@ export interface TraceDecorator {
     editorComponent: React.ComponentType
     // returns true, if a given address is highlighted (e.g. hints at highlights being present)
     hasHighlight?: (address?: string, ...args: any) => boolean
-
     // global extra args that are passed to editor and hasHighlight functions
     extraArgs?: any
 }
@@ -37,6 +37,7 @@ export interface HighlightContext {
 export function Line(props: { children: any, highlightContext?: HighlightContext, address?: string, highlights?: GroupedHighlight[] }) {
     // const [expanded, setExpanded] = useState(false)
     const decorator = props.highlightContext?.decorator
+    const telemetry = useTelemetry();
 
     const setExpanded = (state: boolean) => {
         if (!props.address) {
@@ -67,8 +68,13 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         }
     }
 
+    const onClickLine = () => {
+        setExpanded(!expanded)
+        if (!expanded) telemetry.capture("traceview.opened-annotation-editor")
+    }
+
     if (!expanded) {
-        return <span id='unexpanded' className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan></span>
+        return <span id='unexpanded' className={className + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan></span>
     }
 
     const InlineComponent: any = decorator.editorComponent
@@ -78,7 +84,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         return <span className={className}>{props.children}</span>
     }
 
-    return <span className={className + extraClass}><SelectableSpan onActualClick={() => setExpanded(!expanded)}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
+    return <span className={className + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
 }

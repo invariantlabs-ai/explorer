@@ -13,6 +13,7 @@ import { DatasetLinkList } from './Datasets';
 import { SignUp } from './SignUp';
 import { DeploymentInfo } from './components/DeploymentInfo';
 import { config } from './Config';
+import { ConsentBanner, RevokeConsent } from './ConsentBanner';
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -74,9 +75,11 @@ function SidebarContent(props: { userInfo?: any, sidebarOpen: boolean, setSideba
             </>}
             {/* unicode copyright */}
             <p className='secondary'>&copy; 2024 Invariant Labs</p>
-            <p>
+            <p className='footer-links'>
                 <a href='https://invariantlabs.ai' target='_blank'>About</a>
+                <a href='https://invariantlabs.ai/privacy-policy' target='_blank'>Privacy Policy</a>
                 <a href='https://github.com/invariantlabs-ai/invariant' target='_blank'>Analyzer</a>
+                <RevokeConsent/>
             </p>
         </ul>
     </div>
@@ -206,6 +209,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             {!pageShouldRedirectToSignup && !pageShouldRedirectToLogin && props.children}
         </div>
         <Tooltip id="button-tooltip" place="bottom"/>
+        <ConsentBanner />
     </>;
 }
 

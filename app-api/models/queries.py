@@ -199,7 +199,7 @@ def user_to_json(user):
         "username": user.username,
         "image_url_hash": user.image_url_hash
     }
-    
+
 def dataset_to_json(dataset, user=None, **kwargs):
     out = {
             "id": dataset.id,
