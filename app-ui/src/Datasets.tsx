@@ -74,6 +74,8 @@ export function UploadDatasetModalContent(props) {
   // indicates whether we are currently uploading the file
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
+  const [isDatasetNameInvalid, setIsDatasetNameInvalid] = React.useState(false);
+  const DATASET_NAME_REGEX = /^[A-Za-z0-9-_]+$/;
 
   const onSubmit = () => {
     if (!name) return
@@ -111,16 +113,23 @@ export function UploadDatasetModalContent(props) {
     }
   }, [file])
 
+  const onNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setName(newName);
+    setIsDatasetNameInvalid(!DATASET_NAME_REGEX.test(newName));
+  };
+
   return <div className='form'>
     <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
     <label>Name</label>
-    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Dataset Name" />
+    <input type="text" value={name} onChange={onNameChange} placeholder="Dataset Name" />
+    {isDatasetNameInvalid && name && <span className='error'>Dataset name can only contain A-Z, a-z, 0-9, - and _</span>}
     <label>File (optional)</label>
     <FileUploadMask file={file} />
     <input aria-label="file-input" type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
     <span className='description'>Before uploading a dataset, make sure it is in the correct format, as expected by the Invariant analysis engine.</span>
     <br />
-    <button aria-label='create' className='primary' disabled={!name || loading} onClick={onSubmit}>
+    <button aria-label='create' className='primary' disabled={!name || loading || isDatasetNameInvalid} onClick={onSubmit}>
       {loading ? 'Uploading...' : 'Create'}
     </button>
     {error && <span className='error'>{error}</span>}
