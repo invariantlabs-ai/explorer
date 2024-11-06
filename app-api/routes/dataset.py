@@ -26,6 +26,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func
+from util.util import validate_dataset_name
 
 # dataset routes
 dataset = FastAPI()
@@ -56,6 +57,7 @@ async def create(
     name = data.get("name")
     if name is None:
         raise HTTPException(status_code=400, detail="Name must be provided")
+    validate_dataset_name(name)
 
     metadata = data.get("metadata", dict())
     metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -87,6 +89,7 @@ async def upload_file(
         raise HTTPException(
             status_code=401, detail="Must be authenticated to upload a dataset"
         )
+    validate_dataset_name(name)
 
     with Session(db()) as session:
         lines = file.file.readlines()

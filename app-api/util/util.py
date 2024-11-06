@@ -1,8 +1,23 @@
+"""Utility functions for APIs."""
+from fastapi import HTTPException
+
 import copy
 import hashlib
 import json
 import re
 from typing import Optional
+
+DATASET_NAME_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
+
+def validate_dataset_name(name: str):
+    """Validate the dataset name."""
+    if name is None:
+        return
+    if not DATASET_NAME_REGEX.match(name):
+        raise HTTPException(
+            status_code=400,
+            detail="Dataset name can only contain A-Z, a-z, 0-9, - and _",
+        )
  
 def get_gravatar_hash(email):
     # see https://docs.gravatar.com/api/avatars/python/

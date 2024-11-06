@@ -79,7 +79,8 @@ def _dataset_name(test_name=None):
     if test_name is None:
         test_name = "test"
 
-    return f"{test_name}-{str(uuid4())}"
+    # Avoid special characters in the dataset name which are not allowed.
+    return f"{test_name}-{str(uuid4())}".replace("[", "-").replace("]", "-")
 
 @pytest.fixture(scope='function')
 def dataset_name(request):

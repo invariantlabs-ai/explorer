@@ -15,6 +15,7 @@ from typing import Annotated
 from fastapi import Request, Depends
 from fastapi.exceptions import HTTPException
 
+from util.util import validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
 
@@ -55,6 +56,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
             assert len(metadata) == len(messages), "metadata must be the same length as messages"
     except AssertionError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    validate_dataset_name(dataset_name)
 
     # make sure metadata is a list of dictionaries
     metadata = [md if md is not None else {} for md in metadata] if metadata else [{} for _ in messages]

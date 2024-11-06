@@ -1,8 +1,9 @@
-from playwright.async_api import expect
 import os
 
 # add tests folder (parent) to sys.path
 import sys
+
+from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import util
@@ -262,3 +263,32 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         "Accuracy score must be a non-negative float or int if provided"
         in await update_metadata_response.text()
     )
+
+
+async def test_create_dataset_with_invalid_name_fails(context, url, data_abc):
+    """Tests that creating a dataset with an invalid name fails."""
+    error_message = "Dataset name can only contain A-Z, a-z, 0-9, - and _"
+    for invalid_character in "!@#$%^&*()+=':;<>,.?/\\|`~":
+        # Create a dataset with an invalid name.
+        dataset_name = f"some{invalid_character}name"
+        response = await context.request.post(
+            f"{url}/api/v1/dataset/create",
+            data={"name": dataset_name},
+        )
+        assert response.status == 400
+        assert error_message in await response.text()
+
+        # Upload a dataset with an invalid name.
+        response = await context.request.post(
+            url + "/api/v1/dataset/upload",
+            multipart={
+                "file": {
+                    "name": dataset_name + ".json",
+                    "mimeType": "application/octet-stream",
+                    "buffer": data_abc.encode("utf-8"),
+                },
+                "name": dataset_name,
+            },
+        )
+        assert response.status == 400
+        assert error_message in await response.text()

@@ -76,3 +76,25 @@ async def test_annotate_trace(url, context, data_abc):
         assert len(annotations) == 1
         assert annotations[0]["content"] == "test annotation"
         assert annotations[0]["address"] == "messages[0].content:L0"
+
+async def test_push_trace_with_invalid_dataset_name(context, url):
+    """Tests that pushing trace with an invalid dataset name returns an error."""
+    for invalid_character in "!@#$%^&*()+=':;<>,.?/\\|`~":
+        dataset_name = f"some{invalid_character}name"
+        response = await context.request.post(
+            url + "/api/v1/push/trace",
+            data={
+                "messages": [
+                    [
+                        {"role": "user", "content": "one"},
+                        {"role": "assistant", "content": "two \n three"},
+                    ]
+                ],
+                "annotations": None,
+                "metadata": None,
+                "dataset": dataset_name,
+            },
+        )
+
+        assert response.status == 400
+        assert "Dataset name can only contain A-Z, a-z, 0-9, - and _" in await response.text()
