@@ -3,7 +3,7 @@
  */
 
 import React, { act, useCallback, useEffect } from 'react';
-import { BsExclamationTriangleFill, BsExclamationDiamondFill, BsInfo, BsTools, BsExclamation, BsExclamationLg, BsArrowClockwise, BsCaretDownFill, BsLayoutSidebarInset, BsSave, BsSearch, BsTrash } from 'react-icons/bs';
+import { BsArrowClockwise, BsCaretDown, BsCaretDownFill, BsCaretRightFill, BsExclamationLg, BsExclamationTriangleFill, BsInfo, BsLayoutSidebarInset, BsSave, BsSearch, BsTools, BsTrash } from 'react-icons/bs';
 import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from 'react-viewport-list';
@@ -11,11 +11,30 @@ import { AnnotationAugmentedTraceView } from './AnnotationAugmentedTraceView';
 import { Modal } from './Modal';
 import { sharedFetch } from './SharedFetch';
 import { useUserInfo } from './UserInfo';
-import { Time } from './components/Time';
-import { DeleteSnippetModal } from './lib/snippets';
 import logo from './assets/invariant.svg';
 import { EmptyDatasetInstructions } from './components/EmptyDataset';
 import { useTelemetry } from './telemetry';
+import { Time } from './components/Time';
+import { DeleteSnippetModal } from './lib/snippets';
+
+// constant used to combine hierarchy paths
+const pathSeparator = ' > ';
+
+/**
+ * Get the full name including the hierarchy path of a trace.
+ */
+function getFullDisplayName(trace: Trace|null) {
+  return trace ? [...trace.hierarchy_path||[], trace.name].join(pathSeparator) : ''
+}
+
+/**
+ * Lexicographically compares two traces by their hierarchy path and name. 
+ */
+function compareTraces(a: Trace|null, b: Trace|null) {
+  const lhs = getFullDisplayName(a)
+  const rhs = getFullDisplayName(b)
+  return lhs.localeCompare(rhs)
+}
 
 /**
  * Metadata for a dataset that we receive from the server.
@@ -65,6 +84,7 @@ export interface Trace {
   index: number;
   dataset: string;
   name?: string;
+  hierarchy_path?: string[];
   messages: any[];
   extra_metadata: string;
   time_created: string;
@@ -179,7 +199,7 @@ class LightweightTraces {
     sharedFetch(`/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(',')}`).then(traces => {
       // update fetched traces 
       traces.forEach(t => {
-        this.data[t.index] = { ...t, name: '#' + t.index, fetched: false, preloaded: true }
+        this.data[t.index] = { ...t, fetched: false, preloaded: true }
         this.callbacks[t.index]?.forEach(c => c(this.data[t.index]))
         this.loadingIndices.delete(t.index)
       })
@@ -238,24 +258,43 @@ class LightweightTraces {
   }
 }
 
+/**
+ * Data structure to represent a hierarchy level represented as a group in the sidebar.
+ */
+interface HierarchyPath {
+  path: string[]
+  slug: string
+  indices: number[]
+}
+
 // hook to load all traces in a dataset, represented as a LightweightTraces object
-function useTraces(username: string, datasetname: string): [LightweightTraces | null, () => void] {
+function useTraces(username: string, datasetname: string): [LightweightTraces | null, Record<string, HierarchyPath>, () => void] {
   const [traces, setTraces] = React.useState<LightweightTraces | null>(null)
+  const [hierarchyPaths, setHierarchyPaths] = React.useState<Record<string, HierarchyPath>>({})
 
   React.useEffect(() => refresh(), [username, datasetname])
   const refresh = () => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}/indices`).then(traces => {
       const n = traces.reduce((max, t) => Math.max(max, t.index), 0) + 1
       const traceMap: Record<number, Trace> = {}
-      traces.forEach(t => { traceMap[t.index] = { ...t, name: '#' + t.index, fetched: false } })
+      const pathMap: Record<string, HierarchyPath> = {} // maps hierarchy paths to indices
+      traces.forEach(t => {
+        traceMap[t.index] = { ...t, fetched: false }
+        const path = t.hierarchy_path?.join(pathSeparator) || ''
+        if (!pathMap.hasOwnProperty(path)) {
+          pathMap[path] = { path: t.hierarchy_path || [], slug: path, indices: [] }
+        }
+        pathMap[path].indices.push(t.index)
+      })
       setTraces(new LightweightTraces(n, username, datasetname, traceMap))
+      setHierarchyPaths(pathMap)
     }).catch(e => {
       console.error(e)
       alert("Error loading traces")
     })
   }
 
-  return [traces, refresh]
+  return [traces, hierarchyPaths, refresh]
 }
 
 // makes sure the provided trace has its .messages field populated, by loading the 
@@ -314,7 +353,7 @@ function ShareModalContent(props) {
   return <div className='form' style={{ maxWidth: '500pt' }}>
     {/* <h2>By sharing a trace you can allow others to view the trace and its annotations. Anyone with the generated link will be able to view the trace.</h2> */}
     <h2>Share this trace with others, so they can view the trace and its annotations.</h2>
-    <h2>Only the selected trace <span className='traceid'>#{props.traceId}</span> will be shared with others.</h2>
+    <h2>Only the selected trace <span className='traceid'>{props.traceName}</span> will be shared with others.</h2>
     <label>Link Sharing</label>
     <input type='text' value={props.sharingEnabled ? link : 'Not Enabled'} className='link' onClick={onClick} disabled={!props.sharingEnabled} />
     <span className='description' style={{ color: justCopied ? 'inherit' : 'transparent' }}>{justCopied ? 'Link Copied!' : 'no'}</span>
@@ -516,7 +555,7 @@ export function Traces() {
   // feature set enabled for this dataset
   const featureSet = new FeatureSet(dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {})
   // load information about the traces in the dataset
-  const [traces, refresh] = useTraces(props.username, props.datasetname)
+  const [traces, hierarchyPaths, refresh] = useTraces(props.username, props.datasetname)
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false)
   // trigger whether trace deletion modal is shown
@@ -566,8 +605,8 @@ export function Traces() {
         if (!t) return;
         // if the trace was updated, replace its spot in the 'traces' object, 
         // to trigger a re-render
-        traces.update(t.index, { ...t, fetched: true, name: '#' + t.index })
-        setActiveTrace({ ...t, fetched: true, name: '#' + t.index })
+        traces.update(t.index, { ...t, fetched: true})
+        setActiveTrace({ ...t, fetched: true})
       })
     }
   }, [traces, activeTrace])
@@ -625,7 +664,7 @@ export function Traces() {
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
-      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} />
+      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} traceName={getFullDisplayName(activeTrace)} />
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
@@ -633,6 +672,7 @@ export function Traces() {
       {/* trace explorer sidebar */}
       {hasTraces && <Sidebar // only show the sidebar if there are traces to show
         traces={traces}
+        hierarchyPaths={hierarchyPaths}
         username={props.username}
         datasetname={props.datasetname}
         activeTraceIndex={activeTrace != null ? activeTrace.index : null}
@@ -660,8 +700,8 @@ export function Traces() {
           <h1>
             <Link to='/'>/</Link>
             <Link to={`/u/${props.username}`}>{props.username}</Link>/
-            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>
-            {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{activeTrace.index}</span></Link></>}
+            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
+            {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
         // callback for when the user presses the 'Share' button
@@ -698,6 +738,7 @@ function SearchBox(props) {
     }
   }
 
+  /* Filter dropdown is disabled for now, as we don't have many filters to show and it visually can be confused with hierarchy dropdown.
   const clickSelect = (e) => {
     const dropdown = e.target.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
     if (dropdown) {
@@ -712,9 +753,11 @@ function SearchBox(props) {
       dropdown.classList.toggle('search-select-dropdown-show')
     }
   }
+  */
 
   return <>
     <div className='search'>
+    {/*
       <button className='search-select' onClick={clickSelect}>
         <BsCaretDownFill />
       </button>
@@ -724,10 +767,11 @@ function SearchBox(props) {
           <li onClick={(e) => { addFilter(e, 'not:annotated') }} >No annotation</li>
         </ul>
       </div>
-      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder={"Search"} />
+    */}
+      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
       <button className='search-submit' onClick={() => { props.searchNow() }}>
         {!props.searching && <BsSearch />}
-        {props.searching && <ClockLoader size={'15px'} />}
+        {props.searching && <ClockLoader size={'15px'} className='spinner' />}
       </button>
     </div>
   </>
@@ -737,10 +781,11 @@ function SearchBox(props) {
  * Displays the list of traces in a dataset.
  */
 
-function Sidebar(props: { traces: LightweightTraces | null, username: string, datasetname: string, activeTraceIndex: number | null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: DisplayedTracesT | null, searchNow: () => void, searching: boolean }) {
+function Sidebar(props: { traces: LightweightTraces | null, username: string, datasetname: string, activeTraceIndex: number | null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: DisplayedTracesT | null, searchNow: () => void, searching: boolean, hierarchyPaths: Record<string, HierarchyPath> }) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
   const displayedIndices = props.displayedIndices
+  const hierarchyPaths = props.hierarchyPaths
   const { username, datasetname, traces } = props
   const [visible, setVisible] = React.useState(true)
   const [activeIndices, setActiveIndices] = React.useState<DisplayedTracesT>({});
@@ -756,22 +801,22 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
   // get telemetry instance
   const telemetry = useTelemetry()
 
-  // when the active indices change, scroll to the active trace
-  useEffect(() => {
-    const flattenedActiveIndices : number[] = flattenDisplayedIndices(activeIndices);
-    if (props.activeTraceIndex != null && flattenedActiveIndices.includes(props.activeTraceIndex)) {
-      if (viewport.current && !scrolled) {
-        (viewport.current as any).scrollToIndex({ index: flattenedActiveIndices.indexOf(props.activeTraceIndex), offset: 0 })
-        setScrolled(true)
-      }
-    }
-  }, [props.activeTraceIndex, activeIndices, viewport])
+  // tracks which hierarchy panels are collapsed
+  const [hierarchyCollapsed, setHierarchyCollapsed] = React.useState({} as Record<string, boolean>)
 
   useEffect(() => {
     if (!traces) {
       setActiveIndices({'all': {'traces': [], 'description': 'all traces'}})
       return;
     }
+    
+    let chs = hierarchyCollapsed
+    Object.keys(hierarchyPaths).forEach(key => {
+      if (!chs.hasOwnProperty(key)) {
+        chs[key] = false
+      }
+    })
+    setHierarchyCollapsed(chs)
 
     if (displayedIndices) {      
       if (Object.keys(displayedIndices).length === 1 && 'all' in displayedIndices && displayedIndices['all']['traces'].length == 0) {
@@ -805,9 +850,15 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
   }
   
   const viewItems : React.ReactNode[] = [];
+
+  // maps trace index to its position in the viewItems array
+  // which is rendered in the sidebar
+  const indexToRenderPosition = new Map<number, number>();
+
   if (traces) {
     Object.keys(activeIndices).sort((a, b) => (activeIndices[b].severity||0)-(activeIndices[a].severity||0) ).forEach((key) => {
       if (key !== 'all' && activeIndices[key].traces.length > 0) {
+        // filtered result (e.g. search of analyzer)
         let icon : React.ReactNode = {'info': <><BsInfo/></>,
                       'tools': <><BsTools/></>,
                       'exclamation': <><BsExclamationLg/></>,
@@ -816,14 +867,64 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
                       'none': null
         }[activeIndices[key].icon||'none']
         if (activeIndices[key].severity||0 <= 2) {icon = null;}
-        viewItems.push(<TraceBlockHeader name={key} count={activeIndices[key].traces.length} description={activeIndices[key].description||''} icon={icon||null} severity={activeIndices[key].severity||0} />)
-      }
-        (activeIndices[key].traces || []).sort((a, b) => a-b).forEach((index) => {
-          const trace = traces.get(index) || null
-          viewItems.push(<TraceRow key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} />)
+
+        viewItems.push(<TraceSearchGroupHeader name={key} count={activeIndices[key].traces.length} description={activeIndices[key].description||''} icon={icon||null} severity={activeIndices[key].severity||0} />);
+
+        const indices = (activeIndices[key].traces || []).sort((a, b) => compareTraces(traces.get(a), traces.get(b)))
+        indices.forEach(index => {
+          const trace = traces.get(index) || null;
+          const path = hierarchyPaths[trace?.hierarchy_path?.join(pathSeparator) || '']
+          indexToRenderPosition.set(index, viewItems.length)
+          viewItems.push(<TraceRow key={index} path={path} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} level={0} />)
         })
+      } else {
+        // not-filtered result (default)
+        // e.g. key === 'all'
+       
+        // if we have hierarchy paths, show them first
+        const paths = Object.keys(hierarchyPaths).sort().reverse().map(key => hierarchyPaths[key])
+        paths.forEach(path => {
+          if (path.path.length === 0) return; // skip empty paths
+          const indices = path.indices.filter(index => activeIndices[key].traces.includes(index)).sort((a, b) => a-b);
+          if (indices.length === 0) return; // skip empty paths
+          const toggleVisibility = () => {
+            setHierarchyCollapsed({...hierarchyCollapsed, [path.slug]: !hierarchyCollapsed[path.slug]})
+          }
+          // show the hierarchy path
+          viewItems.push(<TraceHierarchy key={'hierarchy-'+path.slug} path={path} className={viewItems.length>0 ? 'spacer' : ''} onToggle={toggleVisibility} collapsed={hierarchyCollapsed[path.slug]} />);
+          // show the traces in the hierarchy path
+          indices.forEach(index => {
+            const trace = traces.get(index) || null;
+            indexToRenderPosition.set(index, viewItems.length)
+            viewItems.push(<TraceRow display={!hierarchyCollapsed[path.slug]} key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} level={1} />)
+          })
+        })
+       
+        // show the rest of the traces
+        // default path slug is empty string
+        const indices = hierarchyPaths[''].indices.filter(index => activeIndices[key].traces.includes(index)).sort((a, b) => a-b);
+        let first = true;
+        indices.forEach(index => {
+          const trace = traces.get(index) || null;
+          viewItems.push(<TraceRow className={viewItems.length > 0 && first ? 'spacer' : ''} key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} level={0} />)
+          first = false
+        })
+      }
     })
   }
+  
+  // when the active indices change, scroll to the active trace
+  useEffect(() => {
+    if (props.activeTraceIndex != null && indexToRenderPosition.has(props.activeTraceIndex)) {
+      if (viewport.current && !scrolled) {
+        const position = indexToRenderPosition.get(props.activeTraceIndex);
+        (viewport.current as any).scrollToIndex({ index: position, offset: 0 })
+        setScrolled(true)
+      }
+    }
+  }, [props.activeTraceIndex, activeIndices, viewport, viewItems])
+
+
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
       <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching}/>
@@ -875,8 +976,10 @@ function SidebarStatus(props: { traces: LightweightTraces | null, searching: boo
 }
 
 /** A single row in the sidebar list of traces */
-function TraceRow(props: { trace: Trace | null, index: number, active: boolean, username: string, datasetname: string, searchQuery: string | null, activeTraceIndex: number | null, traces: LightweightTraces | null }) {
-  const { index, username, datasetname, searchQuery, traces } = props
+function TraceRow(props: { trace: Trace | null, index: number, active: boolean, username: string, datasetname: string, searchQuery: string | null, activeTraceIndex: number | null, traces: LightweightTraces | null, level: number | null, path?: HierarchyPath, className?: string, display?: boolean }) {
+  const {index, username, datasetname, searchQuery, traces} = props
+  const level = props.level || 0 // indentation level; 0 is no indentation
+  const display = (props.display === undefined ? true : props.display) || props.active
   // keep reference to trace
   const [trace, setTrace] = React.useState(props.trace)
   // use the telemetry hook to log user interactions
@@ -894,16 +997,34 @@ function TraceRow(props: { trace: Trace | null, index: number, active: boolean, 
   });
 
   if (!trace) return <span>...</span>
-
+    
+  // if there is a hierarchy path, show it
+  let path = (props?.path?.path || []).join(pathSeparator)
+  if (path.length > 0) path = path + pathSeparator
+  const pathElement = path.length > 0 ? <span className='path'>{path}</span> : null 
+  
   const active = trace.index === props.activeTraceIndex
-  return <li className={'trace ' + (active ? 'active' : '')}>
+  return <li className={'trace ' + (active ? 'active ' : '') + `level-${level} ` + (props.className||'') + (!display ? ' hidden' : '') }>
     <Link onClick={() => telemetry?.capture('select-trace', { name: trace.name })} to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
-      Run {trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
+      {pathElement}{trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
     </Link>
   </li>
 }
 
-function TraceBlockHeader(props: {name: string, count: number, description: string, icon: React.ReactNode|null, severity: number}) {
+/**
+ * Shows a hierarchy path in the sidebar list of traces.
+ */
+function TraceHierarchy(props: { path: HierarchyPath, className?: string, onToggle: () => void, collapsed: boolean }) {
+  const { path, collapsed, onToggle, className } = props;
+  return <li className={'trace-hierarchy level-0 ' + className||''} onClick={onToggle}>
+      { !collapsed && <BsCaretDownFill onClick={onToggle} />}
+      {  collapsed && <BsCaretRightFill onClick={onToggle} /> }
+      <span>{path.slug}</span>
+  </li>
+}
+
+
+function TraceSearchGroupHeader(props: {name: string, count: number, description: string, icon: React.ReactNode|null, severity: number}) {
   const {name, count, description, icon, severity} = props
   return <li key={name} className={`seperator seperator-severity-${severity||0}`}>
     {icon && <span className='icon'>{icon}</span>}
@@ -988,7 +1109,7 @@ export function SingleTrace() {
       </h1> :
       <h1>{dataset ? <>
         <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
-        <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""}<span className='traceid'>#{trace?.index} {props.traceId}</span></h1>
+        <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""} / <span className='traceid'>{getFullDisplayName(trace)} {props.traceId}</span></h1>
   }
 
   return <div className="panel fullscreen app">
@@ -996,7 +1117,7 @@ export function SingleTrace() {
       <h3>{error}</h3>
     </div>}
     {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
-      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} />
+      <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} traceName={getFullDisplayName(trace)} />
     </Modal>}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{ id: props.traceId }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
     {!error && <div className='sidebyside'>

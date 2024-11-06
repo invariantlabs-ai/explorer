@@ -371,7 +371,7 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
         traces = traces\
             .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
             .group_by(Trace.id)\
-            .add_columns(Trace.id, Trace.index, Trace.content, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
+            .add_columns(Trace.name, Trace.hierarchy_path, Trace.id, Trace.index, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
         
         if limit is not None:
             traces = traces.limit(int(limit))
@@ -388,7 +388,9 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
             "index": trace.index,
             "messages": [],
             "num_annotations": trace.num_annotations,
-            "extra_metadata": trace.extra_metadata
+            "extra_metadata": trace.extra_metadata,
+            "name": trace.name,
+            "hierarchy_path": trace.hierarchy_path,
         } for trace in traces]
 
 @dataset.post("/analyze/{id}")
@@ -570,8 +572,8 @@ def get_trace_indices_by_name(request: Request, username:str, dataset_name:str, 
         dataset, user = load_dataset(session, {'User.username': username, 'name': dataset_name}, user_id, allow_public=True, return_user=True)
         # traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).offset(offset).limit(limit)
         # only select the index
-        trace_rows = session.query(Trace.index, Trace.id).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).all()
-        return [{'index': row[0], 'id': row[1], 'messages': []} for row in trace_rows]
+        trace_rows = session.query(Trace.index, Trace.id, Trace.name, Trace.hierarchy_path).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).all()
+        return [{'index': row[0], 'id': row[1], 'name': row[2], 'messages': [], "hierarchy_path": row[3]} for row in trace_rows]
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
 def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):

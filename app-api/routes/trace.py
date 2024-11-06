@@ -182,7 +182,9 @@ async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, De
             index=0,
             user_id=user_id,
             content=content,
-            extra_metadata=extra_metadata
+            extra_metadata=extra_metadata,
+            name = payload.get("name", f"Single Trace"),
+            hierarchy_path = payload.get("hierarchy_path", []),
         )
         
         session.add(trace)

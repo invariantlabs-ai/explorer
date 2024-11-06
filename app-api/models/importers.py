@@ -82,6 +82,8 @@ def import_jsonl(session: Session, name: str, user_id: str, lines: list[str], me
                 trace = Trace(
                     id=uuid.uuid4(),
                     index=i,
+                    name = f"Run {i}",
+                    hierarchy_path = [],
                     user_id=user_id,
                     dataset_id=dataset.id,
                     content=object,
@@ -97,6 +99,8 @@ def import_jsonl(session: Session, name: str, user_id: str, lines: list[str], me
                 trace = Trace(
                     id=uuid.uuid4(),
                     index=i,
+                    name = object.get("name", f"Run {i}"),
+                    hierarchy_path = object.get("hierarchy_path", []),
                     user_id=user_id,
                     dataset_id=dataset.id,
                     content=object["messages"],

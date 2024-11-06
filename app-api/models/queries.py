@@ -147,6 +147,8 @@ def trace_to_json(trace, annotations=None, user=None, max_length=None):
         "messages": truncate_trace_content(trace.content, max_length),
         "dataset": trace.dataset_id,
         "user_id": trace.user_id,
+        "name": trace.name,
+        "hierarchy_path": trace.hierarchy_path,
         **({"user": user} if user is not None else {}),
         "extra_metadata": trace.extra_metadata,
         "time_created": trace.time_created

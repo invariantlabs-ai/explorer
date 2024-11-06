@@ -110,6 +110,8 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 id=uuid.uuid4(),
                 dataset_id=dataset_id,
                 index=(next_index + i) if dataset_id else 0,
+                name = message_metadata.get("name", f"Run {next_index + i}"),
+                hierarchy_path = message_metadata.get("hierarchy_path", []),
                 user_id=userid,
                 content=message_content,
                 extra_metadata=message_metadata
