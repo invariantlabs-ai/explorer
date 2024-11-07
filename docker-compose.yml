@@ -81,9 +81,6 @@ services:
     container_name: "${APP_NAME}-local-rabbitmq"
     env_file:
       - .env
-    ports:
-      - "5672:5672" # Port used to connect to RabbitMQ and send/receive messages.
-      - "15672:15672" # Port for the RabbitMQ Management Plugin which provides a web-based UI for managing RabbitMQ.
     networks:
       - internal
 
