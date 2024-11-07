@@ -531,7 +531,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
     # write out metadata message
     yield json.dumps(dataset_info) + "\n"
 
-    traces = session.query(Trace).filter(Trace.dataset_id == dataset_id).all()
+    traces = session.query(Trace).filter(Trace.dataset_id == dataset_id).order_by(Trace.index).all()
     for trace in traces:
         # load annotations for this trace
         annotations = load_annoations(session, trace.id)
