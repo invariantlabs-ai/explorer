@@ -770,10 +770,15 @@ async def update_metadata(
     # Only allow updating the benchmark and accuracy fields.
     # If the benchmark field is provided, it must be a non-empty string.
     # If the accuracy field is provided, it must be a non-negative float or int.
-    if metadata.get("benchmark") is None and metadata.get("accuracy") is None:
+    # If the name field is provided, it must be a non-empty string.
+    if (
+        metadata.get("benchmark") is None
+        and metadata.get("accuracy") is None
+        and metadata.get("name") is None
+    ):
         raise HTTPException(
             status_code=400,
-            detail="Request must contain at least one of 'benchmark' or 'accuracy'",
+            detail="Request must contain at least one metadata field to update",
         )
     if metadata.get("benchmark") is not None and (
         not isinstance(metadata.get("benchmark"), str)
@@ -781,6 +786,12 @@ async def update_metadata(
     ):
         raise HTTPException(
             status_code=400, detail="Benchmark must be a non-empty string if provided"
+        )
+    if metadata.get("name") is not None and (
+        not isinstance(metadata.get("name"), str) or not metadata.get("name").strip()
+    ):
+        raise HTTPException(
+            status_code=400, detail="Name must be a non-empty string if provided"
         )
     if metadata.get("accuracy") is not None and (
         not isinstance(metadata.get("accuracy"), (int, float))
@@ -811,11 +822,15 @@ async def update_metadata(
                 dataset_response.extra_metadata.pop("benchmark", None)
             if metadata.get("accuracy") is None:
                 dataset_response.extra_metadata.pop("accuracy", None)
+            if metadata.get("name") is None:
+                dataset_response.extra_metadata.pop("name", None)
         # Update the fields in extra_metadata whose value is not None in the payload.
         if metadata.get("benchmark") is not None:
             dataset_response.extra_metadata["benchmark"] = metadata.get("benchmark")
         if metadata.get("accuracy") is not None:
             dataset_response.extra_metadata["accuracy"] = metadata.get("accuracy")
+        if metadata.get("name") is not None:
+            dataset_response.extra_metadata["name"] = metadata.get("name")
 
         flag_modified(dataset_response, "extra_metadata")
         session.commit()

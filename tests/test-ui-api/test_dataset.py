@@ -146,12 +146,13 @@ async def test_update_metadata_for_public_and_private_dataset_types(
             context,
             url,
             dataset["name"],
-            data={"metadata": {"benchmark": "random", "accuracy": 12.3}},
+            data={"metadata": {"benchmark": "random", "accuracy": 12.3, "name": "abc"}},
         )
         expected_metadata = {
             **dataset.get("extra_metadata", {}),
             "benchmark": "random",
             "accuracy": 12.3,
+            "name": "abc",
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -164,12 +165,13 @@ async def test_update_metadata_for_public_and_private_dataset_types(
             context,
             url,
             dataset["name"],
-            data={"metadata": {"benchmark": "random2", "accuracy": 5}},
+            data={"metadata": {"benchmark": "random2", "accuracy": 5, "name": "def"}},
         )
         expected_metadata = {
             **dataset.get("extra_metadata", {}),
             "benchmark": "random2",
             "accuracy": 5,
+            "name": "def",
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -229,6 +231,22 @@ async def test_update_metadata_without_replace_all(context, url, data_abc):
         assert metadata == expected_metadata
         assert "policies" not in metadata
 
+        # Update only the name with replace_all set to False.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={"metadata": {"name": "abc"}, "replace_all": False},
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "benchmark2",
+            "accuracy": 5,
+            "name": "abc",
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+
 
 async def test_update_metadata_with_replace_all(context, url, data_abc):
     """Tests that updating metadata of a dataset works using replace_all."""
@@ -242,7 +260,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
             url,
             dataset["name"],
             data={
-                "metadata": {"benchmark": "random", "accuracy": 12.3},
+                "metadata": {"benchmark": "random", "accuracy": 12.3, "name": "abc"},
                 "replace_all": True,
             },
         )
@@ -250,6 +268,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
             **dataset.get("extra_metadata", {}),
             "benchmark": "random",
             "accuracy": 12.3,
+            "name": "abc",
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -268,6 +287,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         assert metadata == expected_metadata
         assert "policies" not in metadata
         assert "benchmark" not in metadata
+        assert "name" not in metadata
 
         # Update only the benchmark with replace_all set to True.
         metadata = await update_metadata(
@@ -282,6 +302,23 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
+        assert "accuracy" not in metadata
+        assert "name" not in metadata
+
+        # Update only the name with replace_all set to True.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={"metadata": {"name": "xyz"}, "replace_all": True},
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "name": "xyz",
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+        assert "benchmark" not in metadata
         assert "accuracy" not in metadata
 
 
@@ -326,7 +363,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
 
     assert update_metadata_response.status == 400
     assert (
-        "Request must contain at least one of 'benchmark' or 'accuracy'"
+        "Request must contain at least one metadata field to update"
         in await update_metadata_response.text()
     )
 
@@ -336,7 +373,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Request must contain at least one of 'benchmark' or 'accuracy'"
+        "Request must contain at least one metadata field to update"
         in await update_metadata_response.text()
     )
 
@@ -359,6 +396,28 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     assert update_metadata_response.status == 400
     assert (
         "Benchmark must be a non-empty string if provided"
+        in await update_metadata_response.text()
+    )
+
+    # Update metadata with empy name.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"name": ""}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "Name must be a non-empty string if provided"
+        in await update_metadata_response.text()
+    )
+
+    # Update metadata with invalid name type.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"name": 5}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "Name must be a non-empty string if provided"
         in await update_metadata_response.text()
     )
 
