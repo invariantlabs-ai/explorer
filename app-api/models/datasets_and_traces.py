@@ -5,7 +5,7 @@ import uuid
 
 from invariant.policy import Policy
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import (JSON, Boolean, DateTime, ForeignKey, Integer, String,
+from sqlalchemy import (JSON, Boolean, DateTime, ForeignKey, Integer, String, ARRAY,
                         UniqueConstraint, create_engine)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -56,6 +56,11 @@ class Trace(Base):
     dataset_id = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), nullable=True)
     # user that uploaded the trace
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    # display name of the trace
+    name = mapped_column(String, nullable=False)
+    
+    # hierarchy path of the trace
+    hierarchy_path = mapped_column(ARRAY(String), nullable=False)
     
     content = mapped_column(JSON, nullable=False)
     extra_metadata = mapped_column(JSON, nullable=False)

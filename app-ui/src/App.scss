@@ -189,6 +189,7 @@ header.top {
           color: $text-color;
         }
       }
+      
 
       li.separator {
         border-bottom: 1pt solid $border-color;
@@ -918,6 +919,7 @@ div.panel {
       text-overflow: ellipsis;
       overflow: hidden;
       margin-left: 10pt;
+      padding-right: 10pt;
     }
   }
 }
@@ -990,10 +992,25 @@ button.primary .shortcut {
         border-radius: 0pt;
         border-bottom: 1pt solid $border-color;
         margin: 0pt;
-        padding: 0pt;
-        padding-left: 2pt;
+        padding: 0pt 2pt;
         border-left: 2pt solid transparent;
 
+        &>* {
+          white-space: nowrap;
+          overflow-x: hidden;
+          text-overflow: ellipsis;
+        }
+
+        &.level-0 {
+          margin-left: 0pt;
+        }
+        
+        &.level-1 {
+          margin-left: 10pt;
+          width: calc(100% - 10pt - 2pt);
+          border-left: 1pt solid $border-color;
+        }
+        
         a {
           display: block;
           text-decoration: none;
@@ -1007,6 +1024,39 @@ button.primary .shortcut {
           }
         }
       }
+
+      li.trace-hierarchy {
+        cursor: pointer;
+        background-color: #f1f1f1;
+        color: $text-color;
+        opacity: 0.9;
+
+        svg {
+          margin-right: 5pt;
+        }
+
+        &:hover {
+          background-color: #dbdbdb;
+        }
+      }
+      
+      li.hidden {
+        display: none;
+      }
+      
+      li.spacer {
+        margin-top: 10pt;
+        border-top: 1pt solid $border-color; 
+      }
+
+      li.trace {
+
+        .path {
+          color: lightgray
+        }
+       
+      }
+     
 
       li.seperator:first-of-type {
         margin-top: 0pt;
@@ -1573,6 +1623,7 @@ table.api-keys {
   .search-text {
     flex: 0 1 80%;
     padding: 0;
+    padding-left: 4pt;
     margin: 0;
     outline: none;
   }
@@ -1587,6 +1638,10 @@ table.api-keys {
     width: 100%;
     padding: 0;
     margin: 0;
+      
+      .spinner {
+        margin-left: 4pt;
+      }
   }
 
   .search-select:active,
