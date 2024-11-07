@@ -902,13 +902,15 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
        
         // show the rest of the traces
         // default path slug is empty string
-        const indices = hierarchyPaths[''].indices.filter(index => activeIndices[key].traces.includes(index)).sort((a, b) => a-b);
-        let first = true;
-        indices.forEach(index => {
-          const trace = traces.get(index) || null;
-          viewItems.push(<TraceRow className={viewItems.length > 0 && first ? 'spacer' : ''} key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} level={0} />)
-          first = false
-        })
+        if (hierarchyPaths['']?.indices) {
+          const indices = hierarchyPaths[''].indices.filter(index => activeIndices[key].traces.includes(index)).sort((a, b) => a-b);
+          let first = true;
+          indices.forEach(index => {
+            const trace = traces.get(index) || null;
+            viewItems.push(<TraceRow className={viewItems.length > 0 && first ? 'spacer' : ''} key={index} traces={traces} trace={trace} index={index} active={index === props.activeTraceIndex} username={username} datasetname={datasetname} searchQuery={searchQuery} activeTraceIndex={props.activeTraceIndex} level={0} />)
+            first = false
+          })
+        }
       }
     })
   }
