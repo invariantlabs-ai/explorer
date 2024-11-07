@@ -212,7 +212,7 @@ export function AnnotationAugmentedTraceView(props) {
       </>}
     </header>
     <div className='explorer panel traceview'>
-      <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents}/>
+      <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents} allExpanded={is_all_expanded} />
     </div>
   </>
 }
@@ -246,6 +246,7 @@ function TraceViewContent(props) {
           {errors.length > 0 && <AnalysisResult errors={errors} />}
         </>
       }
+      allExpanded={props.allExpanded}
     />
 }
 

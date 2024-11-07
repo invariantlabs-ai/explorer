@@ -567,14 +567,34 @@ table.json {
     }
 
     tr td:first-child {
+        min-width: 100pt;
         padding-left: 0pt;
         text-align: right;
         vertical-align: top;
         padding-left: 20pt;
     }
 
+    tr td:nth-child(2) {
+        // overflow-x: auto;
+        max-width: 200pt;
+
+        .code-highlighter .line {
+            white-space: pre-wrap;
+        }
+    }
+
     tr td {
         padding-left: 7pt;
+    }
+}
+
+table.json.content {
+    margin: -5pt;
+    width: calc(100% + 10pt);
+    margin-bottom: -10pt;
+
+    td {
+        background-color: transparent !important;
     }
 }
 

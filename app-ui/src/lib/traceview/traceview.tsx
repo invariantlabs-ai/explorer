@@ -263,6 +263,10 @@ interface RenderedTraceProps {
     prelude?: React.ReactNode;
     // callback when the component is mounted
     onMount?: (events: Record<string, BroadcastEvent>) => void
+    // current state of whether all messages are expanded/collapsed 
+    // (used to initialize expanded state of messages when they are loaded in
+    // after the user has already expanded/collapsed all messages)
+    allExpanded?: boolean
 }
 
 // state for the RenderedTrace component
@@ -393,7 +397,8 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
                     {(item: any, index: number) => {
-                        return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} events={this.state.events} />
+                        return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
+                                            events={this.state.events} allExpanded={this.props.allExpanded} />
                     }}
                 </ViewportList>
             </div>
@@ -437,6 +442,10 @@ interface MessageViewProps {
     // broadcast events for the trace view to allow parent components to
     // e.g. expand/collapse all messages
     events: Record<string, BroadcastEvent>
+    // current state of whether all messages are expanded/collapsed 
+    // (used to initialize expanded state of messages when they are loaded in
+    // after the user has already expanded/collapsed all messages)
+    allExpanded?: boolean
 }
 
 /**
@@ -522,7 +531,7 @@ function CompactView(props: { message: any }) {
 /**
  * Component that renders a single message in the trace view, including role, content, and tool calls
  */
-class MessageView extends React.Component<MessageViewProps, { error: Error | null, expanded: boolean }> {
+class MessageView extends React.Component<MessageViewProps, { error: Error | null, collapsed: boolean }> {
     collapse: () => void
     expand: () => void
 
@@ -531,11 +540,11 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
 
         this.state = {
             error: null,
-            expanded: false
+            collapsed: typeof props.allExpanded !== "undefined" ? !props.allExpanded : false
         }
 
-        this.collapse = () => this.setState({ expanded: true })
-        this.expand = () => this.setState({ expanded: false })
+        this.collapse = () => this.setState({ collapsed: true })
+        this.expand = () => this.setState({ collapsed: false })
     }
 
     componentDidMount(): void {
@@ -567,9 +576,9 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
             if (!message.role) {
                 // top-level tool call
                 if (message.type == "function") {
-                    return <div className={"event tool-call" + (this.state.expanded ? " expanded" : "")}>
-                        <MessageHeader message={message} className="seamless" role="Assistant" expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />
-                        {!this.state.expanded && <>
+                    return <div className={"event tool-call" + (this.state.collapsed ? " expanded" : "")}>
+                        <MessageHeader message={message} className="seamless" role="Assistant" expanded={this.state.collapsed} setExpanded={(state: boolean) => this.setState({ collapsed: state })} address={this.props.address} />
+                        {!this.state.collapsed && <>
                             <div className="tool-calls seamless">
                                 <ToolCallView tool_call={message} highlights={this.props.highlights} highlightContext={this.props.highlightContext} address={this.props.address} message={message} />
                             </div>
@@ -586,13 +595,14 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                 </div>
             } else {
                 // normal message (role + content and optional tool calls)
-                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.expanded ? " expanded" : "")}>
-                    {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.expanded} setExpanded={(state: boolean) => this.setState({ expanded: state })} address={this.props.address} />}
-                    {!this.state.expanded && <>
+                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.collapsed ? " expanded" : "")}>
+                    {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.collapsed} setExpanded={(state: boolean) => this.setState({ collapsed: state })} address={this.props.address} />}
+                    {!this.state.collapsed && <>
                         {message.content && <div className={"content " + message.role}>
+                            {typeof message.content === "object" ? <MessageJSONContent content={message.content} highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message} /> :
                             <Annotated highlights={this.props.highlights.for_path("content")} highlightContext={this.props.highlightContext} address={this.props.address + ".content"} message={message}>
                                 {truncate_content(message.content, config("truncation_limit"))}
-                            </Annotated>
+                            </Annotated>}
                         </div>}
                         {message.tool_calls && <div className={"tool-calls " + (message.content ? "" : " seamless")}>
                             {message.tool_calls.map((tool_call: any, index: number) => {
@@ -607,6 +617,23 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
             return null
         }
     }
+}
+
+function MessageJSONContent(props: { content: object, highlights: any, highlightContext?: HighlightContext, address: string, message?: any }) {
+    const content = props.content
+    const highlights = props.highlights
+    const keys = Object.keys(content)
+
+    return <table className="json content">
+        <tbody>
+            {keys.map((key: string, index: number) => {
+                return <tr key={index}>
+                    <td className="key"><div>{key}</div></td>
+                    <td className="value"><AnnotatedStringifiedJSON highlights={highlights.for_path(key)} address={props.address + "." + key} highlightContext={props.highlightContext} message={props.message}>{typeof content[key] === "object" ? JSON.stringify(content[key], null, 2) : content[key]}</AnnotatedStringifiedJSON></td>
+                </tr>
+            })}
+        </tbody>
+    </table>
 }
 
 /**
@@ -725,6 +752,7 @@ function Annotated(props: { highlights: any, children: any, highlightContext?: H
 
     // derive the rendering plugin to use for this content
     useEffect(() => {
+        // serialize JSON objects to strings
         const content = props.children.toString()
         // first check if there is a render plugin that can render this content
         const plugins = Plugins.getPlugins()
