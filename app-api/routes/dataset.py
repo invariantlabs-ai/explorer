@@ -6,18 +6,33 @@ import json
 import re
 import uuid
 from typing import Annotated
-from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
+
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from invariant.policy import AnalysisResult, Policy
 from invariant.runtime.input import mask_json_paths
-from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
-                                        SavedQueries, SharedLinks, Trace, User,
-                                        db)
+from models.datasets_and_traces import (
+    Annotation,
+    Dataset,
+    DatasetPolicy,
+    SavedQueries,
+    SharedLinks,
+    Trace,
+    User,
+    db,
+)
 from models.importers import import_jsonl
-from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
-                            load_dataset, load_trace, query_traces,
-                            search_term_mappings, trace_to_exported_json,
-                            trace_to_json)
+from models.queries import (
+    dataset_to_json,
+    get_savedqueries,
+    load_annoations,
+    load_dataset,
+    load_trace,
+    query_traces,
+    search_term_mappings,
+    trace_to_exported_json,
+    trace_to_json,
+)
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
@@ -738,25 +753,38 @@ async def update_metadata(
     user_id = userinfo.get("sub")
 
     payload = await request.json()
+    metadata = payload.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise HTTPException(status_code=400, detail="metadata must be a dictionary")
+    # When replace_all is False:
+    # * If a field doesn't exist or is None in the payload, ignore it.
+    # * Otherwise, update the field in extra_metadata with the new value.
+    # When replace_all is True:
+    # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
+    # * Otherwise, update the field in extra_metadata with the new value.
+    replace_all = payload.get("replace_all", False)
+    if not isinstance(replace_all, bool):
+        raise HTTPException(status_code=400, detail="replace_all must be a boolean")
 
     # Validate payload.
     # Only allow updating the benchmark and accuracy fields.
     # If the benchmark field is provided, it must be a non-empty string.
     # If the accuracy field is provided, it must be a non-negative float or int.
-    if "benchmark" not in payload and "accuracy" not in payload:
+    if metadata.get("benchmark") is None and metadata.get("accuracy") is None:
         raise HTTPException(
             status_code=400,
             detail="Request must contain at least one of 'benchmark' or 'accuracy'",
         )
-    if "benchmark" in payload and (
-        not isinstance(payload["benchmark"], str) or not payload["benchmark"].strip()
+    if metadata.get("benchmark") is not None and (
+        not isinstance(metadata.get("benchmark"), str)
+        or not metadata.get("benchmark").strip()
     ):
         raise HTTPException(
             status_code=400, detail="Benchmark must be a non-empty string if provided"
         )
-    if "accuracy" in payload and (
-        not isinstance(payload["accuracy"], (int, float))
-        or payload["accuracy"] < 0
+    if metadata.get("accuracy") is not None and (
+        not isinstance(metadata.get("accuracy"), (int, float))
+        or metadata.get("accuracy") < 0
     ):
         raise HTTPException(
             status_code=400,
@@ -765,20 +793,29 @@ async def update_metadata(
 
     with Session(db()) as session:
         dataset_response = load_dataset(
-            session, {"name": dataset_name}, user_id, allow_public=True, return_user=False
+            session,
+            {"name": dataset_name},
+            user_id,
+            allow_public=True,
+            return_user=False,
         )
         if str(dataset_response.user_id) != user_id:
             raise HTTPException(
                 status_code=403,
                 detail="Not allowed to update metadata for this dataset",
             )
-
-        if "benchmark" in payload:
-            dataset_response.extra_metadata["benchmark"] = payload["benchmark"]
-        if "accuracy" in payload:
-            dataset_response.extra_metadata["accuracy"] = payload[
-                "accuracy"
-            ]
+        if replace_all:
+            # Delete the fields in extra_metadata if they are not provided in
+            # the payload when replace_all is True.
+            if metadata.get("benchmark") is None:
+                dataset_response.extra_metadata.pop("benchmark", None)
+            if metadata.get("accuracy") is None:
+                dataset_response.extra_metadata.pop("accuracy", None)
+        # Update the fields in extra_metadata whose value is not None in the payload.
+        if metadata.get("benchmark") is not None:
+            dataset_response.extra_metadata["benchmark"] = metadata.get("benchmark")
+        if metadata.get("accuracy") is not None:
+            dataset_response.extra_metadata["accuracy"] = metadata.get("accuracy")
 
         flag_modified(dataset_response, "extra_metadata")
         session.commit()
