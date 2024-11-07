@@ -64,6 +64,7 @@ def import_jsonl(session: Session, name: str, user_id: str, lines: list[str], me
         object = json.loads(line)
         if i == 0 and type(object) is dict and "metadata" in object.keys() and not metadata_row_seen:
             metadata = {**metadata, **object["metadata"]}
+            dataset.extra_metadata = {**dataset.extra_metadata, **object["metadata"]}
             metadata_row_seen = True
             continue
         else:
