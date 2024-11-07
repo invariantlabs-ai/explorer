@@ -195,6 +195,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
                         <ul>
                             <li className='disabled'>{userInfo?.email}</li>
                             <li><a href='/settings'>Account</a></li>
+                            <li><a target='_blank' href='https://explorer.invariantlabs.ai/docs'>Documentation</a></li>
                             <li><a href='/logout'>Log Out</a></li>
                         </ul>
                     </div>
