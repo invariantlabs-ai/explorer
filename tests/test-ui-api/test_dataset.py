@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 """Tests for dataset API endpoints."""
 
->>>>>>> 6f703c7 (Change request structure for the UpdateDatasetMetadata API to include a replace_all field and to put the benchmark and accuracy fields inside a metadata object. With the replace_all set to True, if some metadata fields are not provided in the request or if they are None, they are deleted from the stored metadata for the dataset. With the replace_all set to False (the default value), only the provided metadata fields are used to update metadata for the dataset.)
 import os
 
 # add tests folder (parent) to sys.path
@@ -322,6 +319,48 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         assert "accuracy" not in metadata
 
 
+async def test_update_metadata_with_replace_all_to_clear_all_metadata(
+    context, url, data_abc
+):
+    """Tests updating metadata of a dataset works using replace_all to clear all metadata."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        # Add some policy for the dataset.
+        await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
+
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {"benchmark": "random", "accuracy": 12.3, "name": "abc"},
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "random",
+            "accuracy": 12.3,
+            "name": "abc",
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+
+        # Update only the accuracy with replace_all set to True.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={"replace_all": True},
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+        assert "benchmark" not in metadata
+        assert "name" not in metadata
+        assert "accuracy" not in metadata
+
+
 async def test_update_metadata_for_non_existent_dataset_fails(context, url):
     """Tests that updating metadata of a non-existent dataset fails."""
     update_metadata_response = await context.request.put(
@@ -356,27 +395,6 @@ async def test_update_metadata_created_by_different_user_fails(url, context, dat
 
 async def test_update_metadata_with_invalid_field_fails(context, url):
     """Tests that updating metadata of a dataset with invalid fields fails."""
-    # Update metadata with empty payload.
-    update_metadata_response = await context.request.put(
-        f"{url}/api/v1/dataset/metadata/some_dataset", data={}
-    )
-
-    assert update_metadata_response.status == 400
-    assert (
-        "Request must contain at least one metadata field to update"
-        in await update_metadata_response.text()
-    )
-
-    # Update metadata with invalid payload.
-    update_metadata_response = await context.request.put(
-        f"{url}/api/v1/dataset/metadata/some_dataset", data={"random-key": "abc"}
-    )
-    assert update_metadata_response.status == 400
-    assert (
-        "Request must contain at least one metadata field to update"
-        in await update_metadata_response.text()
-    )
-
     # Update metadata with empy benchmark.
     update_metadata_response = await context.request.put(
         f"{url}/api/v1/dataset/metadata/some_dataset",
@@ -487,4 +505,3 @@ async def test_create_dataset_with_invalid_name_fails(context, url, data_abc):
         )
         assert response.status == 400
         assert error_message in await response.text()
-

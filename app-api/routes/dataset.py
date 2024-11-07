@@ -767,19 +767,9 @@ async def update_metadata(
         raise HTTPException(status_code=400, detail="replace_all must be a boolean")
 
     # Validate payload.
-    # Only allow updating the benchmark and accuracy fields.
     # If the benchmark field is provided, it must be a non-empty string.
     # If the accuracy field is provided, it must be a non-negative float or int.
     # If the name field is provided, it must be a non-empty string.
-    if (
-        metadata.get("benchmark") is None
-        and metadata.get("accuracy") is None
-        and metadata.get("name") is None
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Request must contain at least one metadata field to update",
-        )
     if metadata.get("benchmark") is not None and (
         not isinstance(metadata.get("benchmark"), str)
         or not metadata.get("benchmark").strip()
