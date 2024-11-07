@@ -98,3 +98,22 @@ async def test_push_trace_with_invalid_dataset_name(context, url):
 
         assert response.status == 400
         assert "Dataset name can only contain A-Z, a-z, 0-9, - and _" in await response.text()
+
+async def test_push_trace_with_hierarch_name(context, url, dataset_name):
+    async with TemporaryExplorerDataset(url, context, '') as dataset:
+        dataset_name = dataset["name"]
+
+        # get an API key
+        key = await get_apikey(url, context)
+        headers = {"Authorization": "Bearer " + key}
+        data = {"messages": [[{"role": "user", "content": "Hello Bananas"}],
+                             [{"role": "user", "content": "Hello Apples"}]],
+                 "annotations": None,
+                 "metadata": [{'name': 'bananas', 'hierarchy_path': ['fruit', 'yellow']},
+                              {'name': 'apple', 'hierarchy_path': ['fruit', 'green']}],
+                 "dataset": dataset_name}
+
+        response = await context.request.post(url + '/api/v1/push/trace',
+                                              data=data,
+                                              headers=headers)
+        await expect(response).to_be_ok()
