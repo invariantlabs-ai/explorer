@@ -700,7 +700,7 @@ export function Traces() {
           <h1>
             <Link to='/'>/</Link>
             <Link to={`/u/${props.username}`}>{props.username}</Link>/
-            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>/
+            <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>
             {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
