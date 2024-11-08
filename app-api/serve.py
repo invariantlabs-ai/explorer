@@ -10,6 +10,7 @@ from routes.dataset import dataset
 from routes.trace import trace
 from routes.apikeys import apikeys
 from routes.push import push
+from routes.benchmark import benchmark
 from util.config import config
 
 from sqlalchemy.orm import Session
@@ -28,6 +29,7 @@ v1.mount("/dataset", dataset)
 v1.mount("/trace", trace)
 v1.mount("/keys", apikeys)
 v1.mount("/push", push)
+v1.mount("/benchmark", benchmark)
 
 # for debugging, we can check if the API is up
 @v1.get("/")
