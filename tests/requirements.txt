@@ -1,6 +1,6 @@
+invariant-sdk
 pytest
 pytest-playwright
 pytest-asyncio
 pytest-lazy-fixtures
 pillow
-git+https://github.com/invariantlabs-ai/invariant-sdk.git#egg=invariant_sdk&subdirectory=python
