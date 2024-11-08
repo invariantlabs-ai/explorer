@@ -1,3 +1,6 @@
+"""This module contains fixtures and helper functions for the tests."""
+
+from invariant_sdk.client import Client
 from playwright.async_api import async_playwright, expect
 import pytest
 import os
@@ -86,6 +89,14 @@ def _dataset_name(test_name=None):
 def dataset_name(request):
     test_name = request.node.name
     return _dataset_name(test_name)
+
+@pytest.fixture(name="invariant_client")
+def fixture_invariant_client(api_server_http_endpoint):
+    """Fixture to create Client instance."""
+    return Client(
+        api_url=api_server_http_endpoint,
+        api_key="<test-api-key>",  # When DEV_MODE is true, this is not used.
+    )
 
 ####################
 # data fixtures    #

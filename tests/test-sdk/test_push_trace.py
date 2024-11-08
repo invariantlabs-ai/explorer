@@ -6,7 +6,6 @@ import uuid
 from typing import Dict, List
 
 import pytest
-from invariant_sdk.client import Client
 from invariant_sdk.types.push_traces import PushTracesResponse
 from playwright.async_api import expect
 
@@ -14,15 +13,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from util import *  # needed for pytest fixtures
 
 pytest_plugins = ("pytest_asyncio",)
-
-
-@pytest.fixture(name="invariant_client")
-def fixture_invariant_client(api_server_http_endpoint):
-    """Fixture to create Client instance."""
-    return Client(
-        api_url=api_server_http_endpoint,
-        api_key="<test-api-key>",  # When DEV_MODE is true, this is not used.
-    )
 
 
 @pytest.fixture(name="push_traces_messages")

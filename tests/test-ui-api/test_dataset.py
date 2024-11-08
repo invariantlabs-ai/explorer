@@ -175,7 +175,7 @@ async def test_update_metadata_for_public_and_private_dataset_types(
 
 
 async def test_update_metadata_without_replace_all(context, url, data_abc):
-    """Tests that updating metadata of a dataset works using replace_all."""
+    """Tests that updating metadata of a dataset works using replace_all set to False (Default)."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
@@ -344,7 +344,7 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
         assert metadata == expected_metadata
         assert "policies" not in metadata
 
-        # Update only the accuracy with replace_all set to True.
+        # With replace_all set to True, pass in empty metadata to clear all metadata.
         metadata = await update_metadata(
             context,
             url,
