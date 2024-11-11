@@ -1,0 +1,3 @@
+{"metadata": {"description": "Traces that upload fails for mixed format files."}}
+[{"role": "user", "content": "test ABC test"}, {"role": "assistant", "content": "i like ABC!"}]
+{"index": 811, "messages": [{"role": "user", "content": "Assign the issue regarding flash alert in primer design guide repo to myself."}], "metadata": {"task_id": 811, "thread_id": "6d057c2a-6347-403e-a21d-4a903fa01294-6b15052d", "success": true, "uploader": "Via API with DEV_MODE true"}}

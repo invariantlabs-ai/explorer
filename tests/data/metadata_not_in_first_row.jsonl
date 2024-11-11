@@ -1,0 +1,2 @@
+[{"role": "user", "content": "test ABC test"}, {"role": "assistant", "content": "i like ABC!"}]
+{"metadata": {"description": "Traces such that if metadata is not in first row, file upload fails."}}
