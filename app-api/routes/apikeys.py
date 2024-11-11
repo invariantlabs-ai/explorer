@@ -124,7 +124,7 @@ async def APIIdentity(request: Request):
                 raise HTTPException(status_code=401, detail="You must provide a valid API key.")
             
             return {
-                "sub": key.User.id,
+                "sub": str(key.User.id),
                 "username": key.User.username,
                 "apikey": "*******" + key.APIKey.hashed_key[-4:]
             }
