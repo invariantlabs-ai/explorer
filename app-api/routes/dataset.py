@@ -46,6 +46,18 @@ from util.util import validate_dataset_name
 # dataset routes
 dataset = FastAPI()
 
+def is_duplicate(user_id, name) -> bool:
+    """Check if a dataset with the same name already exists."""
+    with Session(db()) as session:
+        dataset = (
+            session.query(Dataset)
+            .filter(and_(Dataset.user_id == user_id, Dataset.name == name))
+            .first()
+        )
+        if dataset is not None:
+            return True
+    return False
+
 def handle_dataset_creation_integrity_error(error: IntegrityError):
     """Handle integrity error for dataset creation."""
     if "_user_id_name_uc" in str(error.orig):
@@ -105,15 +117,14 @@ async def upload_file(
             status_code=401, detail="Must be authenticated to upload a dataset"
         )
     validate_dataset_name(name)
+    # Fail eagerly if a dataset with the same name already exists.
+    if is_duplicate(user_id, name):
+        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
 
     with Session(db()) as session:
         lines = file.file.readlines()
         dataset = import_jsonl(session, name, user_id, lines)
-        try:
-            session.commit()
-        except IntegrityError as e:
-            session.rollback()
-            handle_dataset_creation_integrity_error(e)
+        session.commit()
         return dataset_to_json(dataset)
 
 ########################################
