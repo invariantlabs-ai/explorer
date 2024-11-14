@@ -4,7 +4,7 @@ import Layout from './Layout.tsx'
 import { Traces, SingleTrace } from './Traces.tsx'
 import './App.scss'
 import DatasetView from './Dataset.tsx'
-import { Link, } from 'react-router-dom'
+import { Link, Redirect, redirect, } from 'react-router-dom'
 import { New } from './New.tsx'
 import { SignUp } from './SignUp.tsx'
 import User from './User.tsx'
@@ -12,6 +12,7 @@ import { Snippets } from './Snippets.tsx'
 import { Settings } from './Settings.tsx'
 import { Datasets } from './Datasets.tsx'
 import { config } from './Config.ts'
+import MarkdownFile from './MarkdownFile.tsx'
 
 export const routes = [
   {
@@ -104,6 +105,16 @@ export const routes = [
     path: '/settings',
     label: 'Settings',
     element: <Layout needsLogin><Settings /></Layout>,
+  },
+  {
+    path: '/terms',
+    label: 'Terms & Conditions',
+    element: <Layout><MarkdownFile file='terms.md'></MarkdownFile></Layout>
+  },
+  {
+    path: '/policy',
+    label: 'Terms & Conditions',
+    element: <Layout><MarkdownFile file='policy.md'></MarkdownFile></Layout>
   },
   // 404
   {

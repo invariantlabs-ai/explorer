@@ -54,7 +54,7 @@ export function ConsentBanner() {
             
             Special conditions for children under 13: Consent must be given by a parent or guardian.
             
-            We keep a record of your consent. For details on how we handle data, please view our full <a target="_blank" rel="noreferrer" href="https://invariantlabs.ai/privacy-policy">privacy policy</a>.
+            We keep a record of your consent. For details on how we handle data, please view our full <a target="_blank" rel="noreferrer" href="/policy">privacy policy</a>.
             </pre>}
         <p>
             By clicking "Accept", you consent to the use of cookies.

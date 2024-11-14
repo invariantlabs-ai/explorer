@@ -77,7 +77,8 @@ function SidebarContent(props: { userInfo?: any, sidebarOpen: boolean, setSideba
             <p className='secondary'>&copy; 2024 Invariant Labs</p>
             <p className='footer-links'>
                 <a href='https://invariantlabs.ai' target='_blank'>About</a>
-                <a href='https://invariantlabs.ai/privacy-policy' target='_blank'>Privacy Policy</a>
+                <a href='/terms' target='_blank'>Terms of Use</a>
+                <a href='/policy' target='_blank'>Privacy Policy</a>
                 <a href='https://github.com/invariantlabs-ai/invariant' target='_blank'>Analyzer</a>
                 <RevokeConsent/>
             </p>
