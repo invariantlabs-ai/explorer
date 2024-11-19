@@ -13,6 +13,9 @@ import { Datasets } from './Datasets.tsx'
 import { config } from './Config.ts'
 import MarkdownFile from './MarkdownFile.tsx'
 
+import privacyPolicy from './assets/policy.md?raw'
+import terms from './assets/terms.md?raw'
+
 export const routes = [
   {
     path: '/',
@@ -108,12 +111,12 @@ export const routes = [
   {
     path: '/terms',
     label: 'Terms & Conditions',
-    element: <Layout><MarkdownFile file='terms.md'></MarkdownFile></Layout>
+    element: <Layout><MarkdownFile contents={terms}></MarkdownFile></Layout>
   },
   {
     path: '/policy',
     label: 'Terms & Conditions',
-    element: <Layout><MarkdownFile file='policy.md'></MarkdownFile></Layout>
+    element: <Layout><MarkdownFile contents={privacyPolicy}></MarkdownFile></Layout>
   },
   // 404
   {
