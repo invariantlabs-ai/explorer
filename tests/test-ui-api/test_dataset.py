@@ -244,6 +244,87 @@ async def test_update_metadata_without_replace_all(context, url, data_abc):
         assert metadata == expected_metadata
         assert "policies" not in metadata
 
+        # Update only the invariant.test_results.num_tests with replace_all set to False.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {"invariant.test_results": {"num_tests": 5}},
+                "replace_all": False,
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "benchmark2",
+            "accuracy": 5,
+            "name": "abc",
+            "invariant.test_results": {"num_tests": 5},
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+
+        # Update only the invariant.test_results.num_passed with replace_all set to False.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {"invariant.test_results": {"num_passed": 3}},
+                "replace_all": False,
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "benchmark2",
+            "accuracy": 5,
+            "name": "abc",
+            "invariant.test_results": {"num_passed": 3},
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+
+        # Update only invariant.test_results with replace_all set to False.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {
+                    "invariant.test_results": {
+                        "num_tests": 9,
+                        "num_passed": 6,
+                    }
+                },
+                "replace_all": False,
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "benchmark2",
+            "accuracy": 5,
+            "name": "abc",
+            "invariant.test_results": {"num_tests": 9, "num_passed": 6},
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+
+        # With only invalid keys in invariant.test_results, after filtering
+        # invariant.test_results becomes {} and that fails validation.
+        response = await context.request.put(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}",
+            data={
+                "metadata": {
+                    "invariant.test_results": {"ignored_key": "ignored_value"}
+                },
+                "replace_all": False,
+            },
+        )
+        assert response.status == 400
+        assert "invariant.test_results must not be empty if provided" in (
+            await response.text()
+        )
+
 
 async def test_update_metadata_with_replace_all(context, url, data_abc):
     """Tests that updating metadata of a dataset works using replace_all."""
@@ -257,7 +338,16 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
             url,
             dataset["name"],
             data={
-                "metadata": {"benchmark": "random", "accuracy": 12.3, "name": "abc"},
+                "metadata": {
+                    "benchmark": "random",
+                    "accuracy": 12.3,
+                    "name": "abc",
+                    "invariant.test_results": {
+                        "num_tests": 5,
+                        "num_passed": 3,
+                        "ignored_key": "ignored_value",  # Ignored key.
+                    },
+                },
                 "replace_all": True,
             },
         )
@@ -266,6 +356,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
             "benchmark": "random",
             "accuracy": 12.3,
             "name": "abc",
+            "invariant.test_results": {"num_tests": 5, "num_passed": 3},
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -285,6 +376,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         assert "policies" not in metadata
         assert "benchmark" not in metadata
         assert "name" not in metadata
+        assert "invariant.test_results" not in metadata
 
         # Update only the benchmark with replace_all set to True.
         metadata = await update_metadata(
@@ -301,6 +393,7 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         assert "policies" not in metadata
         assert "accuracy" not in metadata
         assert "name" not in metadata
+        assert "invariant.test_results" not in metadata
 
         # Update only the name with replace_all set to True.
         metadata = await update_metadata(
@@ -317,6 +410,63 @@ async def test_update_metadata_with_replace_all(context, url, data_abc):
         assert "policies" not in metadata
         assert "benchmark" not in metadata
         assert "accuracy" not in metadata
+        assert "invariant.test_results" not in metadata
+
+        # Update only invariant.test_results.num_tests with replace_all set to True.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {"invariant.test_results": {"num_tests": 5}},
+                "replace_all": True,
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "invariant.test_results": {"num_tests": 5},
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+        assert "benchmark" not in metadata
+        assert "accuracy" not in metadata
+        assert "name" not in metadata
+
+        # Update only invariant.test_results.num_passed with replace_all set to True.
+        metadata = await update_metadata(
+            context,
+            url,
+            dataset["name"],
+            data={
+                "metadata": {"invariant.test_results": {"num_passed": 5}},
+                "replace_all": True,
+            },
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "invariant.test_results": {"num_passed": 5},
+        }
+        assert metadata == expected_metadata
+        assert "policies" not in metadata
+        assert "benchmark" not in metadata
+        assert "accuracy" not in metadata
+        assert "name" not in metadata
+
+        # With only invalid keys in invariant.test_results, after filtering
+        # invariant.test_results becomes {} and that fails validation.
+        response = await context.request.put(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}",
+            data={
+                "metadata": {
+                    "invariant.test_results": {"ignored_key": "ignored_value"}
+                },
+                "replace_all": True,
+            },
+        )
+        assert response.status == 400
+        assert "invariant.test_results must not be empty if provided" in (
+            await response.text()
+        )
 
 
 async def test_update_metadata_with_replace_all_to_clear_all_metadata(
@@ -332,7 +482,12 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
             url,
             dataset["name"],
             data={
-                "metadata": {"benchmark": "random", "accuracy": 12.3, "name": "abc"},
+                "metadata": {
+                    "benchmark": "random",
+                    "accuracy": 12.3,
+                    "name": "abc",
+                    "invariant.test_results": {"num_tests": 5, "num_passed": 3},
+                },
             },
         )
         expected_metadata = {
@@ -340,6 +495,7 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
             "benchmark": "random",
             "accuracy": 12.3,
             "name": "abc",
+            "invariant.test_results": {"num_tests": 5, "num_passed": 3},
         }
         assert metadata == expected_metadata
         assert "policies" not in metadata
@@ -359,6 +515,7 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
         assert "benchmark" not in metadata
         assert "name" not in metadata
         assert "accuracy" not in metadata
+        assert "invariant.test_results" not in metadata
 
 
 async def test_update_metadata_for_non_existent_dataset_fails(context, url):
@@ -476,6 +633,50 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert "metadata must be a dictionary" in await update_metadata_response.text()
+
+    # Update metadata with invalid invariant.test_results type.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"invariant.test_results": 5}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "invariant.test_results must be a dictionary if provided"
+        in await update_metadata_response.text()
+    )
+
+    # Update metadata with empty invariant.test_results.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"invariant.test_results": {}}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "invariant.test_results must not be empty if provided"
+        in await update_metadata_response.text()
+    )
+
+    # Update metadata with invalid invariant.test_results.num_tests type.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"invariant.test_results": {"num_tests": "random"}}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "invariant.test_results.num_tests must be of type int if provided"
+        in await update_metadata_response.text()
+    )
+
+    # Update metadata with invalid invariant.test_results.num_passed type.
+    update_metadata_response = await context.request.put(
+        f"{url}/api/v1/dataset/metadata/some_dataset",
+        data={"metadata": {"invariant.test_results": {"num_passed": "random"}}},
+    )
+    assert update_metadata_response.status == 400
+    assert (
+        "invariant.test_results.num_passed must be of type int if provided"
+        in await update_metadata_response.text()
+    )
 
 
 async def test_create_dataset_with_invalid_name_fails(context, url, data_abc):
