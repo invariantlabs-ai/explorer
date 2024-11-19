@@ -149,5 +149,6 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         
         return {
             "id": result_ids,
-            **({"dataset": dataset.name} if dataset_id else {})
+            **({"dataset": dataset.name} if dataset_id else {}),
+            "username": userinfo.get("username"),
         }

@@ -51,6 +51,10 @@ async def test_upload_traces(url, context, dataset_name, data_webarena_with_meta
                                           data=data,
                                           headers=headers)
     await expect(response).to_be_ok()
+    push_trace_response = await response.json()
+    assert isinstance(push_trace_response['id'], list) and len(push_trace_response['id']) == 2
+    assert 'dataset' in push_trace_response
+    assert 'username' in push_trace_response
  
     # delete dataset via UI-API 
     response = await context.request.delete(url + '/api/v1/dataset/byid/' + returned_object['id'])
@@ -99,7 +103,7 @@ async def test_push_trace_with_invalid_dataset_name(context, url):
         assert response.status == 400
         assert "Dataset name can only contain A-Z, a-z, 0-9, - and _" in await response.text()
 
-async def test_push_trace_with_hierarch_name(context, url, dataset_name):
+async def test_push_trace_with_hierarchy_name(context, url, dataset_name):
     async with TemporaryExplorerDataset(url, context, '') as dataset:
         dataset_name = dataset["name"]
 
