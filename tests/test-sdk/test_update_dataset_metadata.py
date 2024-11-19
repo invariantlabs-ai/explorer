@@ -78,6 +78,24 @@ async def test_update_metadata_without_replace_all(
             == expected_metadata
         )
 
+        # Update only invariant.test_results with replace_all set to False.
+        _ = invariant_client.create_request_and_update_dataset_metadata(
+            dataset_name=dataset["name"],
+            metadata={"invariant.test_results": {"num_tests": 10, "num_passed": 5}},
+            replace_all=False,
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "benchmark": "benchmark2",
+            "accuracy": 5,
+            "name": "abc",
+            "invariant.test_results": {"num_tests": 10, "num_passed": 5},
+        }
+        assert (
+            invariant_client.get_dataset_metadata(dataset_name=dataset["name"])
+            == expected_metadata
+        )
+
 
 async def test_update_metadata_with_replace_all(
     context, url, invariant_client, data_abc
@@ -152,6 +170,24 @@ async def test_update_metadata_with_replace_all(
         assert "benchmark" not in updated_metadata
         assert "accuracy" not in updated_metadata
 
+        # Update only invariant.test_results with replace_all set to True.
+        _ = invariant_client.create_request_and_update_dataset_metadata(
+            dataset_name=dataset["name"],
+            metadata={"invariant.test_results": {"num_tests": 10}},
+            replace_all=True,
+        )
+        expected_metadata = {
+            **dataset.get("extra_metadata", {}),
+            "invariant.test_results": {"num_tests": 10},
+        }
+        updated_metadata = invariant_client.get_dataset_metadata(
+            dataset_name=dataset["name"]
+        )
+        assert updated_metadata == expected_metadata
+        assert "benchmark" not in updated_metadata
+        assert "accuracy" not in updated_metadata
+        assert "name" not in updated_metadata
+
 
 async def test_update_metadata_with_replace_all_to_clear_all_metadata(
     context, url, invariant_client, data_abc
@@ -160,7 +196,12 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         _ = invariant_client.create_request_and_update_dataset_metadata(
             dataset_name=dataset["name"],
-            metadata={"benchmark": "random", "accuracy": 12.3, "name": "abc"},
+            metadata={
+                "benchmark": "random",
+                "accuracy": 12.3,
+                "name": "abc",
+                "invariant.test_results": {"num_tests": 10, "num_passed": 5},
+            },
             replace_all=False,
         )
         expected_metadata = {
@@ -168,6 +209,7 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
             "benchmark": "random",
             "accuracy": 12.3,
             "name": "abc",
+            "invariant.test_results": {"num_tests": 10, "num_passed": 5},
         }
         assert (
             invariant_client.get_dataset_metadata(dataset_name=dataset["name"])
@@ -190,3 +232,4 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
         assert "benchmark" not in updated_metadata
         assert "name" not in updated_metadata
         assert "accuracy" not in updated_metadata
+        assert "invariant.test_results" not in updated_metadata
