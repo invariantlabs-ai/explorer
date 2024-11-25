@@ -3,7 +3,7 @@
  */
 
 import React, { act, useCallback, useEffect } from 'react';
-import { BsArrowClockwise, BsCaretDown, BsCaretDownFill, BsCaretRightFill, BsExclamationLg, BsExclamationTriangleFill, BsInfo, BsLayoutSidebarInset, BsSave, BsSearch, BsTools, BsTrash } from 'react-icons/bs';
+import { BsBookmark, BsCaretDownFill, BsCaretRightFill, BsExclamationLg, BsExclamationTriangleFill, BsFilterCircle, BsFilterCircleFill, BsInfo, BsLayoutSidebarInset, BsSearch, BsTools, BsTrash } from 'react-icons/bs';
 import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from 'react-viewport-list';
@@ -738,39 +738,17 @@ function SearchBox(props) {
     }
   }
 
-  /* Filter dropdown is disabled for now, as we don't have many filters to show and it visually can be confused with hierarchy dropdown.
-  const clickSelect = (e) => {
-    const dropdown = e.target.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
-    if (dropdown) {
-      dropdown.classList.toggle('search-select-dropdown-show')
-    }
-  }
-
-  const addFilter = (e, filter) => {
-    setSearchQuery(filter + ' ' + searchQuery)
-    const dropdown = e.target.parentElement.parentElement.parentElement.parentElement.querySelector('.search-select-dropdown')
-    if (dropdown) {
-      dropdown.classList.toggle('search-select-dropdown-show')
-    }
-  }
-  */
+  const hasSearch = !props.searching && props.searchQuery != ''
 
   return <>
     <div className='search'>
-    {/*
-      <button className='search-select' onClick={clickSelect}>
-        <BsCaretDownFill />
-      </button>
-      <div className='search-select-dropdown'>
-        <ul>
-          <li onClick={(e) => { addFilter(e, 'is:annotated') }} >Has annotation</li>
-          <li onClick={(e) => { addFilter(e, 'not:annotated') }} >No annotation</li>
-        </ul>
-      </div>
-    */}
       <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
-      <button className='search-submit' onClick={() => { props.searchNow() }}>
-        {!props.searching && <BsSearch />}
+      <button className='search-submit' onClick={hasSearch ? props.onSave : props.searchNow} data-tooltip-id="button-tooltip" data-tooltip-content={hasSearch ? "Save Search" : ""}>
+        {!props.searching ? 
+          (props.searchQuery == '' ? 
+            <BsSearch /> : 
+            <BsBookmark />
+          ) : null}
         {props.searching && <ClockLoader size={'15px'} className='spinner' />}
       </button>
     </div>
@@ -844,9 +822,14 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
     })
   }
 
-  const onInvariantGrouping = (e) => {
-    setSearchQuery('is:invariant');
-    telemetry.capture('traceview.search-invariant-grouping', { query: 'is:invariant' })
+  const isInvariantGrouping = searchQuery === 'is:invariant';
+  const onTriggerInvariantGrouping = (e) => {
+    if (!isInvariantGrouping) {
+      setSearchQuery('is:invariant');
+      telemetry.capture('traceview.search-invariant-grouping', { query: 'is:invariant' })
+    } else {
+      setSearchQuery('');
+    }
   }
   
   const viewItems : React.ReactNode[] = [];
@@ -929,26 +912,24 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
 
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
-      <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching}/>
-      {searchQuery &&
-        <button className='header-short toggle icon' onClick={onSave}
-          data-tooltip-id="button-tooltip" data-tooltip-content="Save Search">
-          <BsSave />
-        </button>
-      }
-      <button className='header-short toggle icon' onClick={onRefresh}
+      <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} onSave={onSave} />
+      {/* <button className='header-short toggle icon' onClick={onRefresh}
         data-tooltip-id="button-tooltip" data-tooltip-content="Refresh">
         <BsArrowClockwise />
-      </button>
-      <SidebarStatus traces={traces} searching={props.searching} />
-      <button className='header-short toggle icon img-button' onClick={onInvariantGrouping}
-         data-tooltip-id="button-tooltip" data-tooltip-content="Group Traces by Analyzer">
-        <img src={logo} style={{width: '1.5em'}}/>
-      </button>
+      </button> */}
+      {!isInvariantGrouping && <button className='header-short toggle icon' onClick={onTriggerInvariantGrouping}
+         data-tooltip-id="button-tooltip" data-tooltip-content="Group Traces by Analysis Result">
+        <BsFilterCircle/>
+      </button>}
+      {isInvariantGrouping && <button className='header-short toggle icon' onClick={onTriggerInvariantGrouping}
+          data-tooltip-id="button-tooltip" data-tooltip-content="Group Traces by Analysis Result">
+          <BsFilterCircleFill/>
+      </button>}
       <button className='header-short toggle icon' onClick={() => setVisible(!visible)}
          data-tooltip-id="button-tooltip" data-tooltip-content="Fold Sidebar">
         <BsLayoutSidebarInset />
       </button>
+      <SidebarStatus traces={traces} searching={props.searching} />
     </header>
     <ul ref={viewportContainerRef}>
       <ViewportList
@@ -1008,9 +989,44 @@ function TraceRow(props: { trace: Trace | null, index: number, active: boolean, 
   const active = trace.index === props.activeTraceIndex
   return <li className={'trace ' + (active ? 'active ' : '') + `level-${level} ` + (props.className||'') + (!display ? ' hidden' : '') }>
     <Link onClick={() => telemetry?.capture('select-trace', { name: trace.name })} to={`/u/${username}/${datasetname}/t/${index}` + (searchQuery ? '?query=' + encodeURIComponent(searchQuery) : '')} className={active ? 'active' : ''}>
-      {pathElement}{trace.name} {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace.num_annotations}</span> : null}
+      {pathElement}<TraceRowContents trace={trace} />
     </Link>
   </li>
+}
+
+/**
+ * Contents of an individual trace row in the sidebar list of traces.
+ */
+function TraceRowContents(props: { trace: Trace }) {
+  const trace = props.trace
+
+  const isTest = trace?.extra_metadata && trace?.extra_metadata['invariant.num-failures'] !== undefined
+
+  if (isTest) {
+    // check if name is <something>[<params>]
+    let name = <span className='name'>{trace.name}</span>
+    if (trace.name?.match(/.*\[.*\]$/)) {
+      const [test_name, params] = trace.name.split('[')
+      name = <><span className='name'>{test_name}</span><span className='params'>[{params}</span></>
+    }
+
+    const num_warnings = trace?.extra_metadata['invariant.num-warnings'] || 0
+    const num_failures = trace?.extra_metadata['invariant.num-failures'] || 0
+    const fail = num_failures > 0
+
+    return <>
+      {name}
+      {/* don't show the annotations badge for test cases */}
+      <div className='spacer'/>
+      {num_warnings > 0 && <span className='warnings'>{num_warnings} warnings</span>}
+      <span className={'test-result ' + (fail ? 'fail' : 'pass')}>{fail ? "FAIL" : "PASS"}</span>
+    </>
+  } else {
+    return <>
+      <span className='name'>{trace.name}</span>
+      {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace?.num_annotations}</span> : null}
+    </>
+  }
 }
 
 /**

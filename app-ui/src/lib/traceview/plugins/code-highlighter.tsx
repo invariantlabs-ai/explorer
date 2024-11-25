@@ -6,6 +6,7 @@ import React from 'react';
 import "./code-highlighter.scss";
 import { HighlightedJSON } from '../highlights';
 import { Line } from '../line';
+import { truncate } from '../utils';
 
 // component properties of the code-highlighter plugin
 interface CodeHighlightedViewProps {
@@ -220,7 +221,8 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
                     </span>)
                 } else {
                     let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
-                    line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className}>{c}</span>)
+                    const tooltip = interval.content.map(c => truncate('[' + c['source'] + ']' + ' ' + c['content'], 100)).join("\n")
+                    line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>{c}</span>)
                 }
             }
             const line_highlights = highlights

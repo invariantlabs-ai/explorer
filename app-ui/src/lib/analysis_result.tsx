@@ -5,8 +5,6 @@ import logo from '../assets/invariant.svg';
  * Renders the result of the analysis.
 **/
 export function AnalysisResult(props) {
-    const errors = props.errors;
-
     return <div className='event analysis-result'>
         <div className='content'>
             <div className="analysis-result-header">

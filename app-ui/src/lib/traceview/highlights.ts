@@ -2,7 +2,16 @@ import IntervalTree from '@flatten-js/interval-tree'
 import jsonMap from "json-source-map"
 
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */
-export interface Highlight {
+export interface HighlightData {
+    content: any
+    // optional highlight properties
+    source?: string
+    extra_metadata?: Record<string, any>
+    annotationId?: string
+}
+
+/** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */
+export interface Highlight extends HighlightData {
     start: number
     end: number
     content: any
@@ -10,10 +19,16 @@ export interface Highlight {
     // specifies whether this highlight is range specific, or marks a higher-level
     // range like an entire object
     specific?: boolean
+    
+    // optional highlight properties
+    source?: string
+    extra_metadata?: Record<string, any>
+    annotationId?: string
 }
 
 /** Like a regular highlight, but stores a list of highlights per range. */
 export interface GroupedHighlight {
+    snippet?: string
     start: number
     end: number
     content: Highlight[] | null
@@ -121,6 +136,15 @@ export class HighlightedJSON {
      */
     static from_mappings(mappings: Record<string, string>) {
         if (!mappings || Object.keys(mappings).length === 0) {
+            return EMPTY_ANNOTATIONS
+        }
+
+        let highlightsMap = highlightsToMap(mappings)
+        return new HighlightedJSON(highlightsMap)
+    }
+
+    static from_entries(mappings: [string, any][]) {
+        if (!mappings || mappings.length === 0) {
             return EMPTY_ANNOTATIONS
         }
 
@@ -376,13 +400,17 @@ function to_text_offsets(highlightMap: any, sourceRangeMap: any, located_highlig
 
 // turns a list of 'key.index.prop:start-end' strings into a map of { key: { index: { prop: { $highlights: [ { start: start, end: end, content: content } ] } } } }
 // this makes highlights easier to work with in the UI, as they are grouped by key, index, and prop
-function highlightsToMap(highlights: Record<string, any>, prefix = ""): HighlightMap {
+function highlightsToMap(highlights: Record<string, any> | [string, any][], prefix = ""): HighlightMap {
+    // convert highlights to a list of entries if necessary
+    if (!Array.isArray(highlights)) {
+        highlights = Object.entries(highlights)
+    }
 
     const map: HighlightMap = { $highlights: [] }
     const highlightsPerKey: Record<string, Record<string, any>> = {}
     const directHighlights: { key: string, start: number | null, end: number | null, content: any }[] = []
 
-    for (const key in highlights) {
+    for (const [key, value] of highlights as [string,any][]) {
         // group keys by first segment (if it is not already a range), then recurse late
         const parts = key.split('.')
         const firstSegment = parts[0]
@@ -396,14 +424,14 @@ function highlightsToMap(highlights: Record<string, any>, prefix = ""): Highligh
             if (isNaN(parsedStart) || isNaN(parsedEnd)) {
                 throw new Error(`Failed to parse range ${range} in key ${prefix + key}`)
             }
-            directHighlights.push({ key: last_prop, start: parsedStart, end: parsedEnd, content: highlights[key] })
+            directHighlights.push({ key: last_prop, start: parsedStart, end: parsedEnd, content: value })
         } else if (rest.length === 0) {
-            directHighlights.push({ key: firstSegment, start: null, end: null, content: highlights[key] })
+            directHighlights.push({ key: firstSegment, start: null, end: null, content: value })
         } else {
             if (!highlightsPerKey[firstSegment]) {
-                highlightsPerKey[firstSegment] = {}
+                highlightsPerKey[firstSegment] = []
             }
-            highlightsPerKey[firstSegment][rest] = highlights[key]
+            highlightsPerKey[firstSegment].push([rest, value])
         }
     }
 

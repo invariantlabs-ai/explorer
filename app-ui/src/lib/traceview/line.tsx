@@ -84,7 +84,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         return <span className={className}>{props.children}</span>
     }
 
-    return <span className={className + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
+    return <span className={className + (expanded ? ' expanded ' : '') + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
 }
@@ -111,5 +111,5 @@ function SelectableSpan(props: { children: any, onActualClick: () => void }) {
         props.onActualClick()
     }
 
-    return <span onClick={handler}>{props.children}</span>
+    return <span className='selectable' onClick={handler}>{props.children}</span>
 }

@@ -322,7 +322,7 @@ async def save_query(request: Request, username:str, dataset_name:str, userinfo:
         session.commit()
 
 @dataset.delete("/query/{query_id}")
-async def save_query(request: Request, query_id:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+async def delete_query(request: Request, query_id:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
     user_id = userinfo['sub']
     with Session(db()) as session:
         query = session.query(SavedQueries).filter(SavedQueries.id == query_id).first()

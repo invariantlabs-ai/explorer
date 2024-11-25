@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {Tooltip} from 'react-tooltip';
+
 import './Annotations.scss';
 import './Explorer.scss';
 
@@ -12,6 +14,8 @@ import { openInPlayground } from './lib/playground';
 import { HighlightedJSON } from './lib/traceview/highlights';
 import { RenderedTrace } from './lib/traceview/traceview';
 import { useTelemetry } from './telemetry';
+import { AnnotationsParser } from './lib/annotations_parser'
+import { HighlightDetails } from './HighlightDetails'
 
 import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash, BsViewList } from "react-icons/bs";
 
@@ -116,51 +120,9 @@ export function AnnotationAugmentedTraceView(props) {
 
   // whenever annotations change, update mappings
   useEffect(() => {
-    // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
-    const mappings = Object.assign({}, props.mappings) || {}
-    // collect errors from analyzer annotations
-    const errors = []
+    let {highlights, errors, filtered_annotations} = AnnotationsParser.parseAnnotations(annotations, props.mappings);
 
-    for (let key in annotations) {
-      for (let annotation of annotations[key]) {
-        if (annotation.extra_metadata && annotation.extra_metadata["source"] == "analyzer") {
-          try {
-            const contentJson = JSON.parse(annotation.content);
-            if (contentJson["errors"]) {
-              for (let error of contentJson["errors"]) {
-                errors.push({ "type": error["args"][0], "count": error["ranges"].length })
-              }
-            }
-          } catch (error) {
-            continue; // Skip if annotation.content is not valid JSON
-          }
-        }
-      }
-
-      // mappings
-      let substr = key.substring(key.indexOf(":"))
-      if (substr.match(/:\d+-\d+/)) {
-        for (let annotation of annotations[key]) { // TODO: what do multiple indices here mean{
-          mappings[key] = { "content": annotation.content }
-          if (annotation.extra_metadata) {
-            mappings[key]["source"] = annotation.extra_metadata.source || "unknown"
-          }
-        }
-      }
-    }
-
-    // Filter all annotations with "analyzer" as source from all the keys
-    // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
-    let filtered_annotations = {}
-    for (let key in annotations) {
-      let new_annotations = annotations[key].filter(annotation =>
-        !(annotation.extra_metadata && annotation.extra_metadata["source"] === "analyzer")
-      );
-      if (new_annotations.length > 0) {
-        filtered_annotations[key] = new_annotations
-      }
-    }
-    setHighlights(HighlightedJSON.from_mappings(mappings))
+    setHighlights(HighlightedJSON.from_entries(highlights))
     setErrors(errors)
     setFilteredAnnotations(filtered_annotations)
   }, [annotations, props.mappings])
@@ -170,9 +132,12 @@ export function AnnotationAugmentedTraceView(props) {
 
   // decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = {
-    editorComponent: (props) => <div className="comment-insertion-point">
-      <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete} />
-    </div>,
+    editorComponent: (props) => {
+      return <div className="comment-insertion-point">
+        <HighlightDetails {...props} />
+        <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete}/>
+      </div>
+    },
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
         return "highlighted num-" + filtered_annotations[address].length
@@ -214,6 +179,7 @@ export function AnnotationAugmentedTraceView(props) {
     <div className='explorer panel traceview'>
       <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents} allExpanded={is_all_expanded} />
     </div>
+    <Tooltip id="highlight-tooltip" place="bottom" style={{whiteSpace: 'pre'}} />
   </>
 }
 
@@ -242,13 +208,14 @@ function TraceViewContent(props) {
       // extra UI to show at the top of the traceview like metadata
       prelude={
         <>
-          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} />
+          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} excluded={['invariant.num-warnings', 'invariant.num-failures']} />
           {errors.length > 0 && <AnalysisResult errors={errors} />}
         </>
       }
       allExpanded={props.allExpanded}
     />
 }
+
 
 // AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
 function AnnotationThread(props) {

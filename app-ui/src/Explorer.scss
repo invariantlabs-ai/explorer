@@ -17,6 +17,7 @@
     height: calc(100vh - 45pt) !important;
     padding: 0pt 5pt;
     overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 
 div[data-resize-handle] {

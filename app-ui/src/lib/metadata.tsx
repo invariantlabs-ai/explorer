@@ -106,6 +106,7 @@ function Pair(props) {
  */
 export function Metadata(props) {
     const extra_metadata = props.extra_metadata;
+    const excluded_keys = new Set(props.excluded || []);
 
     if (!extra_metadata) {
         return null;
@@ -117,7 +118,7 @@ export function Metadata(props) {
     return <div className='event metadata'>
         {props.header}
         <div className='content'>
-            {Object.keys(extra_metadata).map(key => {
+            {Object.keys(extra_metadata).filter(key => !excluded_keys.has(key)).map(key => {
                 return <Pair key={key} keyValue={key} value={extra_metadata[key]} />
             })}
         </div>

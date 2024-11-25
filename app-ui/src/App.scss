@@ -965,21 +965,23 @@ button.primary .shortcut {
 
   .sidebar {
     border: $border-color 1pt solid;
-    margin: 2pt;
-    margin-left: 5pt;
-    margin-top: 45pt;
     border-radius: 5pt;
-    width: 250pt;
+    margin: 2pt;
+    margin-left: 0pt;
+    margin-top: 40pt;
+    width: 300pt;
+    min-width: 300pt;
 
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     position: relative;
     transition: margin-left 0.2s;
-    height: calc(100vh - 100pt);
+    height: calc(100vh - 88pt);
 
     ul {
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 0pt;
       height: 500pt;
       margin: 0pt;
@@ -999,6 +1001,7 @@ button.primary .shortcut {
           white-space: nowrap;
           overflow-x: hidden;
           text-overflow: ellipsis;
+          overflow-y: hidden;
         }
 
         &.level-0 {
@@ -1050,6 +1053,55 @@ button.primary .shortcut {
       }
 
       li.trace {
+        &:hover {
+          background-color: #f1f1f13f;
+        }
+
+        a {
+          display: flex;
+          flex-direction: row;
+          padding-right: 5pt;
+        }
+
+        .name {
+          font-size: 12pt;
+          line-height: 20pt;
+        }
+
+        .params {
+          opacity: 0.5;
+        }
+
+        .warnings {
+          color: #AFAFAF;
+          font-size: 9pt;
+          margin-left: 10pt;
+          margin-right: 6pt;
+          line-height: 20pt;
+        }
+
+        .test-result {
+          padding: 2pt 4pt;
+          font-size: 9pt;
+          line-height: 16pt;
+          color: white;
+          border-radius: 2pt;
+
+          &.pass {
+            background-color: #1E883E;
+          }
+
+          &.fail {
+            background-color: #BA2929;
+          }
+        }
+
+        .name {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
 
         .path {
           color: lightgray
@@ -1178,7 +1230,7 @@ button.primary .shortcut {
 
     header {
       flex-direction: row;
-      align-items: flex-end;
+      align-items: center;
       justify-content: flex-end;
       padding-top: 2pt;
       position: relative;
@@ -1192,6 +1244,10 @@ button.primary .shortcut {
 
       .header-long {
         flex: 1 1 50%;
+        height: 25pt;
+        font-size: 10pt;
+        line-height: 20pt;
+        font-weight: 500;
       }
 
       .img-button {
@@ -1213,7 +1269,7 @@ button.primary .shortcut {
 
     &.collapsed {
       // left: -213pt;
-      margin-left: -213pt;
+      margin-left: -265pt;
 
       ul {
         opacity: 0.0;
@@ -1300,46 +1356,20 @@ button.share {
   }
 }
 
-.traceview span.line.highlighted:before {
-  content: "";
-  text-align: center;
-  font-size: 6pt;
-  line-height: 9.5pt;
-  font-family: NeueMontreal;
-  color: white;
-  // little circle
-  width: 10pt;
-  height: 10pt;
-  border-radius: 50%;
-  background-color: green;
-  position: relative;
-  // top: 0.05em;
-  margin-left: 4pt;
-  margin-right: 4pt;
-  display: inline-block;
-  // position: absolute;
-  // left: -20pt;
-  margin-top: 5pt;
-  position: relative;
-  margin-left: 2pt;
-  top: -2pt;
-  // transform: scale(1.5);
-}
-
-// as for loop to 20
-@for $i from 1 through 20 {
-  .traceview span.line.highlighted.num-#{$i}:before {
-    content: "#{$i}";
-  }
+.traceview span.line .selectable {
+  display: block;
 }
 
 .traceview span.line:hover {
-  background-color: rgba(18, 90, 18, 0.068);
+  background-color: #f1f1f1;
+}
+
+.traceview span.line.expanded:hover {
+  background-color: transparent;
 }
 
 .traceview span.line.highlighted {
-  background-color: rgba(18, 90, 18, 0.168);
-  border-radius: 4pt;
+  background-color: #f1f1f1;
 }
 
 .swap-on-hover {
@@ -1580,6 +1610,7 @@ table.api-keys {
   font-size: 0;
   /* whitespace remover */
   margin: 5pt;
+  margin-top: 4pt;
   overflow: hidden;
   border: 1pt solid #ccc;
   border-radius: 10pt;
@@ -1590,14 +1621,14 @@ table.api-keys {
     background-color: white;
     color: black;
     border: 0px;
-    height: 50px;
+    height: 30pt;
     border-radius: 0;
     position: relative;
   }
 
   .search-select-dropdown {
     position: absolute;
-    top: 50px;
+    top: 30pt;
     left: 5px;
     width: calc(100% - 10px);
     border: 2pt solid #ccc;
@@ -1640,7 +1671,9 @@ table.api-keys {
     margin: 0;
       
       .spinner {
-        margin-left: 4pt;
+        margin-left: 12pt;
+        margin-right: 4pt;
+        opacity: 0.6;
       }
   }
 
@@ -1921,3 +1954,4 @@ p.footer-links {
   h2 { font-size: 16pt; }
   h3 { font-size: 14pt; }
 }
+
