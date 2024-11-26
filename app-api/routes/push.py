@@ -1,8 +1,11 @@
 """
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
+import base64
+import boto3
 import json
 import logging
+import os
 import uuid
 
 from invariant.runtime.input import Input
@@ -15,12 +18,54 @@ from typing import Annotated
 from fastapi import Request, Depends
 from fastapi.exceptions import HTTPException
 
+from PIL import Image
+import io
+
 from util.util import validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
 
 push = FastAPI()
 logger = logging.getLogger(__name__)
+
+def parse_and_push_images(dataset, trace_id, messages):
+    for msg in messages:
+        if msg.get("role") != "tool" or type(msg.get("content")) != str:
+            continue
+        if msg.get("content").startswith("base64_img: ") or msg.get("content").startswith("local_base64_img: "):
+            prefix = "base64_img: " if msg.get("content").startswith("base64_img: ") else "local_base64_img: "
+            img_base64 = msg.get("content")[len(prefix):]
+            
+            img_data = base64.b64decode(img_base64)
+            img = Image.open(io.BytesIO(img_data))
+
+            # Generate a unique filename for the image
+            img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
+            # Save the image as a temporary file
+            with io.BytesIO() as output:
+                img.save(output, format="PNG")
+                img_data = output.getvalue()
+            
+            if prefix == "base64_img: ":
+                s3_client = boto3.client('s3')
+                bucket_name = 'invariant-explorer-imgs' if os.getenv("DEV_MODE") != "true" else 'invariant-explorer-imgs-dev'
+                
+                try:
+                    s3_client.put_object(Bucket=bucket_name, Key=img_filename, Body=img_data)
+                    logger.info(f"Successfully uploaded image to S3: {img_filename}")
+                    img_path = f"s3://{bucket_name}/{img_filename}"
+                except Exception as e:
+                    logger.error(f"Error uploading image to S3: {e}")
+                    img_path = "Error: Failed to upload image"
+                msg["content"] = "s3_img_link: " + img_path
+            else:
+                img_path = f"/srv/images/{img_filename}"
+                os.makedirs(os.path.dirname(img_path), exist_ok=True)
+                with open(img_path, "wb") as f:
+                    f.write(img_data)
+                msg["content"] = "local_img_link: " + img_path
+    return messages
+
 
 """
 Write-only API endpoint to push traces to the server.
@@ -103,11 +148,13 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         result_ids = []
         for i, msg in enumerate(messages):
+            trace_id = uuid.uuid4()
             message_content = msg
+            message_content = parse_and_push_images(dataset_name, trace_id, message_content)
             message_metadata = metadata[i]
 
             trace = Trace(
-                id=uuid.uuid4(),
+                id=trace_id,
                 dataset_id=dataset_id,
                 index=(next_index + i) if dataset_id else 0,
                 name = message_metadata.get("name", f"Run {next_index + i}"),

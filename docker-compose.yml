@@ -68,6 +68,8 @@ services:
         source: ./app-api
         target: /srv/app
       - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - $HOME/.aws:/root/.aws
+      - ./data/images:/srv/images
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
