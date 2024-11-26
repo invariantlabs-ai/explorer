@@ -288,7 +288,15 @@ def search_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 elif key == "Action plan flawed":
                     result[key]['severity'] = 2
                     result[key]['icon'] = 'tools'
-                
+        elif query.strip().startswith("filter"):
+            # e.g. query=filter:some message:16,21,25,26,35
+            filter_query = query.strip()[len("filter:"):].strip()
+            filter_message, indices = filter_query.split(":")
+            indices = [int(i) for i in indices.split(",")]
+            result["Filtered Traces"] = {
+                "traces": indices,
+                "description": filter_message
+            }
         else:
             selected_traces, search_term, filter_terms = query_traces(session, dataset, query)
             for trace in selected_traces:
