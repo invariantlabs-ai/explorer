@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 trace = FastAPI()
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
-async def get_image(request: Request, userInfo: Annotated[dict, Depends(AuthenticatedUserIdentity)], dataset_name: str, trace_id: str, image_id: str):
+async def get_image(request: Request, userInfo: Annotated[dict, Depends(UserIdentity)], dataset_name: str, trace_id: str, image_id: str):
     user_id = userInfo["sub"]
     with Session(db()) as session:
         trace = load_trace(session, trace_id, user_id, allow_public=True, allow_shared=True)
