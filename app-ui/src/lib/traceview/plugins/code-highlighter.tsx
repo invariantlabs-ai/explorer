@@ -266,6 +266,7 @@ register_plugin({
     }
 });
 
+
 /**
  * Performs some basic cleaning on the content to make it easier to classify.
  * 
@@ -284,12 +285,22 @@ function cleanContent(props: { content: string }) {
 
     // in each line, remove leading line numbers
     const lines = content.split('\n');
+    if (LANGUAGE_CLASSIFIER.derive_highlighting_language(content) as string === 'plaintext') {
+        return content;
+    }
     const cleaned = lines.map((line) => {
-        // remove leading NN: from each line
-        return line.replace(/^\d+:/, '');
+        return remove_line_numbers(line)
     });
 
     return cleaned.join('\n')
+}
+
+function remove_line_numbers(text) {
+    // Find line numbers with optional ':'
+    const pattern = /(^\s*\d+:?)(\s*.*)/;
+
+    // Replace with everything after the line number
+    return text.replace(pattern, (_, group1, group2) => group2).replace('\t', '');
 }
 
 /** 
@@ -302,10 +313,10 @@ class LanguageClassifier {
 
     // we rely on a set of very characteristic tokens/strings for each language
     KEY_TOKENS = {
-        "python": ['#', 'import', '[', ']', 'def', 'class', 'return', '"""', "'''", 'print', 'for', 'in', 'if', 'else', 'elif', 'import', 'from', 'as', 'try:', 'except', 'finally', 'raise', 'assert'],
-        "typescript": ['//', '{', '}', '[', ']', '=>', 'function', 'return', 'if', 'else', 'for', 'in', 'import', 'from', 'as', 'try', 'catch', 'finally', 'throw', 'assert', 'console', 'window', 'let', 'const'],
-        "plaintext": ["You are", "you", "he", "she"],
-        "markdown": ["# ", "## ", "### ", "#### ", "##### ", "###### ", "- ", "* ", "**"]
+        "python": ['#', 'import', '[', ']', 'def', 'class', 'return', '"""', "'''", 'print', 'for', 'in', 'if', 'else:', 'elif', 'import', 'from', 'as', 'try:', 'except', 'finally', 'raise', 'assert', '\t', '    '],
+        "typescript": ['//', '{', '}', '[', ']', '=>', 'function', 'return', 'if', 'else', 'for', 'in', 'import', 'from', 'as', 'try', 'catch', 'finally', 'throw', 'assert', 'console', 'window', 'let', 'const', '&&'],
+        "plaintext": ["You are", "you", "he", "she", "I", "I'll", "I'm", "I've", "you", "you'll", "you're", "you've", "he", "he'll", "he's", "he's", "she", "she'll", "she's", "she's", "it", "it'll", "it's", 'we', '.py', '.rst', '.md', '\t'],
+        "markdown": ["# ", "## ", "### ", "#### ", "##### ", "###### ", "- ", "* ", "**"],
     };
 
     // we transform KEY_TOKENS into a map that maps 'token' -> ['lang1', 'lang2', ...] (so we don't have to iterate over all languages for counting)
@@ -345,8 +356,6 @@ class LanguageClassifier {
                 return 'typescript';
             } else if (tag === 'typescript') {
                 return 'typescript';
-            } else {
-                return 'plaintext';
             }
         }
 

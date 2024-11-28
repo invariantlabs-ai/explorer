@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 import inspect
 from uuid import uuid4
-import json
+
 
 @pytest.fixture
 def url():
@@ -115,6 +115,11 @@ def data_abc():
 @pytest.fixture
 def data_code():
     with open('./data/code.jsonl', 'r') as f:
+        return f.read()
+
+@pytest.fixture
+def data_line_numbers():
+    with open('./data/line_numbers.jsonl', 'r') as f:
         return f.read()
     
 
