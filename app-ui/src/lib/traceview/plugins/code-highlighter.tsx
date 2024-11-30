@@ -7,6 +7,7 @@ import "./code-highlighter.scss";
 import { HighlightedJSON } from '../highlights';
 import { Line } from '../line';
 import { truncate } from '../utils';
+import KEY_TOKENS from './code-highligther-keywords.json';
 
 // component properties of the code-highlighter plugin
 interface CodeHighlightedViewProps {
@@ -311,27 +312,20 @@ function remove_line_numbers(text) {
 class LanguageClassifier {
     supported_languages = ['python', 'typescript', 'plaintext', 'markdown'];
 
-    // we rely on a set of very characteristic tokens/strings for each language
-    KEY_TOKENS = {
-        "python": ['#', 'import', '[', ']', 'def', 'class', 'return', '"""', "'''", 'print', 'for', 'in', 'if', 'else:', 'elif', 'import', 'from', 'as', 'try:', 'except', 'finally', 'raise', 'assert', '\t', '    '],
-        "typescript": ['//', '{', '}', '[', ']', '=>', 'function', 'return', 'if', 'else', 'for', 'in', 'import', 'from', 'as', 'try', 'catch', 'finally', 'throw', 'assert', 'console', 'window', 'let', 'const', '&&'],
-        "plaintext": ["You are", "you", "he", "she", "I", "I'll", "I'm", "I've", "you", "you'll", "you're", "you've", "he", "he'll", "he's", "he's", "she", "she'll", "she's", "she's", "it", "it'll", "it's", 'we', '.py', '.rst', '.md', '\t'],
-        "markdown": ["# ", "## ", "### ", "#### ", "##### ", "###### ", "- ", "* ", "**"],
-    };
-
     // we transform KEY_TOKENS into a map that maps 'token' -> ['lang1', 'lang2', ...] (so we don't have to iterate over all languages for counting)
     token_map: Record<string, string[]>;
 
     constructor() {
         this.token_map = {};
-        for (let language in this.KEY_TOKENS) {
-            for (let token of this.KEY_TOKENS[language]) {
+        for (let language in KEY_TOKENS) {
+            // If KEY_TOKENS[language] is an object, iterate over its keys
+            for (let token in KEY_TOKENS[language]) {
                 if (!this.token_map[token]) {
                     this.token_map[token] = [];
                 }
                 this.token_map[token].push(language);
             }
-        }
+        }        
     }
 
     /**
@@ -359,19 +353,23 @@ class LanguageClassifier {
             }
         }
 
-        // replace all double quoted and single quoted strings with empty strings (so we don't count tokens in strings)
-
         // count the number of occurrences of each key token
         let counts: Record<string, number> = Object.fromEntries(this.supported_languages.map((language) => [language, 0]));
         for (let token in this.token_map) {
             const n = (content.split(token).length - 1);
             for (let language of this.token_map[token]) {
-                counts[language] += n;
+                counts[language] += n * KEY_TOKENS[language][token];
             }
+        }
+
+        // bound counts to be at least 0
+        for (let language in counts) {
+            counts[language] = Math.max(0, counts[language]);
         }
 
         // sort languages by number of occurrences
         const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
         // pair with their count
         const pairs: [string, number][] = sorted.map((language) => [language, counts[language]]);
 
