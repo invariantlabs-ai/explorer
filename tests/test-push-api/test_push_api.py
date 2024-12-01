@@ -123,52 +123,56 @@ async def test_push_trace_with_hierarchy_name(context, url, dataset_name):
         await expect(response).to_be_ok()
 
 
-@pytest.mark.skip(reason="skipping for now")
-async def test_push_trace_with_image(context, url, dataset_name):
-    from PIL import Image
-    import io
-    import base64
+async def test_push_trace_with_image(context, url):
+    """Tests that pushing a trace with an image works."""
+    async with TemporaryExplorerDataset(url, context, '') as dataset:
+        from PIL import Image
+        import io
+        import base64
 
-    # Create a 100x100 blue image
-    blue_img = Image.new('RGB', (100, 100), color='blue')
-    
-    # Convert blue image to base64
-    blue_buffer = io.BytesIO()
-    blue_img.save(blue_buffer, format='PNG')
-    blue_base64 = base64.b64encode(blue_buffer.getvalue()).decode('utf-8')
+        blue_img = Image.new('RGB', (100, 100), color='blue')
+        blue_buffer = io.BytesIO()
+        blue_img.save(blue_buffer, format='PNG')
+        blue_base64 = base64.b64encode(blue_buffer.getvalue()).decode('utf-8')
 
-    # Create a 100x100 green image 
-    green_img = Image.new('RGB', (100, 100), color='green')
-    
-    # Convert green image to base64
-    green_buffer = io.BytesIO()
-    green_img.save(green_buffer, format='PNG')
-    green_base64 = base64.b64encode(green_buffer.getvalue()).decode('utf-8')
+        green_img = Image.new('RGB', (100, 100), color='green')
+        green_buffer = io.BytesIO()
+        green_img.save(green_buffer, format='PNG')
+        green_base64 = base64.b64encode(green_buffer.getvalue()).decode('utf-8')
 
-    trace = [
-        {"role": "assistant", "content": "How can I help you?"},
-        {"role": "user", "content": f"I want a blue image"},
-        {"role": "assistant", "content": f"Here is a blue image", "tool_calls": [
-            {"type": "function", "function": {"name": "generate_img", "arguments": {"description": "blue"}}}
-        ]},
-        {"role": "tool", "content": f"base64_img: {blue_base64}"},
-        {"role": "user", "content": f"I want a green image"},
-        {"role": "assistant", "content": f"Here is a green image", "tool_calls": [
-            {"type": "function", "function": {"name": "generate_img", "arguments": {"description": "green"}}}
-        ]},
-        {"role": "tool", "content": f"base64_img: {green_base64}"},
-    ]
+        trace = [
+            {"role": "assistant", "content": "How can I help you?"},
+            {"role": "user", "content": f"I want a blue image"},
+            {"role": "assistant", "content": f"Here is a blue image", "tool_calls": [
+                {"type": "function", "function": {"name": "generate_img", "arguments": {"description": "blue"}}}
+            ]},
+            {"role": "tool", "content": f"local_base64_img: {blue_base64}"},
+            {"role": "user", "content": f"I want a green image"},
+            {"role": "assistant", "content": f"Here is a green image", "tool_calls": [
+                {"type": "function", "function": {"name": "generate_img", "arguments": {"description": "green"}}}
+            ]},
+            {"role": "tool", "content": f"local_base64_img: {green_base64}"},
+        ]
 
-    data = {
-        "messages": [trace],
-        "dataset": "colored_imgs"
-    }
-    # get an API key
-    key = await get_apikey(url, context)
-    headers = {"Authorization": "Bearer " + key}
+        data = {
+            "messages": [trace],
+            "dataset": dataset["name"]
+        }
+        # get an API key and push the trace
+        key = await get_apikey(url, context)
+        headers = {"Authorization": "Bearer " + key}
 
-    response = await context.request.post(url + '/api/v1/push/trace',
-                                          data=data,
-                                          headers=headers)
-    await expect(response).to_be_ok()
+        response = await context.request.post(url + '/api/v1/push/trace',
+                                            data=data,
+                                            headers=headers)
+        await expect(response).to_be_ok()
+        trace_id = (await response.json())['id'][0]
+
+        # get the trace and check that the images are present
+        response = await context.request.get(url + f'/api/v1/trace/{trace_id}')
+        await expect(response).to_be_ok()
+        trace = await response.json()
+        assert len(trace['messages']) == 7
+        assert "local_img_link" in trace['messages'][3]['content']
+        assert "local_img_link" in trace['messages'][6]['content']
 

@@ -36,7 +36,8 @@ class ImageViewer extends React.Component<ImageViewerProps, {
     datasetName: string | null, 
     traceId: string | null, 
     imageId: string | null,
-    imageUrl: string | null
+    imageUrl: string | null,
+    isModalOpen: boolean
 }> {
     constructor(props) {
         super(props);
@@ -46,7 +47,8 @@ class ImageViewer extends React.Component<ImageViewerProps, {
             datasetName: imageInfo.datasetName,
             traceId: imageInfo.traceId,
             imageId: imageInfo.imageId,
-            imageUrl: null
+            imageUrl: null,
+            isModalOpen: false
         };
     }
 
@@ -96,11 +98,26 @@ class ImageViewer extends React.Component<ImageViewerProps, {
     render() {
         return <div className='plugin code-image-viewer'>
             {this.state.imageUrl && (
-                <img 
-                    src={this.state.imageUrl} 
-                    alt="Trace visualization" 
-                    style={{ maxWidth: '50%', marginTop: '10px' }}
-                />
+                <>
+                    <img
+                        src={this.state.imageUrl}
+                        alt="Image in the trace"
+                        style={{ maxWidth: '50%', marginTop: '10px', cursor: 'pointer' }}
+                        onClick={() => this.setState({ isModalOpen: true })}
+                    />
+                    {this.state.isModalOpen && (
+                        <div
+                            className='image-full-screen'
+                            onClick={() => this.setState({ isModalOpen: false })}
+                        >
+                            <img
+                                src={this.state.imageUrl}
+                                alt="Image in the trace fullscreen"
+                                style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain' }}
+                            />
+                        </div>
+                    )}
+                </>
             )}
         </div>;
     }
