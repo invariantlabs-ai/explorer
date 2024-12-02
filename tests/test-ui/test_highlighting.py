@@ -1,14 +1,11 @@
-from playwright.async_api import expect
 import asyncio # even if not used, required for pytest-asyncio
-import pytest
 import os
+import re
 # add tests folder (parent) to sys.path
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from util import * # needed for pytest fixtures
 import util
-import tempfile 
-from pytest_lazy_fixtures import lf
 
 from PIL import Image
 
@@ -80,14 +77,101 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
         msg_screenshot = await screenshot(user_msg)
         assert not is_highlighted(msg_screenshot), "Code shown in table should not be highlighted"
 
+async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url)
+        await screenshot(page)
+
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # share dataset
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+
+        # wait for load ('Tool' message)
+        await page.wait_for_selector("text=TOOL")
+        snippet_1 = page.locator("css=.event").nth(1)
+        snippet_2 = page.locator("css=.event").nth(2)
+
+        # take screenshot of message
+        snippet_1_screenshot = await screenshot(snippet_1)
+        snippet_2_screenshot = await screenshot(snippet_2)
+
+        assert is_highlighted(snippet_1_screenshot), "Code shown in table should be highlighted"
+        assert is_highlighted(snippet_2_screenshot), "Code shown in table should be highlighted"
+
+        # Check that there is not a line number column
+        #assert not await snippet_1.locator("text=113").is_visible()
+        code_snippet_1 = await snippet_1.locator("css=.content").inner_text()
+        code_snippet_2 = await snippet_2.locator("css=.content").inner_text()
+
+        # Check that there are no line numbers in the code text
+        assert len(extract_line_numbers_from_text(code_snippet_1)) == 0
+        assert len(extract_line_numbers_from_text(code_snippet_2)) == 0
+
+
+async def test_line_numbers_are_not_removed_from_non_code(context, url, data_line_numbers, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url)
+        await screenshot(page)
+
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # share dataset
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+
+        # Find table with list data (looks like line numbers)
+        table = page.locator("table").nth(0)
+        table_screenshot = await screenshot(table)
+
+        assert not is_highlighted(table_screenshot), "Code shown in table should not be highlighted"
+
+        assert await table.locator("text=113").is_visible()
+        assert await table.locator("text=144").is_visible()
+
+
+async def test_highlights_python_correctly(context, url, data_line_numbers, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url)
+        await screenshot(page)
+
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # share dataset
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+
+        # Find table with list data (looks like line numbers)
+        table = page.locator("table").nth(1)
+        table_screenshot = await screenshot(table)
+
+        assert is_highlighted(table_screenshot), "Code shown in table should be highlighted"
+
+
+def extract_line_numbers_from_text(text):
+    # Regex to match line numbers at the beginning of a line
+    line_number_pattern = r"^\s*(\d+):?\s"
+    return [int(match.group(1)) for match in re.finditer(line_number_pattern, text, re.MULTILINE)]
+
+
+
 def is_highlighted(screenshot):
     # checks that the screenshot contains any non-greyish pixels
     # load PNG data from table_screenshot
     img = Image.open(screenshot)
     # get the pixel data
     pixels = img.load()
-    # collect all unique pixel colors
-    colors = set()
+
     for x in range(img.width):
         for y in range(img.height):
             # only add colors where RGB are sufficiently different
