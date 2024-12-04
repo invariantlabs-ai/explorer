@@ -17,12 +17,15 @@ import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
 
-import { BsArrowsCollapse, BsArrowsExpand, BsCaretLeftFill, BsCheck, BsClipboard2CheckFill, BsClipboard2Fill, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash, BsViewList } from "react-icons/bs";
+import { BsArrowDown, BsArrowsCollapse, BsArrowsExpand, BsArrowUp, BsCaretLeftFill, BsCheck, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash} from "react-icons/bs";
+
+export const THUMBS_UP = ":feedback:thumbs-up"
+export const THUMBS_DOWN = ":feedback:thumbs-down"
 
 /**
  * CRUD manager (RemoteResource) for trace annotations.
  */
-class Annotations extends RemoteResource {
+export class Annotations extends RemoteResource {
   constructor(traceId) {
     super(`/api/v1/trace/${traceId}/annotations`, `/api/v1/trace/${traceId}/annotation`, `/api/v1/trace/${traceId}/annotation`, `/api/v1/trace/${traceId}/annotate`)
     this.traceId = traceId
@@ -140,7 +143,14 @@ export function AnnotationAugmentedTraceView(props) {
     },
     hasHighlight: (address, ...args) => {
       if (filtered_annotations && filtered_annotations[address] !== undefined) {
-        return "highlighted num-" + filtered_annotations[address].length
+        let thumbs = ""
+        if (filtered_annotations[address].some(a => a.content == THUMBS_UP)) {
+          thumbs += " thumbs-up"
+        }
+        if (filtered_annotations[address].some(a => a.content == THUMBS_DOWN)) {
+          thumbs += " thumbs-down"
+        }
+        return "highlighted num-" + filtered_annotations[address].length + thumbs;
       }
     },
     extraArgs: [activeTraceId]
@@ -213,6 +223,7 @@ function TraceViewContent(props) {
         </>
       }
       allExpanded={props.allExpanded}
+      traceId={activeTraceId}
     />
 }
 
@@ -266,6 +277,13 @@ function Annotation(props) {
     })
   }
 
+  let content = props.content;
+  if (content == THUMBS_UP) {
+    content = <span className='thumbs-up-icon'><BsArrowUp />Positive Feedback</span>
+  } else if (content == THUMBS_DOWN) {
+    content = <span className='thumbs-down-icon'><BsArrowDown />Negative Feedback</span>
+  }
+
   return <div className='annotation'>
     <div className='user'>
       {/* gravat */}
@@ -281,7 +299,9 @@ function Annotation(props) {
           {userInfo?.id == props.user.id && <button onClick={onDelete}><BsTrash /></button>}
         </div>
       </header>
-      {!editing && <div className='content'>{props.content}</div>}
+      {!editing && <div className='content'>
+        {content}
+      </div>}
       {editing && <textarea value={comment} onChange={(e) => setComment(e.target.value)} />}
       {editing && <div className='actions'>
         <button onClick={() => setEditing(!editing)}>Cancel</button>

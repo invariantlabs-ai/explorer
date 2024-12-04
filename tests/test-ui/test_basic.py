@@ -5,6 +5,7 @@ import sys
 import pytest
 import time
 from playwright.async_api import expect
+from typing import Literal
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tempfile
@@ -258,3 +259,55 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
         await screenshot(page)
         no_policies_found_text = await page.locator("div.no-policies").inner_text()
         assert "No policies found for the dataset" in no_policies_found_text
+
+
+async def test_thumbs_up_down(context, url, data_abc, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url)
+        await screenshot(page)
+
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # go to All tab
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+
+        # wait for load
+        await page.wait_for_selector("text=User")
+
+        # hover over a line to show thumbs up/down
+        line = page.locator("#unexpanded").first
+        await line.hover()
+        await screenshot(page)
+
+        # Fold Sidebar (data-tooltip-content="Fold Sidebar")
+        await page.locator("css=[data-tooltip-content='Fold Sidebar']").click()
+
+        # click thumbs up
+        await page.locator(".thumbs-up-icon").first.click()
+        await screenshot(page)
+
+        # verify thumbs up styling applied
+        assert await has_thumbs_visible(line), "Thumbs on the first line are not visible"
+        assert await has_thumb_toggled(line, thumb="up"), "Thumbs up on the first line are not toggled"
+
+        # click thumbs down on another line
+        second_line = page.locator("#unexpanded").nth(1)
+        await second_line.hover()
+        # wait for 200ms
+        await second_line.locator(".thumbs-down-icon").first.click()
+        await screenshot(page)
+
+        # verify thumbs down styling applied
+        assert await has_thumbs_visible(second_line), "Thumbs on the second line are not visible"
+        assert await has_thumb_toggled(second_line, thumb="down"), "Thumbs down on the second line are not toggled"
+
+
+async def has_thumb_toggled(line, thumb: Literal["up", "down"]) -> bool:
+    return "toggled" in await line.locator(".thumbs-{}-icon".format(thumb)).get_attribute("class")
+
+async def has_thumbs_visible(line) -> bool:
+    return "visible" in await line.locator(".thumbs").get_attribute("class")

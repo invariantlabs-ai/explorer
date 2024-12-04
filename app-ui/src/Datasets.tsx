@@ -5,7 +5,7 @@ import { EntityList } from './EntityList'
 import { Modal } from './Modal'
 import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
-
+import { useTelemetry } from './telemetry'
 /**
  * Creates a new dataset with the given name, with no data.
  */
@@ -77,14 +77,18 @@ export function UploadDatasetModalContent(props) {
   const [isDatasetNameInvalid, setIsDatasetNameInvalid] = React.useState(false);
   const DATASET_NAME_REGEX = /^[A-Za-z0-9-_]+$/;
 
+  const telemetry = useTelemetry()
+
   const onSubmit = () => {
     if (!name) return
     if (!file) {
       createDataset(name).then(() => {
         props.onSuccess()
         props.onClose()
+        telemetry.capture('dataset-created', { name: name, from_file: false})
       }).catch(err => {
         setError(err.detail || 'An unknown error occurred, please try again.')
+        telemetry.capture('dataset-create-failed', { name: name, error: err.detail })
       })
       return
     }
@@ -94,9 +98,11 @@ export function UploadDatasetModalContent(props) {
       setLoading(false)
       props.onSuccess()
       props.onClose()
+      telemetry.capture('dataset-created', { name: name, from_file: true})
     }).catch(err => {
       setLoading(false)
       setError(err.detail || 'An unknown error occurred, please try again.')
+      telemetry.capture('dataset-create-failed', { name: name, error: err.detail })
     })
   }
 

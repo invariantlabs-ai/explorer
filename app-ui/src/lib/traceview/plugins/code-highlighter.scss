@@ -1,6 +1,7 @@
 div.code-highlighter {
     // background-color: #f6f6f6;
     overflow-x: auto;
+    overflow-y: visible;
     padding: 0pt;
     padding-bottom: -10pt;
 
@@ -22,4 +23,8 @@ div.code-highlighter {
         border-radius: 2pt;
         font-weight: bold;
     }
+}
+
+.plugin.code-highlighter {
+    overflow: visible;
 }

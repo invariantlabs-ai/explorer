@@ -180,7 +180,7 @@ class RemoteResource {
 // cached set of data loaders
 const RESOURCE_LOADERS = {}
 
-function useRemoteResource(DataLoaderConstructor, ...args) {
+function useRemoteResource(DataLoaderConstructor, ...args): [any, string, any, RemoteResource] {
   const [dataLoader, setDataLoader] = useState(null)
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState(null)

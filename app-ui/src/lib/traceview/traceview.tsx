@@ -24,6 +24,8 @@ interface TraceViewProps {
 
     // highlights to highlight in the trace view
     highlights: Record<string, string>
+    // ID of the trace
+    traceId: string
     // whether to use the side-by-side view
     sideBySide?: boolean
     // custom view to show when selecting a line
@@ -153,7 +155,7 @@ export function TraceView(props: TraceViewProps) {
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
             </div>
         </div>}
         {hasEditor && sideBySide && <div className="sidebyside">
@@ -161,12 +163,12 @@ export function TraceView(props: TraceViewProps) {
                 <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
             </div>
             <div className="traces side">
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
             </div>
         </div>}
         {!hasEditor && <div className="fullscreen">
             <div className={"side traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} />
+                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
             </div>
         </div>}
     </div>
@@ -258,6 +260,8 @@ interface RenderedTraceProps {
     trace: string | object;
     // highlights to highlight in the trace view
     highlights: HighlightedJSON;
+    // ID of the trace
+    traceId: string
     // a decorator configuration for inline editor (e.g. to annotate a line, or comment on a line)
     decorator?: TraceDecorator;
     // additional components to show before the trace (in the same scroll container)
@@ -280,6 +284,9 @@ interface RenderedTraceState {
     traceString: string | object | null;
     // currently selected highlight address (where the inline editor is shown)
     selectedHighlightAddress: string | null;
+
+    // alt key pressed
+    altPressed: boolean;
 
     // broadcast events for the trace view to allow parent components to 
     // expand/collapse all messages
@@ -327,7 +334,8 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             parsed: null,
             traceString: null,
             selectedHighlightAddress: null,
-            events: { collapseAll: new BroadcastEvent(), expandAll: new BroadcastEvent() }
+            events: { collapseAll: new BroadcastEvent(), expandAll: new BroadcastEvent() },
+            altPressed: false
         }
 
         this.listRef = React.createRef()
@@ -340,6 +348,26 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
     componentDidMount() {
         this.parse()
         this.props.onMount?.(this.state.events)
+
+        window.addEventListener("keydown", this.onAltDown)
+        window.addEventListener("keyup", this.onAltUp)
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener("keydown", this.onAltDown)
+        window.removeEventListener("keyup", this.onAltUp)
+    }
+
+    onAltDown = (e: KeyboardEvent) => {
+        if (e.key === "Alt") {
+            this.setState({ altPressed: true })
+        }
+    }
+
+    onAltUp = (e: KeyboardEvent) => {
+        if (e.key === "Alt") {
+            this.setState({ altPressed: false })
+        }
     }
 
     parse() {
@@ -388,11 +416,12 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 selectedHighlightAnchor: this.state.selectedHighlightAddress,
                 setSelection: (address: string | null) => {
                     this.setState({ selectedHighlightAddress: address })
-                }
+                },
+                traceId: this.props.traceId
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
-            return <div className="traces" ref={this.listRef}>
+            return <div className={"traces " + (this.state.altPressed ? "alt" : "")} ref={this.listRef}>
                 {this.props.prelude}
                 {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}

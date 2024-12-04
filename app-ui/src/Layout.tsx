@@ -14,6 +14,7 @@ import { SignUp } from './SignUp';
 import { DeploymentInfo } from './components/DeploymentInfo';
 import { config } from './Config';
 import { ConsentBanner, RevokeConsent } from './ConsentBanner';
+import { SignUpModal } from './SignUpModal';
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -212,6 +213,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
         </div>
         <Tooltip id="button-tooltip" place="bottom"/>
         <ConsentBanner />
+        <SignUpModal />
     </>;
 }
 

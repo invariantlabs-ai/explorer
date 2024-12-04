@@ -1,6 +1,11 @@
-import React from "react"
+import React, { useState } from "react"
 import { GroupedHighlight } from "./highlights";
 import { useTelemetry } from "../../telemetry";
+import { BsHandThumbsUpFill, BsHandThumbsDownFill, BsHandThumbsUp, BsHandThumbsDown, BsArrowUp, BsArrowDown } from "react-icons/bs";
+import { useRemoteResource } from "../../RemoteResource";
+import { Annotations, THUMBS_UP, THUMBS_DOWN } from "../../AnnotationAugmentedTraceView";
+import { useUserInfo } from "../../UserInfo";
+import { alertSignup } from "../../SignUpModal";
 
 /** A way to provide inline decorations to a rendered trace view. */
 export interface TraceDecorator {
@@ -21,6 +26,7 @@ export interface HighlightContext {
     // decorator configuration of the component to show
     // when the inline editor is shown
     decorator?: TraceDecorator
+    traceId?: string
 }
 
 /**
@@ -34,10 +40,13 @@ export interface HighlightContext {
  *  - address: the address of the line (e.g. the address of the tool call argument, message, or line of code)
  *  - highlights: the highlights to show on this line (e.g. search results, analyzer results)
  */
-export function Line(props: { children: any, highlightContext?: HighlightContext, address?: string, highlights?: GroupedHighlight[] }) {
-    // const [expanded, setExpanded] = useState(false)
+export function Line(props: { children: any, highlightContext?: HighlightContext, address?: string, highlights?: GroupedHighlight[]}) {
     const decorator = props.highlightContext?.decorator
     const telemetry = useTelemetry();
+    const userInfo = useUserInfo();
+
+    let traceId = props.highlightContext?.traceId;
+    const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, traceId)
 
     const setExpanded = (state: boolean) => {
         if (!props.address) {
@@ -52,8 +61,9 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     }
 
     const expanded = props.address === props.highlightContext?.selectedHighlightAnchor
-    const className = "line " + (props.highlights?.length ? "has-highlights" : "")
+    const className = "line " + (props.highlights?.length ? "has-highlights" : "") + (userInfo?.loggedIn ? " logged-in" : "")
     let extraClass = " "
+    let thumbsUp = false, thumbsDown = false;
 
     if (!decorator) {
         return <span className={className}>{props.children}</span>
@@ -64,7 +74,10 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         if (typeof highlightResult === "boolean") {
             extraClass += "highlighted"
         } else if (typeof highlightResult === "string") {
-            extraClass += highlightResult
+            let result = highlightResult as string;
+            thumbsUp = thumbsUp || result.includes("thumbs-up")
+            thumbsDown = thumbsDown || result.includes("thumbs-down")
+            extraClass += result;
         }
     }
 
@@ -73,18 +86,109 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         if (!expanded) telemetry.capture("traceview.opened-annotation-editor")
     }
 
+    let threadAnnotations = []
+    if (props.address) {
+        threadAnnotations = (annotations || {})[props.address] || []
+    }
+
+    const handleThumbsUp = (e: React.MouseEvent) => {
+        const existingThumbAnnotations = threadAnnotations
+            .filter(annotation => annotation["content"] === THUMBS_UP || annotation["content"] === THUMBS_DOWN)
+
+        if (!userInfo?.loggedIn) {
+            alertSignup("label agent traces");
+            e.stopPropagation();
+            return;
+        }
+
+        let existing = (userInfo?.id && existingThumbAnnotations.find(a => a["user"]["id"] === userInfo?.id))
+        if (existing) {
+            annotator?.delete(existing["id"]).then(() => {
+                annotator?.refresh();
+            }).catch((error) => {
+                console.error("error deleting thumbs up", error);
+            })
+            e.stopPropagation();
+            
+            // if same as before, untoggle it
+            if (existing["content"] === THUMBS_UP) {
+                return;
+            }
+            // otherwise add opposite
+        }
+
+        e.stopPropagation();
+
+        annotator?.create({ address: props.address, content: THUMBS_UP }).then(() => {
+            annotator?.refresh();
+        }).catch((error) => {
+            console.error("error saving thumbs up", error);
+        });
+    };
+
+    const handleThumbsDown = (e: React.MouseEvent) => {
+        const existingThumbAnnotations = threadAnnotations
+            .filter(annotation => annotation["content"] === THUMBS_DOWN || annotation["content"] === THUMBS_UP)
+
+        if (!userInfo?.loggedIn) {
+            alertSignup("label agent traces");
+            e.stopPropagation();
+            return;
+        }
+
+        let existing = (userInfo?.id && existingThumbAnnotations.find(a => a["user"]["id"] === userInfo?.id))
+        if (existing) {
+            annotator?.delete(existing["id"]).then(() => {
+                annotator?.refresh();
+            }).catch((error) => {
+                console.error("error deleting thumbs down", error);
+            })
+            e.stopPropagation();
+            
+            // if same as before, untoggle it
+            if (existing["content"] === THUMBS_DOWN) {
+                return;
+            }
+            // otherwise add opposite
+        }
+
+        e.stopPropagation();
+        
+        annotator?.create({ address: props.address, content: THUMBS_DOWN }).then(() => {
+            annotator?.refresh();
+        }).catch((error) => {
+            console.error("error saving thumbs down", error);
+        });
+    };
+
     if (!expanded) {
-        return <span id='unexpanded' className={className + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan></span>
+        return <span 
+            id='unexpanded' 
+            className={className + extraClass}
+        > 
+            <SelectableSpan onActualClick={onClickLine}>
+                {props.children}
+                <div className={"thumbs " + (thumbsUp || thumbsDown ? "visible" : "")}>
+                    {<BsArrowUp onClick={handleThumbsUp} className={'thumbs-up-icon up ' + (thumbsUp ? "toggled" : "")} />}
+                    {<BsArrowDown onClick={handleThumbsDown} className={'thumbs-down-icon down ' + (thumbsDown ? "toggled" : "")} />}
+                </div>
+            </SelectableSpan>
+        </span>
     }
 
     const InlineComponent: any = decorator.editorComponent
-    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => setExpanded(false) })
+    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => {setExpanded(false); setHovered(false); } })
 
     if (content === null) {
         return <span className={className}>{props.children}</span>
     }
 
-    return <span className={className + (expanded ? ' expanded ' : '') + extraClass}><SelectableSpan onActualClick={onClickLine}>{props.children}</SelectableSpan>{expanded && <div className="inline-line-editor">
+    return <span 
+        className={className + (expanded ? ' expanded ' : '') + extraClass}
+    >
+        <SelectableSpan onActualClick={onClickLine}>
+            {props.children}
+        </SelectableSpan>{expanded && <div className="inline-line-editor">
         {content}
     </div>}</span>
 }

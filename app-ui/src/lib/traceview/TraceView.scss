@@ -389,7 +389,6 @@ body {
             padding-right: 10pt;
             width: calc(100% - 20pt);
             margin-left: 0pt;
-            overflow: hidden;
         }
 
         .line {
@@ -402,8 +401,10 @@ body {
             position: relative;
 
             .inline-line-editor {
-                margin-left: -10pt;
-                width: calc(100% + 12pt);
+                // negative offset to make the inline line editor
+                // go full width, rather than padded, like the message content
+                margin-left: -7pt;
+                width: calc(100% + 5pt);
             }
         }
 
@@ -412,8 +413,10 @@ body {
             overflow: visible;
 
             .inline-line-editor {
-                margin-left: -10pt;
-                width: calc(100% + 12pt);
+                // negative offset to make the inline line editor
+                // go full width, rather than padded, like the message content
+                margin-left: -7pt;
+                width: calc(100% + 4pt);
             }
         }
     }
@@ -763,6 +766,7 @@ div.inline-line-editor {
     margin-top: 5pt;
     margin-bottom: 10pt;
     padding-bottom: 5pt;
+    padding-top: 10pt;
     // padding: 5pt 5pt;
     padding-left: 10pt;
     padding-right: 5pt;

@@ -166,6 +166,12 @@ def extract_line_numbers_from_text(text):
 
 
 def is_highlighted(screenshot):
+    # ignore thumbs up/down colors
+    IGNORE_COLORS = [
+        (0, 128, 0), # THUMBS UP
+        (255, 0, 0), # THUMBS DOWN
+    ]
+
     # checks that the screenshot contains any non-greyish pixels
     # load PNG data from table_screenshot
     img = Image.open(screenshot)
@@ -177,5 +183,14 @@ def is_highlighted(screenshot):
             # only add colors where RGB are sufficiently different
             grey_distance = abs(pixels[x, y][0] - pixels[x, y][1]) + abs(pixels[x, y][1] - pixels[x, y][2]) + abs(pixels[x, y][2] - pixels[x, y][0])
             if grey_distance > 10:
-                return True
+                # check if there is a color in IGNORE_COLORS in -5/+5 neighborhood of the pixel
+                should_ignore = False
+                for dx in range(-5, 5):
+                    for dy in range(-5, 5):
+                        if x + dx < 0 or x + dx >= img.width or y + dy < 0 or y + dy >= img.height:
+                            continue
+                        if pixels[x + dx, y + dy][:3] in IGNORE_COLORS:
+                            should_ignore = True
+                if not should_ignore:
+                    return True
     return False

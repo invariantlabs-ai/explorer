@@ -660,6 +660,14 @@ button.tool {
     margin-bottom: 5pt;
   }
 
+  a.button {
+    margin-bottom: 10pt;
+  }
+
+  h1 {
+    text-align: left;
+  }
+
   input.link {
     background-color: #ebebeb;
     display: block;
@@ -1356,20 +1364,112 @@ button.share {
   }
 }
 
+.thumbs-up-icon, .thumbs-down-icon {
+  svg {
+    position: relative;
+    bottom: -1.5pt;
+    margin-right: 2pt;
+  }
+
+  font-style: italic;
+
+}
+
+.thumbs::before {
+  content: '';
+  width: 20pt;
+  height: 31pt;
+  background-color: transparent;
+  position: absolute;
+  left: 20pt;
+  top: 0pt;
+}
+
+.traceview span.line .selectable:hover .thumbs {
+  display: inline-block;
+  opacity: 0.5;
+}
+
+.thumbs {
+  position: absolute;
+  top: 8pt;
+  left: -55pt;
+  display: inline-block;
+  border: 1pt solid $border-color;
+  border-radius: 3pt;
+  padding: 3pt;
+  background-color: white;
+  z-index: 1000;
+  transform: scale(0.8) translateY(-50%);
+  transform-origin: top left;
+  opacity: 0.0;
+
+  &.visible {
+    display: inline-block;
+    opacity: 0.5;
+  }
+
+  &:hover {
+    opacity: 1.0 !important;
+  }
+
+  svg {
+    margin: 2pt;
+    padding: 3pt;
+    padding-bottom: 5pt;
+    margin-bottom: -2.5pt;
+    color: rgba(0, 0, 0, 0.481);
+    transform: scale(1.2);
+    transform-origin: center;
+  }
+
+  svg.up {
+    color: black;
+  }
+
+  svg.down {
+    color: black;
+  }
+
+  svg:hover {
+    color: rgba(0, 0, 0, 0.882);
+    cursor: pointer;
+  }
+
+  svg.toggled {
+    background-color: #DECFEE;
+    border-radius: 3pt ;
+  }
+}
+
+// hide thumbs when alt is pressed (so we can select text underneath)
+.explorer .traces.alt .thumbs {
+  display: none !important;
+}
+
 .traceview span.line .selectable {
   display: block;
+  position: relative;
 }
 
 .traceview span.line:hover {
-  background-color: #f1f1f1;
+  background-color: #ededed;
 }
 
-.traceview span.line.expanded:hover {
+.traceview span.line.expanded {
   background-color: transparent;
 }
 
-.traceview span.line.highlighted {
-  background-color: #f1f1f1;
+.traceview span.line.highlighted .selectable {
+  background-color: rgba(204, 204, 204, 0.5);
+}
+
+.traceview span.line.thumbs-up .selectable {
+  background-color: rgba(179, 133, 217, 0.4);
+}
+
+.traceview span.line.thumbs-down .selectable {
+  background-color: rgba(179, 133, 217, 0.4);
 }
 
 .swap-on-hover {
