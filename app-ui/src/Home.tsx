@@ -40,7 +40,8 @@ function Home() {
   const userInfo = useUserInfo()
 
   // fetch datasets and snippets
-  const [datasets, refresh] = useDatasetList(8)
+  const [datasets_homepage, refreshHomepageDataset] = useDatasetList("homepage", 8)
+  const [datasets_private, refreshPrivateDataset] = useDatasetList("private", 8)
   const [snippets, refreshSnippets] = useSnippetsList()
   // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false)
@@ -52,7 +53,7 @@ function Home() {
   return <>
     {/* upload modal */}
     {showUploadModal && <Modal title="Create Dataset" onClose={() => setShowUploadModal(false)} hasWindowControls>
-      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refresh} />
+      <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refreshPrivateDataset} />
     </Modal>}
     <h2 className='home'>Home</h2>
     {/* user-personal snippets and datasets */}
@@ -62,7 +63,7 @@ function Home() {
           <Link to='/datasets'>Datasets</Link>
           <button className='inline primary' onClick={() => setShowUploadModal(true)}>New Dataset</button>
         </h2>
-        <DatasetLinkList datasets={datasets.filter(dataset => dataset.user?.id == userInfo?.id)} icon={<BsDatabase />} />
+        <DatasetLinkList datasets={datasets_private} homepage={false} icon={<BsDatabase />} />
       </div>
       <div className='box'>
         <h2>
@@ -74,8 +75,8 @@ function Home() {
     </div>}
     {/* public datasets */}
     <div className='box'>
-      <h2>Shared Datasets</h2>
-      <DatasetLinkList datasets={datasets.filter(dataset => dataset.is_public)} icon={<BsGlobe />} />
+      <h2>Featured Datasets</h2>
+      <DatasetLinkList datasets={datasets_homepage} homepage={true} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
     <ul className='box activity'>

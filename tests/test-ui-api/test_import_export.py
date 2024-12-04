@@ -47,7 +47,7 @@ async def test_upload_and_delete_dataset(dataset_name, url, context, delete_by):
 
     # list datasets via UI-API and check
     # if the created dataset is in the list
-    response = await context.request.get(url + "/api/v1/dataset/list")
+    response = await context.request.get(url + "/api/v1/dataset/list?kind=any")
     await expect(response).to_be_ok()
     datasets = await response.json()
     datasets = list(
@@ -75,7 +75,7 @@ async def test_upload_and_delete_dataset(dataset_name, url, context, delete_by):
     await expect(response).to_be_ok()
 
     # check if dataset is deleted
-    response = await context.request.get(url + "/api/v1/dataset/list")
+    response = await context.request.get(url + "/api/v1/dataset/list?kind=any")
     await expect(response).to_be_ok()
     datasets = await response.json()
     datasets = list(
