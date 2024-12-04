@@ -177,7 +177,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     }
 
     const InlineComponent: any = decorator.editorComponent
-    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => {setExpanded(false); setHovered(false); } })
+    const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => {setExpanded(false);} })
 
     if (content === null) {
         return <span className={className}>{props.children}</span>

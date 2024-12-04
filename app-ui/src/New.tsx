@@ -81,6 +81,7 @@ export function New() {
       // extra UI to show above the trace view
       header={header}
       title={"Upload Trace"}
+      traceId='<new>'
     />
   </div>
 }
