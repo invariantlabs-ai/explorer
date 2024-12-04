@@ -1,4 +1,16 @@
 import { HighlightData } from "./traceview/highlights";
+
+/**
+ * Root key to identify top-level annotations by.
+ */
+export const ROOT_ANNOTATIONS_KEY = "<root>"
+interface ParsedAnnotationOutput {
+    highlights: [string, HighlightData][]
+    filtered_annotations: { [key: string]: HighlightData[] }
+    errors: { type: string, count: number }[]
+    top_level_annotations: HighlightData[]
+}
+
 /**
  * Takes the total list of trace annotations and splits it into the different types of annotations, e.g.
  * 
@@ -8,7 +20,7 @@ import { HighlightData } from "./traceview/highlights";
  * - testing highlights
  */
 export class AnnotationsParser {
-    static parseAnnotations(annotations, search_highlights: { [key: string]: HighlightData }) {
+    static parse_annotations(annotations, search_highlights: { [key: string]: HighlightData }): ParsedAnnotationOutput {
         // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
         const highlights: [string, HighlightData][] = search_highlights ? Object.entries(search_highlights) : []
         // collect errors from analyzer annotations
@@ -67,7 +79,30 @@ export class AnnotationsParser {
                 filtered_annotations[key] = new_annotations
             }
         }
+        
+        // filter all top-level annotations
+        let top_level_annotations = [] as HighlightData[]
+        // top-level annotations are stored under the <root> key
+        if (annotations && annotations[ROOT_ANNOTATIONS_KEY]) {
+            for (let i=0; i<annotations[ROOT_ANNOTATIONS_KEY].length; i++) {
+                let annotation = annotations[ROOT_ANNOTATIONS_KEY][i]
+                let highlight: HighlightData = { 
+                    "content": annotation.content,
+                    // allows us to identify the annotation from the highlight
+                    source: annotation.extra_metadata ? annotation.extra_metadata["source"] : "unknown",
+                    "annotationId": "<top level>:" + i
+                }
 
-        return { highlights: highlights, filtered_annotations, errors }
+                if (annotation.extra_metadata) {
+                    highlight.extra_metadata = Object.assign({}, annotation.extra_metadata)
+                    // remove source if present
+                    delete highlight.extra_metadata!["source"]
+                }
+
+                top_level_annotations.push(highlight)
+            }
+        }
+
+        return { highlights: highlights, filtered_annotations, errors, top_level_annotations }
     }
 }

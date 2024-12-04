@@ -254,6 +254,7 @@ body {
         margin-bottom: 15pt;
         margin-top: 10pt;
         margin-right: 5pt;
+        margin-left: 0pt;
         border: 1pt solid #d71b1b;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         overflow: hidden;
@@ -766,7 +767,7 @@ div.inline-line-editor {
     margin-top: 5pt;
     margin-bottom: 10pt;
     padding-bottom: 5pt;
-    padding-top: 10pt;
+    padding-top: 0pt;
     // padding: 5pt 5pt;
     padding-left: 10pt;
     padding-right: 5pt;
@@ -855,4 +856,9 @@ pre.marked-line {
     div:not(.highlight) {
         opacity: 0.5;
     }
+}
+
+.event.top-level-highlights {
+    background: transparent;
+    border: none;
 }

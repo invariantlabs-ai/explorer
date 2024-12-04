@@ -144,7 +144,7 @@ export function TestSuccessHighlightDetail(props: { highlight: HighlightData, se
  * Details failed test highlights in the selected line of the trace view.
  */
 export function TestFailureHighlightDetail(props: { highlight: HighlightData, severity: string }) {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     const highlight = props.highlight;
     
     const label = props.severity == "expectation" ? "Expectation Violated" : "Assertion Failed";
