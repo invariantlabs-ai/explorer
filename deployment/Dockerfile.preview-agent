@@ -18,4 +18,7 @@ COPY preview-agent.py /preview-agent/preview-agent.py
 
 WORKDIR /root/www/staging-explorer
 RUN mkdir -p data/database
+
+RUN git config --global --add safe.directory /root/www/staging-explorer
+
 CMD ["python", "/preview-agent/preview-agent.py"]
