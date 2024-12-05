@@ -58,7 +58,7 @@ function useAnimatedClassState(initialState: boolean) {
 function SidebarContent(props: { userInfo?: any, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void, children: React.ReactNode }) {
     const { userInfo, sidebarOpen, setSidebarOpen } = props;
 
-    const [datasets, refresh] = useDatasetList(4);
+    const [datasets, refresh] = useDatasetList("private", 4);
 
     return <div className={"sidebar " + (sidebarOpen ? 'open' : '')}>
         <div className='sidebar-background' onClick={() => setSidebarOpen(false)} />

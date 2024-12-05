@@ -6,7 +6,7 @@ import json
 import re
 import uuid
 from typing import Annotated
-
+from enum import Enum
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from invariant.policy import AnalysisResult, Policy
@@ -42,6 +42,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func
 from util.util import validate_dataset_name
+import os
+
+homepage_dataset_ids = json.load(open("homepage_datasets.json"))
+homepage_dataset_ids = homepage_dataset_ids["DEV"] if os.getenv("DEV_MODE") == "true" else homepage_dataset_ids["PROD"]
 
 # dataset routes
 dataset = FastAPI()
@@ -131,21 +135,31 @@ async def upload_file(
 # list all datasets, but without their traces
 ########################################
 
+class DatasetKind(Enum):
+    PRIVATE = "private"
+    PUBLIC = "public"
+    HOMEPAGE = "homepage"
+    ANY = "any"
+
+
 @dataset.get("/list")
-def list_datasets(request: Request, user: Annotated[dict, Depends(UserIdentity)]):
+def list_datasets(kind: DatasetKind, user: Annotated[dict, Depends(UserIdentity)], limit: int | None = None):
     user_id = user.get("sub")
-    
-    limit = request.query_params.get("limit")
-    limit = limit if limit != '' else None
-    
     with Session(db()) as session:
-        datasets = session.query(Dataset, User)\
-            .join(User, User.id == Dataset.user_id)\
-            .filter(or_(Dataset.user_id == user_id, Dataset.is_public))\
-            .order_by(Dataset.time_created.desc())\
+        query = session.query(Dataset, User)\
+            .join(User, User.id == Dataset.user_id)
+        if kind == DatasetKind.PRIVATE:
+            query = query.filter(Dataset.user_id == user_id)
+        elif kind == DatasetKind.PUBLIC:
+            query = query.filter(Dataset.is_public)
+        elif kind == DatasetKind.HOMEPAGE:
+            query = query.filter(and_(Dataset.is_public,Dataset.id.in_(homepage_dataset_ids)))
+        elif kind == DatasetKind.ANY:
+            query = query.filter(or_(Dataset.is_public,Dataset.user_id == user_id))
+
+        datasets = query.order_by(Dataset.time_created.desc())\
             .limit(limit)\
             .all()
-        
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
 
 @dataset.get("/list/byuser/{user_name}")

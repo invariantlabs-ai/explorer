@@ -6,6 +6,8 @@ import { Modal } from './Modal'
 import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 import { useTelemetry } from './telemetry'
+import HomepageDatasetsNames from './assets/HomepageDatasetsNames.json';
+
 /**
  * Creates a new dataset with the given name, with no data.
  */
@@ -202,15 +204,19 @@ export function DeleteDatasetModalContent(props) {
  */
 export function DatasetLinkList(props) {
   const userInfo = useUserInfo()
-  const datasets = props.datasets || [];
-
-  const hasActions = typeof props.hasActions === 'undefined' ? true : props.hasActions
-
+  let datasets = props.datasets || [];
+  let homepage = props.homepage || false
+  datasets = datasets.map(item => ({
+    ...item,
+    nice_name: homepage
+      ? HomepageDatasetsNames[item.id] || `${item.user.username}/${item.name}`
+      : `${item.user.username}/${item.name}`,
+  }));
   return <>
     <EntityList title={null} actions={null} className={props.className}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
       {datasets.map((dataset, i) => <Link className='item' to={`/u/${dataset.user.username}/${dataset.name}`} key={i}><li>
-        <h3>{props.icon}{dataset.user.username}/{dataset.name}</h3>
+        <h3>{props.icon}{dataset.nice_name}</h3>
       </li></Link>)}
     </EntityList>
   </>
@@ -223,7 +229,7 @@ export function Datasets() {
   // currently signed-in user info
   const userInfo = useUserInfo()
   // remote call to get the list of datasets
-  const [datasets, refresh] = useDatasetList()
+  const [datasets, refresh] = useDatasetList("private")
   // tracks whether the Upload Dataset modal is currently shown
   const [showUploadModal, setShowUploadModal] = React.useState(false)
   // tracks whether we are currently showing a delete modal for a particular dataset (null if none)
@@ -241,7 +247,7 @@ export function Datasets() {
     <EntityList title="Datasets" actions={<>
       {userInfo?.loggedIn && <button onClick={() => setShowUploadModal(true)}><BsUpload /> Upload New Dataset</button>}
     </>}>
-      <DatasetLinkList title="My Datasets" datasets={(datasets || []).filter((dataset) => dataset.user?.id == userInfo?.id)} onDelete={setSelectedDatasetForDelete} />
+      <DatasetLinkList title="My Datasets" datasets={datasets} onDelete={setSelectedDatasetForDelete} />
     </EntityList>
   </>
 }

@@ -1,11 +1,11 @@
 name: Clean Explorer CI
 on:
   schedule:
-    - cron: '22 2 * * 6' # At 02:22, only on Saturday
+    - cron: '22 2 * * *' # At 02:22, every day
 jobs:
   clean-docker:
-      name: Remove Docker Images
-      timeout-minutes: 10
+      name: Remove Docker Images & Check disk usage
+      timeout-minutes: 40 # allow for long builds
       runs-on: self-hosted
       steps:
        - name: Stop all running docker containers
@@ -13,4 +13,27 @@ jobs:
 
        - name: Clean up Docker containers
          run: docker system prune --all --force
+        
+       - name: Checkout
+         uses: actions/checkout@v1
+
+       - name: Build Test Environnement
+         run: ./test build-test-env
+
+       - name: Build Test Runner
+         run: ./test build-tester
+
+       - name: Log disk usage
+         run: df -h
+
+       # if the disk utilization after clean up is higher than 50% we want to fail (exit 1) so that this is visible in github
+       - name: Fail if disk usage too high
+         run: "[ $(df -h / | tail -n 1 | awk '{print substr($5, 1, length($5)-1)}') -gt 50 ] && exit 1 || exit 0"
+         # df -h / gets the disk utilization for the main disk /
+         # | tail -n 1 gets the row with the result
+         # | awk '{print substr($5, 1, length($5)-1)}') gets the current disk utilization percentage and strip off the percentage sign
+
+
+         
+
 

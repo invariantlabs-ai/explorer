@@ -81,6 +81,9 @@ export function AnnotationAugmentedTraceView(props) {
   const [filtered_annotations, setFilteredAnnotations] = useState({})
   // errors from analyzer annotations
   const [errors, setErrors] = useState([])
+  // top-level annotations (e.g. global errors, assertions)
+  const [top_level_annotations, setTopLevelAnnotations] = useState([])
+  
   // Callback functions to update annotations count on the Sidebad.
   const { onAnnotationCreate, onAnnotationDelete } = props;
 
@@ -123,11 +126,12 @@ export function AnnotationAugmentedTraceView(props) {
 
   // whenever annotations change, update mappings
   useEffect(() => {
-    let {highlights, errors, filtered_annotations} = AnnotationsParser.parseAnnotations(annotations, props.mappings);
+    let {highlights, errors, filtered_annotations, top_level_annotations} = AnnotationsParser.parse_annotations(annotations, props.mappings);
 
     setHighlights(HighlightedJSON.from_entries(highlights))
     setErrors(errors)
     setFilteredAnnotations(filtered_annotations)
+    setTopLevelAnnotations(top_level_annotations)
   }, [annotations, props.mappings])
 
   // filter to hide analyzer messages in annotation threads
@@ -138,7 +142,7 @@ export function AnnotationAugmentedTraceView(props) {
     editorComponent: (props) => {
       return <div className="comment-insertion-point">
         <HighlightDetails {...props} />
-        <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete}/>
+        <AnnotationThread {...props} filter={noAnalyzerMessages} traceId={activeTraceId} traceIndex={activeTraceIndex} onAnnotationCreate={onAnnotationCreate} onAnnotationDelete={onAnnotationDelete} numHighlights={props.highlights.length} />
       </div>
     },
     hasHighlight: (address, ...args) => {
@@ -187,7 +191,17 @@ export function AnnotationAugmentedTraceView(props) {
       </>}
     </header>
     <div className='explorer panel traceview'>
-      <TraceViewContent empty={props.empty} activeTrace={activeTrace} activeTraceId={activeTraceId} highlights={highlights} errors={errors} decorator={decorator} setEvents={setEvents} allExpanded={is_all_expanded} />
+      <TraceViewContent 
+        empty={props.empty} 
+        activeTrace={activeTrace} 
+        activeTraceId={activeTraceId} 
+        highlights={highlights} 
+        errors={errors} 
+        decorator={decorator} 
+        setEvents={setEvents} 
+        allExpanded={is_all_expanded} 
+        topLevelAnnotations={top_level_annotations}
+      />
     </div>
     <Tooltip id="highlight-tooltip" place="bottom" style={{whiteSpace: 'pre'}} />
   </>
@@ -218,6 +232,7 @@ function TraceViewContent(props) {
       // extra UI to show at the top of the traceview like metadata
       prelude={
         <>
+          <TopLevelHighlights topLevelAnnotations={props.topLevelAnnotations} />
           <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} excluded={['invariant.num-warnings', 'invariant.num-failures']} />
           {errors.length > 0 && <AnalysisResult errors={errors} />}
         </>
@@ -225,6 +240,27 @@ function TraceViewContent(props) {
       allExpanded={props.allExpanded}
       traceId={activeTraceId}
     />
+}
+
+// shows details on the top-level highlights of a trace (e.g. higlights without a specific address)
+function TopLevelHighlights(props) {
+  const highlights = {
+    snippet: "Top Level Annotations",
+    start: 0,
+    end: 0,
+    content: props.topLevelAnnotations || []
+  }
+
+  // if no highlights, return null
+  if (!highlights.content.length) {
+    return null;
+  }
+
+  // render the highlights
+  return <div className='event top-level-highlights'>
+    <div className='role'>Issues</div>
+    <HighlightDetails highlights={[highlights]} />
+  </div>
 }
 
 
@@ -237,7 +273,7 @@ function AnnotationThread(props) {
 
   return <div className='annotation-thread'>
     {threadAnnotations.filter(a => props.filter ? props.filter(a) : true).map(annotation => <Annotation {...annotation} annotator={annotator} key={annotation.id} traceIndex={props.traceIndex} onAnnotationDelete={onAnnotationDelete} />)}
-    <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} />
+    <AnnotationEditor address={props.address} traceId={props.traceId} traceIndex={props.traceIndex} onClose={props.onClose} annotations={[annotations, annotationStatus, annotationsError, annotator]} onAnnotationCreate={onAnnotationCreate} numHighlights={props.numHighlights} />
   </div>
 }
 
@@ -346,11 +382,17 @@ function AnnotationEditor(props) {
 
   // on mount grab focus
   useEffect(() => {
-    window.setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus()
-      }
-    }, 100)
+    // we only auto-focus the textarea if there are less than 3 highlights
+    // otherwise, the assumption is that the user probably clicked to look at the 
+    // highlight details, not to add a new annotation
+    // worst case: they have to focus the textarea manually but that should be rare
+    if (props.numHighlights < 3) {
+      window.setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+        }
+      }, 100)
+    }
   }, [textareaRef])
 
   const onKeyDown = (e) => {
