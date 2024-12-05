@@ -106,11 +106,13 @@ function ci() {
 function build_tester() {
     ci_env
     docker build -t 'explorer-test' -f ./tests/Dockerfile.test ./tests
+    return $?
 }
 
 function build_test_env() {
     ci_env
     docker compose -f docker-compose.test.yml build
+    return $?
 }
 
 # dispatch behavior based on first argument
@@ -146,3 +148,5 @@ case $command in
     exit 1
     ;;
 esac
+
+exit $?

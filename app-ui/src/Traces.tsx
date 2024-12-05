@@ -698,10 +698,10 @@ export function Traces() {
         // header components to show in the explorer
         header={
           <h1>
-            <Link to='/'>/</Link>
+            <Link to='/'> /</Link>
             <Link to={`/u/${props.username}`}>{props.username}</Link>/
             <Link to={`/u/${props.username}/${props.datasetname}`}>{props.datasetname}</Link>
-            {activeTrace && <>/<Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
+            {activeTrace && <>/ <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
         // callback for when the user presses the 'Share' button
@@ -865,7 +865,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
         // e.g. key === 'all'
        
         // if we have hierarchy paths, show them first
-        const paths = Object.keys(hierarchyPaths).sort().reverse().map(key => hierarchyPaths[key])
+        const paths = Object.keys(hierarchyPaths).sort().map(key => hierarchyPaths[key])
         paths.forEach(path => {
           if (path.path.length === 0) return; // skip empty paths
           const indices = path.indices.filter(index => activeIndices[key].traces.includes(index)).sort((a, b) => a-b);
@@ -999,17 +999,15 @@ function TraceRow(props: { trace: Trace | null, index: number, active: boolean, 
  */
 function TraceRowContents(props: { trace: Trace }) {
   const trace = props.trace
-
   const isTest = trace?.extra_metadata && trace?.extra_metadata['invariant.num-failures'] !== undefined
-
+  // check if name is <something>[<params>]
+  let name = <span className='name'>{trace.name}</span>
+  if (trace.name?.match(/.*\[.*\]$/)) {
+    const [test_name, params] = trace.name.split('[')
+    name = <><span className='name'>{test_name}</span><span className='params'>[{params}</span></>
+  }
+  
   if (isTest) {
-    // check if name is <something>[<params>]
-    let name = <span className='name'>{trace.name}</span>
-    if (trace.name?.match(/.*\[.*\]$/)) {
-      const [test_name, params] = trace.name.split('[')
-      name = <><span className='name'>{test_name}</span><span className='params'>[{params}</span></>
-    }
-
     const num_warnings = trace?.extra_metadata['invariant.num-warnings'] || 0
     const num_failures = trace?.extra_metadata['invariant.num-failures'] || 0
     const fail = num_failures > 0
@@ -1023,8 +1021,9 @@ function TraceRowContents(props: { trace: Trace }) {
     </>
   } else {
     return <>
-      <span className='name'>{trace.name}</span>
+      {name}
       {(trace.num_annotations || 0) > 0 ? <span className='badge'>{trace?.num_annotations}</span> : null}
+      <div className='spacer'/>
     </>
   }
 }

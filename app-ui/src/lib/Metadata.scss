@@ -42,7 +42,9 @@
             /* text-transform: uppercase; */
             font-family: monospace;
             position: relative;
-            line-height: 20pt;
+            line-height: 10pt;
+            position: relative;
+            top: -1pt;
 
             svg {
                 position: relative;
@@ -63,18 +65,6 @@
                 margin-right: 4pt;
             }
 
-            .yellow {
-                color: #FFAE3A;
-            }
-
-            .red {
-                color: #FF3A3A;
-            }
-
-            .green {
-                color: #3dc883;
-            }
-
             a {
                 font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
                 color: $color-primary;
@@ -86,4 +76,21 @@
             }
         }
     }
+}
+
+// define colors on top level
+.event.metadata .value .yellow, .color-yellow {
+    color: #FFAE3A;
+}
+
+.event.metadata .value .red, .color-red {
+    color: #FF3A3A;
+}
+
+.event.metadata .value .green, .color-green {
+    color: #3dc883;
+}
+
+.event.metadata .value .purple, .color-purple {
+    color: #a3a3ff;
 }

@@ -431,6 +431,10 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                                             events={this.state.events} allExpanded={this.props.allExpanded} />
                     }}
                 </ViewportList>
+                {events.length === 0 && <div className="event empty">
+                    No Messages
+                </div>}
+
             </div>
         } catch (e) {
             this.setState({ error: e as Error })

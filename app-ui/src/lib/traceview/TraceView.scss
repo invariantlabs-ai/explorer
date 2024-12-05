@@ -197,6 +197,13 @@ body {
     margin: 5pt auto;
     max-width: 800pt;
 
+    &.empty {
+        height: 120pt;
+        background: transparent;
+        border: none;
+        opacity: 0.8;
+    }
+
     &.analysis-result {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         background-color: rgba(179, 133, 217, 0.1);
