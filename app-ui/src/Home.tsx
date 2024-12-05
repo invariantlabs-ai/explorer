@@ -75,7 +75,7 @@ function Home() {
     </div>}
     {/* public datasets */}
     <div className='box'>
-      <h2>Featured Datasets</h2>
+      <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
       <DatasetLinkList datasets={datasets_homepage} homepage={true} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
