@@ -1157,6 +1157,7 @@ button.primary .shortcut {
         position: sticky;
         top: 0;
         margin-top: 20pt;
+        z-index: 3;
 
         .details {
           margin: 10pt 5pt;
