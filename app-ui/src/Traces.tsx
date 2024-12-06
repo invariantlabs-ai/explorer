@@ -16,6 +16,7 @@ import { EmptyDatasetInstructions } from './components/EmptyDataset';
 import { useTelemetry } from './telemetry';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
+import {UserInfo} from './UserInfo';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -363,12 +364,13 @@ function ShareModalContent(props) {
 
 // returns whether the given trace has link sharing enabled (true for shared, false for not shared, null for when
 // the current user does not have permission to view sharing status)
-function useTraceShared(traceId: string | null | undefined): [boolean | null, (shared: boolean) => void] {
+function useTraceShared(traceId: string | null | undefined, userInfo: UserInfo | null): [boolean | null, (shared: boolean) => void] {
   const [shared, setShared] = React.useState(false as boolean | null)
   const telemetry = useTelemetry()
+  const isUserLoggedIn = userInfo?.loggedIn;
 
   React.useEffect(() => {
-    if (!traceId) { return }
+    if (!traceId || !isUserLoggedIn) { return }
     sharedFetch(`/api/v1/trace/${traceId}/shared`).then(data => {
       setShared(data.shared)
     }).catch(e => {
@@ -379,7 +381,7 @@ function useTraceShared(traceId: string | null | undefined): [boolean | null, (s
         alert("Error checking sharing status")
       }
     })
-  }, [traceId])
+  }, [traceId, isUserLoggedIn])
 
   const setRemoteShared = useCallback((shared: boolean) => {
     if (!traceId) { return }
@@ -402,7 +404,7 @@ function useTraceShared(traceId: string | null | undefined): [boolean | null, (s
     }
   }, [traceId])
 
-  if (!traceId) {
+  if (!traceId || !isUserLoggedIn) {
     return [false, () => { }]
   }
 
@@ -561,10 +563,10 @@ export function Traces() {
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
 
-  // load the sharing status of the active trace (link sharing enabled/disabled)
-  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces.get(props.traceIndex)?.id : null)
   // load the logged in user's information
   const userInfo = useUserInfo()
+  // load the sharing status of the active trace (link sharing enabled/disabled)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces.get(props.traceIndex)?.id : null, userInfo)
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
   const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
   // tracks whether the current user owns the dataset/trace
@@ -1064,15 +1066,15 @@ export function SingleTrace() {
   const [dataset, setDataset] = React.useState(null as { name: string } | null)
   // if an error occurs, this will be set to the error message
   const [error, setError] = React.useState(null as string | null)
+  // load the logged in user's information
+  const userInfo = useUserInfo()
   // whether link sharing is enabled for the current trace
-  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId)
+  const [sharingEnabled, setSharingEnabled] = useTraceShared(props.traceId, userInfo)
   const [showShareModal, setShowShareModal] = React.useState(false)
   // only set if we are showing a snippet trace (a trace without dataset)
   const [snippetData, setSnippetData] = React.useState({ isSnippet: false, user: null } as { isSnippet: boolean, user: string | null })
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false)
-  // load the logged in user's information
-  const userInfo = useUserInfo()
   // used to navigate to a different trace
   const navigate = useNavigate()
   // tracks whether the current user owns this dataset/trace
