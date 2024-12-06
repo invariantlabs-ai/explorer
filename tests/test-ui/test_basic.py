@@ -164,6 +164,48 @@ async def test_reupload_ui(context, url, data_webarena_with_metadata, screenshot
                     # TODO this currently fails, because the dataset reimport does not work well
                     await expect(page.get_by_text("Failed to render")).to_have_count(0)
 
+async def trace_shown_in_sidebar(page, trace_name):
+    traces_shown = await page.locator("css=li.trace").all()
+    return any([(await ts.inner_text()) == trace_name for ts in traces_shown])
+
+@pytest.mark.playwright(slow_mo=800) # make the browser slower to ensure items are rendered as expected
+async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_abc_with_trace_metadata) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url) 
+        await screenshot(page)
+        
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # share dataset
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+       
+        # both traces should be shown
+        await trace_shown_in_sidebar(page, "Run 0")
+        await trace_shown_in_sidebar(page, "Run 1")
+
+        # try different searches
+        # each search is a tuple with query and the expected result (e.g. which traces are shown)
+        searches = [
+            ("ABC", [True, True]),
+            ("name", [False, True]),
+            ("meta:a%101", [True, False]),
+            ("meta:a%10", [True, True]),
+            ("meta:b=asdf", [False, True]),
+            ("meta:b%asdf", [False, True]),
+        ]
+
+        search_input = await page.get_by_placeholder("Search").all()
+        for query, expected in searches:
+            await search_input[0].fill(query)
+            await page.wait_for_timeout(1000) # wait for the search to be processed
+            await screenshot(page)
+            for trace, exp in zip(["Run 0", "Run 1"], expected):
+                assert await trace_shown_in_sidebar(page, trace) == exp
+
 async def test_share_trace(context, url, data_webarena_with_metadata, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_webarena_with_metadata) as dataset:
         page = await context.new_page()

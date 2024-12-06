@@ -468,10 +468,10 @@ function useSearch() {
   const search = (query) => {
     if (query.status !== 'waiting') return;
     query.status = 'searching'
-    return sharedFetch(`/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${query.query}`)
+    const encodedQuery = encodeURIComponent(query.query);
+    return sharedFetch(`/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${encodedQuery}`)
       .then(data => {
         query.status = 'completed'
-        // console.log('completed', query, searchQueue.current)
         // check that this is still the newest query to complete
         if (searchQueue.current.filter(q => q.status === 'completed' && q.date > query.date).length === 0)
         {

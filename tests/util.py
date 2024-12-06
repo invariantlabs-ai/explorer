@@ -107,7 +107,12 @@ def fixture_invariant_client(api_server_http_endpoint):
 def data_webarena_with_metadata():
     with open('./data/webarena.jsonl', 'r') as f:
         return f.read()
-    
+
+@pytest.fixture
+def data_abc_with_trace_metadata():
+    with open('./data/abc_with_trace_metadata.jsonl', 'r') as f:
+        return f.read()
+
 @pytest.fixture
 def data_abc():
     with open('./data/abc.jsonl', 'r') as f:
