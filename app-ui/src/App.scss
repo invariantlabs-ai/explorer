@@ -1367,13 +1367,12 @@ button.share {
 }
 
 .thumbs-up-icon, .thumbs-down-icon {
+  font-style: italic;
   svg {
     position: relative;
     bottom: -1.5pt;
     margin-right: 2pt;
   }
-
-  font-style: italic;
 
 }
 
