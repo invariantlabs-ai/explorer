@@ -7,6 +7,7 @@ import { Time } from './components/Time'
 import { useSnippetsList } from './lib/snippets'
 import { useDatasetList } from './lib/datasets'
 import { DatasetLinkList, DeleteDatasetModalContent, UploadDatasetModalContent } from './Datasets'
+import HomepageDatasetsNames from './assets/HomepageDatasetsNames.json';
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
@@ -40,7 +41,18 @@ function Home() {
   const userInfo = useUserInfo()
 
   // fetch datasets and snippets
-  const [datasets_homepage, refreshHomepageDataset] = useDatasetList("homepage", 8)
+  let [datasets_homepage, refreshHomepageDataset] = useDatasetList("homepage", 8)
+  datasets_homepage = datasets_homepage.map(item => ({
+    ...item,
+    ...(HomepageDatasetsNames["name"][item.id] && { nice_name: HomepageDatasetsNames["name"][item.id] }),
+    ...(HomepageDatasetsNames["description"][item.id] && { description: HomepageDatasetsNames["description"][item.id] })
+  }));
+  // Sort datasets_homepage by nice_name
+  datasets_homepage.sort((a, b) => {
+    const nameA = a.nice_name || '';
+    const nameB = b.nice_name || '';
+    return nameA.localeCompare(nameB);
+  });
   const [datasets_private, refreshPrivateDataset] = useDatasetList("private", 8)
   const [snippets, refreshSnippets] = useSnippetsList()
   // tracks whether the Upload Dataset modal is open
@@ -63,7 +75,7 @@ function Home() {
           <Link to='/datasets'>Datasets</Link>
           <button className='inline primary' onClick={() => setShowUploadModal(true)}>New Dataset</button>
         </h2>
-        <DatasetLinkList datasets={datasets_private} homepage={false} icon={<BsDatabase />} />
+        <DatasetLinkList datasets={datasets_private} icon={<BsDatabase />} />
       </div>
       <div className='box'>
         <h2>
@@ -76,7 +88,7 @@ function Home() {
     {/* public datasets */}
     <div className='box'>
       <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
-      <DatasetLinkList datasets={datasets_homepage} homepage={true} icon={<BsGlobe />} />
+      <DatasetLinkList datasets={datasets_homepage} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
     <ul className='box activity'>

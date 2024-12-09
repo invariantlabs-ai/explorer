@@ -1601,13 +1601,12 @@ header.top .sidebar {
       overflow: hidden;
       text-overflow: ellipsis;
 
-
       h3 {
         padding: 0pt;
         margin: 0pt;
       }
 
-      &:hover {
+      &:hover h3 {
         text-decoration: underline;
       }
     }
