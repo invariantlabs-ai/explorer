@@ -1966,6 +1966,23 @@ div.empty.instructions {
   }
 }
 
+.user-icon {
+  width: var(--size);
+  height: var(--size);
+  border-radius: 4pt;
+  z-index: 2;
+  transform: scale(0.8);
+  background-color: #5855FF;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--size) / 2.5);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+
 .consent-banner {
   background: #fff;
   padding: 0px;

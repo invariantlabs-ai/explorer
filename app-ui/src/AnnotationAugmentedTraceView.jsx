@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {Tooltip} from 'react-tooltip';
+import { Tooltip } from 'react-tooltip';
 
 import './Annotations.scss';
 import './Explorer.scss';
 
 import { RemoteResource, useRemoteResource } from './RemoteResource';
 import { useUserInfo } from './UserInfo';
+import UserIcon from './lib/UserIcon';
 
 import { Time } from './components/Time';
 import { Metadata } from './lib/metadata';
@@ -17,7 +18,7 @@ import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
 
-import { BsArrowDown, BsArrowsCollapse, BsArrowsExpand, BsArrowUp, BsCaretLeftFill, BsCheck, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash} from "react-icons/bs";
+import { BsArrowDown, BsArrowsCollapse, BsArrowsExpand, BsArrowUp, BsCaretLeftFill, BsCheck, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash } from "react-icons/bs";
 
 export const THUMBS_UP = ":feedback:thumbs-up"
 export const THUMBS_DOWN = ":feedback:thumbs-down"
@@ -83,12 +84,12 @@ export function AnnotationAugmentedTraceView(props) {
   const [errors, setErrors] = useState([])
   // top-level annotations (e.g. global errors, assertions)
   const [top_level_annotations, setTopLevelAnnotations] = useState([])
-  
+
   // Callback functions to update annotations count on the Sidebad.
   const { onAnnotationCreate, onAnnotationDelete } = props;
 
   // record if the trace is expanded to decide show "expand all" or "collapse all" button
-  const [is_all_expanded,setAllExpand] = useState(true);
+  const [is_all_expanded, setAllExpand] = useState(true);
 
   // get telemetry object
   const telemetry = useTelemetry()
@@ -120,13 +121,13 @@ export function AnnotationAugmentedTraceView(props) {
   }
 
   // whenever activeTrace changed, the trace is defaultly expanded, set the button to be collapse
-  useEffect(()=>{
+  useEffect(() => {
     setAllExpand(true);
-  },[activeTrace])
+  }, [activeTrace])
 
   // whenever annotations change, update mappings
   useEffect(() => {
-    let {highlights, errors, filtered_annotations, top_level_annotations} = AnnotationsParser.parse_annotations(annotations, props.mappings);
+    let { highlights, errors, filtered_annotations, top_level_annotations } = AnnotationsParser.parse_annotations(annotations, props.mappings);
 
     setHighlights(HighlightedJSON.from_entries(highlights))
     setErrors(errors)
@@ -166,44 +167,44 @@ export function AnnotationAugmentedTraceView(props) {
       <div className='spacer' />
       <div className='vr' />
       {activeTrace && <>
-      {is_all_expanded?(
-        <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>        
-      ) : (
-        <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
-      )}
-      <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
-        <button className='inline icon' onClick={(e) => {
-          e.stopPropagation()
-          telemetry.capture('traceview.download')
-        }}
-        data-tooltip-id="button-tooltip" 
-        data-tooltip-content="Download"
-        >
-          <BsDownload />
-        </button>
-      </a>
-      {props.actions}
-      <div className='vr' />
-      <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>
-      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
-        {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
-      </button>}
+        {is_all_expanded ? (
+          <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
+        ) : (
+          <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
+        )}
+        <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
+          <button className='inline icon' onClick={(e) => {
+            e.stopPropagation()
+            telemetry.capture('traceview.download')
+          }}
+            data-tooltip-id="button-tooltip"
+            data-tooltip-content="Download"
+          >
+            <BsDownload />
+          </button>
+        </a>
+        {props.actions}
+        <div className='vr' />
+        <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>
+        {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+          {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
+        </button>}
       </>}
     </header>
     <div className='explorer panel traceview'>
-      <TraceViewContent 
-        empty={props.empty} 
-        activeTrace={activeTrace} 
-        activeTraceId={activeTraceId} 
-        highlights={highlights} 
-        errors={errors} 
-        decorator={decorator} 
-        setEvents={setEvents} 
-        allExpanded={is_all_expanded} 
+      <TraceViewContent
+        empty={props.empty}
+        activeTrace={activeTrace}
+        activeTraceId={activeTraceId}
+        highlights={highlights}
+        errors={errors}
+        decorator={decorator}
+        setEvents={setEvents}
+        allExpanded={is_all_expanded}
         topLevelAnnotations={top_level_annotations}
       />
     </div>
-    <Tooltip id="highlight-tooltip" place="bottom" style={{whiteSpace: 'pre'}} />
+    <Tooltip id="highlight-tooltip" place="bottom" style={{ whiteSpace: 'pre' }} />
   </>
 }
 
@@ -213,33 +214,33 @@ export function AnnotationAugmentedTraceView(props) {
 function TraceViewContent(props) {
   const { activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
   const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
-  
+
   // if no trace ID set
   if (activeTraceId === null) {
     return <div className='explorer panel'>
-      <EmptyComponent/>
+      <EmptyComponent />
     </div>
   }
   return <RenderedTrace
-      // the trace events
-      trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
-      // ranges to highlight (e.g. because of analyzer or search results)
-      highlights={highlights}
-      // callback to register events for collapsing/expanding all messages
-      onMount={(events) => setEvents(events)}
-      // extra UI decoration (inline annotation editor)
-      decorator={decorator}
-      // extra UI to show at the top of the traceview like metadata
-      prelude={
-        <>
-          <TopLevelHighlights topLevelAnnotations={props.topLevelAnnotations} />
-          <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} excluded={['invariant.num-warnings', 'invariant.num-failures']} />
-          {errors.length > 0 && <AnalysisResult errors={errors} />}
-        </>
-      }
-      allExpanded={props.allExpanded}
-      traceId={activeTraceId}
-    />
+    // the trace events
+    trace={JSON.stringify(activeTrace?.messages || [], null, 2)}
+    // ranges to highlight (e.g. because of analyzer or search results)
+    highlights={highlights}
+    // callback to register events for collapsing/expanding all messages
+    onMount={(events) => setEvents(events)}
+    // extra UI decoration (inline annotation editor)
+    decorator={decorator}
+    // extra UI to show at the top of the traceview like metadata
+    prelude={
+      <>
+        <TopLevelHighlights topLevelAnnotations={props.topLevelAnnotations} />
+        <Metadata extra_metadata={activeTrace?.extra_metadata || activeTrace?.trace?.extra_metadata} header={<div className='role'>Trace Information</div>} excluded={['invariant.num-warnings', 'invariant.num-failures']} />
+        {errors.length > 0 && <AnalysisResult errors={errors} />}
+      </>
+    }
+    allExpanded={props.allExpanded}
+    traceId={activeTraceId}
+  />
 }
 
 // shows details on the top-level highlights of a trace (e.g. higlights without a specific address)
@@ -285,7 +286,7 @@ function Annotation(props) {
   const [submitting, setSubmitting] = useState(false)
   const user = props?.user
   const userInfo = useUserInfo()
-  
+
   const telemetry = useTelemetry()
 
   const onDelete = () => {
@@ -322,8 +323,7 @@ function Annotation(props) {
 
   return <div className='annotation'>
     <div className='user'>
-      {/* gravat */}
-      <img src={"https://www.gravatar.com/avatar/" + user.image_url_hash} />
+      <UserIcon username={userInfo?.username}/>
     </div>
     <div className='bubble'>
       <header className='username'>
@@ -354,7 +354,7 @@ function AnnotationEditor(props) {
   const [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const textareaRef = useRef(null)
   const userInfo = useUserInfo()
-  
+
   const telemetry = useTelemetry()
 
   const onSave = () => {
@@ -408,8 +408,12 @@ function AnnotationEditor(props) {
 
   return <div className='annotation'>
     <div className='user'>
-      {/* gravat */}
-      <img src={"https://www.gravatar.com/avatar/" + "abc"} />
+      {userInfo?.loggedIn ?
+        <UserIcon username={userInfo?.username}/>
+        :
+        // if not logged in, show a generic user icon with A for anonymous.
+        <UserIcon username={"A"}/>
+      }
     </div>
     <div className='bubble'>
       <header className='username'>

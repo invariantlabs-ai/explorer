@@ -8,6 +8,7 @@ import { useSnippetsList } from './lib/snippets'
 import { useDatasetList } from './lib/datasets'
 import { DatasetLinkList, DeleteDatasetModalContent, UploadDatasetModalContent } from './Datasets'
 import HomepageDatasetsNames from './assets/HomepageDatasetsNames.json';
+import UserIcon from './lib/UserIcon';
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
@@ -106,7 +107,7 @@ function Home() {
             <li className='event'>
               <div className='event-info'>
                 <div className='user'>
-                  <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
+                <UserIcon username={userInfo?.username} size={40}/>
                   <div className='left'>
                     <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
                     <div className='event-time'><Time text={true}>{event.time}</Time></div>

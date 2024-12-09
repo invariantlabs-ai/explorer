@@ -3,6 +3,7 @@ import {Tooltip} from 'react-tooltip';
 
 import logo from './assets/invariant.svg';
 import { useUserInfo } from './UserInfo';
+import UserIcon from './lib/UserIcon';
 import { Link, useLoaderData, useNavigate } from 'react-router-dom';
 import { BsCodeSlash, BsDatabase, BsFillGearFill, BsGear, BsHouse, BsList, BsPerson, BsUpload, BsX } from 'react-icons/bs';
 import { BiSolidHome } from 'react-icons/bi';
@@ -189,10 +190,8 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             {!userInfo?.loggedIn && <button className='inline' onClick={() => window.location.href = '/login'}>Sign In</button>}
             <div className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
                 {userInfo?.loggedIn && <>
-                    <div className='avatar'>
-                        <img src={"https://www.gravatar.com/avatar/" + userInfo?.image_url_hash} />
-                    </div>
-                    {userInfo ? <p>{userInfo?.name}</p> : <p>Loading...</p>}
+                    <UserIcon username={userInfo?.username}/>
+                    {userInfo ? <p>{userInfo?.username}</p> : <p>Loading...</p>}
                     <div className='popover'>
                         <ul>
                             <li className='disabled'>{userInfo?.email}</li>
