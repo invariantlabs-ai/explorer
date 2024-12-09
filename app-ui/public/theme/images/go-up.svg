@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="453px" height="273px" viewBox="0 0 453 273" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>up</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="453" height="273"></rect>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="up">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Rectangle"></g>
+            <g id="Group" mask="url(#mask-2)">
+                <g transform="translate(226.139000, 136.139000) rotate(-45.000000) translate(-226.139000, -136.139000) translate(127.000000, 37.000000)" id="Path">
+                    <path d="M198.278,99.139 C198.278,44.3859 153.892,0 99.139,0 C44.386,0 0,44.3859 0,99.139 C0,153.892 44.386,198.278 99.139,198.278 C153.892,198.278 198.278,153.892 198.278,99.139 Z" stroke="none" fill="#BEB8FF" fill-rule="nonzero"></path>
+                    <path d="M117.602,69.516 L134.733,86.647 C141.633,93.547 141.633,104.73 134.733,111.67 L117.602,128.801" stroke="#0C0C13" stroke-width="7" fill="none" stroke-linecap="round"></path>
+                    <line x1="58.359" y1="99.139" x2="117.605" y2="99.139" stroke="#0C0C13" stroke-width="7" fill="none" stroke-linecap="round"></line>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

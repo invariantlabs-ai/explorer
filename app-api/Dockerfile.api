@@ -1,0 +1,11 @@
+FROM python:3.10
+
+COPY ./requirements.txt /srv/app/requirements.txt
+WORKDIR /srv/app
+
+RUN pip install --no-cache-dir -r requirements.txt
+RUN invariant-cli add all -y
+RUN python -m spacy download en_core_web_lg
+COPY . /srv/app
+
+ENTRYPOINT ./run.sh

@@ -1,0 +1,321 @@
+@import 'Colors.scss';
+
+.app {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+    color: $text-color;
+    // background-color: #1E1E1E;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    height: calc(100vh - 45pt) !important;
+    padding: 0pt 5pt;
+    overflow-y: hidden !important;
+    overflow-x: hidden !important;
+}
+
+div[data-resize-handle] {
+    border: 0.5pt solid grey;
+    opacity: 0.2;
+    cursor: ew-resize;
+}
+
+div[data-resize-handle]:hover,
+div[data-resize-handle][data-resize-handle-state='hover'] {
+    border: 0.5pt solid $color-primary !important;
+    box-shadow: 0pt 0pt 0pt $color-primary;
+    opacity: 0.8;
+}
+
+div[data-panel] {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    h2 {
+        font-size: 18px;
+        padding: 0pt;
+        margin: 0pt;
+        margin-left: 5pt;
+    }
+
+    textarea {
+        flex: 1;
+        display: block;
+    }
+
+    header {
+        border: none;
+        padding: 3pt;
+        display: flex;
+        height: 32pt;
+        margin-bottom: 0pt;
+        border-bottom: 1pt solid rgba(255, 255, 255, 0.102);
+
+        button:last-child {
+            margin-right: -1px;
+        }
+
+        h2 {
+            line-height: 32pt;
+            margin-right: 5pt;
+        }
+
+        button.inline {
+            position: relative;
+            border-radius: 5pt;
+            margin-left: 8pt;
+            top: 2pt;
+            height: 28pt;
+        }
+
+        input[type='checkbox'] {
+            margin-right: 5pt;
+            margin-top: 12pt;
+        }
+
+        label {
+            margin-top: 5pt;
+            line-height: 30px;
+            margin-right: 12pt;
+            text-transform: none;
+        }
+
+        .vr {
+            border-left: 1pt solid rgba(255, 255, 255, 0.052);
+            margin-right: 6pt;
+            margin-left: 4pt;
+        }
+    }
+
+    button.green {
+        background-color: $color-green;
+        color: darken($color-green, 90%);
+
+        &.with-arrow {
+            background-image: url('/theme/images/arrow-right-dark.svg');
+        }
+
+    }
+
+    button.small {
+        margin: 2px 8px 2px 8px;
+        font-size: 14px;
+        border-radius: 30px;
+        height: 30px;
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+
+        background-color: rgba(255, 255, 255, 0.102);
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        &:active {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    }
+}
+
+.buttons {
+    position: absolute;
+    top: 4pt;
+    right: 4pt;
+    display: flex;
+    flex-direction: row;
+    height: 20pt;
+    line-height: 22px;
+    padding: 0;
+    margin: 0;
+
+    button {
+        border-radius: 4pt;
+        margin-left: 4pt;
+        margin-right: -1pt;
+        font-size: 10pt;
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    button.inline.icon {
+        width: 30pt;
+        line-height: 5pt;
+        text-overflow: none;
+        color: transparent;
+        border: none;
+
+        svg {
+            opacity: 0.6;
+            color: $text-color;
+            width: 10pt;
+            height: 10pt;
+            margin: 0pt;
+            top: -5pt;
+        }
+    }
+}
+
+label svg.role {
+    position: relative;
+    top: 0pt !important;
+    width: 8pt;
+    height: 8pt;
+}
+
+button.inline {
+    top: 5pt;
+    right: 5pt;
+    padding: 5pt 12pt;
+    border-radius: 2pt;
+    min-width: 30pt;
+    font-size: 10pt;
+    margin: 0pt;
+    z-index: 2;
+    background: white;
+    color: inherit;
+    border: 1pt solid rgba(0, 0, 0, 0.1);
+    margin-right: 5pt;
+    display: block;
+    line-height: 1.0;
+    height: 22pt;
+    font-weight: bold;
+    min-height: 22px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 8pt;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    &.active {
+        // use primary
+        border: 1pt solid $color-primary;
+    }
+
+    svg {
+        position: relative;
+        top: 1pt;
+        margin-right: 5pt;
+        transform: scale(1.4);
+    }
+}
+
+.app button.icon {
+    padding: 10pt;
+
+    svg {
+        position: relative;
+        top: 1pt;
+    }
+}
+
+.badge {
+    background-color: $color-primary;
+    color: darken($color-primary, 90%);
+    padding: 2pt;
+    font-family: monospace;
+    font-size: 10pt;
+    border-radius: 2pt;
+
+    &.badge-1 {
+        background-color: #3E3AFF;
+        color: white !important;
+    }
+
+    &.badge-2 {
+        background-color: #AEADBF;
+        color: darken($color-button, 90%) !important;
+    }
+
+    &.badge-3 {
+        background-color: #3A3E60;
+        color: white !important;
+    }
+
+    &.badge-4 {
+        background-color: #646198;
+        color: white !important;
+    }
+
+    &.badge-5 {
+        background-color: #4AEC9B;
+        color: darken($color-green, 90%) !important;
+    }
+
+    &.badge-6 {
+        background-color: #FF3E3A;
+        color: white !important;
+    }
+
+    &.badge-7 {
+        background-color: #FFAE3A;
+        color: black !important;
+    }
+
+    &.badge-8 {
+        background-color: #FF3A3A;
+        color: white !important;
+    }
+}
+
+button.inline.primary {
+    background-color: $color-button-primary;
+    color: white;
+    transition: background-color 0.01s;
+
+    &:hover {
+        background-color: darken($color-button-primary, 10%);
+    }
+
+    &:active {
+        background-color: darken($color-button-primary, 20%);
+    }
+}
+
+button.inline.icon {
+    svg {
+        color: $text-color;
+        width: 10pt;
+        height: 10pt;
+        margin: 0pt;
+        top: 0pt;
+        left: 0pt;
+    }
+}
+
+button.inline.danger {
+    svg {
+        color: red !important;
+    }
+}
+
+.line.has-editor {
+    background-color: red;
+}
+
+.explorer.panel {
+    padding: 0pt;
+    border: none;
+    background: transparent;
+}
+
+.explorer .traces {
+    border: none;
+}
+
+.sidebyside {
+    width: calc(100vw - 5pt);
+}

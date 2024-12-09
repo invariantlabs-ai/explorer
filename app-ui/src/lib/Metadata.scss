@@ -1,0 +1,96 @@
+@import '../Colors.scss';
+
+.traces {
+    .event.metadata {
+        margin: auto;
+    }
+}
+
+.event.metadata {
+    background-color: transparent;
+    margin-bottom: 20pt;
+    border: none;
+    align-items: flex-start;
+    margin-left: 0pt;
+    margin-right: 0pt;
+
+    .role {
+        position: relative;
+        left: -4pt;
+    }
+
+    .content {
+        padding: 0pt;
+    }
+
+    .pair {
+        display: inline-block;
+        margin-right: 5pt;
+        background: white;
+        border-radius: 4pt;
+        padding: 2pt 4pt;
+        border: 1pt solid $border-color;
+        margin-bottom: 5pt;
+
+        .key {
+            color: $text-color;
+            font-weight: bold;
+            font-size: 8pt;
+            line-height: 22pt;
+            opacity: 0.8;
+            padding: 0pt 2pt;
+            /* text-transform: uppercase; */
+            font-family: monospace;
+            position: relative;
+            line-height: 10pt;
+            position: relative;
+            top: -1pt;
+
+            svg {
+                position: relative;
+                top: 1pt;
+                margin-right: 2pt;
+            }
+        }
+
+        .value {
+            font-family: monospace;
+            margin-left: 4pt;
+            line-height: 20pt;
+
+            svg {
+                position: relative;
+                top: 1.5pt;
+                transform: scale(0.8);
+                margin-right: 4pt;
+            }
+
+            a {
+                font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+                color: $color-primary;
+                text-decoration: none;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
+}
+
+// define colors on top level
+.event.metadata .value .yellow, .color-yellow {
+    color: #FFAE3A;
+}
+
+.event.metadata .value .red, .color-red {
+    color: #FF3A3A;
+}
+
+.event.metadata .value .green, .color-green {
+    color: #3dc883;
+}
+
+.event.metadata .value .purple, .color-purple {
+    color: #a3a3ff;
+}

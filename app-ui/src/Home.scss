@@ -1,0 +1,101 @@
+@import "./Colors.scss";
+
+h2.home {
+    margin-left: 10pt;
+}
+
+.mosaic {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin: auto;
+}
+
+ul.activity {
+    list-style-type: none;
+    background-color: transparent;
+    border: none;
+    padding: 0pt;
+    margin-top: 30pt;
+
+    h2 {
+        margin-bottom: 15pt;
+    }
+
+    li.event {
+        border-radius: 0pt;
+        margin-bottom: 10pt;
+        border: 1pt solid $border-color;
+        padding: 10pt;
+        border-radius: 5pt;
+
+        &:hover {
+            background-color: rgb(245, 245, 245);
+        }
+
+        .event-info {
+            text-decoration: none;
+            color: $text-color;
+
+            div.user {
+                display: flex;
+
+                img {
+                    border-radius: 4pt;
+                    width: 30pt;
+                    height: 30pt;
+                    margin-top: 2.5pt;
+                    margin-right: 6pt;
+                }
+
+                .left {
+                    div {
+                        margin: 0pt;
+                    }
+
+                    .event-time {
+                        font-weight: normal;
+                        height: 10pt;
+                        opacity: 0.8;
+                        font-size: 10pt;
+                    }
+                }
+            }
+        }
+
+        .event-detail {
+            display: block;
+            background-color: rgba(0, 0, 0, 0.04);
+            margin-top: 10pt;
+            border-radius: 2pt;
+            padding: 10pt;
+
+            svg {
+                position: relative;
+                top: 1pt;
+                margin-right: 4pt;
+            }
+
+            span.description {
+                display: inline-block;
+                text-align: right;
+                margin-left: 10pt;
+                font-family: monospace;
+                max-width: 100%;
+                line-height: 10pt;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        a {
+            color: $text-color;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}

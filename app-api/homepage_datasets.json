@@ -1,0 +1,13 @@
+{
+    "DEV" : {},
+    "PROD" : {
+        "9a11583f-9fed-48d6-a7df-123856a5123b": "swe-bench--OpenHands---CodeAct-v2-1--claude-3-5-sonnet-20241022-",
+        "4563101a-e89b-43c8-b8d2-d8bff4be9c1a": "cybench12-_anthropic-claude-3-5-sonnet-20240620",
+        "2a708049-980c-4d14-9ceb-e85d380b385f": "cybench12-_openai-gpt-4o-2024-05-13",
+        "06154973-e4f4-4b3d-824c-1d749fb7363f": "tau-bench_claude-3-5-sonnet",
+        "e1385525-3b7a-40c5-af03-41e72b1ffe91": "webarena--JaceAI",
+        "9c3b88f3-5d03-4416-9e8c-18ff7194a7f4": "agentdojo_gpt-4o-2024-05-13-repeat_user_prompt",
+        "495cda4f-a6a7-4403-9243-67e9f3b47e06": "agentdojo_claude-3-5-sonnet-20240620",
+        "a6e6118d-99a8-4ced-9446-41db98f352b8": "bfcl-v3-gpt-4o-2024-08-06-FC"
+    }
+}

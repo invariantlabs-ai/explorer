@@ -1,0 +1,89 @@
+services:
+  traefik:
+    image: traefik:v2.0
+    container_name: "${APP_NAME}-local-traefik"
+    command:
+      - --providers.docker=true
+      # Enable the API handler in insecure mode,
+      # which means that the Traefik API will be available directly
+      # on the entry point named traefik.
+      - --api.insecure=true
+      # Define Traefik entry points to port [80] for http and port [443] for https.
+      - --entrypoints.web.address=0.0.0.0:80
+    networks:
+      - web
+    ports:
+      - '${PORT_HTTP}:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-http.entrypoints=web"
+  
+  app-ui:
+    image: node:alpine
+    entrypoint: "sh -c 'yarn && yarn run dev --host 0.0.0.0 --port 5173'"
+    working_dir: /srv/app
+    networks:
+      - web
+    volumes:
+      - type: bind
+        source: ./app-ui
+        target: /srv/app
+      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+    environment:
+      - APP_NAME=${APP_NAME}
+      - VITE_CONFIG_FILE=/config/explorer.config.yml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=web"
+      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
+
+  app-api:
+    build:
+      context: ./app-api
+      dockerfile: ../app-api/Dockerfile.api
+    working_dir: /srv/app
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
+      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
+      - PROJECTS_DIR=/srv/projects
+      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
+      - TZ=Europe/Berlin
+      - DEV_MODE=${DEV_MODE}
+      - APP_NAME=${APP_NAME}
+      - CONFIG_FILE=/config/explorer.config.yml
+    networks:
+      - web
+      - internal
+    volumes:
+      - type: bind
+        source: ./app-api
+        target: /srv/app
+      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ./data/images:/srv/images
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
+      - "traefik.http.routers.$APP_NAME-api.entrypoints=web"
+      - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=web"
+
+  database:
+    image: postgres:16
+    env_file:
+      - .env
+    networks:
+      - internal
+    volumes:
+      - type: bind
+        source: ./data/database
+        target: /var/lib/postgresql/data
+
+networks:
+  web:
+  internal:
