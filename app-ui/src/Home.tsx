@@ -91,32 +91,35 @@ function Home() {
       <DatasetLinkList datasets={datasets_homepage} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
-    <ul className='box activity'>
-      <h2>Activity</h2>
-      {activity.map((event, i) =>
-        <div className='item' onClick={() => navigate(
-          {
-            'dataset': '/u/' + event.user.username + '/' + event.details.name,
-            'trace': '/trace/' + event.details.id,
-            'annotation': '/trace/' + event.details?.trace?.id
-          }[event.type])
-        } key={i}>
-          <li className='event'>
-            <div className='event-info'>
-              <div className='user'>
-                <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
-                <div className='left'>
-                  <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
-                  <div className='event-time'><Time text={true}>{event.time}</Time></div>
+    {
+      activity.length > 0 &&
+      (<ul className='box activity'>
+        <h2>Activity</h2>
+        {activity.map((event, i) =>
+          <div className='item' onClick={() => navigate(
+            {
+              'dataset': '/u/' + event.user.username + '/' + event.details.name,
+              'trace': '/trace/' + event.details.id,
+              'annotation': '/trace/' + event.details?.trace?.id
+            }[event.type])
+          } key={i}>
+            <li className='event'>
+              <div className='event-info'>
+                <div className='user'>
+                  <img src={"https://www.gravatar.com/avatar/" + event.user.image_url_hash} />
+                  <div className='left'>
+                    <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
+                    <div className='event-time'><Time text={true}>{event.time}</Time></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <ActivityDetail event={event} />
-          </li>
-        </div>
-      )}
-      {activity.length === 0 && <div className='empty'>No activity</div>}
-    </ul>
+              <ActivityDetail event={event} />
+            </li>
+          </div>
+        )}
+        {activity.length === 0 && <div className='empty'>No activity</div>}
+      </ul>)
+    }
   </>
 }
 
