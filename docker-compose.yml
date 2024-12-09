@@ -55,9 +55,6 @@ services:
       - DEV_MODE=${DEV_MODE}
       - APP_NAME=${APP_NAME}
       - CONFIG_FILE=/config/explorer.config.yml
-    depends_on:
-      - rabbitmq
-      - celery
     networks:
       - internal
       - web
@@ -77,26 +74,6 @@ services:
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=web"
       - "traefik.http.routers.$APP_NAME-api.tls=true"
-
-  rabbitmq:
-    image: rabbitmq:4-management
-    container_name: "${APP_NAME}-local-rabbitmq"
-    env_file:
-      - .env
-    networks:
-      - internal
-
-  celery:
-    build:
-      context: ./app-api
-      dockerfile: ../app-api/Dockerfile.celery
-    container_name: "${APP_NAME}-local-celery"
-    env_file:
-      - .env
-    depends_on:
-      - rabbitmq
-    networks:
-      - internal
 
   database:
     image: postgres:16

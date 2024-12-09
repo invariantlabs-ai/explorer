@@ -11,7 +11,6 @@ fastapi-keycloak-middleware
 prometheus-fastapi-instrumentator
 lark
 modal
-celery
 git+https://github.com/invariantlabs-ai/invariant.git
 boto3
 pillow

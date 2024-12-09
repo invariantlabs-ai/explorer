@@ -3,7 +3,6 @@ import os
 import uuid
 from typing import Annotated
 
-from celery_tasks.highlight_code import highlight_code_for_snippet
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
@@ -215,9 +214,6 @@ async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, De
         
         session.add(trace)
         session.commit()
-
-        # highlight code in the background
-        highlight_code_for_snippet.delay(str(trace.id))
         
         return {
             "id": str(trace.id)

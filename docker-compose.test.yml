@@ -47,20 +47,6 @@ services:
     networks:
       - web
       - internal
-  rabbitmq:
-    extends:
-      file: docker-compose.yml
-      service: rabbitmq
-    container_name: "${APP_NAME}-rabbitmq"
-    networks:
-      - internal
-  celery:
-    extends:
-      file: docker-compose.yml
-      service: celery
-    container_name: "${APP_NAME}-celery"
-    networks:
-      - internal
 
 networks:
   web:

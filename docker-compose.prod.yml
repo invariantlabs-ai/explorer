@@ -31,22 +31,6 @@ services:
     networks:
       - internal
 
-  rabbitmq:
-    container_name: "${APP_NAME}-rabbitmq"
-    extends:
-      file: docker-compose.yml
-      service: rabbitmq
-    networks:
-      - internal
-
-  celery:
-    container_name: "${APP_NAME}-celery"
-    extends:
-      file: docker-compose.yml
-      service: celery
-    networks:
-      - internal
-
   app-ui:
     container_name: "${APP_NAME}-app-ui"
     build:
