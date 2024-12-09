@@ -4,6 +4,12 @@ CLI to launch the Invariant Explorer as a Docker compose application.
 """
 import os
 import subprocess
+import argparse
+
+parser = argparse.ArgumentParser(description='Launch the Invariant Explorer as a Docker compose application.')
+parser.add_argument('--port', type=int, default=80, help='The port to expose the Invariant Explorer on.')
+
+args = parser.parse_args()
 
 def ensure_has_docker_compose():
     """
@@ -28,7 +34,7 @@ def launch():
         'DEV_MODE': 'true',
         'CONFIG_FILE_NAME': 'explorer.local.yml',
         'PREVIEW': '0',
-        'PORT_HTTP': '80',
+        'PORT_HTTP': str(args.port),
         'PORT_API': '8000',
         'KEYCLOAK_CLIENT_ID_SECRET': 'local-does-not-use-keycloak'
     }

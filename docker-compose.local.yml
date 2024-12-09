@@ -60,6 +60,8 @@ services:
     networks:
       - web
       - internal
+    ports:
+      - "${PORT_API}:8000"
     volumes:
       - type: bind
         source: ./app-api
