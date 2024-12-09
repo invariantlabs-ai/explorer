@@ -103,20 +103,6 @@ async def test_create_policy_for_non_existent_dataset_fails(context, url):
     assert create_policy_response.status == 404
 
 
-async def test_create_invalid_policy_fails(context, url, data_abc):
-    """Tests that creating an unparseable policy results in a 400."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
-
-        # Create an invalid policy for the dataset.
-        create_policy_response = await context.request.post(
-            f'{url}/api/v1/dataset/{dataset["id"]}/policy',
-            data={'policy': INVALID_POLICY, 'name': "test-policy"}
-        )
-
-        # This should result in an error.
-        assert create_policy_response.status == 400
-
-
 async def test_create_policy_without_required_fields_fails(context, url, data_abc):
     """Tests that creating a policy without the necessary fields results in a 400."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
@@ -249,24 +235,6 @@ async def test_update_policy_for_non_existent_dataset_fails(context, url):
 
     # This should result in an error.
     assert update_policy_response.status == 404
-
-
-async def test_update_policy_with_unparseable_policy_content_fails(data_abc, url, context):
-    """Tests that updating an existing policy with an unparseable policy results in a 400."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
-
-        # Create policy for the dataset.
-        dataset = await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test-policy")
-
-        # Set the policy content as an invalid value.
-        policy_id = dataset["extra_metadata"]["policies"][0]["id"]
-        update_policy_response = await context.request.put(
-            f'{url}/api/v1/dataset/{dataset["id"]}/policy/{policy_id}',
-            data={'policy': INVALID_POLICY}
-        )
-
-        # This should result in an error.
-        assert update_policy_response.status == 400
 
 
 async def test_update_policy_with_invalid_request_payload_fails(data_abc, url, context):

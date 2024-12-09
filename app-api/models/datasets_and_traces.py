@@ -3,7 +3,6 @@ import hashlib
 import os
 import uuid
 
-from invariant.policy import Policy
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import (JSON, Boolean, DateTime, ForeignKey, Integer, String, ARRAY,
                         UniqueConstraint, create_engine)
@@ -151,15 +150,6 @@ class DatasetPolicy(BaseModel):
         """Represents the object as a dictionary."""
         return self.model_dump()
 
-    @field_validator('content')
-    @classmethod
-    def validate_content(cls, content: str) -> str:
-        """Validates that the policy string is valid."""
-        try:
-            _ = Policy.from_string(content)
-        except Exception as e:
-            raise ValueError('Policy Content must be valid') from e
-        return content
 
 def get_db_url():
     return "postgresql://{}:{}@{}:5432/{}".format(os.environ["POSTGRES_USER"],

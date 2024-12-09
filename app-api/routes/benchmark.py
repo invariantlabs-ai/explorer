@@ -9,8 +9,6 @@ import uuid
 from typing import Annotated
 from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from invariant.policy import AnalysisResult, Policy
-from invariant.runtime.input import mask_json_paths
 from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
                                         SavedQueries, SharedLinks, Trace, User,
                                         db)

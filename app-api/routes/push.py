@@ -2,13 +2,11 @@
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
 import base64
-import boto3
 import json
 import logging
 import os
 import uuid
 
-from invariant.runtime.input import Input
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from routes.apikeys import APIIdentity
@@ -45,20 +43,6 @@ def parse_and_push_images(dataset, trace_id, messages):
             with io.BytesIO() as output:
                 img.save(output, format="PNG")
                 img_data = output.getvalue()
-            
-            if prefix == "base64_img: ":
-                s3_client = boto3.client('s3')
-                bucket_name = 'invariant-explorer-imgs' if os.getenv("DEV_MODE") != "true" else 'invariant-explorer-imgs-dev'
-                
-                try:
-                    s3_client.put_object(Bucket=bucket_name, Key=img_filename, Body=img_data)
-                    logger.info(f"Successfully uploaded image to S3: {img_filename}")
-                    img_path = f"s3://{bucket_name}/{img_filename}"
-                except Exception as e:
-                    logger.error(f"Error uploading image to S3: {e}")
-                    img_path = "Error: Failed to upload image"
-                msg["content"] = "s3_img_link: " + img_path
-            else:
                 img_path = f"/srv/images/{img_filename}"
                 os.makedirs(os.path.dirname(img_path), exist_ok=True)
                 with open(img_path, "wb") as f:

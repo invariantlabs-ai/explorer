@@ -2,11 +2,7 @@ uvicorn
 fastapi
 aiohttp
 sse-starlette
-uvicorn
 sqlalchemy[postgresql]
-passlib[bcrypt]
 pyyaml
-python-jose
-passlib[bcrypt]
 python-multipart
 fastapi-keycloak-middleware
