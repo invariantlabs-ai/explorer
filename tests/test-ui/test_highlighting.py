@@ -9,6 +9,7 @@ import util
 
 from PIL import Image
 
+
 pytest_plugins = ('pytest_asyncio',)
 
 async def test_highlighted_tool_arg(context, url, data_code, screenshot):
@@ -158,11 +159,91 @@ async def test_highlights_python_correctly(context, url, data_line_numbers, scre
         assert is_highlighted(table_screenshot), "Code shown in table should be highlighted"
 
 
+async def test_image_highlighting(context, url, screenshot):
+    """Test that we get highlights for both passed and failed tests on images."""
+
+    async with util.TemporaryExplorerDataset(url, context, '') as dataset:
+        await push_annotated_images(url, context, dataset)
+
+        page = await context.new_page()
+
+        await page.goto(url)
+        await screenshot(page)
+
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        await page.get_by_role("link", name="All").click()
+        all_screenshot = await screenshot(page)
+
+        assert is_highlighted(all_screenshot), "Images should be highlighted"
+
+
+async def push_annotated_images(url, context, dataset):
+    """
+    Push 3 images to the api. All images are grey and two are highligthed.
+    """
+    from PIL import Image
+    import io
+    import base64
+
+    trace = []
+    for _ in range(3):
+        _img = Image.new('RGB', (100, 100), color=(220, 220, 220))
+        _img_buffer = io.BytesIO()
+        _img.save(_img_buffer, format='PNG')
+        _img_64 = base64.b64encode(_img_buffer.getvalue()).decode('utf-8')
+        trace.append({"role": "tool", "content": f"local_base64_img: {_img_64}"})
+
+    data = {
+        "messages": [trace],
+        "dataset": dataset["name"],
+        "annotations": [[
+            {
+                "content":"passed",
+                "address":"messages.0.content:0-592766",
+                "extra_metadata":{
+                    "source":"test-assertion-passed",
+                    "test":"some_test",
+                    "passed":True,
+                    "line":6,
+                    "assertion_id":4530431520
+                }
+            },
+            {
+                "content":"failed",
+                "address":"messages.1.content:0-592766",
+                "extra_metadata":{
+                    # When source does not contain something like 'pass' we defualt to fail
+                    "source":"test-assertion",
+                    "test":"some_test",
+                    "passed": False,
+                    "line":6,
+                    "assertion_id":4530431520
+                }
+            },
+
+        ]]
+    }
+    # get an API key and push the trace
+    key = await util.get_apikey(url, context)
+    headers = {"Authorization": "Bearer " + key}
+
+    response = await context.request.post(url + '/api/v1/push/trace',
+                                        data=data,
+                                        headers=headers)
+    await util.expect(response).to_be_ok()
+    trace_id = (await response.json())['id'][0]
+
+    # get the trace and check that the images are present
+    response = await context.request.get(url + f'/api/v1/trace/{trace_id}')
+    await util.expect(response).to_be_ok()
+
+
 def extract_line_numbers_from_text(text):
     # Regex to match line numbers at the beginning of a line
     line_number_pattern = r"^\s*(\d+):?\s"
     return [int(match.group(1)) for match in re.finditer(line_number_pattern, text, re.MULTILINE)]
-
 
 
 def is_highlighted(screenshot):

@@ -153,6 +153,16 @@ async def async_delete_trace_by_id(url, context, trace_id):
     response = await context.request.delete(url + '/api/v1/trace/' + trace_id)
     await expect(response).to_be_ok()
 
+# helper function to get an API key
+async def get_apikey(url, context):
+    response = await context.request.post(url + '/api/v1/keys/create')
+    await expect(response).to_be_ok()
+    out = await response.json()
+    return out['key']
+
+async def test_create_apikey(url, context):
+    key = await get_apikey(url, context)
+
 class TemporaryExplorerDataset:
     
     def __init__(self, url, context, data):
