@@ -107,7 +107,7 @@ function Home() {
             <li className='event'>
               <div className='event-info'>
                 <div className='user'>
-                <UserIcon username={userInfo?.username} size={40}/>
+                <UserIcon username={event.user.username} size={40}/>
                   <div className='left'>
                     <div><Link to={`/u/${event.user.username}`}><b>{event.user.username}</b></Link> {event.text}</div>
                     <div className='event-time'><Time text={true}>{event.time}</Time></div>
