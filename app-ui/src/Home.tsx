@@ -71,14 +71,14 @@ function Home() {
     <h2 className='home'>Home</h2>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
-      <div className='box'>
+      <div className='box split-view'>
         <h2>
           <Link to='/datasets'>Datasets</Link>
           <button className='inline primary' onClick={() => setShowUploadModal(true)}>New Dataset</button>
         </h2>
         <DatasetLinkList datasets={datasets_private} icon={<BsDatabase />} />
       </div>
-      <div className='box'>
+      <div className='box split-view'>
         <h2>
           <Link to='/snippets'>Snippets</Link>
           <button className='inline primary' onClick={() => navigate('/new')}>New Trace</button>
