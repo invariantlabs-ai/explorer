@@ -233,7 +233,7 @@ async def test_share_trace(context, url, data_webarena_with_metadata, screenshot
         # test navigation as owner
         await page.goto(link)
         await screenshot(page)
-        username = await page.locator("css=.user-info").inner_text()
+        username = await page.locator("css=.user-info p").inner_text()
         path_username = await page.get_by_label("path-user").inner_text()
         path_username = path_username[:-2] # remove the trailing /
         assert username.lower().strip() == path_username.lower().strip()
