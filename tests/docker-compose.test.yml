@@ -1,3 +1,4 @@
+name: ${APP_NAME}-test
 services:
   traefik:
     image: traefik:v2.0
@@ -19,14 +20,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-http.entrypoints=web"
-
+  
   app-api:
     build:
-      context: ./app-api
+      context: ../app-api
       dockerfile: ../app-api/Dockerfile.api
     working_dir: /srv/app
     env_file:
-      - .env
+      - ../.env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
@@ -44,10 +45,10 @@ services:
       - "${PORT_API}:8000"
     volumes:
       - type: bind
-        source: ./app-api
+        source: ../app-api
         target: /srv/app
-      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
-      - ./data/images:/srv/images
+      - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ../data/images:/srv/images
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
@@ -56,37 +57,49 @@ services:
       - "traefik.docker.network=web"
 
   app-ui:
-    image: node:alpine
-    entrypoint: "sh -c 'yarn && yarn run dev --host 0.0.0.0 --port 5173'"
-    working_dir: /srv/app
+    container_name: "${APP_NAME}-app-ui"
+    build:
+      context: ../app-ui
+      # expose ./configs as additional context to enable copying-in of
+      # the respective explorer.config.yml file during the Dockerfile build
+      additional_contexts:
+        configs: ../configs
+      dockerfile: Dockerfile.app-ui
+      args:
+        - APP_NAME=${APP_NAME}
+        - PREVIEW=${PREVIEW}
+        - CONFIG_FILE_NAME=${CONFIG_FILE_NAME}
+    depends_on:
+      - app-api
     networks:
       - web
-    volumes:
-      - type: bind
-        source: ./app-ui
-        target: /srv/app
-      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
     environment:
       - APP_NAME=${APP_NAME}
-      - VITE_CONFIG_FILE=/config/explorer.config.yml
+      - PREVIEW=${PREVIEW}
+      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
+    volumes:
+      - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
-      - "traefik.http.routers.$APP_NAME-ui.entrypoints=web"
-      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
+      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`${APP_NAME}.${BASE_URL}`)"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=websecure"
+      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=8000"
+      - "traefik.http.routers.$APP_NAME-ui.tls.certresolver=le"
+      - "traefik.http.routers.$APP_NAME-ui.tls=true"
       - "traefik.docker.network=web"
 
   database:
     image: postgres:16
     env_file:
-      - .env
+      - ../.env
     networks:
       - internal
     volumes:
       - type: bind
-        source: ./data/database
+        source: ../data/database
         target: /var/lib/postgresql/data
 
 networks:
   web:
   internal:
+    internal: true

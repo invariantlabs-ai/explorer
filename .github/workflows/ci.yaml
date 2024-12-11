@@ -1,0 +1,67 @@
+name: Explorer CI
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  test:
+    name: Build & Test
+    timeout-minutes: 30
+    runs-on: self-hosted
+
+    steps:
+    - name: Stop all running docker containers
+      run: docker stop $(docker ps -a -q) || true
+
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Build Test Environnement
+      run: ./tests/test-runner build-test-env
+
+    - name: Build Test Runner
+      run: ./tests/test-runner build-tester
+
+    - name: Run CI
+      run: ./tests/test-runner ci
+        
+    - name: tar screenshots
+      run: tar czf screenshots.tar.gz ./tests/screenshots
+      if: always()
+
+    - name: upload screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: screenshots
+        path: screenshots.tar.gz 
+
+    - name: upload rest-result
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ./tests/results/test-results-all.xml
+
+    - name: test-report
+      uses: pmeier/pytest-results-action@main
+      if: always()
+      with:
+        path: ./tests/results/test-results-all.xml
+
+        # (Optional) Add a summary of the results at the top of the report
+        summary: true
+
+        # (Optional) Select which results should be included in the report.
+        # Follows the same syntax as `pytest -r`
+        display-options: fEX
+
+        # (Optional) Fail the workflow if no JUnit XML was found.
+        fail-on-empty: true
+
+        # (Optional) Title of the test results section in the workflow summary
+        title: Test results
+    

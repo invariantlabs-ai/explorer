@@ -6,7 +6,7 @@ import { useRemoteResource } from "../../RemoteResource";
 import { Annotations, THUMBS_UP, THUMBS_DOWN } from "../../AnnotationAugmentedTraceView";
 import { useUserInfo } from "../../UserInfo";
 import { alertSignup } from "../../SignUpModal";
-import { anchor, permalink } from "../permalink-navigator";
+import { permalink } from "../permalink-navigator";
 
 /** A way to provide inline decorations to a rendered trace view. */
 export interface TraceDecorator {

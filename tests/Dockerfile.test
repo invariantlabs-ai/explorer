@@ -1,0 +1,12 @@
+FROM python:3.10
+
+RUN mkdir -p /tests
+COPY ./requirements.txt /tests/requirements.txt
+WORKDIR /tests
+RUN pip install --no-cache-dir -r requirements.txt
+RUN apt update
+RUN playwright install
+RUN playwright install-deps
+
+ENTRYPOINT ["pytest", "--capture=tee-sys", "--tracing", "off"]
+CMD ["--junit-xml=/tests/results/test-results-all.xml", "."]
