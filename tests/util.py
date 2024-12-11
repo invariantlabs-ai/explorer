@@ -17,7 +17,7 @@ def url():
     if "URL" in os.environ:
         return os.environ["URL"]
     else:
-        return "https://127.0.0.0:443"
+        return "http://127.0.0.0:80"
 
 @pytest.fixture
 def api_server_http_endpoint():
