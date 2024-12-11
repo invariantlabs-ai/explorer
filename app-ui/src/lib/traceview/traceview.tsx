@@ -1,17 +1,18 @@
 import "./TraceView.scss"
 import Editor from "@monaco-editor/react";
-import { BsCaretRightFill, BsCaretDownFill, BsPersonFill, BsRobot, BsChatFill, BsCheck2, BsExclamationCircleFill, BsMagic } from "react-icons/bs";
+import { BsCaretRightFill, BsCaretDownFill, BsPersonFill, BsRobot, BsChatFill, BsCheck2, BsExclamationCircleFill, BsMagic, BsLink } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
 import { validate } from "./schema";
 import jsonMap from "json-source-map"
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Ref } from "react";
 
 import { ViewportList } from 'react-viewport-list';
 import { Plugins } from "./plugins";
 import { HighlightContext, Line, TraceDecorator } from "./line";
 import { config } from "../../Config";
 import { truncate } from "./utils";
+import { AnchorDiv, anchorToAddress, copyPermalinkToClipboard, permalink } from "../permalink-navigator";
 
 /**
  * Props for the TraceView component.
@@ -324,6 +325,7 @@ class BroadcastEvent {
  */
 export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedTraceState> {
     listRef: any
+    viewportRef: any
 
     constructor(props: RenderedTraceProps) {
         super(props)
@@ -339,6 +341,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
         }
 
         this.listRef = React.createRef()
+        this.viewportRef = React.createRef()
     }
 
     componentDidUpdate(): void {
@@ -394,6 +397,29 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
         }
     }
 
+    onReveal(segments: any[], operation: string) {
+        // check if first segment is 'messages', then highlight the list item
+        if (segments.length > 1 && segments[0] === "messages" && typeof segments[1] === "number") {
+            this.viewportRef.current.scrollToIndex({index: segments[1]})
+            // if last segment is L<NUM>
+            if (segments.length > 2 && segments[segments.length - 1].startsWith && segments[segments.length - 1].startsWith("L")) {
+                if (operation == 'annotations') {
+                    this.setState({ selectedHighlightAddress: anchorToAddress(segments) })
+                }
+            }
+        }
+    }
+
+    afterReveal(segments: any[], operation: string, element: HTMLElement) {
+        if (element && element.classList.contains('annotated') && operation == 'annotations') {
+            let line = element.parentElement?.parentElement;
+            let lineAddress = line?.getAttribute('data-address');
+
+            this.setState({ selectedHighlightAddress: lineAddress || this.state.selectedHighlightAddress })
+        }
+    }
+
+
     render() {
         if (this.state.error) {
             return <div className="error">
@@ -421,11 +447,11 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
 
-            return <div className={"traces " + (this.state.altPressed ? "alt" : "")} ref={this.listRef}>
+            return <AnchorDiv id="messages" className={"traces " + (this.state.altPressed ? "alt" : "")} htmlRef={this.listRef} onReveal={this.onReveal.bind(this)} afterReveal={this.afterReveal.bind(this)}>
                 {this.props.prelude}
                 {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
-                <ViewportList items={events} viewportRef={this.listRef} overscan={1000}>
+                <ViewportList items={events} viewportRef={this.listRef} ref={this.viewportRef} overscan={1000}>
                     {(item: any, index: number) => {
                         return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
                                             events={this.state.events} allExpanded={this.props.allExpanded} />
@@ -434,8 +460,7 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 {events.length === 0 && <div className="event empty">
                     No Messages
                 </div>}
-
-            </div>
+            </AnchorDiv>
         } catch (e) {
             this.setState({ error: e as Error })
             return null
@@ -500,13 +525,27 @@ function RoleIcon(props: { role: string }) {
  * Component that renders a message header, including the role and if applicable, a compact view of the message content (e.g. the tool call)
  */
 function MessageHeader(props: { className: string, role: string, message: any, expanded: boolean, setExpanded: (state: boolean) => void, address: string }) {
+    const [copied, setCopied] = useState(false)
+    const [timeout, setTimeoutHandle] = useState(null as any)
+
+    const onCopy = (e: any) => {
+        copyPermalinkToClipboard(props.address)
+        setCopied(true)
+        clearTimeout(timeout)
+        setTimeoutHandle(setTimeout(() => setCopied(false), 2000))
+    }
+
     return <div className={"role " + props.className} onClick={() => props.setExpanded(!props.expanded)}>
         {props.expanded ? <BsCaretRightFill /> : <BsCaretDownFill />}
         <RoleIcon role={props.role} />
         {props.role}
         <CompactView message={props} />
-        <div className="address">
+        <div className="address" onClick={(e) => {
+                onCopy(e);
+                e.stopPropagation();
+            }} >
             {props.address}
+            {copied ? " (copied)" : ""}
         </div>
     </div>
 }
@@ -629,7 +668,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                 </div>
             } else {
                 // normal message (role + content and optional tool calls)
-                return <div className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.collapsed ? " expanded" : "")}>
+                return <AnchorDiv className={"event " + (isHighlighted ? "highlight" : "") + " " + message.role + (this.state.collapsed ? " expanded" : "")} id={permalink(this.props.address, false)} onReveal={() => this.setState({ collapsed: false })} flash={true}>
                     {message.role && <MessageHeader message={message} className="role" role={message.role} expanded={this.state.collapsed} setExpanded={(state: boolean) => this.setState({ collapsed: state })} address={this.props.address} />}
                     {!this.state.collapsed && <>
                         {message.content && <div className={"content " + message.role}>
@@ -644,7 +683,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
                             })}
                         </div>}
                     </>}
-                </div>
+                </AnchorDiv>
             }
         } catch (e) {
             this.setState({ error: e as Error })
@@ -691,7 +730,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
     // translate highlights on arguments back into JSON source ranges
     const argumentHighlights = highlights.for_path("function.arguments")
 
-    return <div className={"tool-call " + (isHighlighted ? "highlight" : "")}>
+    return <AnchorDiv className={"tool-call " + (isHighlighted ? "highlight" : "")} id={permalink(props.address, false)}>
         <div className="function-name">
             <Annotated highlights={highlights.for_path("function.name")} highlightContext={props.highlightContext} address={props.address + ".function.name"} message={props.message}>
                 {f.name || <span className="error">Could Not Parse Function Name</span>}
@@ -706,7 +745,7 @@ function ToolCallView(props: { tool_call: any, highlights: any, highlightContext
                 </HighlightedJSONTable>
             </pre>
         </div>
-    </div>
+    </AnchorDiv>
 }
 
 /**
@@ -823,10 +862,13 @@ function Annotated(props: { highlights: any, children: any, highlightContext?: H
                         {c}
                     </span>)
                 } else {
+                    const addr = props.address + ":" + (interval.start - 1) + "-" + (interval.end - 1)
+                    const permalink_id = permalink(addr, false)
+
                     const message_content = content.substring(interval.start - 1, interval.end - 1)
                     let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     const tooltip = interval.content.map(c => truncate('[' + c['source'] + ']' + ' ' + c['content'], 100)).join("\n")
-                    line.push(<span key={(elements.length) + "-" + (interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>{message_content}</span>)
+                    line.push(<span key={(elements.length) + "-" + (interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip} id={permalink_id}>{message_content}</span>)
                 }
             }
             const line_highlights = highlights
@@ -893,10 +935,13 @@ function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highl
                         {content.substring(interval.start, interval.end)}
                     </span>)
                 } else {
+                    const addr = props.address + ":" + (interval.start - 1) + "-" + (interval.end - 1)
+                    const permalink_id = permalink(addr, false)
+                    
                     const message_content = props.children.toString().substring(interval.start, interval.end)
                     let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     const tooltip = interval.content.map(c => truncate('[' + c['source'] + ']' + ' ' + c['content'], 100)).join("\n")
-                    line.push(<span key={(interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>
+                    line.push(<span key={(interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip} id={permalink_id}>
                         {message_content}
                     </span>)
                 }

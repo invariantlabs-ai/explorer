@@ -1,11 +1,12 @@
 import React, { useState } from "react"
 import { GroupedHighlight } from "./highlights";
 import { useTelemetry } from "../../telemetry";
-import { BsHandThumbsUpFill, BsHandThumbsDownFill, BsHandThumbsUp, BsHandThumbsDown, BsArrowUp, BsArrowDown } from "react-icons/bs";
+import { BsArrowUp, BsArrowDown } from "react-icons/bs";
 import { useRemoteResource } from "../../RemoteResource";
 import { Annotations, THUMBS_UP, THUMBS_DOWN } from "../../AnnotationAugmentedTraceView";
 import { useUserInfo } from "../../UserInfo";
 import { alertSignup } from "../../SignUpModal";
+import { permalink } from "../permalink-navigator";
 
 /** A way to provide inline decorations to a rendered trace view. */
 export interface TraceDecorator {
@@ -161,10 +162,12 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
         });
     };
 
+    const id = permalink(props.address || '', false);
+
     if (!expanded) {
         return <span 
-            id='unexpanded' 
-            className={className + extraClass}
+            id={id} data-address={props.address}
+            className={className + extraClass + ' unexpanded'}
         > 
             <SelectableSpan onActualClick={onClickLine}>
                 {props.children}
@@ -180,11 +183,12 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     const content = InlineComponent({ highlights: props.highlights, address: props.address, onClose: () => {setExpanded(false);} })
 
     if (content === null) {
-        return <span className={className}>{props.children}</span>
+        return <span id={id} data-address={props.address} className={className}>{props.children}</span>
     }
 
     return <span 
         className={className + (expanded ? ' expanded ' : '') + extraClass}
+        id={id} data-address={props.address}
     >
         <SelectableSpan onActualClick={onClickLine}>
             {props.children}

@@ -17,7 +17,9 @@ import { RenderedTrace } from './lib/traceview/traceview';
 import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
+import { HighlightsNavigator } from './HighlightsNavigator';
 
+import { copyPermalinkToClipboard } from './lib/permalink-navigator';
 import { BsArrowDown, BsArrowsCollapse, BsArrowsExpand, BsArrowUp, BsCaretLeftFill, BsCheck, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash } from "react-icons/bs";
 
 export const THUMBS_UP = ":feedback:thumbs-up"
@@ -52,6 +54,7 @@ export class Annotations extends RemoteResource {
  * Components that renders agent traces with the ability for user's to add comments ("annotation").
  * 
  * @param {Object} props
+ * @param {Object} props.collapsed - whether the trace is collapsed by default
  * @param {Object} props.activeTrace - the trace to render
  * @param {string} props.selectedTraceId - the trace ID
  * @param {number} props.selectedTraceIndex - the trace index
@@ -77,7 +80,7 @@ export function AnnotationAugmentedTraceView(props) {
   const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, activeTraceId)
 
   // highlights to show in the traceview (e.g. because of analyzer or search results)
-  const [highlights, setHighlights] = useState(HighlightedJSON.empty())
+  const [highlights, setHighlights] = useState({highlights: HighlightedJSON.empty(), traceId: null})
   // filtered annotations (without analyzer annotations)
   const [filtered_annotations, setFilteredAnnotations] = useState({})
   // errors from analyzer annotations
@@ -89,7 +92,7 @@ export function AnnotationAugmentedTraceView(props) {
   const { onAnnotationCreate, onAnnotationDelete } = props;
 
   // record if the trace is expanded to decide show "expand all" or "collapse all" button
-  const [is_all_expanded, setAllExpand] = useState(true);
+  const [is_all_expanded, setAllExpand] = useState(props.collapsed);
 
   // get telemetry object
   const telemetry = useTelemetry()
@@ -121,15 +124,24 @@ export function AnnotationAugmentedTraceView(props) {
   }
 
   // whenever activeTrace changed, the trace is defaultly expanded, set the button to be collapse
-  useEffect(() => {
-    setAllExpand(true);
-  }, [activeTrace])
+  useEffect(()=>{
+    if (props.collapsed) {
+      setAllExpand(false);
+      events.collapseAll?.fire()
+    } else {
+      setAllExpand(true);
+      events.expandAll?.fire()
+    }
+  },[activeTrace])
 
   // whenever annotations change, update mappings
   useEffect(() => {
     let { highlights, errors, filtered_annotations, top_level_annotations } = AnnotationsParser.parse_annotations(annotations, props.mappings);
 
-    setHighlights(HighlightedJSON.from_entries(highlights))
+    setHighlights({
+      highlights: HighlightedJSON.from_entries(highlights),
+      traceId: activeTraceId
+    })
     setErrors(errors)
     setFilteredAnnotations(filtered_annotations)
     setTopLevelAnnotations(top_level_annotations)
@@ -161,12 +173,23 @@ export function AnnotationAugmentedTraceView(props) {
     extraArgs: [activeTraceId]
   }
 
+  // note: make sure to only pass highlights here that actually belong to the active trace 
+  // otherwise we can end up in an intermediate state where we have a new trace but old highlights (this must never happen)
+  const traceHighlights = highlights.traceId == activeTraceId ? highlights.highlights : HighlightedJSON.empty()
+
   return <>
     <header className='toolbar'>
       {props.header}
       <div className='spacer' />
       <div className='vr' />
+      <HighlightsNavigator 
+        highlights={traceHighlights} 
+        top_level_annotations={top_level_annotations} 
+        onOpen='expand-first'
+        traceId={activeTraceId}
+      />
       {activeTrace && <>
+
         {is_all_expanded ? (
           <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
         ) : (
@@ -196,7 +219,7 @@ export function AnnotationAugmentedTraceView(props) {
         empty={props.empty}
         activeTrace={activeTrace}
         activeTraceId={activeTraceId}
-        highlights={highlights}
+        highlights={traceHighlights}
         errors={errors}
         decorator={decorator}
         setEvents={setEvents}
@@ -264,6 +287,12 @@ function TopLevelHighlights(props) {
   </div>
 }
 
+function safeAnchorId(annotationId) {
+  if (!annotationId) {
+    return 'no-id';
+  }
+  return annotationId.replace(/[^a-zA-Z0-9]/g, '_');
+}
 
 // AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
 function AnnotationThread(props) {
@@ -421,7 +450,9 @@ function AnnotationEditor(props) {
         Add Annotation
         <div className='spacer' />
         <div className='actions'>
-          <pre style={{ opacity: 0.4 }}>{props.address}</pre>
+          <pre style={{ opacity: 0.4 }} onClick={() => copyPermalinkToClipboard(props.address)}>
+            {props.address}
+          </pre>
         </div>
       </header>
       <textarea value={content} onChange={(e) => setContent(e.target.value)} ref={textareaRef} onKeyDown={onKeyDown} />

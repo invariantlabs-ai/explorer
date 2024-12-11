@@ -8,6 +8,7 @@ import { HighlightedJSON } from '../highlights';
 import { Line } from '../line';
 import { truncate } from '../utils';
 import KEY_TOKENS from './code-highligther-keywords.json';
+import { copyPermalinkToClipboard, permalink } from '../../permalink-navigator';
 
 // component properties of the code-highlighter plugin
 interface CodeHighlightedViewProps {
@@ -215,6 +216,8 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
             for (const interval of highlights) {
                 // additionally highlight NLs with unicode character
                 let c = tokenized_content.consume(interval.start - 1, interval.end - 1)
+                const addr = this.props.address + ":" + (interval.start - 1) + "-" + (interval.end - 1)
+                const permalink_id = permalink(addr, false)
 
                 if (interval.content === null) {
                     line.push(<span key={(elements.length) + '-' + (line.length) + "-" + interval.start + "-" + interval.end} className="unannotated">
@@ -223,7 +226,9 @@ class CodeHighlightedView extends React.Component<CodeHighlightedViewProps, { no
                 } else {
                     let className = "annotated" + " " + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ")
                     const tooltip = interval.content.map(c => truncate('[' + c['source'] + ']' + ' ' + c['content'], 100)).join("\n")
-                    line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>{c}</span>)
+                    line.push(<span key={(elements.length) + '-' + (line.length) + "-" + (interval.start) + "-" + (interval.end)} className={className} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip} id={permalink_id}>
+                        {c}
+                    </span>)
                 }
             }
             const line_highlights = highlights

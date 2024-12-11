@@ -2086,3 +2086,87 @@ p.footer-links {
   h3 { font-size: 14pt; }
 }
 
+*[data-anchor-highlight] {
+  border-color: #3d3aff31;
+  transition: background-color 0.1s;
+  background-color: transparent;
+  
+  // style of the flashing permalinked items
+  &[data-anchor-flash] {
+    background-color: #3d3aff1b !important;
+    box-shadow: 0pt 0pt 0pt 2pt #3d3aff31;
+  }
+
+  // style of the flashing parent elements when revealing a permalinked item
+  &[data-anchor-parent-flash] {
+    border: 1pt solid #3d3aff31 !important;
+  }
+}
+
+.permalink {
+  font-size: 10pt;
+  color: #3E3AFF;
+  margin-right: 5pt;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.highlights-navigator {
+  display: flex;
+  border: 1pt solid $border-color;
+  border-radius: 7.5pt;
+  line-height: 30pt;
+  margin: 4pt;
+  margin-right: 6pt;
+  height: 28pt;
+  overflow: hidden;
+  background-color: white;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  button {
+    border: none;
+    padding: 0pt;
+    margin: 0pt;
+    height: auto;
+    background: none;
+    border-radius: 0pt;
+    color: $text-color;
+    padding: 0pt 5pt;
+    cursor: pointer;
+    border-left: 1pt solid $border-color;
+
+    &:disabled {
+      opacity: 0.2;
+    }
+
+    &:hover {
+      background-color: #d5d5d5;
+    }
+
+    svg {
+      margin-left: 2pt;
+      margin-right: 2pt;
+    }
+  }
+
+  .content {
+    display: flex;
+    white-space: nowrap;
+    padding: 0pt 10pt;
+    line-height: 30pt;
+    font-size: 10pt;
+  }
+
+  .content:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+  }
+
+  .content:active {
+    background-color: #e1e1e1;
+  }
+}
