@@ -2,7 +2,7 @@ name: ${APP_NAME}-test
 services:
   traefik:
     image: traefik:v2.0
-    container_name: "${APP_NAME}-local-traefik"
+    container_name: "${APP_NAME}-test-local-traefik"
     command:
       - --providers.docker=true
       # Enable the API handler in insecure mode,

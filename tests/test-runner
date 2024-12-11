@@ -7,7 +7,7 @@ function dev_run_test() {
     # Example: calls via SDK to the HTTPS endpoint don't work with a self-signed certificate hence we use the
     # HTTP endpoint in the tests.
     docker run \
-        -e URL='https://127.0.0.1' \
+        -e URL='http://127.0.0.1' \
         -e API_SERVER_HTTP_ENDPOINT="http://127.0.0.1:${PORT_API}" \
         --mount type=bind,source=./tests,target=/tests \
         --network host \
@@ -29,7 +29,6 @@ function ci_env() {
     export DEV_MODE=true
     export CONFIG_FILE_NAME="explorer.local.yml"
     export PORT_HTTP=8080
-    export PORT_HTTPS=8443
     export PORT_API=8001
 }
 
@@ -69,18 +68,18 @@ function ci_run_test() {
     ci_env
 
     # make sure we are signed up (dev user)
-    curl -k -X POST https://127.0.0.1:${PORT_HTTPS}/api/v1/user/signup
+    curl -k -X POST http://127.0.0.1:${PORT_HTTP}/api/v1/user/signup
     echo ""
     
     sleep 5
 
     # run test
-    echo "Running tests on https://127.0.0.1:${PORT_HTTPS}..."
+    echo "Running tests on http://127.0.0.1:${PORT_HTTP}..."
     # API_SERVER_HTTP_ENDPOINT is used in some tests where calls to the HTTP explorer backend API are needed.
     # Example: calls via SDK to the HTTPS endpoint don't work with a self-signed certificate hence we use the
     # HTTP endpoint in the tests.
     docker run \
-        -e URL="https://127.0.0.1:${PORT_HTTPS}" \
+        -e URL="http://127.0.0.1:${PORT_HTTP}" \
         -e API_SERVER_HTTP_ENDPOINT="http://127.0.0.1:${PORT_API}" \
         --mount type=bind,source=./tests,target=/tests \
         --network host \
