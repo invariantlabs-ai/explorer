@@ -52,10 +52,11 @@ function ci_run_server() {
     rm -rf /tmp/invariant-explorer-test/data
     mkdir -p /tmp/invariant-explorer-test/data/database
     mkdir -p /tmp/invariant-explorer-test/data/datasets
+    mkdir -p /tmp/invariant-explorer-test/data/images
 
     # start wait and stop docker to ensure everything is set up
     # this avoids several network timing issues and initialization issues
-    docker compose -f tests/docker-compose.test.yml up -d    
+    docker compose -f tests/docker-compose.test.yml up
     sleep 5
     docker compose -f tests/docker-compose.test.yml down
    

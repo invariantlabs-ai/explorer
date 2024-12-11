@@ -77,8 +77,10 @@ services:
       - type: bind
         source: /tmp/invariant-explorer-test/data/datasets
         target: /srv/datasets
+      - type: bind
+        source: /tmp/invariant-explorer-test/data/images
+        target: /srv/images
       - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
-      - ../data/images:/srv/images
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
@@ -100,4 +102,3 @@ services:
 networks:
   web:
   internal:
-    internal: true
