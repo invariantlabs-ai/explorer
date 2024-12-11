@@ -1,5 +1,4 @@
 import json
-from invariant.runtime.input import Input
 from models.datasets_and_traces import Trace, Annotation
 from typing import Any
 

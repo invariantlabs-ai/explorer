@@ -1,5 +1,9 @@
-// registers a global listener to listen for hash changes, and navigates 
-// to the relevant HTML dom element as soon as it appears
+/**
+ * Enables adressing of page elements by their address.
+ * 
+ * In case of nested e.g. tool calls or highlights, `Reveal` also supports
+ * to first unfold the relevant parent elements before flashing the leaf element.
+ */
 
 import { useEffect, useRef } from "react";
 
@@ -236,7 +240,7 @@ function segmentsToIds(segments) {
     let ids: string[] = [];
     let prefix = "";
     let trace_object = segments.length > 0 && segments[0] === 'messages';
-    
+
     for (let i = 0; i < segments.length; i++) {
         let s = segments[i];
         // string segments we append to the prefix
@@ -253,8 +257,8 @@ function segmentsToIds(segments) {
             prefix += prefix ? '-' + s : s;
         } else if (typeof s === 'number') {
             // number segments we append to the prefix
-            ids.push(prefix ? prefix + '-n-' + s : 'n-' + s);
-            prefix += prefix ? '-n-' + s : 'n-' + s;
+            ids.push(prefix ? (prefix + '-' + s) : (""+s));
+            prefix += prefix ? '-' + s : '' + s;
         } else if (Array.isArray(s)) {
             // array segments we append to the prefix
             ids.push(prefix ? prefix + '-' + s.join('-') : s.join('-'));
@@ -264,6 +268,8 @@ function segmentsToIds(segments) {
 
     return ids;
 }
+
+export let ACTIVE_HASH = '';
 
 /**
  * Install the permalink navigator.
@@ -275,6 +281,7 @@ function segmentsToIds(segments) {
 export function install() {
     function onHashChange() {
         let h = window.location.hash;
+        ACTIVE_HASH = h;
         let [full, operation] = parse(h);
 
         if (h === '#' || h === '') {
@@ -287,15 +294,6 @@ export function install() {
 
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
-}
-
-/**
- * Returns the full hash of the current page in parsed form.
- * 
- * See also `parse`.
- */
-function getFullHash() {
-    return parse(window.location.hash);
 }
 
 /**
@@ -315,7 +313,7 @@ export function permalink(s: string, link=true) {
     let original = s;
 
     s = s.replace(/\./g, '/');
-    s = s.replace(/\[/g, '/n/');
+    s = s.replace(/\[/g, '/');
     s = s.replace(/\]/g, '');
     s = s.replace(/\:/g, '/');
     s = s.replace(/[^a-zA-Z0-9/]/g, '-');
@@ -352,11 +350,10 @@ export function parse(hash: string): [any[], string] {
     const parts = hash.split('/');
     const result: (string | number | number[])[] = [];
     for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === 'n' && !isNaN(parseInt(parts[i + 1]))) {
-            result.push(parseInt(parts[i + 1]));
-            i++;
-        } else if (parts[i].includes('-') && i + 1 === parts.length) {
+        if (parts[i].includes('-') && i + 1 === parts.length) {
             result.push(parts[i].split('-').map(x => parseInt(x)));
+        } else if (!isNaN(parseInt(parts[i]))) {
+            result.push(parseInt(parts[i]));
         } else {
             // check if int and convert
             if (!isNaN(parseInt(parts[i]))) {
@@ -366,6 +363,7 @@ export function parse(hash: string): [any[], string] {
             }
         }
     }
+
     return [result, operation || ''];
 }
 

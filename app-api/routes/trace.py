@@ -1,9 +1,7 @@
-import boto3
 import os
 import uuid
 from typing import Annotated
 
-from celery_tasks.highlight_code import highlight_code_for_snippet
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
@@ -24,17 +22,8 @@ async def get_image(request: Request, userInfo: Annotated[dict, Depends(UserIden
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
             return Response(content=f.read(), media_type="image/png")
-    
-    s3_client = boto3.client('s3')
-    bucket_name = f'invariant-explorer-imgs'
-
-    # Get the image from S3
-    response = s3_client.get_object(Bucket=bucket_name, Key=f"{dataset_name}/{trace_id}/{image_id}.png")
-    image_data = response['Body'].read()
-    return Response(
-        content=image_data, 
-        media_type="image/png",
-    )
+    # If no local image is found, return 404
+    raise HTTPException(status_code=404, detail="Image not found")
 
 @trace.get("/snippets")
 def get_trace_snippets(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
@@ -215,9 +204,6 @@ async def upload_new_single_trace(request: Request, userinfo: Annotated[dict, De
         
         session.add(trace)
         session.commit()
-
-        # highlight code in the background
-        highlight_code_for_snippet.delay(str(trace.id))
         
         return {
             "id": str(trace.id)

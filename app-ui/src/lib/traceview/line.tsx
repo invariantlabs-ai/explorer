@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { GroupedHighlight } from "./highlights";
 import { useTelemetry } from "../../telemetry";
-import { BsHandThumbsUpFill, BsHandThumbsDownFill, BsHandThumbsUp, BsHandThumbsDown, BsArrowUp, BsArrowDown } from "react-icons/bs";
+import { BsArrowUp, BsArrowDown } from "react-icons/bs";
 import { useRemoteResource } from "../../RemoteResource";
 import { Annotations, THUMBS_UP, THUMBS_DOWN } from "../../AnnotationAugmentedTraceView";
 import { useUserInfo } from "../../UserInfo";
@@ -167,7 +167,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     if (!expanded) {
         return <span 
             id={id} data-address={props.address}
-            className={className + extraClass}
+            className={className + extraClass + ' unexpanded'}
         > 
             <SelectableSpan onActualClick={onClickLine}>
                 {props.children}

@@ -6,7 +6,6 @@ import { Modal } from './Modal'
 import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 import { useTelemetry } from './telemetry'
-import HomepageDatasetsNames from './assets/HomepageDatasetsNames.json';
 
 /**
  * Creates a new dataset with the given name, with no data.
@@ -205,18 +204,16 @@ export function DeleteDatasetModalContent(props) {
 export function DatasetLinkList(props) {
   const userInfo = useUserInfo()
   let datasets = props.datasets || [];
-  let homepage = props.homepage || false
   datasets = datasets.map(item => ({
     ...item,
-    nice_name: homepage
-      ? HomepageDatasetsNames[item.id] || `${item.user.username}/${item.name}`
-      : `${item.user.username}/${item.name}`,
+    nice_name: item.nice_name || item.name,
   }));
   return <>
     <EntityList title={null} actions={null} className={props.className}>
       {datasets.length === 0 && <div className='empty'>No datasets</div>}
       {datasets.map((dataset, i) => <Link className='item' to={`/u/${dataset.user.username}/${dataset.name}`} key={i}><li>
         <h3>{props.icon}{dataset.nice_name}</h3>
+        {dataset.description && <span className="description" >{dataset.description}</span>}
       </li></Link>)}
     </EntityList>
   </>

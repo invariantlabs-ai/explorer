@@ -539,7 +539,6 @@ function useSearch() {
   useEffect(() => {
     dispatchSearch(searchQuery)
   }, [searchQuery])
-
   return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] as const;
 }
 
@@ -936,7 +935,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
          data-tooltip-id="button-tooltip" data-tooltip-content="Fold Sidebar">
         <BsLayoutSidebarInset />
       </button>
-      <SidebarStatus traces={traces} searching={props.searching} />
+      <SidebarStatus traces={traces} searching={props.searching} activeIndices={activeIndices} />
     </header>
     <ul ref={viewportContainerRef}>
       <ViewportList
@@ -956,10 +955,10 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
 }
 
 /** Status message on top of the sidebar list of traces */
-function SidebarStatus(props: { traces: LightweightTraces | null, searching: boolean }) {
-  const { traces, searching } = props
+function SidebarStatus(props: { traces: LightweightTraces | null, searching: boolean, activeIndices: DisplayedTracesT }) {
+  const { traces, searching, activeIndices } = props
   if (traces && !searching) {
-    return <h1 className='header-long'>{traces.indices().length + " Traces"}</h1>
+    return <h1 className='header-long'>{Object.values(activeIndices).reduce((acc, group) => acc + group.traces.length, 0) + " Traces"}</h1>
   } else {
     return <h1 className='header-long'>{searching ? 'Searching...' : 'Loading...'}</h1>
   }
