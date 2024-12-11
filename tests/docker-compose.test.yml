@@ -75,8 +75,8 @@ services:
       - "${PORT_API}:8000"
     volumes:
       - type: bind
-        source: ../app-api
-        target: /srv/app
+        source: /tmp/invariant-explorer-test/data/datasets
+        target: /srv/datasets
       - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
       - ../data/images:/srv/images
     labels:
@@ -94,7 +94,7 @@ services:
       - internal
     volumes:
       - type: bind
-        source: ../data/database
+        source: /tmp/invariant-explorer-test/data/database
         target: /var/lib/postgresql/data
 
 networks:
