@@ -27,7 +27,7 @@ function ci_env() {
     source .env
     export APP_NAME="explorer-test"
     export DEV_MODE=true
-    export CONFIG_FILE_NAME="explorer.local.yml"
+    export CONFIG_FILE_NAME="explorer.test.yml"
     export PORT_HTTP=8080
     export PORT_API=8001
 }
