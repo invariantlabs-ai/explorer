@@ -19,7 +19,7 @@ from fastapi.exception_handlers import http_exception_handler
 import traceback
 
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from metrics.active_users import install_active_user_monitoring_middleware
+from metrics.active_users import install_metrics_middleware
 
 v1 = fastapi.FastAPI()
 
@@ -51,8 +51,8 @@ def auth_metrics(request: fastapi.Request):
     if not token or request_token != f"Bearer {token}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-# counts active users
-install_active_user_monitoring_middleware(app)
+if os.getenv("DEV_MODE") != "true":
+    install_metrics_middleware(app)
 
 # write back the refreshed token to the response if auth refreshed an access token
 app.middleware("http")(write_back_refreshed_token)

@@ -262,44 +262,6 @@ def search_dataset_by_name(request: Request, username:str, dataset_name:str, use
                                 result[title]['traces'].append(trace.index)
                 if not trace_with_match:
                     result['Other Traces']['traces'].append(trace.index)
-            for key in result.keys():
-                if key == 'Other Traces': continue
-                result[key]['description'] = 'Invariant Analyzer'
-
-                # TODO: replace with permanent solution
-                if key == "Forgot to call a tool":
-                    result[key]['severity'] = 1
-                    result[key]['icon'] = 'tools'
-                elif key == "Wrong tool arguments":
-                    result[key]['severity'] = 3
-                    result[key]['icon'] = 'tools'
-                elif key == "Infinite loop":
-                    result[key]['icon'] = 'exclamation'
-                    result[key]['severity'] = 4
-                elif key == "Missing information in the response":
-                    result[key]['severity'] = 1
-                    result[key]['icon'] = 'info'
-                elif key == "Moderated content":
-                    result[key]['severity'] = 1
-                    result[key]['icon'] = 'info'
-                elif key == "Secret code in the discord message":
-                    result[key]['severity'] = 5
-                    result[key]['icon'] = 'exclamation-large'
-                elif key == "URL sent to discord":
-                    result[key]['severity'] = 2
-                    result[key]['icon'] = 'info'
-                elif key == "User message contains URL":
-                    result[key]['severity'] = 1
-                    result[key]['icon'] = 'exclamation'
-                elif key == "Hallucination":
-                    result[key]['severity'] = 4
-                    result[key]['icon'] = 'exclamation'
-                elif key == "Wrong tool argument format":
-                    result[key]['severity'] = 2
-                    result[key]['icon'] = 'tools'
-                elif key == "Action plan flawed":
-                    result[key]['severity'] = 2
-                    result[key]['icon'] = 'tools'
         elif query.strip().startswith("filter"):
             # e.g. query=filter:some message:16,21,25,26,35
             filter_query = query.strip()[len("filter:"):].strip()
