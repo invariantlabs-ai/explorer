@@ -14,6 +14,7 @@ import { AnalysisResult } from './lib/analysis_result';
 import { openInPlayground } from './lib/playground';
 import { HighlightedJSON } from './lib/traceview/highlights';
 import { RenderedTrace } from './lib/traceview/traceview';
+import { config } from './Config';
 import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
@@ -208,8 +209,8 @@ export function AnnotationAugmentedTraceView(props) {
         </a>
         {props.actions}
         <div className='vr' />
-        <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>
-        {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+        {config('sharing') && <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
+        {config('sharing') && props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
           {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
         </button>}
       </>}

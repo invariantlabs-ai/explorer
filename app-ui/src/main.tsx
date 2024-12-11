@@ -8,7 +8,7 @@ import { routes } from './Routes'
 
 import { PostHogProvider} from 'posthog-js/react'
 import { posthog } from 'posthog-js'
-import { telemetryOptions, HAS_CONSENT, capture } from './telemetry'
+import { telemetryOptions, HAS_CONSENT, capture, SUPPORTS_TELEMETRY } from './telemetry'
 
 import { install } from "./lib/permalink-navigator"
 
@@ -57,7 +57,7 @@ install();
 
 ReactDOM.createRoot(document.getElementById('app-root')!).render(
   <React.StrictMode>
-    {HAS_CONSENT ? <PostHogProvider
+    {HAS_CONSENT && SUPPORTS_TELEMETRY ? <PostHogProvider
       apiKey='phc_fG5QwXaLBOPZgtjnHR4UP9kcnLdY2cD1JUwGBw06YjT'
       options={telemetryOptions}
     >

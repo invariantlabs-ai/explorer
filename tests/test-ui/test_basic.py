@@ -210,6 +210,7 @@ async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
             for trace, exp in zip(["Run 0", "Run 1"], expected):
                 assert await trace_shown_in_sidebar(page, trace) == exp
 
+@pytest.mark.skip(reason="Sharing is now disabld on a local instnace. This would have to be done on an instance with sharing=true.")
 async def test_share_trace(context, url, data_webarena_with_metadata, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_webarena_with_metadata) as dataset:
         page = await context.new_page()

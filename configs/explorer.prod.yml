@@ -20,3 +20,6 @@ private: false
 
 # whether telemetry is enabled for this instance
 telemetry: true
+
+# whether sharing is enabled for this instance
+sharing: true
