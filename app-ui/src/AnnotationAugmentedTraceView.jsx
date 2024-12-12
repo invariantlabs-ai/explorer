@@ -220,7 +220,7 @@ export function AnnotationAugmentedTraceView(props) {
         </a>
         {props.actions}
         <div className='vr' />
-        {config('sharing') && <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
+        {config('sharing') && <button className='inline guide-step-4' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
         {config('sharing') && props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
           {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
         </button>}
