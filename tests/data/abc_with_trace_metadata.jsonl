@@ -1,0 +1,2 @@
+{"messages": [{"role": "user", "content": "test ABC test"}, {"role": "assistant", "content": "i like ABC!"}], "metadata": {"a": 101, "b": "a long string with spaces"}}
+{"messages": [{"role": "user", "content": "what is your name?"}, {"role": "assistant", "content": "my name is ABC!"}], "metadata": {"a": 102, "b": "asdf"}}

@@ -1,0 +1,3 @@
+{"metadata": {"description": "Traces that demonstrate that indices are picked from the file."}}
+{"index": 5, "messages": [{"role": "user", "content": "Assign the issue regarding flash alert in primer design guide repo to myself."}], "metadata": {"task_id": 5, "thread_id": "6d057c2a-6347-403e-a21d-4a903fa01294-6b15052d", "success": true, "uploader": "Via API with DEV_MODE true"}}
+{"index": 812, "messages": [{"role": "user2", "content": "Assign the issue regarding flash alert in primer design guide repo to you."}], "metadata": {"task_id": 812, "thread_id": "6t057c2a-6347-403e-a21d-4a903fa01294-6b15052d", "success": false, "uploader": "Via API with DEV_MODE true"}}
