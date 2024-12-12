@@ -8,7 +8,9 @@ import { routes } from './Routes'
 
 import { PostHogProvider} from 'posthog-js/react'
 import { posthog } from 'posthog-js'
-import { telemetryOptions, HAS_CONSENT, capture } from './telemetry'
+import { telemetryOptions, HAS_CONSENT, capture, SUPPORTS_TELEMETRY } from './telemetry'
+
+import { install } from "./lib/permalink-navigator"
 
 // create browser router
 const router = createBrowserRouter(routes);
@@ -25,6 +27,10 @@ router.subscribe(() => {
 
 /** override window.alert to show errors in a nice way without blocking the UI */
 window.alert = (message: string) => {
+  // if message starts with 'info:', show it as an info message
+  let isInfo = message.startsWith('info:');
+  if (isInfo) message = message.substring(5);
+
   // get #alert-error-list element
   const alertErrorList = document.getElementById('alert-error-list');
   // create a li element
@@ -32,6 +38,9 @@ window.alert = (message: string) => {
 
   // set the text of the li element to the message
   li.textContent = message;
+  
+  // if it's an info message, add the info class
+  if (isInfo) li.classList.add('info');
 
   // append the li element to the alertErrorList
   alertErrorList?.appendChild(li);
@@ -44,9 +53,11 @@ window.alert = (message: string) => {
   }, 5000);
 }
 
+install();
+
 ReactDOM.createRoot(document.getElementById('app-root')!).render(
   <React.StrictMode>
-    {HAS_CONSENT ? <PostHogProvider
+    {HAS_CONSENT && SUPPORTS_TELEMETRY ? <PostHogProvider
       apiKey='phc_fG5QwXaLBOPZgtjnHR4UP9kcnLdY2cD1JUwGBw06YjT'
       options={telemetryOptions}
     >

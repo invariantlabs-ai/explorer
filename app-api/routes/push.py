@@ -160,7 +160,6 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         if annotations is not None:
             for i, trace_annotations in enumerate(annotations):
-                print("annotations", trace_annotations)
                 for ann in trace_annotations:
                     new_annotation = Annotation(
                         trace_id=result_ids[i],

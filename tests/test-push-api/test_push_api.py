@@ -12,15 +12,6 @@ from util import * # needed for pytest fixtures
 
 pytest_plugins = ('pytest_asyncio',)
 
-# helper function to get an API key
-async def get_apikey(url, context):
-    response = await context.request.post(url + '/api/v1/keys/create')
-    await expect(response).to_be_ok()
-    out = await response.json()
-    return out['key']
-
-async def test_create_apikey(url, context):
-    key = await get_apikey(url, context)
 
 async def test_upload_traces(url, context, dataset_name, data_webarena_with_metadata):
     # create empty dataset via UI-API

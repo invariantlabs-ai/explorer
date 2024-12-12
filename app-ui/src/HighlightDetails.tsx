@@ -7,6 +7,7 @@ import { BsCheckCircleFill, BsExclamationCircle, BsExclamationTriangleFill, BsXC
 import { GroupedHighlight, HighlightData } from "./lib/traceview/highlights";
 import { AnalysisResult } from "./lib/analysis_result";
 import { useState, useEffect } from "react";
+import { AnchorDiv } from "./lib/permalink-navigator";
 
 /**
  * Renders details on specific highlights in the unfolding UI that is shown
@@ -125,7 +126,7 @@ export function TestSuccessHighlightDetail(props: { highlight: HighlightData, se
     const label = props.severity == "expectation-passed" ? "Expectation Met" : "Assertion Passed";
     const icon = props.severity == "expectation-passed" ? <BsCheckCircleFill /> : <BsCheckCircleFill />;
     
-    return <div className={'event test-result ' + props.severity + (expanded ? ' ' : ' compact')} onClick={() => setExpanded(!expanded)}>
+    return <AnchorDiv className={'event test-result ' + props.severity + (expanded ? ' ' : ' compact')} onClick={() => setExpanded(!expanded)} copyOnClick={false} id={safeAnchorId(highlight.annotationId || '')}>
         <div className='content'>
             <div className="test-result-header">
                 {icon}
@@ -137,7 +138,7 @@ export function TestSuccessHighlightDetail(props: { highlight: HighlightData, se
                 </MarkedLinePre>
             </>}
         </div>
-    </div>
+    </AnchorDiv>
 }
 
 /**
@@ -150,7 +151,7 @@ export function TestFailureHighlightDetail(props: { highlight: HighlightData, se
     const label = props.severity == "expectation" ? "Expectation Violated" : "Assertion Failed";
     const icon = props.severity == "expectation" ? <BsExclamationTriangleFill /> : <BsXCircleFill />;
     
-    return <div className={'event test-result ' + props.severity + (expanded ? ' ' : ' compact')} onClick={() => setExpanded(!expanded)}>
+    return <AnchorDiv className={'event test-result ' + props.severity + (expanded ? ' ' : ' compact')} onClick={() => setExpanded(!expanded)} copyOnClick={false} id={safeAnchorId(highlight.annotationId || '')}>
         <div className='content'>
             <div className="test-result-header">
                 {icon}
@@ -162,7 +163,7 @@ export function TestFailureHighlightDetail(props: { highlight: HighlightData, se
                 </MarkedLinePre>
             </>}
         </div>
-    </div>
+    </AnchorDiv>
 }
 
 /**
@@ -180,4 +181,8 @@ export function MarkedLinePre(props: {line: number, children: React.ReactNode}) 
             </div>
         })}
     </pre>
+}
+
+export function safeAnchorId(annotationId: string) {
+    return annotationId.replace(/[^a-zA-Z0-9]/g, '_');
 }

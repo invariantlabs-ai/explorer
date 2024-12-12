@@ -101,17 +101,21 @@ export class HighlightedJSON {
         return this.highlightsMap.$highlights || []
     }
 
-    allHighlights(): Highlight[] {
-        let queue = [this.highlightsMap]
-        let highlights: Highlight[] = []
+    allHighlights(): [string, Highlight][] {
+        let queue = [["", this.highlightsMap]]
+        let highlights = [] as [string, Highlight][]
         while (queue.length > 0) {
-            let current: any = queue.shift()
+            let current_pair: any = queue.shift()
+            let current = current_pair[1]
+            let current_address = current_pair[0]
+
             if (current.$highlights) {
-                highlights.push(...current.$highlights)
+                highlights.push(...current.$highlights.map((a: any) => ([current_address, a])))
             }
             for (let key in current) {
                 if (key !== "$highlights") {
-                    queue.push(current[key])
+                    // extend address, but use [<int>] for array indices
+                    queue.push([current_address + (current_address.length > 0 ? "." : "") + key, current[key]])
                 }
             }
         }

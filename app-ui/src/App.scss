@@ -486,6 +486,8 @@ div.panel {
         padding: 0pt;
         font-size: 12pt !important;
         line-height: 30pt;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         svg {
           margin-right: 5pt;
@@ -1090,11 +1092,16 @@ button.primary .shortcut {
         }
 
         .test-result {
+          display: inline-block; 
+          text-align: center;
           padding: 2pt 4pt;
           font-size: 9pt;
           line-height: 16pt;
           color: white;
           border-radius: 2pt;
+          width: 24pt;
+          min-width: 24pt;
+          
 
           &.pass {
             background-color: #1E883E;
@@ -1551,6 +1558,12 @@ header.top .sidebar {
   margin: 10pt;
   padding: 10pt;
   border: 1pt solid $border-color;
+  max-width: 100%;
+
+  &.split-view {
+    max-width: 50%;
+    overflow: hidden;
+  }
 
   h2 {
     font-size: 12pt;
@@ -1966,6 +1979,24 @@ div.empty.instructions {
   }
 }
 
+.user-icon {
+  width: var(--size);
+  height: var(--size);
+  border-radius: 4pt;
+  z-index: 2;
+  transform: scale(0.8);
+  background-color: #5855FF;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: NeueMontreal;
+  font-size: calc(var(--size) / 2.5);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+
 .consent-banner {
   background: #fff;
   padding: 0px;
@@ -2055,3 +2086,241 @@ p.footer-links {
   h3 { font-size: 14pt; }
 }
 
+*[data-anchor-highlight] {
+  border-color: #3d3aff31;
+  transition: background-color 0.1s;
+  background-color: transparent;
+  
+  // style of the flashing permalinked items
+  &[data-anchor-flash] {
+    background-color: #3d3aff1b !important;
+    box-shadow: 0pt 0pt 0pt 2pt #3d3aff31;
+  }
+
+  // style of the flashing parent elements when revealing a permalinked item
+  &[data-anchor-parent-flash] {
+    border: 1pt solid #3d3aff31 !important;
+  }
+}
+
+.permalink {
+  font-size: 10pt;
+  color: #3E3AFF;
+  margin-right: 5pt;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.highlights-navigator {
+  display: flex;
+  border: 1pt solid $border-color;
+  border-radius: 7.5pt;
+  line-height: 30pt;
+  margin: 4pt;
+  margin-right: 6pt;
+  height: 28pt;
+  overflow: hidden;
+  background-color: white;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  button {
+    border: none;
+    padding: 0pt;
+    margin: 0pt;
+    height: auto;
+    background: none;
+    border-radius: 0pt;
+    color: $text-color;
+    padding: 0pt 5pt;
+    cursor: pointer;
+    border-left: 1pt solid $border-color;
+
+    &:disabled {
+      opacity: 0.2;
+    }
+
+    &:hover {
+      background-color: #d5d5d5;
+    }
+
+    svg {
+      margin-left: 2pt;
+      margin-right: 2pt;
+    }
+  }
+
+  .content {
+    display: flex;
+    white-space: nowrap;
+    padding: 0pt 10pt;
+    line-height: 30pt;
+    font-size: 10pt;
+  }
+
+  .content:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+  }
+
+  .content:active {
+    background-color: #e1e1e1;
+  }
+}
+
+.home-banner {
+  background: linear-gradient(92deg, #434DA6 7.93%, #10135C 94.43%);
+  color: white;
+  padding: 10pt 20pt;
+  border-radius: 5pt;
+  margin: 0 10pt;
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap if space is limited */
+  justify-content: space-between;
+  align-items: center;
+  gap: 10pt; /* Add spacing between items when wrapping */
+}
+
+.home-banner-content {
+  max-width: 70%;
+  margin-top: 5pt;
+  flex: 1 1 auto; /* Allow content to resize based on available space */
+}
+
+.home-banner-content h2 {
+  margin: 0;
+  font-size: 18pt;
+  font-weight: bold;
+}
+
+.home-banner-content p {
+  margin: 0 0 10pt;
+  font-size: 12pt;
+}
+
+.home-banner-buttons {
+  display: flex;
+  flex-wrap: wrap; /* Allow buttons to stack if space is limited */
+  gap: 10pt;
+  justify-content: flex-end; /* Align buttons to the end of their container */
+}
+
+.home-banner-button {
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 20pt;
+  font-size: 10pt;
+  cursor: pointer;
+  transition: background-color 0.5s, color 0.5s;
+  line-height: normal;
+  height: 35px;
+  padding: 5pt 15pt;
+}
+
+.home-banner-button:hover {
+  background-color: #6C79f7;
+  color: white;
+}
+
+/* Responsive Design for Small Screens */
+@media (max-width: 768px) {
+  .home-banner {
+    flex-direction: column; /* Stack content and buttons vertically */
+    text-align: center;
+    padding: 15pt; /* Add more padding for better spacing */
+  }
+
+  .home-banner-content {
+    max-width: 100%;
+    margin-bottom: 15pt; /* Add spacing between content and buttons */
+  }
+
+  .home-banner-buttons {
+    justify-content: center; /* Center buttons on small screens */
+  }
+
+  .home-banner-button {
+    width: 100%; /* Buttons take full width */
+    max-width: none; /* Remove max-width restriction */
+  }
+}
+
+/* Additional Breakpoint for Extra Small Screens */
+@media (max-width: 480px) {
+  .home-banner {
+    padding: 10pt; /* Reduce padding for smaller devices */
+  }
+
+  .home-banner-content h2 {
+    font-size: 16pt; /* Adjust font size for smaller screens */
+  }
+
+  .home-banner-content p {
+    font-size: 10pt; /* Adjust font size for smaller screens */
+  }
+
+  .home-banner-button {
+    font-size: 9pt; /* Smaller font size for buttons */
+    padding: 5pt 10pt; /* Reduce padding to fit smaller screens */
+  }
+}
+
+.featured-dataset-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.featured-dataset-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  gap: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.featured-dataset-item:first-child {
+  margin-top: 5px;
+}
+
+.featured-dataset-item h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.featured-dataset-item h3:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.featured-dataset-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: auto;
+  text-align: left;
+  flex-shrink: 0;
+  width: 40%;
+}
+
+.featured-dataset-empty {
+  color: #999;
+  font-size: 1rem;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.featured-dataset-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+}

@@ -30,6 +30,12 @@
     border-radius: 0.25rem;
   }
 
+  li.info {
+    background-color: #dadce4;
+    color: #000;
+    border: 1px solid #bee5eb;
+  }
+
   li.appear {
     animation: slideIn 0.5s forwards;
   }

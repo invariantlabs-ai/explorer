@@ -18,6 +18,7 @@ import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
+import { HighlightsNavigator } from './HighlightsNavigator';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -47,6 +48,7 @@ export interface DatasetData {
   num_traces: number
   extra_metadata: Record<string, any>
   user_id: string
+  is_public: boolean
 }
 
 /**
@@ -539,7 +541,6 @@ function useSearch() {
   useEffect(() => {
     dispatchSearch(searchQuery)
   }, [searchQuery])
-
   return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] as const;
 }
 
@@ -595,7 +596,7 @@ export function Traces() {
       if (traces && traces.first() != Infinity) new_index = traces.first()
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (flattenedDisplayedIndices.length > 0) new_index = flattenedDisplayedIndices[0];
-      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search)
+      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search + window.location.hash)
     }
   }, [props.traceIndex, traces, displayedIndices])
 
@@ -616,7 +617,7 @@ export function Traces() {
 
   // navigates to the given trace index and refreshes the list of traces
   const navigateToTrace = useCallback((traceIndex: number | null) => {
-    navigate(`/u/${props.username}/${props.datasetname}/t/${traceIndex || ''}`)
+    navigate(`/u/${props.username}/${props.datasetname}/t/${traceIndex || ''}` + window.location.search + window.location.hash)
     refresh()
   }, [props.username, props.datasetname])
 
@@ -664,6 +665,9 @@ export function Traces() {
     }
   }
 
+  // derive whether this is a testing trace
+  const isTest = activeTrace?.extra_metadata && typeof activeTrace?.extra_metadata['invariant.num-failures'] === 'number'
+
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
@@ -695,6 +699,7 @@ export function Traces() {
         selectedTraceIndex={activeTrace?.index}
         // shown when no trace is selected
         empty={emptyView}
+        collapsed={isTest}
         // current search highlights
         mappings={activeTrace ? highlightMappings[activeTrace.index] : null}
         // whether we are still loading the dataset's trace data
@@ -708,6 +713,7 @@ export function Traces() {
             {activeTrace && <>/ <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
+        is_public={dataset.is_public}
         // callback for when the user presses the 'Share' button
         onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
         // whether link sharing is enabled for the current trace
@@ -933,7 +939,7 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
          data-tooltip-id="button-tooltip" data-tooltip-content="Fold Sidebar">
         <BsLayoutSidebarInset />
       </button>
-      <SidebarStatus traces={traces} searching={props.searching} />
+      <SidebarStatus traces={traces} searching={props.searching} activeIndices={activeIndices} />
     </header>
     <ul ref={viewportContainerRef}>
       <ViewportList
@@ -953,10 +959,10 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
 }
 
 /** Status message on top of the sidebar list of traces */
-function SidebarStatus(props: { traces: LightweightTraces | null, searching: boolean }) {
-  const { traces, searching } = props
+function SidebarStatus(props: { traces: LightweightTraces | null, searching: boolean, activeIndices: DisplayedTracesT }) {
+  const { traces, searching, activeIndices } = props
   if (traces && !searching) {
-    return <h1 className='header-long'>{traces.indices().length + " Traces"}</h1>
+    return <h1 className='header-long'>{Object.values(activeIndices).reduce((acc, group) => acc + group.traces.length, 0) + " Traces"}</h1>
   } else {
     return <h1 className='header-long'>{searching ? 'Searching...' : 'Loading...'}</h1>
   }

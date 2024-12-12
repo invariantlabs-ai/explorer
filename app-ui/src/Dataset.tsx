@@ -213,7 +213,7 @@ function DatasetView() {
               <BsTrash /> Delete
             </button>
           </div>}
-          <PublicControls dataset={dataset} datasetLoader={datasetLoader} onPublicChange={onPublicChange} userInfo={userInfo} />
+          {config("sharing") && <PublicControls dataset={dataset} datasetLoader={datasetLoader} onPublicChange={onPublicChange} userInfo={userInfo} />}
           <div className='box full setting'>
             <div>
               <h3>Export Dataset</h3>
