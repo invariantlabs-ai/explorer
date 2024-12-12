@@ -2208,11 +2208,11 @@ p.footer-links {
   color: black;
   border: none;
   border-radius: 20pt;
-  padding: 10pt 20pt;
   font-size: 10pt;
   cursor: pointer;
   transition: background-color 0.5s, color 0.5s;
   line-height: normal;
+  height: 35px;
 }
 
 .home-banner-button:hover {

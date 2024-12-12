@@ -75,8 +75,8 @@ function Home() {
         <p>Learn More about using Explorer for AI agent debugging.</p>
       </div>
       <div className="home-banner-buttons">
-        <button className="home-banner-button" onClick={() => window.location.href = 'https://discord.gg/dZuZfhKnJ4'}>Join the Discord →</button>
         <button className="home-banner-button" onClick={() => window.location.href = 'https://explorer.invariantlabs.ai/docs/'}>Learn More →</button>
+        <button className="home-banner-button" onClick={() => window.location.href = 'https://discord.gg/dZuZfhKnJ4'}>Join the Discord →</button>
       </div>
     </div>
     {/* user-personal snippets and datasets */}
