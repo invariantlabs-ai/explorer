@@ -35,6 +35,41 @@ function useActivity(): [any[], () => void] {
   ]
 }
 
+function FeaturedDatasets(props) {
+  const datasets = (props.datasets || []).map((item) => ({
+    ...item,
+    nice_name: item.nice_name || item.name,
+  }));
+
+  return (
+    <div>
+      {datasets.length === 0 ? (
+        <div className="featured-dataset-empty">No datasets available</div>
+      ) : (
+        <div className="featured-dataset-list">
+          {datasets.map((dataset, i) => (
+            <div
+              key={i}
+              className={`featured-dataset-item ${
+                i === datasets.length - 1 ? "last-item" : ""
+              }`}
+            >
+              <div className="featured-dataset-info">
+                <Link className="item" to={`/u/${dataset.user.username}/${dataset.name}`}>
+                  <h3>
+                    <BsGlobe /> {dataset.nice_name}
+                  </h3>
+                </Link>
+              </div>
+              <div className="featured-dataset-description">{dataset.description}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Home screen compopnents, including user's datasets and snippets, public datasets, and user activity.
  */
@@ -99,7 +134,7 @@ function Home() {
     {/* public datasets */}
     <div className='box'>
       <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
-      <DatasetLinkList datasets={datasets_homepage} icon={<BsGlobe />} />
+      <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
     {

@@ -2219,3 +2219,59 @@ p.footer-links {
   background-color: #6C79F7;
   color: white;
 }
+
+.featured-dataset-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.featured-dataset-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  gap: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.featured-dataset-item:first-child {
+  margin-top: 5px;
+}
+
+.featured-dataset-item h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.featured-dataset-item h3:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.featured-dataset-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: auto;
+  text-align: left;
+  flex-shrink: 0;
+  width: 40%;
+}
+
+.featured-dataset-empty {
+  color: #999;
+  font-size: 1rem;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.featured-dataset-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+}
