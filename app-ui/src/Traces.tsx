@@ -47,6 +47,7 @@ export interface DatasetData {
   num_traces: number
   extra_metadata: Record<string, any>
   user_id: string
+  is_public: boolean
 }
 
 /**
@@ -710,6 +711,7 @@ export function Traces() {
             {activeTrace && <>/ <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
+        is_public={dataset.is_public}
         // callback for when the user presses the 'Share' button
         onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
         // whether link sharing is enabled for the current trace

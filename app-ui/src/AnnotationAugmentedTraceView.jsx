@@ -65,6 +65,7 @@ export class Annotations extends RemoteResource {
  * @param {Function} props.onAnnotationCreate - callback to update annotations count on the Sidebar
  * @param {Function} props.onAnnotationDelete - callback to update annotations count on the Sidebar
  * @param {React.Component} props.header - the header component (e.g. <user>/<dataset>/<trace> links)
+ * @param {React.Component} props.is_public - whether the trace is public
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
@@ -75,6 +76,8 @@ export function AnnotationAugmentedTraceView(props) {
   const activeTraceId = props.selectedTraceId || null
   // the trace index
   const activeTraceIndex = props.selectedTraceIndex;
+  // whether the trace is public
+  const is_public = props.is_public || null
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({})
   // loads and manages annotations as a remote resource (server CRUD)
@@ -181,6 +184,12 @@ export function AnnotationAugmentedTraceView(props) {
   return <>
     <header className='toolbar'>
       {props.header}
+      { // Add a box to show if the trace is public or private (if the prop is set)
+        (props.is_public != null) 
+        && <div className={`badge ${props.is_public ? 'public-trace' : 'private-trace'}`}> 
+          {props.is_public ? 'Shared' : 'Private'} 
+        </div>
+      }
       <div className='spacer' />
       <div className='vr' />
       <HighlightsNavigator 

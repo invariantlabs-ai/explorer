@@ -354,6 +354,27 @@ async def test_thumbs_up_down(context, url, data_abc, screenshot):
         assert await has_thumb_toggled(second_line, thumb="down"), "Thumbs down on the second line are not toggle, but got: {}".format(await classes_of_element(second_line))
 
 
+async def test_has_no_share_box_when_dataset_is_private(context, url, data_webarena_with_metadata, screenshot):
+    async with util.TemporaryExplorerDataset(url, context, data_webarena_with_metadata) as dataset:
+        page = await context.new_page()
+        # go to home page
+        await page.goto(url) 
+        await screenshot(page)
+        
+        await page.locator(f"text={dataset['name']}").click()
+        await screenshot(page)
+
+        # go back to the dataset
+        await page.get_by_role("button", name="Traces").click()
+        await page.get_by_role("link", name="All").click()
+        await screenshot(page)
+
+        # check if the share box is not visible
+        share_box = page.locator("css=.private-trace").first
+        await screenshot(share_box)
+        assert await share_box.is_visible()
+
+
 async def has_thumb_toggled(line, thumb: Literal["up", "down"]) -> bool:
     return "toggled" in await line.locator(".thumbs-{}-icon".format(thumb)).get_attribute("class")
 
