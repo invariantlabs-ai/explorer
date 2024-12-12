@@ -203,9 +203,9 @@ export function AnnotationAugmentedTraceView(props) {
       />
       {activeTrace && <>
         {is_all_expanded ? (
-          <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
+          <button className="inline icon guide-step-3" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
         ) : (
-          <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
+          <button className="inline icon guide-step-3" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
         )}
         <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
           <button className='inline icon' onClick={(e) => {
@@ -220,8 +220,8 @@ export function AnnotationAugmentedTraceView(props) {
         </a>
         {props.actions}
         <div className='vr' />
-        {config('sharing') && <button className='inline guide-step-4' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
-        {config('sharing') && props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+        {config('sharing') && <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
+        {config('sharing') && props.onShare && <button className={'inline guide-step-4' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
           {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
         </button>}
       </>}

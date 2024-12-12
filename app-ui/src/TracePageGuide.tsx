@@ -41,7 +41,7 @@ export default function TracePageGuide() {
             placement: 'right',
         },
         {
-            target: ".toolbar button",
+            target: "button.inline.guide-step-3",
             content: "Collapse All / Expand All messages in the current trace selected",
             placement: 'bottom',
             locale: { next: 'Next', skip: 'Skip', back: 'Back' },
