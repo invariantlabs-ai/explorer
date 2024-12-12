@@ -11,6 +11,7 @@ import HomepageDatasetsNames from './assets/HomepageDatasetsNames.json';
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
+import HomePageGuide from './HomePageGuide'
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {
@@ -70,7 +71,8 @@ function Home() {
     <h2 className='home'>Home</h2>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
-      <div className='box'>
+      <HomePageGuide></HomePageGuide>
+      <div className='box dataset'>
         <h2>
           <Link to='/datasets'>Datasets</Link>
           <button className='inline primary' onClick={() => setShowUploadModal(true)}>New Dataset</button>
@@ -86,7 +88,7 @@ function Home() {
       </div>
     </div>}
     {/* public datasets */}
-    <div className='box'>
+    <div className='box featureddataset'>
       <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
       <DatasetLinkList datasets={datasets_homepage} icon={<BsGlobe />} />
     </div>

@@ -17,6 +17,7 @@ import { useTelemetry } from './telemetry';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
+import TracePageGuide from './TracePageGuide';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -670,6 +671,7 @@ export function Traces() {
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
+    <TracePageGuide></TracePageGuide>
     <div className='sidebyside'>
       {/* trace explorer sidebar */}
       {hasTraces && <Sidebar // only show the sidebar if there are traces to show

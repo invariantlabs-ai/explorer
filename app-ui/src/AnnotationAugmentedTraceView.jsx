@@ -16,7 +16,7 @@ import { RenderedTrace } from './lib/traceview/traceview';
 import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
-
+import TracePageGuide from './TracePageGuide'
 import { BsArrowDown, BsArrowsCollapse, BsArrowsExpand, BsArrowUp, BsCaretLeftFill, BsCheck, BsCommand, BsDownload, BsPencilFill, BsShare, BsTerminal, BsTrash} from "react-icons/bs";
 
 export const THUMBS_UP = ":feedback:thumbs-up"
@@ -159,7 +159,7 @@ export function AnnotationAugmentedTraceView(props) {
     },
     extraArgs: [activeTraceId]
   }
-
+  // console.log('activeTrace', activeTrace)
   return <>
     <header className='toolbar'>
       {props.header}
@@ -185,7 +185,7 @@ export function AnnotationAugmentedTraceView(props) {
       {props.actions}
       <div className='vr' />
       <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>
-      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+      {props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : 'guide-step-4')} onClick={onShare}>
         {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
       </button>}
       </>}
@@ -213,7 +213,6 @@ export function AnnotationAugmentedTraceView(props) {
 function TraceViewContent(props) {
   const { activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
   const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
-  
   // if no trace ID set
   if (activeTraceId === null) {
     return <div className='explorer panel'>
