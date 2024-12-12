@@ -2170,3 +2170,51 @@ p.footer-links {
     background-color: #e1e1e1;
   }
 }
+
+.home-banner {
+  background: linear-gradient(92deg, #434DA6 7.93%, #10135C 94.43%);
+  color: white;
+  padding: 10pt 20pt 10pt 20pt;
+  border-radius: 5pt;
+  margin: 0 10pt 0 10pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.home-banner-content {
+  max-width: 70%;
+}
+
+.home-banner-content h2 {
+  margin: 0;
+  font-size: 18pt;
+  font-weight: bold;
+}
+
+.home-banner-content p {
+  margin: 0 0 16pt;
+  font-size: 12pt;
+}
+
+.home-banner-buttons {
+  display: flex;
+  gap: 10pt;
+}
+
+.home-banner-button {
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 20pt;
+  padding: 10pt 20pt;
+  font-size: 10pt;
+  cursor: pointer;
+  transition: background-color 0.5s, color 0.5s;
+  line-height: normal;
+}
+
+.home-banner-button:hover {
+  background-color: #6C79F7;
+  color: white;
+}

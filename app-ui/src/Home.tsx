@@ -69,6 +69,16 @@ function Home() {
       <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refreshPrivateDataset} />
     </Modal>}
     <h2 className='home'>Home</h2>
+    <div className="home-banner">
+      <div className="home-banner-content">
+        <h2>Explorer helps you understand your AI agents</h2>
+        <p>Learn More about using Explorer for AI agent debugging.</p>
+      </div>
+      <div className="home-banner-buttons">
+        <button className="home-banner-button" onClick={() => window.location.href = 'https://discord.gg/dZuZfhKnJ4'}>Join the Discord →</button>
+        <button className="home-banner-button" onClick={() => window.location.href = 'https://explorer.invariantlabs.ai/docs/'}>Learn More →</button>
+      </div>
+    </div>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
       <div className='box split-view'>
