@@ -9,21 +9,24 @@ services:
       # on the entry point named traefik.
       - --api.insecure=true
       # Define Traefik entry points to port [80] for http and port [443] for https.
-      - --entrypoints.web.address=0.0.0.0:80
+      - --entrypoints.invariant-explorer-web.address=0.0.0.0:80
+      - --log.level=INFO
     networks:
-      - web
+      - invariant-explorer-web
     ports:
       - '${PORT_HTTP}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik-http.entrypoints=web"
+      - "traefik.http.routers.traefik-http.entrypoints=invariant-explorer-web"
 
   app-api:
     build:
       context: ./app-api
       dockerfile: ../app-api/Dockerfile.api
+    depends_on:
+      - database
     working_dir: /srv/app
     env_file:
       - .env
@@ -39,7 +42,7 @@ services:
       - CONFIG_FILE=/config/explorer.config.yml
     networks:
       - internal
-      - web
+      - invariant-explorer-web
     ports:
       - "${PORT_API}:8000"
     volumes:
@@ -51,16 +54,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
-      - "traefik.http.routers.$APP_NAME-api.entrypoints=web"
+      - "traefik.http.routers.$APP_NAME-api.entrypoints=invariant-explorer-web"
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=invariant-explorer-web"
 
   app-ui:
     image: node:alpine
     entrypoint: "sh -c 'yarn && yarn run dev --host 0.0.0.0 --port 5173'"
     working_dir: /srv/app
     networks:
-      - web
+      - invariant-explorer-web
     volumes:
       - type: bind
         source: ./app-ui
@@ -72,9 +75,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
-      - "traefik.http.routers.$APP_NAME-ui.entrypoints=web"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=invariant-explorer-web"
       - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=invariant-explorer-web"
 
   database:
     image: postgres:16
@@ -88,5 +91,6 @@ services:
         target: /var/lib/postgresql/data
 
 networks:
-  web:
+  invariant-explorer-web:
+    external: true
   internal:

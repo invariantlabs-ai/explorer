@@ -10,16 +10,16 @@ services:
       # on the entry point named traefik.
       - --api.insecure=true
       # Define Traefik entry points to port [80] for http and port [443] for https.
-      - --entrypoints.web.address=0.0.0.0:80
+      - --entrypoints.invariant-explorer-web-test.address=0.0.0.0:80
     networks:
-      - web
+      - invariant-explorer-web-test
     ports:
       - '${PORT_HTTP}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik-http.entrypoints=web"
+      - "traefik.http.routers.traefik-http.entrypoints=invariant-explorer-web-test"
   
   app-ui:
     container_name: "${APP_NAME}-app-ui"
@@ -37,7 +37,7 @@ services:
     depends_on:
       - app-api
     networks:
-      - web
+      - invariant-explorer-web-test
     environment:
       - APP_NAME=${APP_NAME}
       - PREVIEW=${PREVIEW}
@@ -47,9 +47,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
-      - "traefik.http.routers.$APP_NAME-ui.entrypoints=web"
+      - "traefik.http.routers.$APP_NAME-ui.entrypoints=invariant-explorer-web-test"
       - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=8000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=invariant-explorer-web-test"
 
   app-api:
     build:
@@ -70,7 +70,7 @@ services:
       - CONFIG_FILE=/config/explorer.config.yml
     networks:
       - internal
-      - web
+      - invariant-explorer-web-test
     ports:
       - "${PORT_API}:8000"
     volumes:
@@ -84,9 +84,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
-      - "traefik.http.routers.$APP_NAME-api.entrypoints=web"
+      - "traefik.http.routers.$APP_NAME-api.entrypoints=invariant-explorer-web-test"
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=invariant-explorer-web-test"
 
   database:
     image: postgres:16
@@ -100,5 +100,6 @@ services:
         target: /var/lib/postgresql/data
 
 networks:
-  web:
+  invariant-explorer-web-test:
+    external: true
   internal:

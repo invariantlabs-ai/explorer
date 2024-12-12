@@ -30,13 +30,14 @@ function ci_env() {
     export CONFIG_FILE_NAME="explorer.test.yml"
     export PORT_HTTP=8080
     export PORT_API=8001
+    export NETWORK="invariant-explorer-web-test"
 }
 
 
 function ci_run_server() {
     # test if dev environment is running, and refuse to start test environment if it is
     if [ -n "$(docker ps -q --filter name=explorer-local-traefik)" ]; then
-      echo "Refunsing to start test eviroment. Please stop dev environment first."
+      echo "Refusing to start test environment. Please stop dev environment first."
       echo "While different ports are used, running both environments at the same time can cause issues (due to traefik)."
       exit 1
     fi
@@ -53,7 +54,7 @@ function ci_run_server() {
     mkdir -p /tmp/invariant-explorer-test/data/database
     mkdir -p /tmp/invariant-explorer-test/data/datasets
     mkdir -p /tmp/invariant-explorer-test/data/images
-
+    
     # start wait and stop docker to ensure everything is set up
     # this avoids several network timing issues and initialization issues
     docker compose -f tests/docker-compose.test.yml up -d
@@ -99,6 +100,7 @@ function ci() {
     
     # stop service
     docker compose -f tests/docker-compose.test.yml down
+
     exit $STATUS
 }
 
@@ -111,6 +113,8 @@ function build_tester() {
 
 function build_test_env() {
     ci_env
+    # create docker network if it doesn't exist
+    docker network create ${NETWORK} || true
     docker compose -f tests/docker-compose.test.yml build
     return $?
 }
@@ -145,7 +149,7 @@ case $command in
     ci $@
     ;;
   *)
-    echo "unsuppored command: $command"
+    echo "unsupported command: $command"
     exit 1
     ;;
 esac

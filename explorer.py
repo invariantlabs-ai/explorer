@@ -5,6 +5,7 @@ CLI to launch the Invariant Explorer as a Docker compose application.
 import os
 import subprocess
 import argparse
+from pathlib import Path
 
 parser = argparse.ArgumentParser(description='Launch the Invariant Explorer as a Docker compose application.')
 parser.add_argument('--port', type=int, default=80, help='The port to expose the Invariant Explorer on.')
@@ -23,10 +24,31 @@ def ensure_has_docker_compose():
             raise Exception('Docker Compose is not installed. Please go to https://docs.docker.com/compose/install/ to install it and then re-run this command.')
     except FileNotFoundError:
         raise Exception('Docker Compose is not installed. Please go to https://docs.docker.com/compose/install/ to install it and then re-run this command.')
+    
+def ensure_has_docker_network():
+    """
+    Ensure that the user has the Docker network that the Invariant Explorer uses `invariant-explorer-web`.
+    """
+    p = subprocess.Popen(['docker', 'network', 'ls', '--filter', 'name=invariant-explorer-web'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.communicate()
 
+    if p.returncode != 0:
+        p = subprocess.Popen(['docker', 'network', 'create', 'invariant-explorer-web'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.communicate()
+
+        if p.returncode != 0:
+            raise Exception('Failed to create the Docker network that the Invariant Explorer uses. Please check the logs for more information.')
+
+def ensure_has_db_folder():
+    """
+    Ensure that the user has the database folder that the Invariant Explorer uses.
+    """
+    Path("./data/database").mkdir(parents=True, exist_ok=True)
 
 def launch():
     ensure_has_docker_compose()
+    ensure_has_docker_network()
+    ensure_has_db_folder()
 
     env = {
         **dict(os.environ),
