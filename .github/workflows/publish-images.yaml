@@ -30,7 +30,7 @@ jobs:
           file: ./app-api/Dockerfile.api
           platforms: linux/amd64
           push: true
-          tags: ${{ github.repository }}/app-api:latest
+          tags: ghcr.io/${{ github.repository }}/app-api:latest
           build-args: |
             APP_NAME=explorer
             DEV_MODE=false
@@ -43,7 +43,7 @@ jobs:
           file: ./app-ui/Dockerfile.app-ui
           platforms: linux/amd64
           push: true
-          tags: ${{ github.repository }}/app-ui:latest
+          tags: ghcr.io/${{ github.repository }}/app-ui:latest
           build-args: |
             APP_NAME=explorer
             PREVIEW=false
