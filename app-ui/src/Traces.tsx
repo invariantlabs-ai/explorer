@@ -19,6 +19,8 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
+import { WorkflowProvider } from "./workflow-control";
+
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -668,14 +670,15 @@ export function Traces() {
   // derive whether this is a testing trace
   const isTest = activeTrace?.extra_metadata && typeof activeTrace?.extra_metadata['invariant.num-failures'] === 'number'
 
-  return <div className="panel fullscreen app">
+  return (
+    <WorkflowProvider>
+  <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} traceName={getFullDisplayName(activeTrace)} />
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
-    <TracePageGuide></TracePageGuide>
     <div className='sidebyside'>
       {/* trace explorer sidebar */}
       {hasTraces && <Sidebar // only show the sidebar if there are traces to show
@@ -725,9 +728,13 @@ export function Traces() {
         onAnnotationCreate={onAnnotationCreate}
         onAnnotationDelete={onAnnotationDelete}
       />}
+      <TracePageGuide/>
     </div>
   </div>
+  </WorkflowProvider>
+  )
 }
+
 
 /**
  * Displays a search box and search filters.

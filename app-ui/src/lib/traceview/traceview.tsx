@@ -13,6 +13,7 @@ import { HighlightContext, Line, TraceDecorator } from "./line";
 import { config } from "../../Config";
 import { truncate } from "./utils";
 import { AnchorDiv, anchorToAddress, copyPermalinkToClipboard, permalink } from "../permalink-navigator";
+import { useWorkflow } from "../../workflow-control";
 
 /**
  * Props for the TraceView component.
@@ -435,7 +436,6 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
             </div>
         }
 
-
         try {
             const highlightContext: HighlightContext = {
                 decorator: this.props.decorator,
@@ -446,13 +446,19 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 traceId: this.props.traceId
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
-
+            console.log("is expanded", events,this.props.allExpanded)
+        
             return <AnchorDiv id="messages" className={"traces " + (this.state.altPressed ? "alt" : "")} htmlRef={this.listRef} onReveal={this.onReveal.bind(this)} afterReveal={this.afterReveal.bind(this)}>
                 {this.props.prelude}
                 {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
                 {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
                 <ViewportList items={events} viewportRef={this.listRef} ref={this.viewportRef} overscan={1000}>
                     {(item: any, index: number) => {
+                        console.log("item", item)
+                        const messageview = <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
+                        events={this.state.events} allExpanded={this.props.allExpanded} />
+                        console.log("messageview", messageview)
+                        MessageView.finish()
                         return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
                                             events={this.state.events} allExpanded={this.props.allExpanded} />
                     }}
@@ -618,6 +624,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
 
         this.collapse = () => this.setState({ collapsed: true })
         this.expand = () => this.setState({ collapsed: false })
+        
     }
 
     componentDidMount(): void {
@@ -634,7 +641,14 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
         this.setState({ error })
     }
 
+    public static finish(){
+        const {setIsTraceviewComplete} = useWorkflow();
+        setIsTraceviewComplete(true);
+        console.log("finish")
+    }
+
     render() {
+
         if (this.state.error) {
             return <div className="message">
                 <h3>Failed to Render Message #{this.props.index}: {this.state.error.message}</h3>
@@ -645,6 +659,9 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
 
         try {
             const message = this.props.message
+           
+            console.log("message:", message)
+            
 
             if (!message.role) {
                 // top-level tool call

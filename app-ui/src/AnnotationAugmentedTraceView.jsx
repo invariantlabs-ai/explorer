@@ -71,6 +71,7 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
+
 export function AnnotationAugmentedTraceView(props) {
   // the rendered trace
   const activeTrace = props.activeTrace || null
@@ -183,7 +184,7 @@ export function AnnotationAugmentedTraceView(props) {
   // note: make sure to only pass highlights here that actually belong to the active trace 
   // otherwise we can end up in an intermediate state where we have a new trace but old highlights (this must never happen)
   const traceHighlights = highlights.traceId == activeTraceId ? highlights.highlights : HighlightedJSON.empty()
-
+  console.log("is annotaion view rendering finished")
   return <>
     <header className='toolbar'>
       {props.header}
@@ -256,6 +257,7 @@ function TraceViewContent(props) {
       <EmptyComponent />
     </div>
   }
+  console.log("rendering trace view content")
   return <RenderedTrace
     // the trace events
     trace={JSON.stringify(activeTrace?.messages || [], null, 2)}

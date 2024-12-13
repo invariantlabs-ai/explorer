@@ -1,6 +1,6 @@
 import Joyride, {CallBackProps, STATUS, Step, Placement} from 'react-joyride';
 import { useEffect, useState } from 'react';
-
+import {useWorkflow} from "./workflow-control";
 const defaultOptions = {
     options: {
         arrowColor: '#fff',
@@ -15,25 +15,37 @@ const defaultOptions = {
   };
 
 //   The variable is declared in the global scope so that once the className of the second event is found no more requests are made
-let className_event = "undefined";
+
 
 export default function TracePageGuide() {
     const [run, setRun] = useState(true);
     const [isFirstVisit, setIsFirstVisit] = useState(false);
-
+    const [className_event,setClassNameEvent] = useState("undefined");
     // keep requesting until the className of the second event is found, first event is always metadata
     const selector = ".event:nth-child(2)";
-    if (! className_event.includes("event")){ 
-        const eventFind = document.querySelector(selector)
-        // construct the className of the second event
-        className_event = "."+eventFind?.className.replace(/\s+/g, ".") || '';
-        const content = eventFind?.querySelector(".content") || null;
-        if(content){
-            className_event = "."+content.className.replace(/\s+/g, ".") || '';
+    console.log("outside loop", className_event)
+    const {isTraceviewComplete} = useWorkflow();
+    if(isTraceviewComplete){
+        const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
+        let new_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || ''
+        console.log("new_className_event",className_event, new_className_event)
+        if (className_event != new_className_event && !new_className_event.includes("undefined")) { 
+            console.log("selector", document.querySelector(`.event`))
+            // const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
+            // const eventFind = document.querySelector(`.event[class*="expanded"]:not([class*="metadata"])`);
+            // construct the className of the second event
+            console.log("eventFind", eventFind)
+            setClassNameEvent("."+eventFind?.className.replace(/\s+/g, ".") || '');
+            console.log("className_event", className_event)
+            const content = eventFind?.querySelector(".content") || null;
+            // if(content){
+            //     className_event = "."+content.className.replace(/\s+/g, ".") || '';
+            //     console.log("content.className", className_event)
+            // }
         }
     }
 
-    const steps: Step[] = [
+    let steps: Step[] = [
         {
             target: ".sidebar",
             content: "Explore and browse all traces from your dataset.",
@@ -65,12 +77,30 @@ export default function TracePageGuide() {
         if (!firstVisitTraceFlag || firstVisitTraceFlag === 'true') {
             setIsFirstVisit(true);
             localStorage.setItem('firstVisitTraceFlag', 'false');
+        const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
+        let new_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || ''
+        console.log("new_className_event",className_event, new_className_event)
+        if (className_event != new_className_event && !new_className_event.includes("undefined")) { 
+            console.log("selector", document.querySelector(`.event`))
+            // const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
+            // const eventFind = document.querySelector(`.event[class*="expanded"]:not([class*="metadata"])`);
+            // construct the className of the second event
+            console.log("eventFind", eventFind)
+            setClassNameEvent("."+eventFind?.className.replace(/\s+/g, ".") || '');
+            console.log("steps", steps)
+            const content = eventFind?.querySelector(".content") || null;
+            // if(content){
+            //     className_event = "."+content.className.replace(/\s+/g, ".") || '';
+            //     console.log("content.className", className_event)
+            // }
         }
-    }, []);
+        }
+    }, [isFirstVisit,isTraceviewComplete]);
 
     const handleJoyrideCallback = (data: CallBackProps) => {
         const { status, type } = data;
         const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+        console.log("callback status", data)
         if (finishedStatuses.includes(status)) {
           setRun(false);
         }
@@ -78,7 +108,7 @@ export default function TracePageGuide() {
 
     return (
         <div>
-            {isFirstVisit &&
+            isFirstVisit && isTraceviewComplete &&
                 <Joyride
                     steps={steps}
                     run={run}
@@ -90,7 +120,7 @@ export default function TracePageGuide() {
                     callback={handleJoyrideCallback}
                     >
                 </Joyride>
-            }
+            
         </div>
     ) 
 }
