@@ -1,0 +1,43 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+
+jobs:
+  build-explorer-local-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build app-api
+        uses: docker/build-push-action@v5
+        with:
+          context: ../app-api
+          file: ../app-api/Dockerfile.api
+          platforms: linux/amd64
+          tags: ${{ github.repository }}/app-api:latest
+          build-args: |
+            APP_NAME=explorer
+            DEV_MODE=false
+            CONFIG_FILE=explorer.local.yml
+
+      - name: Build app-ui
+        uses: docker/build-push-action@v5
+        with:
+          context: ../app-ui
+          file: Dockerfile.app-ui
+          platforms: linux/amd64
+          tags: ${{ github.repository }}/app-ui:latest
+          build-args: |
+            APP_NAME=explorer
+            PREVIEW=false
+            CONFIG_FILE_NAME=explorer.local.yml
+          additional-contexts: |
+            configs=../configs
