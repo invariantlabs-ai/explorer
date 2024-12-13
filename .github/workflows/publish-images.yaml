@@ -44,5 +44,5 @@ jobs:
             APP_NAME=explorer
             PREVIEW=false
             CONFIG_FILE_NAME=explorer.local.yml
-          additional-contexts: |
+          build-contexts: |
             configs=./configs
