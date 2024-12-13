@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main  # Trigger on pushes to the main branch
+  # when new v tag is created
+  tag:
+    - 'v*'
+
 
 jobs:
   build-explorer-local-images:
@@ -19,6 +23,19 @@ jobs:
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      # based on whether this is a version tag or a branch, we will set the tags for the pushed images
+      - name: Set Docker Tags
+        id: set-tags
+        run: |
+          if [[ "${{ github.ref_type }}" == "branch" ]]; then
+            echo "tags=ghcr.io/${{ github.repository }}/app-api:latest" >> $GITHUB_ENV
+            echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest" >> $GITHUB_ENV
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            version=${{ github.ref_name }}
+            echo "tags=ghcr.io/${{ github.repository }}/app-api:latest,ghcr.io/${{ github.repository }}/app-api:${version}" >> $GITHUB_ENV
+            echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest,ghcr.io/${{ github.repository }}/app-ui:${version}" >> $GITHUB_ENV
+          fi
+
       - name: Build app-api
         uses: docker/build-push-action@v5
         with:
@@ -26,7 +43,7 @@ jobs:
           file: ./app-api/Dockerfile.api
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ github.repository }}/app-api:latest
+          tags: ${{ env.tags }}
           build-args: |
             APP_NAME=explorer
             DEV_MODE=false
@@ -39,7 +56,7 @@ jobs:
           file: ./app-ui/Dockerfile.app-ui
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ github.repository }}/app-ui:latest
+          tags: ${{ env.tags_ui }}
           build-args: |
             APP_NAME=explorer
             PREVIEW=false
