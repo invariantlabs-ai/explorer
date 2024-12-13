@@ -16,10 +16,14 @@ from sqlalchemy.orm import Session
 from util.util import parse_and_push_images
 
 
-def create_dataset(user_id, name, metadata):
+def create_dataset(user_id, name, metadata, is_public: bool = False):
     """Create a dataset with given parameters."""
     dataset = Dataset(
-        id=uuid.uuid4(), user_id=user_id, name=name, extra_metadata=metadata
+        id=uuid.uuid4(),
+        user_id=user_id,
+        name=name,
+        extra_metadata=metadata,
+        is_public=is_public,
     )
     dataset.extra_metadata = metadata
     return dataset
@@ -108,7 +112,8 @@ def import_jsonl(
     user_id: str,
     lines: list[str],
     metadata: dict | None = None,
-    existing_dataset=None,
+    existing_dataset = None,
+    is_public: bool = False,
 ):
     """
     Parses and reads a JSONL file and imports it into the database.
@@ -141,10 +146,12 @@ def import_jsonl(
 
     # Save the metadata to the database.
     if existing_dataset is None:
-        dataset = create_dataset(user_id, name, metadata)
+        dataset = create_dataset(user_id, name, metadata, is_public)
         session.add(dataset)
     else:
         dataset = existing_dataset
+    dataset = create_dataset(user_id, name, metadata, is_public)
+    session.add(dataset)
 
     i = 0
     for line in lines:
@@ -188,7 +195,9 @@ def import_jsonl(
                 else i
             )
             trace_id = uuid.uuid4()
-            parsed_messages = parse_and_push_images(name, trace_id, parsed_line["messages"])
+            parsed_messages = parse_and_push_images(
+                name, trace_id, parsed_line["messages"]
+            )
             trace = Trace(
                 id=trace_id,
                 index=index,

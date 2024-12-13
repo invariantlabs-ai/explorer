@@ -4,7 +4,9 @@ import os
 
 # add tests folder (parent) to sys.path
 import sys
+import uuid
 
+import pytest
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -706,3 +708,96 @@ async def test_create_dataset_with_invalid_name_fails(context, url, data_abc):
         )
         assert response.status == 400
         assert error_message in await response.text()
+
+
+@pytest.mark.parametrize("is_public", [True, False, None])
+async def test_create_dataset_for_is_public_cases(context, url, is_public):
+    """Tests that creating a dataset with is_public works."""
+    dataset_name = f"some_name-{uuid.uuid4()}"
+    request = {"name": dataset_name}
+    if is_public is not None:
+        request["is_public"] = is_public
+
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/create",
+        data=request,
+    )
+    await expect(response).to_be_ok()
+
+    dataset_json = await response.json()
+    assert dataset_json["is_public"] is (is_public is True)
+
+    # Cleanup the dataset.
+    _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
+
+async def test_create_dataset_validate_field_types(context, url):
+    """Tests that creating a dataset with invalid field types fails."""
+    dataset_name = f"some_name-{uuid.uuid4()}"
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/create",
+        data={"name": dataset_name, "is_public": "random"
+        })
+    assert response.status == 400
+    assert "is_public must be a boolean" in await response.text()
+
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/create",
+        data={"name": 1234, "is_public": "random"
+        })
+    assert response.status == 400
+    assert "name must be a string" in await response.text()
+
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/create",
+        data={"name": dataset_name, "is_public": True, "metadata": "random"
+        })
+    assert response.status == 400
+    assert "metadata must be a dict" in await response.text()
+
+
+@pytest.mark.parametrize("is_public", [True, False, None])
+async def test_upload_dataset_for_is_public_cases(context, url, data_abc, is_public):
+    """Tests that uploading a dataset with is_public works."""
+    dataset_name = f"some_name-{uuid.uuid4()}"
+    request = {
+        "name": dataset_name,
+        "file": {
+            "name": dataset_name + ".json",
+            "mimeType": "application/octet-stream",
+            "buffer": data_abc.encode("utf-8"),
+        },
+    }
+    if is_public is not None:
+        # is_public has to be a string to be passed in the Multipart request.
+        request["is_public"] = str(is_public)
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/upload",
+        multipart=request,
+    )
+    await expect(response).to_be_ok()
+
+    dataset_json = await response.json()
+    assert dataset_json["is_public"] is (is_public is True)
+
+    # Cleanup the dataset.
+    _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
+
+async def test_upload_dataset_validate_field_types(context, url, data_abc):
+    """Tests that uploading a dataset with invalid field types fails."""
+    dataset_name = f"some_name-{uuid.uuid4()}"
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/upload",
+        multipart={
+            "name": dataset_name,
+            "file": {
+                "name": dataset_name + ".json",
+                "mimeType": "application/octet-stream",
+                "buffer": data_abc.encode("utf-8"),
+            },
+            # is_public is not a string representing a boolean
+            "is_public": "random"
+        },
+    )
+
+    assert response.status == 400
+    assert "is_public must be a string representing a boolean" in await response.text()
