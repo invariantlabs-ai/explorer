@@ -6,17 +6,20 @@ import { Modal } from './Modal'
 import { useUserInfo } from './UserInfo'
 import { useDatasetList } from './lib/datasets'
 import { useTelemetry } from './telemetry'
+import { config } from './Config';
+import { BsLock, BsGlobe } from 'react-icons/bs'
 
 /**
  * Creates a new dataset with the given name, with no data.
  */
-function createDataset(name: string) {
+function createDataset(name: string, isPublic: boolean = false) {
   const promise = new Promise((resolve, reject) => {
 
     fetch('/api/v1/dataset/create', {
       method: 'POST',
       body: JSON.stringify({
-        "name": name
+        "name": name,
+        "is_public": isPublic
       })
     }).then(response => {
       if (response.ok) {
@@ -39,11 +42,12 @@ function createDataset(name: string) {
 /**
  * Uploads a new dataset to the current user's account.
  */
-function uploadDataset(name: string, file: File) {
+function uploadDataset(name: string, file: File, isPublic: boolean = false) {
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData()
     formData.append('name', name)
     formData.append('file', file)
+    formData.append('is_public', isPublic.toString())
 
     fetch('/api/v1/dataset/upload', {
       method: 'POST',
@@ -77,13 +81,25 @@ export function UploadDatasetModalContent(props) {
   const [error, setError] = React.useState('')
   const [isDatasetNameInvalid, setIsDatasetNameInvalid] = React.useState(false);
   const DATASET_NAME_REGEX = /^[A-Za-z0-9-_]+$/;
+  const [isPublic, setIsPublic] = React.useState(false);
+  const [contentType, setContentType] = React.useState('empty'); // Tracks selected content type
+
+  const handleAccessChange = (event) => {
+    console.log("Access changed to: ", event.target.value);
+    setIsPublic(event.target.value === 'public');
+  };
+
+  const handleContentChange = (event) => {
+    console.log("Content changed to: ", event.target.value);
+    setContentType(event.target.value);
+  };
 
   const telemetry = useTelemetry()
 
   const onSubmit = () => {
     if (!name) return
     if (!file) {
-      createDataset(name).then(() => {
+      createDataset(name, isPublic).then(() => {
         props.onSuccess()
         props.onClose()
         telemetry.capture('dataset-created', { name: name, from_file: false})
@@ -94,7 +110,7 @@ export function UploadDatasetModalContent(props) {
       return
     }
     setLoading(true)
-    uploadDataset(name, file).then(() => {
+    uploadDataset(name, file, isPublic).then(() => {
       // on success, close the modal
       setLoading(false)
       props.onSuccess()
@@ -126,21 +142,133 @@ export function UploadDatasetModalContent(props) {
     setIsDatasetNameInvalid(!DATASET_NAME_REGEX.test(newName));
   };
 
-  return <div className='form'>
-    <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
-    <label>Name</label>
-    <input type="text" value={name} onChange={onNameChange} placeholder="Dataset Name" />
-    {isDatasetNameInvalid && name && <span className='error'>Dataset name can only contain A-Z, a-z, 0-9, - and _</span>}
-    <label>File (optional)</label>
-    <FileUploadMask file={file} />
-    <input aria-label="file-input" type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
-    <span className='description'>Before uploading a dataset, make sure it is in the correct format, as expected by the Invariant analysis engine.</span>
-    <br />
-    <button aria-label='create' className='primary' disabled={!name || loading || isDatasetNameInvalid} onClick={onSubmit}>
-      {loading ? 'Uploading...' : 'Create'}
-    </button>
-    {error && <span className='error'>{error}</span>}
-  </div>
+  return (
+    <div className="create-dataset-form">
+      <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
+      <label>Name</label>
+      <input
+        type="text"
+        value={name}
+        onChange={onNameChange}
+        placeholder="Dataset Name"
+      />
+      {isDatasetNameInvalid && name && (
+        <span className="error">
+          Dataset name can only contain A-Z, a-z, 0-9, - and _
+        </span>
+      )}
+      <label>Access</label>
+      {!config("sharing") && (
+        <span className="option-name">
+          The dataset will only be stored on your local machine.
+        </span>
+      )}
+      {config("sharing") && (
+        <>
+          <div className="options-container">
+            <input
+              type="radio"
+              id="public"
+              name="access"
+              value="public"
+              checked={isPublic}
+              onChange={handleAccessChange}
+            />
+            <BsGlobe className="icon" />
+            <div>
+              <span className="option-name">Public</span>
+              <span className="option-description">
+                Anyone on the internet can view this dataset.
+              </span>
+            </div>
+          </div>
+          <div className="options-container">
+            <input
+              type="radio"
+              id="private"
+              name="access"
+              value="private"
+              checked={!isPublic}
+              onChange={handleAccessChange}
+            />
+            <BsLock className="icon" />
+            <div>
+              <span className="option-name">Private</span>
+              <span className="option-description">
+                Only you can access this dataset.
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+      <label>Contents</label>
+      <div className="options-container">
+        <input
+          type="radio"
+          id="empty"
+          name="content"
+          value="empty"
+          checked={contentType === "empty"}
+          onChange={handleContentChange}
+        />
+        <div className="option-dataset-type">
+          <span className="option-name">Empty Dataset</span>
+          <span className="option-description">
+            You can upload traces using the{" "}
+            <a
+              target="_blank"
+              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
+            >
+              Explorer Push API
+            </a>
+            .
+          </span>
+        </div>
+      </div>
+      <div className="options-container">
+        <input
+          type="radio"
+          id="jsonl"
+          name="content"
+          value="jsonl"
+          checked={contentType === "jsonl"}
+          onChange={handleContentChange}
+        />
+        <div className="option-dataset-type">
+          <span className="option-name">Upload JSON Lines file</span>
+          <span className="option-description">
+            Before uploading traces make sure they are in the{" "}
+            <a
+              target="_blank"
+              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
+            >
+              correct format
+            </a>
+            .
+          </span>
+        </div>
+      </div>
+      {contentType === "jsonl" && (
+        <div className="file-upload">
+          <FileUploadMask file={file} />
+          <input
+            aria-label="file-input"
+            type="file"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+        </div>
+      )}
+      <button
+        aria-label="create"
+        className="primary"
+        disabled={!name || loading || isDatasetNameInvalid}
+        onClick={onSubmit}
+      >
+        {loading ? "Uploading..." : "Create"}
+      </button>
+      {error && <span className="error">{error}</span>}
+    </div>
+  );   
 }
 
 /**

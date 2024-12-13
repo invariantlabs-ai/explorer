@@ -2324,3 +2324,79 @@ p.footer-links {
   gap: 10px;
   width: auto;
 }
+
+.create-dataset-form {
+  width: 600px;
+  display: flex;
+  flex-direction: column;
+
+  h2 {
+    margin-top: 0px;
+    margin-bottom: 0px !important;
+  }
+
+  input {
+    background-color: #ebebeb;
+    display: block;
+    padding: 5pt;
+    font-size: 14px;
+    border-radius: 5pt;
+    border: none;
+    margin-bottom: 5pt;
+  }
+
+  label {
+    font-size: 14pt;
+    opacity: 1.0;
+    margin-top: 1lvh;
+    margin-bottom: 5pt;
+  }
+
+  button {
+    margin-top: 15px;
+    margin-bottom: 0px;
+  }
+
+  input[type=file] {
+    opacity: 0.0;
+    height: 100pt;
+  }
+
+  .file-upload {
+    margin-top: 15px;
+  }
+
+  .error {
+    color: #ED707B;
+    font-size: 14px;
+    border-left: 2pt solid #ED707B;
+    padding-left: 10pt;
+    display: block;
+    margin-bottom: 0px;
+    margin-top: 0px;
+  }
+
+  .options-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .option-name {
+    font-size: 14px;
+    display: block;
+  }
+
+  .option-description {
+    font-size: 12px;
+    display: block;
+  }
+
+  .option-dataset-type {
+    margin-left: 8px;
+  }
+
+  .icon {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+}
