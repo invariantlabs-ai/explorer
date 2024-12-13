@@ -45,4 +45,4 @@ jobs:
             PREVIEW=false
             CONFIG_FILE_NAME=explorer.local.yml
           additional-contexts: |
-            configs=../configs
+            configs=./configs
