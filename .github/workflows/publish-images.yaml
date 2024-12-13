@@ -19,8 +19,8 @@ jobs:
       - name: Build app-api
         uses: docker/build-push-action@v5
         with:
-          context: ../app-api
-          file: ../app-api/Dockerfile.api
+          context: ./app-api
+          file: ./app-api/Dockerfile.api
           platforms: linux/amd64
           tags: ${{ github.repository }}/app-api:latest
           build-args: |
@@ -31,7 +31,7 @@ jobs:
       - name: Build app-ui
         uses: docker/build-push-action@v5
         with:
-          context: ../app-ui
+          context: ./app-ui
           file: Dockerfile.app-ui
           platforms: linux/amd64
           tags: ${{ github.repository }}/app-ui:latest
