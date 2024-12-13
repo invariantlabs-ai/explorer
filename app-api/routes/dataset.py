@@ -70,6 +70,19 @@ def handle_dataset_creation_integrity_error(error: IntegrityError):
         status_code=400, detail="An integrity error occurred"
     ) from error
 
+def str_to_bool(key: str, value: str) -> bool:
+    """Convert a string to a boolean."""
+    if isinstance(value, bool):  # If already a boolean, return as is
+        return value
+    value_lower = value.lower()
+    if value_lower == "true":
+        return True
+    if value_lower == "false":
+        return False
+    raise HTTPException(
+        status_code=400,
+        detail=f"{key} must be a string representing a boolean like 'true' or 'false'"
+    )
 
 @dataset.post("/create")
 async def create(
@@ -85,15 +98,27 @@ async def create(
     data = await request.json()
     name = data.get("name")
     if name is None:
-        raise HTTPException(status_code=400, detail="Name must be provided")
+        raise HTTPException(status_code=400, detail="name must be provided")
+    if not isinstance(name, str):
+        raise HTTPException(status_code=400, detail="name must be a string")
     validate_dataset_name(name)
 
     metadata = data.get("metadata", dict())
+    if not isinstance(metadata, dict):
+        raise HTTPException(status_code=400, detail="metadata must be a dictionary")
     metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    is_public = data.get("is_public", False)
+    if not isinstance(is_public, bool):
+        raise HTTPException(status_code=400, detail="is_public must be a boolean")
 
     with Session(db()) as session:
         dataset = Dataset(
-            id=uuid.uuid4(), user_id=user_id, name=name, extra_metadata=metadata
+            id=uuid.uuid4(),
+            user_id=user_id,
+            name=name,
+            is_public=is_public,
+            extra_metadata=metadata,
         )
         dataset.extra_metadata = metadata
         session.add(dataset)
@@ -111,8 +136,12 @@ async def upload_file(
     file: UploadFile = File(...),
 ):
     """Create a dataset via file upload."""
-    # get name from the form
-    name = (await request.form()).get("name")
+    # get name and is_public from the form
+    form = await request.form()
+    name = form.get("name")
+    # is_public is a string because of Multipart request, convert to boolean
+    is_public = str_to_bool("is_public", form.get("is_public", "false"))
+    
     user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(
@@ -125,7 +154,7 @@ async def upload_file(
 
     with Session(db()) as session:
         lines = file.file.readlines()
-        dataset = import_jsonl(session, name, user_id, lines)
+        dataset = import_jsonl(session, name, user_id, lines, is_public=is_public)
         session.commit()
         return dataset_to_json(dataset)
 
