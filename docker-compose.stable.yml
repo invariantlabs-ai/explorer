@@ -1,6 +1,6 @@
 # CAUTION: This docker-compose.yml file should only be used by the `invariant explorer` CLI command and not be used directly.
 # This is not the development setup but what is used for released versions of the explorer.
-# For a development setup (hot-reloading), please see docker-compose.local.yml.
+# For a development setup (hot-reloading), please see docker-compose.dev.yml.
 # This stack will pull in the specified $VERSION of the app-api and app-ui services.
 services:
   traefik:
