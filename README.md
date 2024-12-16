@@ -1,8 +1,6 @@
 # Invariant Explorer
 
-
-
-A tool for visualizing and exploring agent traces.
+A tool for visualizing and exploring agent traces. [Hosted Version](https://explorer.invariantlabs.ai).
 
 <img width="1396" alt="image" src="https://github.com/user-attachments/assets/91829aa5-8385-4c3e-9bff-1d8d7a8202ae" />
 
