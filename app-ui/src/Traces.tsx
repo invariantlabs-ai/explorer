@@ -55,9 +55,9 @@ export interface DatasetData {
 /**
  * Hook to load the dataset metadata for a given user and dataset name.
  */
-function useDataset(username: string, datasetname: string): [DatasetData | null, string | null] {
+function useDataset(username: string, datasetname: string): [DatasetData | null, Response | null] {
   const [dataset, setDataset] = React.useState(null)
-  const [error, setError] = React.useState(null as string | null);
+  const [error, setError] = React.useState(null as Response | null);
 
   React.useEffect(() => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
