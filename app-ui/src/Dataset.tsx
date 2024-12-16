@@ -10,6 +10,7 @@ import { useUserInfo } from './UserInfo'
 import { Metadata } from './lib/metadata'
 import { config } from './Config'
 import { useTelemetry } from './telemetry'
+import { NotFound } from './NotFound'
 
 
 interface Query {
@@ -142,11 +143,7 @@ function DatasetView() {
   // if the dataset is not found, display a message
   if (datasetError) {
     if (datasetError.status === 401) {
-      return (
-        <div className='empty'>
-          <h3>It looks like you are not logged in, or your account has no access to this dataset.</h3>
-        </div>
-      );
+      return (<NotFound />);
     }
     return (
       <div className='empty'>

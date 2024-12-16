@@ -19,6 +19,7 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
+import { NotFound } from './NotFound';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -62,8 +63,11 @@ function useDataset(username: string, datasetname: string): [DatasetData | null,
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
       .then(data => setDataset(data))
       .catch(e => {
-        alert("Error loading dataset")
+        console.error(e)
         setError(e)
+        if (e.status !== 401) {
+          alert("Error loading traces")
+        }
       })
   }, [username, datasetname])
 
@@ -294,7 +298,9 @@ function useTraces(username: string, datasetname: string): [LightweightTraces | 
       setHierarchyPaths(pathMap)
     }).catch(e => {
       console.error(e)
-      alert("Error loading traces")
+      if (e.status !== 401) {
+        alert("Error loading traces")
+      }
     })
   }
 
@@ -628,8 +634,8 @@ export function Traces() {
     if (datasetLoadingError.status === 401) {
       return (
         <div className='empty'>
-          <h3>It looks like you are not logged in, or your account has no access to this dataset.</h3>
-        </div>
+        <h3>Failed to Load Dataset</h3>
+      </div>
       );
     }
     return (
