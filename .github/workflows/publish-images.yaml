@@ -32,7 +32,10 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository }}/app-api:latest" >> $GITHUB_ENV
             echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest" >> $GITHUB_ENV
           elif [[ "${{ github.event.workflow_run.head_branch }}" == refs/tags/* ]]; then
-            version=${{ github.event.workflow_run.head_branch#refs/tags/ }}
+            # get tag name from the event
+            version=${{ github.event.workflow_run.head_branch }}
+            # remove the refs/tags/ prefix
+            version=${{ version#refs/tags/ }}
             echo "tags=ghcr.io/${{ github.repository }}/app-api:latest,ghcr.io/${{ github.repository }}/app-api:${version}" >> $GITHUB_ENV
             echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest,ghcr.io/${{ github.repository }}/app-ui:${version}" >> $GITHUB_ENV
           else
