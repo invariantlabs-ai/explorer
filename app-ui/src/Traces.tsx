@@ -624,13 +624,24 @@ export function Traces() {
 
   // error state of this view
   if (datasetLoadingError) {
-    return <div className='empty'>
-      <h3>Failed to Load Dataset</h3>
-    </div>
+    if (datasetLoadingError.status === 401) {
+      return (
+        <div className='empty'>
+          <h3>It looks like you are not logged in, or your account has no access to this dataset.</h3>
+        </div>
+      );
+    }
+    return (
+      <div className='empty'>
+        <h3>Failed to Load Dataset</h3>
+      </div>
+    );
   } else if (!dataset) {
-    return <div className='empty'>
-      <h3>Loading...</h3>
-    </div>
+    return (
+      <div className='empty'>
+        <h3>Loading...</h3>
+      </div>
+    );
   }
 
   const onAnnotationCreate = (traceIndex: number) => {
