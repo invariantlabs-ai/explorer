@@ -16,7 +16,7 @@ services:
       - --entrypoints.web.address=0.0.0.0:80
       - --log.level=INFO
     networks:
-      - web
+      - invariant-explorer-web
     ports:
       - '${PORT_HTTP}:80'
     volumes:
@@ -44,7 +44,7 @@ services:
       - APP_NAME=${APP_NAME}
       - CONFIG_FILE=/config/explorer.config.yml
     networks:
-      - web
+      - invariant-explorer-web
       - internal
     volumes:
       - $CONFIG_FILE_NAME:/config/explorer.config.yml
@@ -54,13 +54,13 @@ services:
       - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
       - "traefik.http.routers.$APP_NAME-api.entrypoints=web"
       - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=invariant_web"
+      - "traefik.docker.network=invariant-explorer-web"
 
   app-ui:
     image: ghcr.io/invariantlabs-ai/explorer-oss/app-ui:${VERSION}
     platform: linux/amd64
     networks:
-      - web
+      - invariant-explorer-web
     volumes:
       - $CONFIG_FILE_NAME:/config/explorer.config.yml
     environment:
@@ -71,7 +71,7 @@ services:
       - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
       - "traefik.http.routers.$APP_NAME-ui.entrypoints=web"
       - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=8000"
-      - "traefik.docker.network=invariant_web"
+      - "traefik.docker.network=invariant-explorer-web"
 
   database:
     image: postgres:16
@@ -85,5 +85,6 @@ services:
         target: /var/lib/postgresql/data
 
 networks:
-  web:
+  invariant-explorer-web:
+    external: true
   internal:
