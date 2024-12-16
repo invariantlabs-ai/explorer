@@ -112,7 +112,7 @@ def import_jsonl(
     user_id: str,
     lines: list[str],
     metadata: dict | None = None,
-    existing_dataset = None,
+    existing_dataset=None,
     is_public: bool = False,
 ):
     """
@@ -150,8 +150,6 @@ def import_jsonl(
         session.add(dataset)
     else:
         dataset = existing_dataset
-    dataset = create_dataset(user_id, name, metadata, is_public)
-    session.add(dataset)
 
     i = 0
     for line in lines:
