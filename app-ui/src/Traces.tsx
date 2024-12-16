@@ -19,7 +19,6 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
-import { WorkflowProvider } from "./workflow-control";
 
 
 // constant used to combine hierarchy paths
@@ -578,6 +577,8 @@ export function Traces() {
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
 
+  const [renderGuide, setRenderGuide] = React.useState(false)
+
   // when the trace index changes, update the activeTrace
   useEffect(() => {
     // if search or analyzer was run, get the flattened list of results
@@ -651,6 +652,11 @@ export function Traces() {
     }
   }
 
+  const enableGuide = () => {
+    setRenderGuide(true)
+    console.log("guide enabled", renderGuide)
+  }
+
   // whether the trace view shows any trace
   const traceVisible = !searching && (displayedIndices != null)
 
@@ -669,10 +675,7 @@ export function Traces() {
 
   // derive whether this is a testing trace
   const isTest = activeTrace?.extra_metadata && typeof activeTrace?.extra_metadata['invariant.num-failures'] === 'number'
-
-  return (
-    <WorkflowProvider>
-  <div className="panel fullscreen app">
+  return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} traceName={getFullDisplayName(activeTrace)} />
@@ -727,12 +730,11 @@ export function Traces() {
         </>}
         onAnnotationCreate={onAnnotationCreate}
         onAnnotationDelete={onAnnotationDelete}
+        enableGuide={enableGuide}
       />}
-      <TracePageGuide/>
+      {renderGuide && <TracePageGuide/>}
     </div>
   </div>
-  </WorkflowProvider>
-  )
 }
 
 

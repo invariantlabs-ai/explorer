@@ -13,7 +13,6 @@ import { HighlightContext, Line, TraceDecorator } from "./line";
 import { config } from "../../Config";
 import { truncate } from "./utils";
 import { AnchorDiv, anchorToAddress, copyPermalinkToClipboard, permalink } from "../permalink-navigator";
-import { useWorkflow } from "../../workflow-control";
 
 /**
  * Props for the TraceView component.
@@ -137,43 +136,43 @@ export function TraceView(props: TraceViewProps) {
     }, [highlights])
 
     return <div className="traceview">
-        {props.header != false && <h2>
-            <div>
-                {props.title}
-                {!sideBySide && <div className="tab-group">
-                    <button className={mode === "input" ? "active" : ""} onClick={() => setMode("input")}>
-                        <span className="inner">Edit</span>
-                    </button>
-                    <button className={mode === "trace" ? "active" : ""} onClick={() => setMode("trace")}>
-                        <span className="inner">Preview</span>
-                    </button>
-                </div>}
-                {hasEditor && <TraceValidationStatus validation={validationResult} />}
-                {props.header}
-            </div>
-        </h2>}
-        {hasEditor && !sideBySide && <div className={"content"}>
-            <div className={"tab" + (mode === "input" ? " active" : "")}>
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
-            </div>
-            <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
-            </div>
-        </div>}
-        {hasEditor && sideBySide && <div className="sidebyside">
-            <div className="side">
-                <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
-            </div>
-            <div className="traces side">
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
-            </div>
-        </div>}
-        {!hasEditor && <div className="fullscreen">
-            <div className={"side traces " + (mode === "trace" ? " active" : "")}>
-                <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
-            </div>
-        </div>}
-    </div>
+    {props.header != false && <h2>
+        <div>
+            {props.title}
+            {!sideBySide && <div className="tab-group">
+                <button className={mode === "input" ? "active" : ""} onClick={() => setMode("input")}>
+                    <span className="inner">Edit</span>
+                </button>
+                <button className={mode === "trace" ? "active" : ""} onClick={() => setMode("trace")}>
+                    <span className="inner">Preview</span>
+                </button>
+            </div>}
+            {hasEditor && <TraceValidationStatus validation={validationResult} />}
+            {props.header}
+        </div>
+    </h2>}
+    {hasEditor && !sideBySide && <div className={"content"}>
+        <div className={"tab" + (mode === "input" ? " active" : "")}>
+            <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
+        </div>
+        <div className={"tab traces " + (mode === "trace" ? " active" : "")}>
+            <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
+        </div>
+    </div>}
+    {hasEditor && sideBySide && <div className="sidebyside">
+        <div className="side">
+            <TraceEditor inputData={inputData} handleInputChange={handleInputChange} highlights={highlightedJson || HighlightedJSON.empty()} validation={validationResult} />
+        </div>
+        <div className="traces side">
+            <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
+        </div>
+    </div>}
+    {!hasEditor && <div className="fullscreen">
+        <div className={"side traces " + (mode === "trace" ? " active" : "")}>
+            <RenderedTrace trace={inputData} highlights={highlightedJson || HighlightedJSON.empty()} decorator={props.decorator} traceId={props.traceId} />
+        </div>
+    </div>}
+</div>
 }
 
 /**
@@ -446,27 +445,21 @@ export class RenderedTrace extends React.Component<RenderedTraceProps, RenderedT
                 traceId: this.props.traceId
             }
             const events = this.state.parsed ? (Array.isArray(this.state.parsed) ? this.state.parsed : [this.state.parsed]) : []
-            console.log("is expanded", events,this.props.allExpanded)
-        
+
             return <AnchorDiv id="messages" className={"traces " + (this.state.altPressed ? "alt" : "")} htmlRef={this.listRef} onReveal={this.onReveal.bind(this)} afterReveal={this.afterReveal.bind(this)}>
-                {this.props.prelude}
-                {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
-                {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
-                <ViewportList items={events} viewportRef={this.listRef} ref={this.viewportRef} overscan={1000}>
-                    {(item: any, index: number) => {
-                        console.log("item", item)
-                        const messageview = <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
-                        events={this.state.events} allExpanded={this.props.allExpanded} />
-                        console.log("messageview", messageview)
-                        MessageView.finish()
-                        return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
-                                            events={this.state.events} allExpanded={this.props.allExpanded} />
-                    }}
-                </ViewportList>
-                {events.length === 0 && <div className="event empty">
-                    No Messages
-                </div>}
-            </AnchorDiv>
+            {this.props.prelude}
+            {/* ViewportList is an external library (react-viewport-list) that ensures that only the visible messages are rendered, improving performance */}
+            {/* Note: overscan can be reduce to greatly improve performance for long traces, but then ctrl-f doesn't work (needs custom implementation) */}
+            <ViewportList items={events} viewportRef={this.listRef} ref={this.viewportRef} overscan={1000}>
+                {(item: any, index: number) => {
+                    return <MessageView key={index} index={index} message={item} highlights={this.props.highlights.for_path("messages." + index)} highlightContext={highlightContext} address={"messages[" + index + "]"} 
+                                        events={this.state.events} allExpanded={this.props.allExpanded} />
+                }}
+            </ViewportList>
+            {events.length === 0 && <div className="event empty">
+                No Messages
+            </div>}
+        </AnchorDiv>
         } catch (e) {
             this.setState({ error: e as Error })
             return null
@@ -641,12 +634,6 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
         this.setState({ error })
     }
 
-    public static finish(){
-        const {setIsTraceviewComplete} = useWorkflow();
-        setIsTraceviewComplete(true);
-        console.log("finish")
-    }
-
     render() {
 
         if (this.state.error) {
@@ -658,10 +645,7 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
         const isHighlighted = this.props.highlights.rootHighlights.length
 
         try {
-            const message = this.props.message
-           
-            console.log("message:", message)
-            
+            const message = this.props.message            
 
             if (!message.role) {
                 // top-level tool call

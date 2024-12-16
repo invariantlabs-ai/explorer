@@ -404,7 +404,7 @@ export function AnchorDiv(props: any & AnchorDivProps) {
     if (flash) {
         className = (className || '') + ' permalink-flash';
     }
-    
+
     useEffect(() => {
         if (htmlRef) htmlRef.current = ref.current;
         

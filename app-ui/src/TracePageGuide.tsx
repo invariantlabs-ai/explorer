@@ -1,6 +1,5 @@
 import Joyride, {CallBackProps, STATUS, Step, Placement} from 'react-joyride';
 import { useEffect, useState } from 'react';
-import {useWorkflow} from "./workflow-control";
 const defaultOptions = {
     options: {
         arrowColor: '#fff',
@@ -14,43 +13,17 @@ const defaultOptions = {
     }
   };
 
-//   The variable is declared in the global scope so that once the className of the second event is found no more requests are made
-
-
 export default function TracePageGuide() {
     const [run, setRun] = useState(true);
-    const [isFirstVisit, setIsFirstVisit] = useState(false);
+    const [enableGuide, setEnableGuide] = useState(false);
     const [className_event,setClassNameEvent] = useState("undefined");
-    // keep requesting until the className of the second event is found, first event is always metadata
-    const selector = ".event:nth-child(2)";
-    console.log("outside loop", className_event)
-    const {isTraceviewComplete} = useWorkflow();
-    if(isTraceviewComplete){
-        const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
-        let new_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || ''
-        console.log("new_className_event",className_event, new_className_event)
-        if (className_event != new_className_event && !new_className_event.includes("undefined")) { 
-            console.log("selector", document.querySelector(`.event`))
-            // const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
-            // const eventFind = document.querySelector(`.event[class*="expanded"]:not([class*="metadata"])`);
-            // construct the className of the second event
-            console.log("eventFind", eventFind)
-            setClassNameEvent("."+eventFind?.className.replace(/\s+/g, ".") || '');
-            console.log("className_event", className_event)
-            const content = eventFind?.querySelector(".content") || null;
-            // if(content){
-            //     className_event = "."+content.className.replace(/\s+/g, ".") || '';
-            //     console.log("content.className", className_event)
-            // }
-        }
-    }
-
-    let steps: Step[] = [
+    const disableTraceViewGuideLocal = "invariant.explorer.enable.guide.trace_view";
+    const steps: Step[] = [
         {
             target: ".sidebar",
             content: "Explore and browse all traces from your dataset.",
+            placement: "right",
             disableBeacon: true,
-            placement: 'right',
         },
         {
             target: "button.inline.guide-step-3",
@@ -62,7 +35,6 @@ export default function TracePageGuide() {
             target: className_event,
             content: "Click on any line inside a message to add an annotation.",
             placement: 'top',
-    
         },
         {
             target: "button.inline.guide-step-4",
@@ -73,34 +45,32 @@ export default function TracePageGuide() {
     ]
 
     useEffect(() => {
-        const firstVisitTraceFlag = localStorage.getItem('firstVisitTraceFlag');
-        if (!firstVisitTraceFlag || firstVisitTraceFlag === 'true') {
-            setIsFirstVisit(true);
-            localStorage.setItem('firstVisitTraceFlag', 'false');
-        const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
-        let new_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || ''
-        console.log("new_className_event",className_event, new_className_event)
-        if (className_event != new_className_event && !new_className_event.includes("undefined")) { 
-            console.log("selector", document.querySelector(`.event`))
-            // const eventFind = document.querySelector(`.event:not([class*="metadata"]):not([class*="expanded"])`);
-            // const eventFind = document.querySelector(`.event[class*="expanded"]:not([class*="metadata"])`);
-            // construct the className of the second event
-            console.log("eventFind", eventFind)
-            setClassNameEvent("."+eventFind?.className.replace(/\s+/g, ".") || '');
-            console.log("steps", steps)
-            const content = eventFind?.querySelector(".content") || null;
-            // if(content){
-            //     className_event = "."+content.className.replace(/\s+/g, ".") || '';
-            //     console.log("content.className", className_event)
-            // }
-        }
-        }
-    }, [isFirstVisit,isTraceviewComplete]);
+        if(!localStorage.getItem(disableTraceViewGuideLocal)){
+            // return the first event that's not test, metadata, but expanded
+            // Note the expanded status is contracted, when the event is collapsed it has the class expanded
+            const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"])`;
+            const eventFind = document.querySelector(selector);
+            let new_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || ''
+            if (className_event != new_className_event && !new_className_event.includes("undefined")) { 
+                // build class name as format ".class1.class2.class3"
+                const temp_className_event = "."+eventFind?.className.replace(/\s+/g, ".") || '';
+                setClassNameEvent(temp_className_event);
+                // if there is a content, get the class name of the content
+                const content = eventFind?.querySelector(".content") || null;
+                if(content){
+                    setClassNameEvent("."+content.className.replace(/\s+/g, "."))
+                }
+            }
+    
+            setEnableGuide(true);
 
+            localStorage.setItem(disableTraceViewGuideLocal,"true");
+        }
+    }, [])
+ 
     const handleJoyrideCallback = (data: CallBackProps) => {
         const { status, type } = data;
         const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
-        console.log("callback status", data)
         if (finishedStatuses.includes(status)) {
           setRun(false);
         }
@@ -108,7 +78,7 @@ export default function TracePageGuide() {
 
     return (
         <div>
-            isFirstVisit && isTraceviewComplete &&
+            {enableGuide &&
                 <Joyride
                     steps={steps}
                     run={run}
@@ -120,7 +90,7 @@ export default function TracePageGuide() {
                     callback={handleJoyrideCallback}
                     >
                 </Joyride>
-            
+    }                       
         </div>
     ) 
 }
