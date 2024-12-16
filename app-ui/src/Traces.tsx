@@ -632,11 +632,7 @@ export function Traces() {
   // if the dataset is not found, display a message
   if (datasetLoadingError) {
     if (datasetLoadingError.status === 401) {
-      return (
-        <div className='empty'>
-        <h3>Failed to Load Dataset</h3>
-      </div>
-      );
+      return (<NotFound />);
     }
     return (
       <div className='empty'>
