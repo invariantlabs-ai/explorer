@@ -249,14 +249,14 @@ export function UploadDatasetModalContent(props) {
         </div>
       </div>
       {contentType === "jsonl" && (
-        <div className="file-upload">
+        <>
           <FileUploadMask file={file} />
           <input
             aria-label="file-input"
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
-        </div>
+        </>
       )}
       <button
         aria-label="create"
