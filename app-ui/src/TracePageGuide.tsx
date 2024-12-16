@@ -1,5 +1,6 @@
 import Joyride, {CallBackProps, STATUS, Step, Placement} from 'react-joyride';
 import { useEffect, useState } from 'react';
+import { config } from './Config';
 const defaultOptions = {
     options: {
         arrowColor: '#fff',
@@ -78,7 +79,7 @@ export default function TracePageGuide() {
 
     return (
         <div>
-            {enableGuide &&
+            {enableGuide && config('nux') && 
                 <Joyride
                     steps={steps}
                     run={run}

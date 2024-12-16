@@ -1,6 +1,7 @@
 import Joyride, {CallBackProps, STATUS, Step, Placement} from 'react-joyride';
 import { useEffect, useState } from 'react';
 import { useUserInfo } from './UserInfo';
+import { config } from './Config';
 
 const defaultOptions = {
     options: {
@@ -24,6 +25,7 @@ export default function HomePageGuide(props) {
 
     const [run, setRun] = useState(true);
     const [isFirstVisit, setIsFirstVisit] = useState(false);
+    const disableHomeGuideLocal = "invariant.explorer.enable.guide.home";
 
     const steps: Step[] = [
         {
@@ -53,11 +55,9 @@ export default function HomePageGuide(props) {
     }
 
     useEffect(() => {
-        const firstVisitHomeFlag = localStorage.getItem('firstVisitHomeFlag');
-        console.log("firstVisitHomeFlag",firstVisitHomeFlag);
-        if (!firstVisitHomeFlag || firstVisitHomeFlag === 'true') {
+        if( !localStorage.getItem(disableHomeGuideLocal)){
             setIsFirstVisit(true);
-            localStorage.setItem('firstVisitHomeFlag', 'false');
+            localStorage.setItem(disableHomeGuideLocal, 'true');
         }
     }, []);
 
@@ -71,7 +71,7 @@ export default function HomePageGuide(props) {
       };
     return (
         <div>
-            {isFirstVisit &&
+            {isFirstVisit && config("nux") &&
                 <Joyride
                     steps={steps}
                     run={run}
