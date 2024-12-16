@@ -19,7 +19,7 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
-import { NotFound } from './NotFound';
+import { DatasetNotFound } from './NotFound';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -632,7 +632,7 @@ export function Traces() {
   // if the dataset is not found, display a message
   if (datasetLoadingError) {
     if (datasetLoadingError.status === 401) {
-      return (<NotFound />);
+      return (<DatasetNotFound />);
     }
     return (
       <div className='empty'>
