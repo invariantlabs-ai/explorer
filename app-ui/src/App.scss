@@ -733,6 +733,7 @@ button.danger {
 
 .file-upload-mask {
   height: 0pt;
+  margin-top: 15px;
 
   .overlay {
     background-color: #ebebeb;
@@ -2352,7 +2353,7 @@ p.footer-links {
     margin-bottom: 5pt;
   }
 
-  button {
+  >button {
     margin-top: 15px;
     margin-bottom: 0px;
   }
@@ -2360,10 +2361,6 @@ p.footer-links {
   input[type=file] {
     opacity: 0.0;
     height: 100pt;
-  }
-
-  .file-upload {
-    margin-top: 15px;
   }
 
   .error {
