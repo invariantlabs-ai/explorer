@@ -25,6 +25,7 @@ export default function HomePageGuide(props) {
 
     const [run, setRun] = useState(true);
     const [isFirstVisit, setIsFirstVisit] = useState(false);
+    const [datasetMessageContent, setDatasetMessageContent] = useState("We created a sample dataset for you to explore.");
 
     const steps: Step[] = [
         {
@@ -46,7 +47,7 @@ export default function HomePageGuide(props) {
         steps.unshift(
             {
                 target: ".box.dataset",
-                content: "We created a sample dataset for you to explore.",
+                content: datasetMessageContent,
                 disableBeacon: true,
                 placement: 'left',
             }
@@ -59,6 +60,17 @@ export default function HomePageGuide(props) {
         if (!firstVisitHomeFlag || firstVisitHomeFlag === 'true') {
             setIsFirstVisit(true);
             localStorage.setItem('firstVisitHomeFlag', 'false');
+        }
+    }, []);
+
+    useEffect(() => {
+        const datasetElement = document.querySelector('.box.dataset');
+        if (datasetElement) {
+            const welcomeDataset = datasetElement.querySelector('a[href*="/Welcome-to-Explorer"]');
+            setDatasetMessageContent(welcomeDataset ?
+                "We created a sample dataset for you to explore." :
+                "Here you can find all of your datasets."
+            );
         }
     }, []);
 
