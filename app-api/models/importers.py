@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from models.datasets_and_traces import Annotation, Dataset, Trace
 from models.queries import *
 from sqlalchemy.orm import Session
+from util.util import parse_and_push_images
 
 
 def create_dataset(user_id, name, metadata):
@@ -107,6 +108,7 @@ def import_jsonl(
     user_id: str,
     lines: list[str],
     metadata: dict | None = None,
+    existing_dataset=None,
 ):
     """
     Parses and reads a JSONL file and imports it into the database.
@@ -138,8 +140,11 @@ def import_jsonl(
     validation_result = validate_file_upload(lines)
 
     # Save the metadata to the database.
-    dataset = create_dataset(user_id, name, metadata)
-    session.add(dataset)
+    if existing_dataset is None:
+        dataset = create_dataset(user_id, name, metadata)
+        session.add(dataset)
+    else:
+        dataset = existing_dataset
 
     i = 0
     for line in lines:
@@ -162,14 +167,16 @@ def import_jsonl(
             else:
                 trace_metadata = {}
             # Otherwise, the list in this row, is the list of messages/events.
+            trace_id = uuid.uuid4()
+            parsed_messages = parse_and_push_images(name, trace_id, parsed_line)
             trace = Trace(
-                id=uuid.uuid4(),
+                id=trace_id,
                 index=i,
                 name=trace_metadata.get("name", f"Run {i}"),
                 hierarchy_path=trace_metadata.get("hierarchy_path", []),
                 user_id=user_id,
                 dataset_id=dataset.id,
-                content=parsed_line,
+                content=parsed_messages,
                 extra_metadata=trace_metadata,
             )
             session.add(trace)
@@ -180,8 +187,10 @@ def import_jsonl(
                 if validation_result["are_indices_present"]
                 else i
             )
+            trace_id = uuid.uuid4()
+            parsed_messages = parse_and_push_images(name, trace_id, parsed_line["messages"])
             trace = Trace(
-                id=uuid.uuid4(),
+                id=trace_id,
                 index=index,
                 name=parsed_line.get(
                     "name", trace_metadata.get("name", f"Run {index}")
@@ -191,7 +200,7 @@ def import_jsonl(
                 ),
                 user_id=user_id,
                 dataset_id=dataset.id,
-                content=parsed_line["messages"],
+                content=parsed_messages,
                 extra_metadata=trace_metadata,
             )
             session.add(trace)

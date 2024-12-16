@@ -18,6 +18,8 @@ import { config } from './Config';
 import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
+import TracePageGuide from './TracePageGuide'
+
 import { HighlightsNavigator } from './HighlightsNavigator';
 
 import { copyPermalinkToClipboard } from './lib/permalink-navigator';
@@ -65,6 +67,7 @@ export class Annotations extends RemoteResource {
  * @param {Function} props.onAnnotationCreate - callback to update annotations count on the Sidebar
  * @param {Function} props.onAnnotationDelete - callback to update annotations count on the Sidebar
  * @param {React.Component} props.header - the header component (e.g. <user>/<dataset>/<trace> links)
+ * @param {React.Component} props.is_public - whether the trace is public
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
@@ -75,6 +78,8 @@ export function AnnotationAugmentedTraceView(props) {
   const activeTraceId = props.selectedTraceId || null
   // the trace index
   const activeTraceIndex = props.selectedTraceIndex;
+  // whether the trace is public
+  const is_public = props.is_public || null
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({})
   // loads and manages annotations as a remote resource (server CRUD)
@@ -174,6 +179,7 @@ export function AnnotationAugmentedTraceView(props) {
     extraArgs: [activeTraceId]
   }
 
+
   // note: make sure to only pass highlights here that actually belong to the active trace 
   // otherwise we can end up in an intermediate state where we have a new trace but old highlights (this must never happen)
   const traceHighlights = highlights.traceId == activeTraceId ? highlights.highlights : HighlightedJSON.empty()
@@ -181,6 +187,12 @@ export function AnnotationAugmentedTraceView(props) {
   return <>
     <header className='toolbar'>
       {props.header}
+      { // Add a box to show if the trace is public or private (if the prop is set)
+        (config("sharing") && props.is_public != null) 
+        && <div className={`badge ${props.is_public ? 'public-trace' : 'private-trace'}`}> 
+          {props.is_public ? 'Shared' : 'Private'} 
+        </div>
+      }
       <div className='spacer' />
       <div className='vr' />
       <HighlightsNavigator 
@@ -190,11 +202,10 @@ export function AnnotationAugmentedTraceView(props) {
         traceId={activeTraceId}
       />
       {activeTrace && <>
-
         {is_all_expanded ? (
-          <button className="inline icon" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
+          <button className="inline icon guide-step-3" onClick={onCollapseAll} data-tooltip-id="button-tooltip" data-tooltip-content="Collapse All"><BsArrowsCollapse /></button>
         ) : (
-          <button className="inline icon" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
+          <button className="inline icon guide-step-3" onClick={onExpandAll} data-tooltip-id="button-tooltip" data-tooltip-content="Expand All"><BsArrowsExpand /></button>
         )}
         <a href={'/api/v1/trace/' + activeTraceId + '?annotated=1'} download={activeTraceId + '.json'}>
           <button className='inline icon' onClick={(e) => {
@@ -210,7 +221,7 @@ export function AnnotationAugmentedTraceView(props) {
         {props.actions}
         <div className='vr' />
         {config('sharing') && <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
-        {config('sharing') && props.onShare && <button className={'inline ' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+        {config('sharing') && props.onShare && <button className={'inline guide-step-4' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
           {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
         </button>}
       </>}

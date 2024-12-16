@@ -12,6 +12,7 @@ import UserIcon from './lib/UserIcon';
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
+import HomePageGuide from './HomePageGuide'
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {
@@ -33,6 +34,41 @@ function useActivity(): [any[], () => void] {
     activity,
     refresh
   ]
+}
+
+function FeaturedDatasets(props) {
+  const datasets = (props.datasets || []).map((item) => ({
+    ...item,
+    nice_name: item.nice_name || item.name,
+  }));
+
+  return (
+    <div>
+      {datasets.length === 0 ? (
+        <div className="featured-dataset-empty">No datasets available</div>
+      ) : (
+        <div className="featured-dataset-list">
+          {datasets.map((dataset, i) => (
+            <div
+              key={i}
+              className={`featured-dataset-item ${
+                i === datasets.length - 1 ? "last-item" : ""
+              }`}
+            >
+              <div className="featured-dataset-info">
+                <Link className="item" to={`/u/${dataset.user.username}/${dataset.name}`}>
+                  <h3>
+                    <BsGlobe /> {dataset.nice_name}
+                  </h3>
+                </Link>
+              </div>
+              <div className="featured-dataset-description">{dataset.description}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -69,9 +105,20 @@ function Home() {
       <UploadDatasetModalContent onClose={() => setShowUploadModal(false)} onSuccess={refreshPrivateDataset} />
     </Modal>}
     <h2 className='home'>Home</h2>
+    <div className="home-banner">
+      <div className="home-banner-content">
+        <h2>Explorer helps you understand your AI agents</h2>
+        <p>Learn More about using Explorer for AI agent debugging.</p>
+      </div>
+      <div className="home-banner-buttons">
+        <button className="home-banner-button" onClick={() => window.location.href = 'https://explorer.invariantlabs.ai/docs/'}>Learn More →</button>
+        <button className="home-banner-button" onClick={() => window.location.href = 'https://discord.gg/dZuZfhKnJ4'}>Join the Discord →</button>
+      </div>
+    </div>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
-      <div className='box split-view'>
+      <HomePageGuide></HomePageGuide>
+      <div className='box dataset split-view'>
         <h2>
           <Link to='/datasets'>Datasets</Link>
           <button className='inline primary' onClick={() => setShowUploadModal(true)}>New Dataset</button>
@@ -87,9 +134,9 @@ function Home() {
       </div>
     </div>}
     {/* public datasets */}
-    <div className='box'>
+    <div className='box featureddataset'>
       <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
-      <DatasetLinkList datasets={datasets_homepage} icon={<BsGlobe />} />
+      <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
     </div>
     {/* user activity */}
     {

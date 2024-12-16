@@ -2170,3 +2170,157 @@ p.footer-links {
     background-color: #e1e1e1;
   }
 }
+
+.home-banner {
+  background: linear-gradient(92deg, #434DA6 7.93%, #10135C 94.43%);
+  color: white;
+  padding: 10pt 20pt;
+  border-radius: 5pt;
+  margin: 0 10pt;
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap if space is limited */
+  justify-content: space-between;
+  align-items: center;
+  gap: 10pt; /* Add spacing between items when wrapping */
+}
+
+.home-banner-content {
+  max-width: 70%;
+  margin-top: 5pt;
+  flex: 1 1 auto; /* Allow content to resize based on available space */
+}
+
+.home-banner-content h2 {
+  margin: 0;
+  font-size: 18pt;
+  font-weight: bold;
+}
+
+.home-banner-content p {
+  margin: 0 0 10pt;
+  font-size: 12pt;
+}
+
+.home-banner-buttons {
+  display: flex;
+  flex-wrap: wrap; /* Allow buttons to stack if space is limited */
+  gap: 10pt;
+  justify-content: flex-end; /* Align buttons to the end of their container */
+}
+
+.home-banner-button {
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 20pt;
+  font-size: 10pt;
+  cursor: pointer;
+  transition: background-color 0.5s, color 0.5s;
+  line-height: normal;
+  height: 35px;
+  padding: 5pt 15pt;
+}
+
+.home-banner-button:hover {
+  background-color: #6C79f7;
+  color: white;
+}
+
+/* Responsive Design for Small Screens */
+@media (max-width: 768px) {
+  .home-banner {
+    flex-direction: column; /* Stack content and buttons vertically */
+    text-align: center;
+    padding: 15pt; /* Add more padding for better spacing */
+  }
+
+  .home-banner-content {
+    max-width: 100%;
+    margin-bottom: 15pt; /* Add spacing between content and buttons */
+  }
+
+  .home-banner-buttons {
+    justify-content: center; /* Center buttons on small screens */
+  }
+
+  .home-banner-button {
+    width: 100%; /* Buttons take full width */
+    max-width: none; /* Remove max-width restriction */
+  }
+}
+
+/* Additional Breakpoint for Extra Small Screens */
+@media (max-width: 480px) {
+  .home-banner {
+    padding: 10pt; /* Reduce padding for smaller devices */
+  }
+
+  .home-banner-content h2 {
+    font-size: 16pt; /* Adjust font size for smaller screens */
+  }
+
+  .home-banner-content p {
+    font-size: 10pt; /* Adjust font size for smaller screens */
+  }
+
+  .home-banner-button {
+    font-size: 9pt; /* Smaller font size for buttons */
+    padding: 5pt 10pt; /* Reduce padding to fit smaller screens */
+  }
+}
+
+.featured-dataset-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.featured-dataset-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  gap: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.featured-dataset-item:first-child {
+  margin-top: 5px;
+}
+
+.featured-dataset-item h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.featured-dataset-item h3:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.featured-dataset-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: auto;
+  text-align: left;
+  flex-shrink: 0;
+  width: 40%;
+}
+
+.featured-dataset-empty {
+  color: #999;
+  font-size: 1rem;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.featured-dataset-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+}

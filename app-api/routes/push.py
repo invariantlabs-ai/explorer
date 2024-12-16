@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from routes.apikeys import APIIdentity
 from models.datasets_and_traces import db, Dataset, Trace, Annotation
-from models.queries import load_trace, load_dataset
+from models.queries import load_dataset
 from typing import Annotated
 from fastapi import Request, Depends
 from fastapi.exceptions import HTTPException
@@ -19,37 +19,12 @@ from fastapi.exceptions import HTTPException
 from PIL import Image
 import io
 
-from util.util import validate_dataset_name
+from util.util import validate_dataset_name, parse_and_push_images
 from util.validation import validate_annotation, validate_trace
 
 
 push = FastAPI()
 logger = logging.getLogger(__name__)
-
-def parse_and_push_images(dataset, trace_id, messages):
-    for msg in messages:
-        if msg.get("role") != "tool" or type(msg.get("content")) != str:
-            continue
-        if msg.get("content").startswith("base64_img: ") or msg.get("content").startswith("local_base64_img: "):
-            prefix = "base64_img: " if msg.get("content").startswith("base64_img: ") else "local_base64_img: "
-            img_base64 = msg.get("content")[len(prefix):]
-            
-            img_data = base64.b64decode(img_base64)
-            img = Image.open(io.BytesIO(img_data))
-
-            # Generate a unique filename for the image
-            img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
-            # Save the image as a temporary file
-            with io.BytesIO() as output:
-                img.save(output, format="PNG")
-                img_data = output.getvalue()
-                img_path = f"/srv/images/{img_filename}"
-                os.makedirs(os.path.dirname(img_path), exist_ok=True)
-                with open(img_path, "wb") as f:
-                    f.write(img_data)
-                msg["content"] = "local_img_link: " + img_path
-    return messages
-
 
 """
 Write-only API endpoint to push traces to the server.

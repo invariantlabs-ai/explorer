@@ -6,6 +6,11 @@ import hashlib
 import json
 import re
 from typing import Optional
+import base64
+import os
+import uuid
+from PIL import Image
+import io
 
 DATASET_NAME_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
@@ -85,5 +90,41 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
                         truncate_string(name, max_length): truncate_string(value, max_length)
                         for name, value in tool_call["function"]["arguments"].items()
                 }
+    return messages
+
+def parse_and_push_images(dataset, trace_id, messages):
+    """
+    Parse messages for base64 encoded images, save them to disk, and update message content with local file path.
+    
+    Args:
+        dataset: Dataset name
+        trace_id: UUID of the trace
+        messages: List of messages to process
+        
+    Returns:
+        Updated messages with image paths
+    """
+    for msg in messages:
+        if msg.get("role") != "tool" or type(msg.get("content")) != str:
+            continue
+        print("now at msg: ", msg)
+        if msg.get("content").startswith("base64_img: ") or msg.get("content").startswith("local_base64_img: "):
+            prefix = "base64_img: " if msg.get("content").startswith("base64_img: ") else "local_base64_img: "
+            img_base64 = msg.get("content")[len(prefix):]
+            
+            img_data = base64.b64decode(img_base64)
+            img = Image.open(io.BytesIO(img_data))
+
+            # Generate a unique filename for the image
+            img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
+            # Save the image as a temporary file
+            with io.BytesIO() as output:
+                img.save(output, format="PNG")
+                img_data = output.getvalue()
+                img_path = f"/srv/images/{img_filename}"
+                os.makedirs(os.path.dirname(img_path), exist_ok=True)
+                with open(img_path, "wb") as f:
+                    f.write(img_data)
+                msg["content"] = "local_img_link: " + img_path
     return messages
 

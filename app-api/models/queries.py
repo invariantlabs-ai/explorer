@@ -10,6 +10,9 @@ from sqlalchemy.sql import func
 import re
 from util.util import truncate_trace_content
 from util.config import config
+import datetime
+import uuid
+from models.importers import import_jsonl
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Trace, User)
@@ -136,7 +139,37 @@ def save_user(session, userinfo):
     stmt = sqlite_upsert(User).values([user])
     stmt = stmt.on_conflict_do_update(index_elements=[User.id],
                                       set_={k:user[k] for k in user if k != 'id'})
-    session.execute(stmt)
+    result = session.execute(stmt)
+    
+    # Check if this was an insert (new user) rather than an update
+    if result.rowcount > 0:
+        sample_data = []
+        with open("assets/sample_data.jsonl", "r") as f:
+            for line in f:
+                sample_data.append(json.loads(line))
+        for data in sample_data:
+            if "annotations" in data:
+                for ann in data["annotations"]:
+                    ann["user"] = user
+        sample_jsonl = [json.dumps(item) + '\n' for item in sample_data]
+        
+        # Create metadata for the dataset
+        metadata = {
+            "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            "topic": "question-answering"
+        }
+       
+        # Create the dataset
+        dataset = Dataset(
+            id=uuid.uuid4(),
+            user_id=user['id'],
+            name="Welcome-to-Explorer",
+            extra_metadata=metadata
+        )
+        session.add(dataset)
+        
+        # Import the sample traces
+        import_jsonl(session, "Welcome-to-Explorer", user['id'], sample_jsonl, existing_dataset=dataset)
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:

@@ -17,6 +17,7 @@ import { useTelemetry } from './telemetry';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
+import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
 
 // constant used to combine hierarchy paths
@@ -47,6 +48,7 @@ export interface DatasetData {
   num_traces: number
   extra_metadata: Record<string, any>
   user_id: string
+  is_public: boolean
 }
 
 /**
@@ -526,9 +528,9 @@ function useSearch() {
     _setSearchQuery(value)
     if (value === null || value === '') {
       searchParams.delete('query')
-      setSearchParams(searchParams)
+      setSearchParams(searchParams, { replace: true })
     } else {
-      setSearchParams({ ...searchParams, query: value })
+      setSearchParams({ ...searchParams, query: value }, { replace: true })
     }
   };
 
@@ -539,6 +541,7 @@ function useSearch() {
   useEffect(() => {
     dispatchSearch(searchQuery)
   }, [searchQuery])
+  
   return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] as const;
 }
 
@@ -594,7 +597,7 @@ export function Traces() {
       if (traces && traces.first() != Infinity) new_index = traces.first()
       // if the trace index is not in the list of displayed traces, navigate to the first displayed trace
       if (flattenedDisplayedIndices.length > 0) new_index = flattenedDisplayedIndices[0];
-      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search + window.location.hash)
+      navigate(`/u/${props.username}/${props.datasetname}/t/${new_index}` + window.location.search + window.location.hash, { replace: true })
     }
   }, [props.traceIndex, traces, displayedIndices])
 
@@ -673,6 +676,7 @@ export function Traces() {
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
+    <TracePageGuide></TracePageGuide>
     <div className='sidebyside'>
       {/* trace explorer sidebar */}
       {hasTraces && <Sidebar // only show the sidebar if there are traces to show
@@ -710,6 +714,7 @@ export function Traces() {
             {activeTrace && <>/ <Link to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}><span className='traceid'>{getFullDisplayName(activeTrace)}</span></Link></>}
           </h1>
         }
+        is_public={dataset.is_public}
         // callback for when the user presses the 'Share' button
         onShare={sharingEnabled != null ? () => setShowShareModal(true) : null}
         // whether link sharing is enabled for the current trace
