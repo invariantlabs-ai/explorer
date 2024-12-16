@@ -88,9 +88,10 @@ async def test_create_delete_snippet(context, url, screenshot):
                                      lf('data_webarena_with_metadata'),
                                      lf('data_abc')])
 async def test_create_delete_dataset(context, url, dataset_name, content, screenshot):
+    """Create datasets (empty and via file upload) and delete them."""
     page = await context.new_page()
     await page.goto(url)
-    
+
     # create upload dataset
     await screenshot(page)
     await page.click("text=New Dataset")
@@ -101,40 +102,44 @@ async def test_create_delete_dataset(context, url, dataset_name, content, screen
     await screenshot(page)
 
     if content is None:
+        # Select the radio button with value 'empty'
+        await page.locator("input[type='radio'][value='empty']").check()
         # create empty dataset
         await page.get_by_label("create").click()
     else:
+        # Select the radio button with value 'jsonl'
+        await page.locator("input[type='radio'][value='jsonl']").check()
         async with page.expect_file_chooser() as fc_info:
             await page.get_by_label("file-input").click()
         file_chooser = await fc_info.value
-       
+
         with tempfile.TemporaryDirectory() as tmpdirname:
             fn = os.path.join(tmpdirname, f"{dataset_name}.jsonl")
-            with open(fn, 'w') as f:
+            with open(fn, 'w', encoding="utf-8") as f:
                 f.write(content)
             await file_chooser.set_files(fn)
             await screenshot(page)
             await page.get_by_label("create").click()
             await screenshot(page)
-    
+
     # go to home page
-    await page.goto(url) 
+    await page.goto(url)
     await screenshot(page)
-    
+
     await page.locator(f"text={dataset_name}").click()
     await expect(page.locator("text=Failed to render")).to_have_count(0)
     await screenshot(page)
-    
-    # delete dataset 
-    await page.goto(url) 
+
+    # delete dataset
+    await page.goto(url)
     await page.locator(f"text={dataset_name}").click()
     await page.get_by_role("button", name="settings").click()
     await page.get_by_label("delete").click()
     await screenshot(page)
     await page.get_by_label("confirm delete").click()
     await screenshot(page)
-    
-    # we should be back at the home page 
+
+    # we should be back at the home page
     # check if the dataset is deleted
     dataset_mentions = await page.locator(f"text={dataset_name}").all()
     assert len(dataset_mentions) == 0
