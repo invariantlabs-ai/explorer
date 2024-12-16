@@ -1,16 +1,18 @@
 name: Build Docker Images
 
 on:
-  push:
-    branches:
-      - main  # Trigger on pushes to the main branch
-    tags:
-      - 'v*'  # Trigger on tags that match v*
+  workflow_run:
+    workflows:
+      - Explorer CI  # Name of the first workflow
+    types:
+      - completed
 
 
 jobs:
   build-explorer-local-images:
     runs-on: ubuntu-latest
+    # check that this is a tag or the 'main' branch but not a pull request
+    if: ${{ github.event.workflow_run.conclusion == 'success' && (github.ref_type == 'tag' || github.ref == 'refs/heads/main') }}
 
     steps:
       - name: Checkout Code
@@ -26,13 +28,16 @@ jobs:
       - name: Set Docker Tags
         id: set-tags
         run: |
-          if [[ "${{ github.ref_type }}" == "branch" ]]; then
+          if [[ "${{ github.ref_type }}" == "branch" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "tags=ghcr.io/${{ github.repository }}/app-api:latest" >> $GITHUB_ENV
             echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest" >> $GITHUB_ENV
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             version=${{ github.ref_name }}
             echo "tags=ghcr.io/${{ github.repository }}/app-api:latest,ghcr.io/${{ github.repository }}/app-api:${version}" >> $GITHUB_ENV
             echo "tags_ui=ghcr.io/${{ github.repository }}/app-ui:latest,ghcr.io/${{ github.repository }}/app-ui:${version}" >> $GITHUB_ENV
+          else
+            echo "Failed to determine the tags for the Docker images for ${{ github.ref_type }} ${{ github.ref }}"
+            exit 1
           fi
 
       - name: Build app-api

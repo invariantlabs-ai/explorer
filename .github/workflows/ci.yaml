@@ -1,11 +1,13 @@
 name: Explorer CI
-on: 
+on:
   push:
     branches:
-      - main
+      - main   # Trigger on main branch pushes
+    tags:
+      - 'v*'   # Trigger on tags (e.g., v1.0.0)
   pull_request:
     branches:
-      - main
+      - main # Trigger on main branch pull requests
 jobs:
   test:
     name: Build & Test
