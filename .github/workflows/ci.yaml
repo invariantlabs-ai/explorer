@@ -12,7 +12,7 @@ jobs:
   test:
     name: Build & Test
     timeout-minutes: 30
-    runs-on: self-hosted
+    runs-on: gh-large
 
     steps:
     - name: Stop all running docker containers
