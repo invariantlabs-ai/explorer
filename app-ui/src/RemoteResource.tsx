@@ -69,7 +69,7 @@ class RemoteResource {
       })
         .then(response => {
           if (response.status != 200) {
-            throw new Error('Server responded with status ' + response.status)
+            reject(response)
           }
           return response.json()
         })
