@@ -144,7 +144,7 @@ export function UploadDatasetModalContent(props) {
 
   return (
     <div className="create-dataset-form">
-      <h2>Create a new trace dataset to start using the Invariant Explorer.</h2>
+      <h2>Create a new trace dataset to start using Invariant Explorer.</h2>
       <label>Name</label>
       <input
         type="text"
