@@ -19,7 +19,7 @@ authentication_client_id_prefix: invariant-dev
 private: false
 
 # whether telemetry is enabled for this instance
-telemetry: true
+telemetry: false
 
 # whether sharing is enabled for this instance
 sharing: false

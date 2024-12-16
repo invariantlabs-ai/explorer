@@ -54,7 +54,7 @@ def launch():
         **dict(os.environ),
         'APP_NAME': 'explorer-local',
         'DEV_MODE': 'true',
-        'CONFIG_FILE_NAME': 'explorer.dev.yml',
+        'CONFIG_FILE_NAME': 'explorer.local.yml',
         'PREVIEW': '0',
         'PORT_HTTP': str(args.port),
         'PORT_API': '8000',
