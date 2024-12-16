@@ -29,7 +29,8 @@ services:
     image: ghcr.io/invariantlabs-ai/explorer-oss/app-api:${VERSION}
     platform: linux/amd64
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     working_dir: /srv/app
     env_file:
       - .env
@@ -83,6 +84,11 @@ services:
       - type: bind
         source: ./data/database
         target: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 networks:
   invariant-explorer-web:
