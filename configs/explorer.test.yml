@@ -20,3 +20,9 @@ private: false
 
 # whether telemetry is enabled for this instance
 telemetry: false
+
+# whether sharing is enabled for this instance
+sharing: true
+
+# whether the NUX should be enabled for this instance
+nux: false
