@@ -168,23 +168,6 @@ export function UploadDatasetModalContent(props) {
           <div className="options-container">
             <input
               type="radio"
-              id="public"
-              name="access"
-              value="public"
-              checked={isPublic}
-              onChange={handleAccessChange}
-            />
-            <BsGlobe className="icon" />
-            <div>
-              <span className="option-name">Public</span>
-              <span className="option-description">
-                Anyone on the internet can view this dataset.
-              </span>
-            </div>
-          </div>
-          <div className="options-container">
-            <input
-              type="radio"
               id="private"
               name="access"
               value="private"
@@ -196,6 +179,23 @@ export function UploadDatasetModalContent(props) {
               <span className="option-name">Private</span>
               <span className="option-description">
                 Only you can access this dataset.
+              </span>
+            </div>
+          </div>
+          <div className="options-container">
+            <input
+              type="radio"
+              id="public"
+              name="access"
+              value="public"
+              checked={isPublic}
+              onChange={handleAccessChange}
+            />
+            <BsGlobe className="icon" />
+            <div>
+              <span className="option-name">Public</span>
+              <span className="option-description">
+                Anyone on the internet can view this dataset.
               </span>
             </div>
           </div>
