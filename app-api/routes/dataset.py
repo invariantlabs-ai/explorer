@@ -38,7 +38,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, exists
 from util.util import validate_dataset_name
 import os
 
@@ -192,7 +192,7 @@ def list_datasets(kind: DatasetKind, user: Annotated[dict, Depends(UserIdentity)
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
-        user_exists = session.query(User).filter(User.username == user_name).first()
+        user_exists = session.query(exists().where(User.username == user_name)).scalar()
         if not user_exists:
             raise HTTPException(status_code=404, detail="User not found")
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
