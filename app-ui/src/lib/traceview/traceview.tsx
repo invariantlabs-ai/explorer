@@ -966,4 +966,3 @@ function AnnotatedStringifiedJSON(props: { highlights: any, children: any, highl
         {contentElements}
     </div>
 }
-

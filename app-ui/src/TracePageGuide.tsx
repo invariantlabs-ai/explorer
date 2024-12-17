@@ -1,97 +1,110 @@
-import Joyride, {CallBackProps, STATUS, Step, Placement} from 'react-joyride';
-import { useEffect, useState } from 'react';
-import { config } from './Config';
+import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
+import { useEffect, useState } from "react";
+import { config } from "./Config";
 
 const defaultOptions = {
-    options: {
-        arrowColor: '#fff',
-        backgroundColor: '#fff',
-        beaconSize: 36,
-        overlayColor: 'rgba(0, 0, 0, 0.5)',
-        primaryColor: '#8b89f7',
-        textColor: '#000',
-        zIndex: 100,
-        Cursor: 'None',
+  options: {
+    arrowColor: "#fff",
+    backgroundColor: "#fff",
+    beaconSize: 36,
+    overlayColor: "rgba(0, 0, 0, 0.5)",
+    primaryColor: "#8b89f7",
+    textColor: "#000",
+    zIndex: 100,
+    Cursor: "None",
+  },
+};
+
+export default function TracePageGuide() {
+  const [run, setRun] = useState(true);
+  const [enableNux, setEnableNux] = useState(false);
+  const [className_event, setClassNameEvent] = useState("undefined");
+  const HAS_SEEN_NUX_TRACE_VIEW =
+    "invariant.explorer.enable.guide.trace_view";
+  const steps: Step[] = [
+    {
+      target: ".sidebar",
+      content: "Explore and browse all traces from your dataset.",
+      placement: "right",
+      disableBeacon: true,
+    },
+    {
+      target: "button.inline.guide-step-3",
+      content:
+        "Collapse All / Expand All messages in the current trace selected",
+      placement: "bottom",
+      locale: { next: "Next", skip: "Skip", back: "Back" },
+    },
+    {
+      target: className_event,
+      content: "Click on any line inside a message to add an annotation.",
+      placement: "top",
+    },
+  ];
+
+  // Add the sharing step if sharing is enabled
+  if (config("sharing")) {
+    steps.push({
+      target: "button.inline.guide-step-4",
+      content:
+        "Share the trace with a collaborator. The annotations that you left on it are sticky and will follow the trace in their own Explorer view.",
+      placement: "bottom",
+      locale: { next: "Next", skip: "Skip", back: "Back" },
+    });
+  }
+
+  useEffect(() => {
+    if (!localStorage.getItem(HAS_SEEN_NUX_TRACE_VIEW)) {
+      // return the first event that's not test, metadata, but expanded
+      // Note the expanded status is contracted, when the event is collapsed it has the class expanded
+      const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"])`;
+      const eventFind = document.querySelector(selector);
+      let new_className_event =
+        "." + eventFind?.className.replace(/\s+/g, ".") || "";
+      if (
+        className_event != new_className_event &&
+        !new_className_event.includes("undefined")
+      ) {
+        // build class name as format ".class1.class2.class3"
+        const temp_className_event =
+          "." + eventFind?.className.replace(/\s+/g, ".") || "";
+        setClassNameEvent(temp_className_event);
+        // if there is a content, get the class name of the content
+        const content = eventFind?.querySelector(".content") || null;
+        if (content) {
+          setClassNameEvent("." + content.className.replace(/\s+/g, "."));
+        }
+      }
+      // This code should be deleted after some time
+      localStorage.removeItem("firstVisitTraceFlag");
+      setEnableNux(true);
+
+      localStorage.setItem(HAS_SEEN_NUX_TRACE_VIEW, "true");
+    }
+  }, []);
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status, type } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRun(false);
     }
   };
 
-//   The variable is declared in the global scope so that once the className of the second event is found no more requests are made
-let className_event = "undefined";
-
-export default function TracePageGuide() {
-    const [run, setRun] = useState(true);
-    const [isFirstVisit, setIsFirstVisit] = useState(false);
-
-    // keep requesting until the className of the second event is found, first event is always metadata
-    const selector = ".event:nth-child(2)";
-    if (! className_event.includes("event")){ 
-        const eventFind = document.querySelector(selector)
-        // construct the className of the second event
-        className_event = "."+eventFind?.className.replace(/\s+/g, ".") || '';
-        const content = eventFind?.querySelector(".content") || null;
-        if(content){
-            className_event = "."+content.className.replace(/\s+/g, ".") || '';
-        }
-    }
-
-    const steps: Step[] = [
-        {
-            target: ".sidebar",
-            content: "Explore and browse all traces from your dataset.",
-            disableBeacon: true,
-            placement: 'right',
-        },
-        {
-            target: "button.inline.guide-step-3",
-            content: "Collapse All / Expand All messages in the current trace selected",
-            placement: 'bottom',
-            locale: { next: 'Next', skip: 'Skip', back: 'Back' },
-        },
-        {
-            target: className_event,
-            content: "Click on any line inside a message to add an annotation.",
-            placement: 'top',
-    
-        },
-        {
-            target: "button.inline.guide-step-4",
-            content: "Share the trace with a collaborator. The annotations that you left on it are sticky and will follow the trace in their own Explorer view.",
-            placement: 'bottom',
-            locale: { next: 'Next', skip: 'Skip', back: 'Back' },
-        },
-    ]
-
-    useEffect(() => {
-        const firstVisitTraceFlag = localStorage.getItem('firstVisitTraceFlag');
-        if (!firstVisitTraceFlag || firstVisitTraceFlag === 'true') {
-            setIsFirstVisit(true);
-            localStorage.setItem('firstVisitTraceFlag', 'false');
-        }
-    }, []);
-
-    const handleJoyrideCallback = (data: CallBackProps) => {
-        const { status, type } = data;
-        const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
-        if (finishedStatuses.includes(status)) {
-          setRun(false);
-        }
-      };
-
-    return (
-        <div>
-            {isFirstVisit && config('nux') && 
-                <Joyride
-                    steps={steps}
-                    run={run}
-                    continuous={true}
-                    showProgress={true}
-                    showSkipButton={true}
-                    disableScrolling={true}
-                    styles = {defaultOptions}
-                    callback={handleJoyrideCallback}
-                    >
-                </Joyride>
-            }
-        </div>
-    ) 
+  return (
+    <div>
+      {enableNux && config("nux") && (
+        <Joyride
+          steps={steps}
+          run={run}
+          continuous={true}
+          showProgress={true}
+          showSkipButton={true}
+          disableScrolling={true}
+          styles={defaultOptions}
+          callback={handleJoyrideCallback}
+        ></Joyride>
+      )}
+    </div>
+  );
 }

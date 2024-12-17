@@ -20,6 +20,7 @@ import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
 
+
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
 
@@ -577,6 +578,8 @@ export function Traces() {
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null)
 
+  const [renderNux, setRenderNux] = React.useState(false)
+
   // when the trace index changes, update the activeTrace
   useEffect(() => {
     // if search or analyzer was run, get the flattened list of results
@@ -650,6 +653,10 @@ export function Traces() {
     }
   }
 
+  const enableNux = () => {
+    setRenderNux(true)
+  }
+
   // whether the trace view shows any trace
   const traceVisible = !searching && (displayedIndices != null)
 
@@ -668,7 +675,6 @@ export function Traces() {
 
   // derive whether this is a testing trace
   const isTest = activeTrace?.extra_metadata && typeof activeTrace?.extra_metadata['invariant.num-failures'] === 'number'
-
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
     {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
@@ -676,7 +682,6 @@ export function Traces() {
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal entityName='trace' snippet={{ id: activeTrace?.id }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigateToTrace(findPreviousTrace(activeTrace?.id, traces))} />}
-    <TracePageGuide></TracePageGuide>
     <div className='sidebyside'>
       {/* trace explorer sidebar */}
       {hasTraces && <Sidebar // only show the sidebar if there are traces to show
@@ -725,10 +730,13 @@ export function Traces() {
         </>}
         onAnnotationCreate={onAnnotationCreate}
         onAnnotationDelete={onAnnotationDelete}
+        enableNux={enableNux}
       />}
+      {renderNux && <TracePageGuide/>}
     </div>
   </div>
 }
+
 
 /**
  * Displays a search box and search filters.
