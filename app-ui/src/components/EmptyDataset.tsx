@@ -14,7 +14,7 @@ export function EmptyDatasetInstructions(props) {
           <h2>Upload a Dataset</h2>
           <p>You can upload a dataset from your local machine. The dataset should be a <code>jsonl</code> file containing an array of traces.</p>
           <p>See the resources below, for more information about the trace format and how to upload a dataset.</p>
-          <button className='with-arrow' onClick={() => window.location.href = 'https://github.com/invariantlabs-ai/explorer/blob/main/DOCS.md'}>
+          <button className='with-arrow' onClick={() => window.location.href = 'https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/file_uploads/'}>
             Uploading Instructions
           </button>
         </div>
@@ -22,7 +22,7 @@ export function EmptyDatasetInstructions(props) {
           <h2>Add New Traces via API</h2>
           <p>You can add new traces to this dataset by pushing them directly from your application via API.</p>
           <p>For this, you need to obtain an <Link to='/settings'>API Key</Link> from the user settings and follow the instructions below.</p>
-          <button className='primary with-arrow' onClick={() => window.location.href = 'https://github.com/invariantlabs-ai/explorer/blob/main/DOCS.md#push-trace-api-apiv1pushtrace'}>
+          <button className='primary with-arrow' onClick={() => window.location.href = 'https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/'}>
             API Documentation
           </button>
           {/* <pre>
