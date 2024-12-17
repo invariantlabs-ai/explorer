@@ -15,6 +15,16 @@ export function UserNotFound({ username }: { username: string }) {
       </div>
     );
   }
+export function TraceNotFound() {
+    return (
+      <div className='empty'>
+        <p>
+        Can't view snippet: Snippet does not exist, or you do not have permission to access this snippet. <br />
+        Please log in or contact the owner for access.
+        </p>
+      </div>
+    );
+  }
 export function PageNotFound() {
     return <div className='empty'>
     <p>

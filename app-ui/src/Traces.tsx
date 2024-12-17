@@ -19,7 +19,7 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
-import { DatasetNotFound } from './NotFound';
+import { DatasetNotFound, TraceNotFound } from './NotFound';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -65,7 +65,7 @@ function useDataset(username: string, datasetname: string): [DatasetData | null,
       .catch(e => {
         console.error(e)
         setError(e)
-        if (e.status !== 401) {
+        if (![401, 404].includes(e.status)) {
           alert("Error loading traces")
         }
       })
@@ -1088,7 +1088,7 @@ export function SingleTrace() {
   // the loaded dataset data
   const [dataset, setDataset] = React.useState(null as { name: string } | null)
   // if an error occurs, this will be set to the error message
-  const [error, setError] = React.useState(null as string | null)
+  const [traceLoadingError, setError] = React.useState(null as Response | null)
   // load the logged in user's information
   const userInfo = useUserInfo()
   // whether link sharing is enabled for the current trace
@@ -1111,11 +1111,10 @@ export function SingleTrace() {
     sharedFetch(`/api/v1/trace/${props.traceId}`).then(data => {
       setTrace(data)
     }).catch(e => {
-      if (e.status === 401) {
-        setError("You do not have permission to view this trace")
-        return
-      } else {
-        setError("Error loading trace")
+      console.error(e)
+      setError(e)
+      if (![401, 404].includes(e.status)) {
+        alert("Error loading traces")
       }
     })
   }, [props.traceId])
@@ -1140,29 +1139,44 @@ export function SingleTrace() {
 
   // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>
-  if (dataset) {
-    header = snippetData.isSnippet ?
-      <h1>
-        <Link aria-label='path-user'
-          to={`/u/${snippetData.user}`}>{snippetData.user}
-        </Link>
-        <span className='traceid'># {props.traceId}</span>
-        <Time className='time'>{trace?.time_created || ''}</Time>
-      </h1> :
-      <h1>{dataset ? <>
-        <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
-        <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""} / <span className='traceid'>{getFullDisplayName(trace)} {props.traceId}</span></h1>
+  if (traceLoadingError){
+    if ([401, 404].includes(traceLoadingError.status)){
+      return <TraceNotFound/>
+    }
+    else {
+      return (
+        <div className='empty'>
+          <h3>Failed to Load Snippet</h3>
+        </div>
+      );
+    }
   }
+  else if (!dataset) {
+    return (
+      <div className='empty'>
+        <h3>Loading...</h3>
+      </div>
+    );
+  }
+  header = snippetData.isSnippet ?
+    <h1>
+      <Link aria-label='path-user'
+        to={`/u/${snippetData.user}`}>{snippetData.user}
+      </Link>
+      <span className='traceid'># {props.traceId}</span>
+      <Time className='time'>{trace?.time_created || ''}</Time>
+    </h1> :
+    <h1>{dataset ? <>
+      <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
+      <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""} / <span className='traceid'>{getFullDisplayName(trace)} {props.traceId}</span></h1>
+  
 
   return <div className="panel fullscreen app">
-    {error && <div className='empty'>
-      <h3>{error}</h3>
-    </div>}
     {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} traceName={getFullDisplayName(trace)} />
     </Modal>}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{ id: props.traceId }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
-    {!error && <div className='sidebyside'>
+    <div className='sidebyside'>
       <AnnotationAugmentedTraceView
         activeTrace={trace}
         loading={!trace}
@@ -1175,6 +1189,6 @@ export function SingleTrace() {
         </>}
       />
 
-    </div>}
+    </div>
   </div>
 }
