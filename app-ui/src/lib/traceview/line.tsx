@@ -48,6 +48,8 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
 
     let traceId = props.highlightContext?.traceId;
     const [annotations, annotationStatus, annotationsError, annotator] = useRemoteResource(Annotations, traceId)
+    const [isThumbsUpHovered, setIsThumbsUpHovered] = useState(false);
+    const [isThumbsDownHovered, setIsThumbsDownHovered] = useState(false);
 
     const setExpanded = (state: boolean) => {
         if (!props.address) {
@@ -167,13 +169,22 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
     if (!expanded) {
         return <span 
             id={id} data-address={props.address}
-            className={className + extraClass + ' unexpanded'}
-        > 
-            <SelectableSpan onActualClick={onClickLine}>
+            className={`${className}${extraClass} unexpanded ${isThumbsUpHovered ? 'hovered-up' : isThumbsDownHovered ? 'hovered-down' : ''}`}> 
+            <SelectableSpan onActualClick={onClickLine} className={isThumbsUpHovered ? 'hovered-up' : isThumbsDownHovered ? 'hovered-down' : ''}>
                 {props.children}
                 <div className={"thumbs " + (thumbsUp || thumbsDown ? "visible" : "")}>
-                    {<BsArrowUp onClick={handleThumbsUp} className={'thumbs-up-icon up ' + (thumbsUp ? "toggled" : "")} />}
-                    {<BsArrowDown onClick={handleThumbsDown} className={'thumbs-down-icon down ' + (thumbsDown ? "toggled" : "")} />}
+                    {<BsArrowUp 
+                        onClick={handleThumbsUp} 
+                        className={'thumbs-up-icon up ' + (thumbsUp ? "toggled" : "")}                     
+                        onMouseEnter={() => setIsThumbsUpHovered(true)}
+                        onMouseLeave={() => setIsThumbsUpHovered(false)}
+                    />}
+                    {<BsArrowDown 
+                        onClick={handleThumbsDown} 
+                        className={'thumbs-down-icon down ' + (thumbsDown ? "toggled" : "")} 
+                        onMouseEnter={() => setIsThumbsDownHovered(true)}
+                        onMouseLeave={() => setIsThumbsDownHovered(false)}
+                    />}
                 </div>
             </SelectableSpan>
         </span>
@@ -203,7 +214,7 @@ export function Line(props: { children: any, highlightContext?: HighlightContext
  * 
  * If a user selects text, the click event is not triggered.
  */
-function SelectableSpan(props: { children: any, onActualClick: () => void }) {
+function SelectableSpan(props: { children: any, onActualClick: () => void, className?: string }) {
     const handler = (e: React.MouseEvent) => {
         const selection = window.getSelection()
         if (selection && selection.toString().length > 0) {
@@ -219,5 +230,5 @@ function SelectableSpan(props: { children: any, onActualClick: () => void }) {
         props.onActualClick()
     }
 
-    return <span className='selectable' onClick={handler}>{props.children}</span>
+    return <span className={`selectable ${props.className || ''}`} onClick={handler}>{props.children}</span>
 }
