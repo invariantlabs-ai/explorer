@@ -38,7 +38,7 @@ export default function HomePageNUX(props) {
     });
   }
   // Activity box and public dataset only shows up in production
-  if (config("instance_name") != "prod") {
+  if (config("instance_name") == "prod") {
     steps.push(
       {
         target: ".box.featureddataset",
@@ -72,7 +72,6 @@ export default function HomePageNUX(props) {
       setRun(false);
     }
   };
-  console.log(steps);
   return (
     <div>
       {enableNUX && config("nux") && (
