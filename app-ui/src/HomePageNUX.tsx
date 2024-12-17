@@ -26,17 +26,18 @@ export default function HomePageNUX(props) {
   const [enableNUX, setEnableNUX] = useState(false);
   const HAS_SEEN_NUX_HOME = "invariant.explorer.enable.guide.home";
 
-  const steps: Step[] = [
-    {
-      target: ".box.featureddataset",
-      content: "Explore public datasets from top agent benchmarks.",
-      placement: "top",
-      locale: { next: "Next", skip: "Skip", back: "Back" },
-    },
-  ];
+  const steps: Step[] = [];
 
   // Activity box only shows up in production
   if (config("instance_name") == "prod") {
+    steps.push(
+      {
+        target: ".box.featureddataset",
+        content: "Explore public datasets from top agent benchmarks.",
+        placement: "top",
+        locale: { next: "Next", skip: "Skip", back: "Back" },
+      }
+    );
     steps.push({
       target: ".box.activity",
       content: "Once you annotate a trace the activity shows up here.",
