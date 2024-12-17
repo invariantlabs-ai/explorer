@@ -192,6 +192,9 @@ def list_datasets(kind: DatasetKind, user: Annotated[dict, Depends(UserIdentity)
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
+        user_exists = session.query(User).filter(User.username == user_name).first()
+        if not user_exists:
+            raise HTTPException(status_code=404, detail="User not found")
         datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
     

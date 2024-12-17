@@ -1,7 +1,7 @@
 import React from 'react'
 import { useLoaderData } from 'react-router-dom'
 import { DatasetLinkList } from './Datasets'
-
+import { UserNotFound } from './NotFound'
 
 /**
  * Component for displaying a user's public datasets, i.e. the user's profile page.
@@ -11,8 +11,27 @@ function User() {
   const props: any = useLoaderData()
   const username = props.username
 
-  const [datasets, refreshDatasets] = useDatasetList()
-
+  const [datasets, error] = useDatasetList()
+  if (error) {
+    if (error.status === 404) {
+      return UserNotFound({ username })
+    } else {
+      return <div className='empty'>
+        <p>
+          Error loading user.
+        </p>
+      </div>
+    }
+  }
+  console.log("datasets")
+  console.log(datasets)
+  if (!datasets) {
+    return <div className='empty'>
+      <p>
+        Loading...
+      </p>
+    </div>
+  }
   return <div className="panel entity-list">
     <header>
       <h1>
@@ -29,26 +48,28 @@ function User() {
 }
 
 // fetches list of public datasets for a user
-function useDatasetList(): [any[], (username: string) => void] {
+function useDatasetList(): [any[] | null, Response | null] {
   const props: any = useLoaderData()
   const username = props.username
-  const [datasets, setDatasets] = React.useState<any[]>([])
+  const [datasets, setDatasets] = React.useState<any[] | null>(null);
+  const [error, setError] = React.useState(null as Response | null);
 
   const refresh = (username) => {
     fetch('/api/v1/dataset/list/byuser/' + username).then(response => {
-      if (response.ok) {
+      if (response.status !== 200) {
+        setError(response)
+      } else {
         response.json().then(data => {
           setDatasets(data)
         })
-      }
-    })
+      }})
   }
 
   React.useEffect(() => refresh(username), [username])
 
   return [
     datasets,
-    refresh
+    error
   ]
 }
 
