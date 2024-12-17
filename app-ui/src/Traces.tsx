@@ -19,6 +19,7 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageNUX from './TracePageNUX';
 import { HighlightsNavigator } from './HighlightsNavigator';
+import { DatasetNotFound, TraceNotFound, isClientError } from './NotFound';
 
 
 // constant used to combine hierarchy paths
@@ -55,16 +56,18 @@ export interface DatasetData {
 /**
  * Hook to load the dataset metadata for a given user and dataset name.
  */
-function useDataset(username: string, datasetname: string): [DatasetData | null, string | null] {
+function useDataset(username: string, datasetname: string): [DatasetData | null, Response | null] {
   const [dataset, setDataset] = React.useState(null)
-  const [error, setError] = React.useState(null as string | null);
+  const [error, setError] = React.useState(null as Response | null);
 
   React.useEffect(() => {
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
       .then(data => setDataset(data))
       .catch(e => {
-        alert("Error loading dataset")
         setError(e)
+        if (!isClientError(e.status)) {
+          alert("Error loading dataset")
+        }
       })
   }, [username, datasetname])
 
@@ -295,7 +298,9 @@ function useTraces(username: string, datasetname: string): [LightweightTraces | 
       setHierarchyPaths(pathMap)
     }).catch(e => {
       console.error(e)
-      alert("Error loading traces")
+      if (!isClientError(e.status)) {
+        alert("Error loading traces")
+      }
     })
   }
 
@@ -626,14 +631,22 @@ export function Traces() {
   }, [props.username, props.datasetname])
 
   // error state of this view
+  // if the dataset is not found, display a message
   if (datasetLoadingError) {
-    return <div className='empty'>
-      <h3>Failed to Load Dataset</h3>
-    </div>
+    if (isClientError(datasetLoadingError.status)) {
+      return (<DatasetNotFound />);
+    }
+    return (
+      <div className='empty'>
+        <h3>Failed to Load Dataset</h3>
+      </div>
+    );
   } else if (!dataset) {
-    return <div className='empty'>
-      <h3>Loading...</h3>
-    </div>
+    return (
+      <div className='empty'>
+        <h3>Loading...</h3>
+      </div>
+    );
   }
 
   const onAnnotationCreate = (traceIndex: number) => {
@@ -1082,7 +1095,7 @@ export function SingleTrace() {
   // the loaded dataset data
   const [dataset, setDataset] = React.useState(null as { name: string } | null)
   // if an error occurs, this will be set to the error message
-  const [error, setError] = React.useState(null as string | null)
+  const [traceLoadingError, setError] = React.useState(null as Response | null)
   // load the logged in user's information
   const userInfo = useUserInfo()
   // whether link sharing is enabled for the current trace
@@ -1105,11 +1118,10 @@ export function SingleTrace() {
     sharedFetch(`/api/v1/trace/${props.traceId}`).then(data => {
       setTrace(data)
     }).catch(e => {
-      if (e.status === 401) {
-        setError("You do not have permission to view this trace")
-        return
-      } else {
-        setError("Error loading trace")
+      console.error(e)
+      setError(e)
+      if (!isClientError(e.status)) {
+        alert("Error loading traces")
       }
     })
   }, [props.traceId])
@@ -1134,29 +1146,44 @@ export function SingleTrace() {
 
   // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>
-  if (dataset) {
-    header = snippetData.isSnippet ?
-      <h1>
-        <Link aria-label='path-user'
-          to={`/u/${snippetData.user}`}>{snippetData.user}
-        </Link>
-        <span className='traceid'># {props.traceId}</span>
-        <Time className='time'>{trace?.time_created || ''}</Time>
-      </h1> :
-      <h1>{dataset ? <>
-        <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
-        <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""} / <span className='traceid'>{getFullDisplayName(trace)} {props.traceId}</span></h1>
+  if (traceLoadingError){
+    if (isClientError(traceLoadingError.status)){
+      return <TraceNotFound/>
+    }
+    else {
+      return (
+        <div className='empty'>
+          <h3>Failed to Load Snippet</h3>
+        </div>
+      );
+    }
   }
+  else if (!dataset) {
+    return (
+      <div className='empty'>
+        <h3>Loading...</h3>
+      </div>
+    );
+  }
+  header = snippetData.isSnippet ?
+    <h1>
+      <Link aria-label='path-user'
+        to={`/u/${snippetData.user}`}>{snippetData.user}
+      </Link>
+      <span className='traceid'># {props.traceId}</span>
+      <Time className='time'>{trace?.time_created || ''}</Time>
+    </h1> :
+    <h1>{dataset ? <>
+      <Link aria-label='path-user' to={`/u/${trace?.user}`}>{trace?.user} / </Link>
+      <Link aria-label='path-dataset' to={`/u/${trace?.user}/${dataset.name}`}>{dataset.name}</Link></> : ""} / <span className='traceid'>{getFullDisplayName(trace)} {props.traceId}</span></h1>
+  
 
   return <div className="panel fullscreen app">
-    {error && <div className='empty'>
-      <h3>{error}</h3>
-    </div>}
     {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={props.traceId} traceName={getFullDisplayName(trace)} />
     </Modal>}
     {isUserOwned && showDeleteModal && <DeleteSnippetModal snippet={{ id: props.traceId }} setSnippet={(state) => setShowDeleteModal(!!state)} onSuccess={() => navigate('/')} />}
-    {!error && <div className='sidebyside'>
+    <div className='sidebyside'>
       <AnnotationAugmentedTraceView
         activeTrace={trace}
         loading={!trace}
@@ -1169,6 +1196,6 @@ export function SingleTrace() {
         </>}
       />
 
-    </div>}
+    </div>
   </div>
 }

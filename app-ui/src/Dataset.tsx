@@ -10,6 +10,7 @@ import { useUserInfo } from './UserInfo'
 import { Metadata } from './lib/metadata'
 import { config } from './Config'
 import { useTelemetry } from './telemetry'
+import { DatasetNotFound, isClientError } from './NotFound'
 
 
 interface Query {
@@ -139,11 +140,22 @@ function DatasetView() {
     event.preventDefault()
   }
 
-  // if the dataset is not loaded yet, display a loading message
-  if (!dataset) {
-    return <div className='empty'>
-      <h3>Loading...</h3>
-    </div>
+  // if the dataset is not found, display a message
+  if (datasetError) {
+    if (isClientError(datasetError.status)) {
+      return (<DatasetNotFound />);
+    }
+    return (
+      <div className='empty'>
+        <h3>Failed to Load Dataset</h3>
+      </div>
+    );
+  } else if (!dataset) {
+    return (
+      <div className='empty'>
+        <h3>Loading...</h3>
+      </div>
+    );
   }
 
   const filterMetadata = (metadata) => {

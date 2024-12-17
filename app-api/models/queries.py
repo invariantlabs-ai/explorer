@@ -15,10 +15,19 @@ import uuid
 from models.importers import import_jsonl
 
 def load_trace(session, by, user_id, allow_shared=False, allow_public=False, return_user=False):
+    try:
+        by = uuid.UUID(str(by))
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Trace not a valid UUID")
+
     query_filter = get_query_filter(by, Trace, User)
     if return_user:
         # join on user_id to get real user name
-        trace, user = session.query(Trace, User).filter(query_filter).join(User, User.id == Trace.user_id).first()
+        result = session.query(Trace, User).filter(query_filter).join(User, User.id == Trace.user_id).first()
+        if result is None:
+            raise HTTPException(status_code=404, detail="Trace not found")
+        else:
+            trace, user = result
     else:
         trace = session.query(Trace).filter(query_filter).first()
     

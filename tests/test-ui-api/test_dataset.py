@@ -801,3 +801,34 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
 
     assert response.status == 400
     assert "is_public must be a string representing a boolean" in await response.text()
+
+
+@pytest.mark.parametrize(
+    "endpoint, valid",
+    [
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{valid_datset}", True),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{valid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{invalid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{valid_datset}/indices", True),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{valid_datset}/indices", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{invalid_datset}/indices", False),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}/indices", False),
+        ("{url}/api/v1/dataset/list/byuser/{valid_user}", True),
+        ("{url}/api/v1/dataset/list/byuser/{invalid_user}", False),
+    ]
+)
+async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        endpoint_formatted = endpoint.format(
+            url=url,
+            valid_user="developer",
+            invalid_user="developer-does-not-exists",
+            valid_datset=dataset['name'],
+            invalid_datset="dataset-that-does-not-exist"
+        )
+        response = await context.request.get(endpoint_formatted)
+        if valid:
+            assert response.status == 200
+        else:
+            assert 400 <= response.status < 500
