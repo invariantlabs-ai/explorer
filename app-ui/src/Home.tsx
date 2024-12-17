@@ -12,7 +12,7 @@ import UserIcon from './lib/UserIcon';
 
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
-import HomePageGuide from './HomePageGuide'
+import HomePageNUX from './HomePageNUX'
 import { config } from './Config'
 
 // fetches user activity from backend
@@ -118,7 +118,6 @@ function Home() {
     </div>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
-      <HomePageGuide></HomePageGuide>
       <div className='box dataset split-view'>
         <h2>
           <Link to='/datasets'>Datasets</Link>
@@ -171,6 +170,7 @@ function Home() {
         {activity.length === 0 && <div className='empty'>No activity</div>}
       </ul>)
     }
+    <HomePageNUX/>
   </>
 }
 

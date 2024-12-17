@@ -18,7 +18,6 @@ import { config } from './Config';
 import { useTelemetry } from './telemetry';
 import { AnnotationsParser } from './lib/annotations_parser'
 import { HighlightDetails } from './HighlightDetails'
-import TracePageGuide from './TracePageGuide'
 
 import { HighlightsNavigator } from './HighlightsNavigator';
 
@@ -71,6 +70,7 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  */
+
 export function AnnotationAugmentedTraceView(props) {
   // the rendered trace
   const activeTrace = props.activeTrace || null
@@ -179,11 +179,21 @@ export function AnnotationAugmentedTraceView(props) {
     extraArgs: [activeTraceId]
   }
 
+// wait a bit after the last render of the components to enable the guide
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        props.enableNux(); // Mark rendering as stabilized
+    }, 500); // Adjust the timeout based on the rendering frequency
+
+    return () => {
+        clearTimeout(timer); // Clear the timeout if re-render occurs
+    };
+  }, [events]); 
+
 
   // note: make sure to only pass highlights here that actually belong to the active trace 
   // otherwise we can end up in an intermediate state where we have a new trace but old highlights (this must never happen)
   const traceHighlights = highlights.traceId == activeTraceId ? highlights.highlights : HighlightedJSON.empty()
-
   return <>
     <header className='toolbar'>
       {props.header}
@@ -446,20 +456,23 @@ function AnnotationEditor(props) {
       props.onClose()
     }
   }
-
   return <div className='annotation'>
     <div className='user'>
       {userInfo?.loggedIn ?
         <UserIcon username={userInfo?.username}/>
         :
-        // if not logged in, show a generic user icon with A for anonymous.
-        <UserIcon username={"A"}/>
+        // if not logged in, show a generic user icon without name.
+        <UserIcon username=""/>
       }
     </div>
     <div className='bubble'>
       <header className='username'>
         <BsCaretLeftFill className='caret' />
-        Add Annotation
+        {userInfo?.loggedIn ?
+        <p>Add Annotation</p>
+        :
+        <p>Log in to be able to add an annotation</p>
+        }
         <div className='spacer' />
         <div className='actions'>
           <pre style={{ opacity: 0.4 }} onClick={() => copyPermalinkToClipboard(props.address)}>
