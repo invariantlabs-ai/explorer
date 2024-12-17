@@ -38,7 +38,7 @@ export default function HomePageNUX(props) {
     });
   }
   // Activity box and public dataset only shows up in production
-  if (config("instance_name") == "prod") {
+  if (config("instance_name") != "local") {
     steps.push(
       {
         target: ".box.featureddataset",
