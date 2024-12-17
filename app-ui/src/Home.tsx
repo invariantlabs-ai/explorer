@@ -13,6 +13,7 @@ import UserIcon from './lib/UserIcon';
 import "./Home.scss"
 import { CompactSnippetList } from './Snippets'
 import HomePageGuide from './HomePageGuide'
+import { config } from './Config'
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {
@@ -134,10 +135,12 @@ function Home() {
       </div>
     </div>}
     {/* public datasets */}
-    <div className='box featureddataset'>
-      <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
-      <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
-    </div>
+    {config('instance_name') != 'local' && (
+      <div className='box featureddataset'>
+        <h2><a href="https://explorer.invariantlabs.ai/benchmarks/">Featured Datasets</a></h2>
+        <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
+      </div>
+    )}
     {/* user activity */}
     {
       activity.length > 0 &&
