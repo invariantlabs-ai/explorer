@@ -15,7 +15,7 @@ const defaultOptions = {
   },
 };
 
-export default function TracePageGuide() {
+export default function TracePageNUX() {
   const [run, setRun] = useState(true);
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");

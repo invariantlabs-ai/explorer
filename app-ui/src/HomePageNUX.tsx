@@ -19,11 +19,11 @@ const defaultOptions = {
 };
 
 // This function returns the new user guide for the home page
-export default function HomePageGuide(props) {
+export default function HomePageNUX(props) {
   const userInfo = useUserInfo();
 
   const [run, setRun] = useState(true);
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
+  const [enableNUX, setEnableNUX] = useState(false);
   const HAS_SEEN_NUX_HOME = "invariant.explorer.enable.guide.home";
 
   const steps: Step[] = [
@@ -58,7 +58,7 @@ export default function HomePageGuide(props) {
     if (!localStorage.getItem(HAS_SEEN_NUX_HOME)) {
       // This code should be deleted after some time
       localStorage.removeItem("firstVisitHomeFlag");
-      setIsFirstVisit(true);
+      setEnableNUX(true);
       localStorage.setItem(HAS_SEEN_NUX_HOME, "true");
     }
   }, []);
@@ -73,7 +73,7 @@ export default function HomePageGuide(props) {
   };
   return (
     <div>
-      {isFirstVisit && config("nux") && (
+      {enableNUX && config("nux") && (
         <Joyride
           steps={steps}
           run={run}

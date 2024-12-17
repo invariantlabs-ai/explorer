@@ -17,7 +17,7 @@ import { useTelemetry } from './telemetry';
 import { Time } from './components/Time';
 import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
-import TracePageGuide from './TracePageGuide';
+import TracePageNUX from './TracePageNUX';
 import { HighlightsNavigator } from './HighlightsNavigator';
 
 
@@ -732,7 +732,7 @@ export function Traces() {
         onAnnotationDelete={onAnnotationDelete}
         enableNux={enableNux}
       />}
-      {renderNux && <TracePageGuide/>}
+      {renderNux && <TracePageNUX/>}
     </div>
   </div>
 }
