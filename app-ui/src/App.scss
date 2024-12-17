@@ -28,6 +28,8 @@ body {
   --color-secondary-background: #e9e9e9;
   --color-primary-background: white;
   --color-error-background: #f9e7e9;
+  --color-thumbs-up-highlight: #0f9d0f2d;
+  --color-thumbs-down-highlight: #ba29292d;
 
   --nav-width: 40pt;
   display: flex;
@@ -1408,7 +1410,7 @@ button.share {
   border-radius: 3pt;
   padding: 3pt;
   background-color: white;
-  z-index: 1000;
+  z-index: 999;
   transform: scale(0.8) translateY(-50%);
   transform-origin: top left;
   opacity: 0.0;
@@ -1449,6 +1451,24 @@ button.share {
     background-color: #DECFEE;
     border-radius: 3pt ;
   }
+
+  svg.toggled.up {
+    background-color: var(--color-thumbs-up-highlight);
+  }
+
+  svg.up:hover {
+    background-color: var(--color-thumbs-up-highlight);
+    border-radius: 3pt;
+  }
+
+  svg.down:hover {
+    background-color: var(--color-thumbs-down-highlight);
+    border-radius: 3pt;
+  }
+
+  svg.toggled.down {
+    background-color: var(--color-thumbs-down-highlight);
+  }
 }
 
 // hide thumbs when alt is pressed (so we can select text underneath)
@@ -1473,12 +1493,34 @@ button.share {
   background-color: rgba(204, 204, 204, 0.5);
 }
 
-.traceview span.line.thumbs-up .selectable {
-  background-color: rgba(179, 133, 217, 0.4);
+.traceview span.line {
+  &.thumbs-down {
+    .selectable {
+      background-color: var(--color-thumbs-down-highlight) !important;
+    }
+  }
+
+  &.thumbs-up {
+    .selectable {
+      background-color: var(--color-thumbs-up-highlight) !important;
+    }
+  }
 }
 
-.traceview span.line.thumbs-down .selectable {
-  background-color: rgba(179, 133, 217, 0.4);
+.traceview span.line.hovered-up {
+  background-color: #ffffff !important; 
+
+  .selectable {
+    background-color: var(--color-thumbs-up-highlight) !important;
+  }
+}
+
+.traceview span.line.hovered-down {
+  background-color: #ffffff !important; 
+
+  .selectable {
+    background-color: var(--color-thumbs-down-highlight) !important;
+  }
 }
 
 .swap-on-hover {
