@@ -118,7 +118,6 @@ function Home() {
     </div>
     {/* user-personal snippets and datasets */}
     {userInfo?.loggedIn && <div className='mosaic'>
-      <HomePageNUX></HomePageNUX>
       <div className='box dataset split-view'>
         <h2>
           <Link to='/datasets'>Datasets</Link>
@@ -171,6 +170,7 @@ function Home() {
         {activity.length === 0 && <div className='empty'>No activity</div>}
       </ul>)
     }
+    <HomePageNUX/>
   </>
 }
 
