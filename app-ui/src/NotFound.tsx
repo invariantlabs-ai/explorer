@@ -32,3 +32,6 @@ export function PageNotFound() {
     </p>
   </div>
 }
+export function isClientError(statusCode: number): boolean {
+  return statusCode >= 400 && statusCode < 500;
+}

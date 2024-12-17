@@ -1,7 +1,7 @@
 import React from 'react'
 import { useLoaderData } from 'react-router-dom'
 import { DatasetLinkList } from './Datasets'
-import { UserNotFound } from './NotFound'
+import { UserNotFound, isClientError } from './NotFound'
 
 /**
  * Component for displaying a user's public datasets, i.e. the user's profile page.
@@ -13,7 +13,7 @@ function User() {
 
   const [datasets, error] = useDatasetList()
   if (error) {
-    if (error.status === 404) {
+    if (isClientError(error.status)) {
       return UserNotFound({ username })
     } else {
       return <div className='empty'>

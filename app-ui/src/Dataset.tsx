@@ -10,7 +10,7 @@ import { useUserInfo } from './UserInfo'
 import { Metadata } from './lib/metadata'
 import { config } from './Config'
 import { useTelemetry } from './telemetry'
-import { DatasetNotFound } from './NotFound'
+import { DatasetNotFound, isClientError } from './NotFound'
 
 
 interface Query {
@@ -142,7 +142,7 @@ function DatasetView() {
 
   // if the dataset is not found, display a message
   if (datasetError) {
-    if ([401, 404].includes(datasetError.status)) {
+    if (isClientError(datasetError.status)) {
       return (<DatasetNotFound />);
     }
     return (

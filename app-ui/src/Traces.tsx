@@ -19,7 +19,7 @@ import { DeleteSnippetModal } from './lib/snippets';
 import {UserInfo} from './UserInfo';
 import TracePageGuide from './TracePageGuide';
 import { HighlightsNavigator } from './HighlightsNavigator';
-import { DatasetNotFound, TraceNotFound } from './NotFound';
+import { DatasetNotFound, TraceNotFound, isClientError } from './NotFound';
 
 // constant used to combine hierarchy paths
 const pathSeparator = ' > ';
@@ -64,7 +64,7 @@ function useDataset(username: string, datasetname: string): [DatasetData | null,
       .then(data => setDataset(data))
       .catch(e => {
         setError(e)
-        if (![401, 404].includes(e.status)) {
+        if (!isClientError(e.status)) {
           alert("Error loading dataset")
         }
       })
@@ -297,7 +297,7 @@ function useTraces(username: string, datasetname: string): [LightweightTraces | 
       setHierarchyPaths(pathMap)
     }).catch(e => {
       console.error(e)
-      if (![401, 404].includes(e.status)) {
+      if (!isClientError(e.status)) {
         alert("Error loading traces")
       }
     })
@@ -630,7 +630,7 @@ export function Traces() {
   // error state of this view
   // if the dataset is not found, display a message
   if (datasetLoadingError) {
-    if ([401, 404].includes(datasetLoadingError.status)) {
+    if (isClientError(datasetLoadingError.status)) {
       return (<DatasetNotFound />);
     }
     return (
@@ -1112,7 +1112,7 @@ export function SingleTrace() {
     }).catch(e => {
       console.error(e)
       setError(e)
-      if (![401, 404].includes(e.status)) {
+      if (!isClientError(e.status)) {
         alert("Error loading traces")
       }
     })
@@ -1139,7 +1139,7 @@ export function SingleTrace() {
   // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>
   if (traceLoadingError){
-    if ([401, 404].includes(traceLoadingError.status)){
+    if (isClientError(traceLoadingError.status)){
       return <TraceNotFound/>
     }
     else {
