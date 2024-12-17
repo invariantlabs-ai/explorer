@@ -802,28 +802,33 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
     assert response.status == 400
     assert "is_public must be a string representing a boolean" in await response.text()
 
-async def test_list_dataset(context, url, data_abc):
-    """Tests that listing datasets works."""
-    dataset_name = f"some_name-{uuid.uuid4()}"
-    # Upload a dataset.
-    response = await context.request.post(
-        f"{url}/api/v1/dataset/upload",
-        multipart={
-            "name": dataset_name,
-            "file": {
-                "name": dataset_name + ".json",
-                "mimeType": "application/octet-stream",
-                "buffer": data_abc.encode("utf-8"),
-            },
-        },
-    )
-    await expect(response).to_be_ok()
 
-    # List datasets.
-    response = await context.request.get(f"{url}/api/v1/dataset/list")
-    await expect(response).to_be_ok()
-
-    # Cleanup the dataset.
-    dataset_json = await response.json()
-    dataset_id = dataset_json[0]["id"]
-    _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_id}")
+@pytest.mark.parametrize(
+    "endpoint, valid",
+    [
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{valid_datset}", True),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{valid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{invalid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{valid_datset}/indices", True),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{valid_datset}/indices", False),
+        ("{url}/api/v1/dataset/byuser/{valid_user}/{invalid_datset}/indices", False),
+        ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}/indices", False),
+        ("{url}/api/v1/dataset/list/byuser/{valid_user}", True),
+        ("{url}/api/v1/dataset/list/byuser/{invalid_user}", False),
+    ]
+)
+async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        endpoint_formatted = endpoint.format(
+            url=url,
+            valid_user="developer",
+            invalid_user="developer-does-not-exists",
+            valid_datset=dataset['name'],
+            invalid_datset="dataset-that-does-not-exist"
+        )
+        response = await context.request.get(endpoint_formatted)
+        if valid:
+            assert response.status == 200
+        else:
+            assert 400 <= response.status < 500
