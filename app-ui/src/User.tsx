@@ -23,8 +23,6 @@ function User() {
       </div>
     }
   }
-  console.log("datasets")
-  console.log(datasets)
   if (!datasets) {
     return <div className='empty'>
       <p>

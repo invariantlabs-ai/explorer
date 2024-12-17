@@ -63,10 +63,9 @@ function useDataset(username: string, datasetname: string): [DatasetData | null,
     sharedFetch(`/api/v1/dataset/byuser/${username}/${datasetname}`)
       .then(data => setDataset(data))
       .catch(e => {
-        console.error(e)
         setError(e)
         if (![401, 404].includes(e.status)) {
-          alert("Error loading traces")
+          alert("Error loading dataset")
         }
       })
   }, [username, datasetname])
@@ -298,7 +297,7 @@ function useTraces(username: string, datasetname: string): [LightweightTraces | 
       setHierarchyPaths(pathMap)
     }).catch(e => {
       console.error(e)
-      if (e.status !== 401) {
+      if (![401, 404].includes(e.status)) {
         alert("Error loading traces")
       }
     })
@@ -631,7 +630,7 @@ export function Traces() {
   // error state of this view
   // if the dataset is not found, display a message
   if (datasetLoadingError) {
-    if (datasetLoadingError.status === 401) {
+    if ([401, 404].includes(datasetLoadingError.status)) {
       return (<DatasetNotFound />);
     }
     return (
