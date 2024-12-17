@@ -1410,7 +1410,7 @@ button.share {
   border-radius: 3pt;
   padding: 3pt;
   background-color: white;
-  z-index: 1000;
+  z-index: 999;
   transform: scale(0.8) translateY(-50%);
   transform-origin: top left;
   opacity: 0.0;
