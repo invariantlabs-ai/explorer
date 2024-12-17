@@ -28,13 +28,23 @@ export default function HomePageNUX(props) {
 
   const steps: Step[] = [];
 
-  // Activity box only shows up in production
-  if (config("instance_name") == "prod") {
+  // Only show guide for dataset box if the user is logged in
+  if (userInfo?.loggedIn) {
+    steps.push({
+      target: ".box.dataset",
+      content: "We created a sample dataset for you to explore.",
+      disableBeacon: true,
+      placement: "left",
+    });
+  }
+  // Activity box and public dataset only shows up in production
+  if (config("instance_name") != "prod") {
     steps.push(
       {
         target: ".box.featureddataset",
         content: "Explore public datasets from top agent benchmarks.",
         placement: "top",
+        disableBeacon: true,
         locale: { next: "Next", skip: "Skip", back: "Back" },
       }
     );
@@ -42,16 +52,6 @@ export default function HomePageNUX(props) {
       target: ".box.activity",
       content: "Once you annotate a trace the activity shows up here.",
       placement: "top",
-    });
-  }
-
-  // Only show guide for dataset box if the user is logged in
-  if (userInfo?.loggedIn) {
-    steps.unshift({
-      target: ".box.dataset",
-      content: "We created a sample dataset for you to explore.",
-      disableBeacon: true,
-      placement: "left",
     });
   }
 
@@ -72,6 +72,7 @@ export default function HomePageNUX(props) {
       setRun(false);
     }
   };
+  console.log(steps);
   return (
     <div>
       {enableNUX && config("nux") && (
