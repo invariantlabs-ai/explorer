@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {Tooltip} from 'react-tooltip';
 
 import logo from './assets/invariant.svg';
@@ -136,6 +136,7 @@ function Sidebar(props) {
 function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean }) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
+    const dropdownRef = useRef(null); // Create a reference to the dropdown
     const navigate = useNavigate();
 
     const isPrivateInstance = config("private");
@@ -145,6 +146,26 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
     
     const pageShouldRedirectToSignup = (userInfo && userInfo?.loggedIn && !userInfo?.signedUp);
     const pageShouldRedirectToLogin = pageRequiresLogin && !userIsLoggedIn;
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          setUserPopoverVisible(false); // Close the dropdown if clicked outside
+        }
+      };
+
+      // Add event listener for clicks
+      document.addEventListener("click", handleClickOutside);
+
+      // Cleanup the event listener on component unmount
+      return () => {
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }, []);
+
 
     return <>
         <header className='top'>
@@ -186,7 +207,7 @@ function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsL
             <DeploymentInfo/>
             <div className='spacer'/>
             {!userInfo?.loggedIn && <button className='inline' onClick={() => window.location.href = '/login'}>Sign In</button>}
-            <div className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
+            <div ref={dropdownRef} className={'user-info ' + (userPopoverVisible ? 'open' : '')} onClick={() => setUserPopoverVisible(!userPopoverVisible)}>
                 {userInfo?.loggedIn && <>
                     <UserIcon username={userInfo?.username}/>
                     {userInfo ? <p>{userInfo?.username}</p> : <p>Loading...</p>}
