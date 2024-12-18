@@ -24,7 +24,7 @@ export default function HomePageNUX(props) {
 
   const [run, setRun] = useState(true);
   const [enableNUX, setEnableNUX] = useState(false);
-  const HAS_SEEN_NUX_HOME = "invariant.explorer.enable.guide.home";
+  const HAS_SEEN_NUX_HOME = "invariant.explorer.disable.guide.home";
 
   const steps: Step[] = [];
 
