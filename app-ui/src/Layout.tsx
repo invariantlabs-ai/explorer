@@ -136,7 +136,7 @@ function Sidebar(props) {
 function Layout(props: { children: React.ReactNode, fullscreen?: boolean, needsLogin?: boolean }) {
     const userInfo = useUserInfo();
     const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
-    const dropdownRef = useRef(null); // Create a reference to the dropdown
+    const dropdownRef = useRef<HTMLDivElement | null>(null); // Create a reference to the dropdown
     const navigate = useNavigate();
 
     const isPrivateInstance = config("private");
