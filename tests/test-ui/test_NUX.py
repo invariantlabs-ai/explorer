@@ -7,7 +7,7 @@ from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # for local testing
-os.chdir(os.path.dirname(os.getcwd()))
+# os.chdir(os.path.dirname(os.getcwd()))
 
 
 import util
