@@ -35,12 +35,12 @@ async def context(request, slow_mo=250):
         kwargs = request.keywords["playwright"].kwargs
         if "slow_mo" in kwargs:
             slow_mo = kwargs["slow_mo"]
-    playwright = await async_playwright().start()
-    # launch a chrome browser that ignores certificate errors
-    browser = await playwright.firefox.launch(headless=True, slow_mo=slow_mo)
-    context = await browser.new_context(ignore_https_errors=True)
-    return context
-
+    async with async_playwright() as playwright:
+        browser = await playwright.firefox.launch(headless=True, slow_mo=slow_mo)
+        context = await browser.new_context(ignore_https_errors=True)
+        yield context
+        await context.close()
+        await browser.close()
 @pytest.fixture(scope='function')
 async def screenshot(request):
     # setup
