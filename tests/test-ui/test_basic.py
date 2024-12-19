@@ -1,6 +1,7 @@
 import os
 # add tests folder (parent) to sys.path
 import sys
+import asyncio
 
 import pytest
 import time
@@ -31,7 +32,6 @@ async def test_create_delete_snippet(context, url, screenshot):
     await screenshot(page)
     
     # wait for 2s
-    await page.wait_for_timeout(2000)
 
     await page.click("text=Upload")
     await screenshot(page)
@@ -45,7 +45,7 @@ async def test_create_delete_snippet(context, url, screenshot):
     await page.goto(url)
     await screenshot(page)
     # get all displayed snippet ids
-    traces = await page.locator("css=span.traceid").all()
+    traces = await retry_fetch(lambda: page.locator("css=span.traceid").all())
     traceids = [(await trace.inner_text())[1:] for trace in traces] # remove the leading #
 
     # there is at least the newly created snippet    
@@ -59,7 +59,7 @@ async def test_create_delete_snippet(context, url, screenshot):
     trace_link = traces[match.index(True)]
     await trace_link.click()
     await screenshot(page)
-    delete_button = await page.locator("css=button.danger").all() # TODO support better locator and alt-text
+    delete_button = await retry_fetch(lambda: page.locator("css=button.danger").all()) # TODO support better locator and alt-text
     assert len(delete_button) == 1
     await delete_button[0].click()
     await screenshot(page)
@@ -177,7 +177,7 @@ async def trace_shown_in_sidebar(page, trace_name):
     traces_shown = await page.locator("css=li.trace").all()
     return any([(await ts.inner_text()) == trace_name for ts in traces_shown])
 
-@pytest.mark.playwright(slow_mo=800) # make the browser slower to ensure items are rendered as expected
+
 async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_abc_with_trace_metadata) as dataset:
         page = await context.new_page()
@@ -250,7 +250,6 @@ async def test_share_trace(context, url, data_webarena_with_metadata, screenshot
         assert path_dataset == dataset['name']
 
 
-@pytest.mark.playwright(slow_mo=800) # make the browser slower to ensure items are rendered as expected
 async def test_policy(context, url, data_webarena_with_metadata, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_webarena_with_metadata) as dataset:
         page = await context.new_page()
@@ -272,7 +271,7 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
         # Wait for the monaco editor to load.
         policy_name_input = await page.get_by_placeholder("Policy Name").all()
         await policy_name_input[0].fill("Test Policy")
-        policy_code_input = await page.locator("div.view-lines").all()
+        policy_code_input = await retry_fetch(lambda: page.locator("div.view-lines").all())
         await policy_code_input[0].click()
         await page.keyboard.type("""
             from invariant.detectors import secrets
@@ -357,12 +356,36 @@ async def test_thumbs_up_down(context, url, data_abc, screenshot):
         assert await has_thumbs_visible(second_line), "Thumbs on the second line are not visible, but got: {}".format(await classes_of_element(second_line))
         assert await has_thumb_toggled(second_line, thumb="down"), "Thumbs down on the second line are not toggle, but got: {}".format(await classes_of_element(second_line))
 
+def retry(max_time: float = 3.0, time_interval: float = 0.01):
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            for _ in range(int(max_time / time_interval)):
+                if await func(*args, **kwargs):
+                    return True
+                await asyncio.sleep(time_interval)
+            return False
+        return wrapper
+    return decorator
 
+@retry()
 async def has_thumb_toggled(line, thumb: Literal["up", "down"]) -> bool:
     return "toggled" in await line.locator(".thumbs-{}-icon".format(thumb)).get_attribute("class")
 
+@retry()
 async def has_thumbs_visible(line) -> bool:
     return "visible" in await line.locator(".thumbs").get_attribute("class")
 
 async def classes_of_element(element):
     return await element.get_attribute("class")
+
+async def retry_fetch(fetch_fn, max_time: float = 3.0, time_interval: float = 0.01):
+    """
+    The fetch_fn is an Async func that returns a list. We will retry untill it is not empty
+    """
+    for _ in range(int(max_time / time_interval)):
+        out = await fetch_fn()
+        if out:
+            return out
+        await asyncio.sleep(time_interval)
+    return []
+    

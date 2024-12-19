@@ -29,17 +29,24 @@ def api_server_http_endpoint():
 def name():
     return f"test-{str(uuid4())}"
 
+
 @pytest.fixture
-async def context(request, slow_mo=250):
-    if "playwright" in request.keywords:
-        kwargs = request.keywords["playwright"].kwargs
-        if "slow_mo" in kwargs:
-            slow_mo = kwargs["slow_mo"]
-    playwright = await async_playwright().start()
-    # launch a chrome browser that ignores certificate errors
-    browser = await playwright.firefox.launch(headless=True, slow_mo=slow_mo)
+async def playwright(scope="session"):
+    async with async_playwright() as playwright_instance:
+        yield playwright_instance
+
+@pytest.fixture
+async def browser(playwright, scope="session"):
+    browser = await playwright.firefox.launch(headless=True)
+    yield browser
+    await browser.close()
+
+@pytest.fixture
+async def context(browser):
     context = await browser.new_context(ignore_https_errors=True)
-    return context
+    yield context
+    await context.close()
+
 
 @pytest.fixture(scope='function')
 async def screenshot(request):
