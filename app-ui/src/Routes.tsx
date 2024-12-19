@@ -123,7 +123,7 @@ export const routes = [
     path: '*',
     label: 'Not Found',
     element: <Layout><div className='empty'>
-      Not Found
+      <h3>Not Found</h3>
     </div></Layout>,
     category: 'hidden'
   }
