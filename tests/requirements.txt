@@ -4,4 +4,3 @@ pytest-playwright
 pytest-asyncio
 pytest-lazy-fixtures
 pillow
-PyYAML
