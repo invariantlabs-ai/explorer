@@ -18,7 +18,6 @@ def url():
         return os.environ["URL"]
     else:
         return "http://127.0.0.0:80"
-        # return "http://localhost"
 
 @pytest.fixture
 def api_server_http_endpoint():
@@ -63,10 +62,10 @@ async def screenshot(request):
    
     # teardown after test 
     # if test failed, keep the screenshots, else we delete
-    # if not request.node.rep_call.failed:
-    #     for file in folder.iterdir():
-    #         file.unlink()
-    #     folder.rmdir()
+    if not request.node.rep_call.failed:
+        for file in folder.iterdir():
+            file.unlink()
+        folder.rmdir()
 
 def _dataset_name(test_name=None):
     frame = inspect.currentframe()
