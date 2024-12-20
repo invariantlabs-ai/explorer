@@ -58,11 +58,6 @@ function ci_run_server() {
     # start wait and stop docker to ensure everything is set up
     # this avoids several network timing issues and initialization issues
     docker compose -f tests/docker-compose.test.yml up -d
-    sleep 5
-    docker compose -f tests/docker-compose.test.yml down
-   
-    # start clean test container
-    docker compose -f tests/docker-compose.test.yml up -d
 }
 
 function ci_run_test() {
@@ -93,8 +88,7 @@ function ci() {
     ci_run_server
 
     echo "Waiting for service to start..."
-    sleep 30
-
+    sleep 5
     ci_run_test $@
     STATUS=$?
     
@@ -141,6 +135,9 @@ case $command in
     ;;
   "ci-server")
     ci_run_server
+    ;;
+  "ci-run-test")
+    ci_run_test $@
     ;;
   "env-stop")
     APP_NAME="explorer-test" docker compose -f tests/docker-compose.test.yml down
