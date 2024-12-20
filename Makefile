@@ -9,9 +9,9 @@ test-env:
 	docker network inspect invariant-explorer-web-test >/dev/null 2>&1 || docker network create invariant-explorer-web-test
 	docker compose -f tests/docker-compose.test.yml build
 	rm -rf /tmp/invariant-explorer-test/data
-    mkdir -p /tmp/invariant-explorer-test/data/database
-    mkdir -p /tmp/invariant-explorer-test/data/datasets
-    mkdir -p /tmp/invariant-explorer-test/data/images
+	mkdir -p /tmp/invariant-explorer-test/data/database
+	mkdir -p /tmp/invariant-explorer-test/data/datasets
+	mkdir -p /tmp/invariant-explorer-test/data/images
 	docker compose -f tests/docker-compose.test.yml up -d
 
 tester:
