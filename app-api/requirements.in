@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy[postgresql]
+alembic
+openai
+pyyaml
+python-multipart
+fastapi-keycloak-middleware
+prometheus-fastapi-instrumentator
+pillow
