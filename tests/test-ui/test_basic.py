@@ -210,6 +210,7 @@ async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
         search_input = await retry_fetch(lambda: page.get_by_placeholder("Search").all())
         for query, expected in searches:
             await search_input[0].fill(query)
+            await search_input[0].press("Enter")
             await page.wait_for_timeout(1000) # wait for the search to be processed
             await screenshot(page)
             for trace, exp in zip(["Run 0", "Run 1"], expected):
