@@ -380,7 +380,7 @@ async def classes_of_element(element):
 
 async def retry_fetch(fetch_fn, max_time: float = 3.0, time_interval: float = 0.01):
     """
-    The fetch_fn is an Async func that returns a list. We will retry untill it is not empty
+    The fetch_fn is an Async func that returns a list. We will retry until it is not empty
     """
     for _ in range(int(max_time / time_interval)):
         out = await fetch_fn()
