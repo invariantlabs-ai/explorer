@@ -207,7 +207,7 @@ async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
             ("meta:b%asdf", [False, True]),
         ]
 
-        search_input = await page.get_by_placeholder("Search").all()
+        search_input = await retry_fetch(lambda: page.get_by_placeholder("Search").all())
         for query, expected in searches:
             await search_input[0].fill(query)
             await page.wait_for_timeout(1000) # wait for the search to be processed
