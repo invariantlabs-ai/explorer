@@ -25,12 +25,23 @@ Alternatively, you can try the _public and managed instance_ at [https://explore
 
 To get started, run the following command. Make sure you first install [Docker Compose](https://docs.docker.com/compose/install/).
 
+To run the setup locally:
 ```bash
-./explorer.py
+make up
 ```
-
-To open the Explorer interface go to `http://localhost`
-
+To open the Explorer interface go to `http://localhost`.
 This will automatically launch a local Explorer instance on your machine.
 
 All data will be stored in `./data`. To reset the data, simply delete the `./data` directory.
+
+### Tests
+To run tests locally first turn off the app
+```bash
+make down
+```
+And then run tests
+```bash
+make tests
+make down
+```
+The `make down` guarantees that you can then run `make up` again. You can skip it if you are planning un run tests again.

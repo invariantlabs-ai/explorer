@@ -1,8 +1,8 @@
-name: ${APP_NAME}-test
+name: explorer-test
 services:
   traefik:
     image: traefik:v2.0
-    container_name: "${APP_NAME}-test-local-traefik"
+    container_name: "explorer-test-traefik"
     command:
       - --providers.docker=true
       # Enable the API handler in insecure mode,
@@ -14,7 +14,7 @@ services:
     networks:
       - invariant-explorer-web-test
     ports:
-      - '${PORT_HTTP}:80'
+      - '${PORT_HTTP:-80}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
@@ -22,7 +22,7 @@ services:
       - "traefik.http.routers.traefik-http.entrypoints=invariant-explorer-web-test"
   
   app-ui:
-    container_name: "${APP_NAME}-app-ui"
+    container_name: "explorer-test-app-ui"
     build:
       context: ../app-ui
       # expose ./configs as additional context to enable copying-in of
@@ -31,24 +31,23 @@ services:
         configs: ../configs
       dockerfile: Dockerfile.app-ui
       args:
-        - APP_NAME=${APP_NAME}
-        - PREVIEW=${PREVIEW}
-        - CONFIG_FILE_NAME=${CONFIG_FILE_NAME}
+        - APP_NAME=explorer-test
+        - PREVIEW=${PREVIEW:-false}
+        - CONFIG_FILE_NAME=explorer.test.yml
     depends_on:
       - app-api
     networks:
       - invariant-explorer-web-test
     environment:
-      - APP_NAME=${APP_NAME}
-      - PREVIEW=${PREVIEW}
-      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
+      - APP_NAME=explorer-test
+      - PREVIEW=${PREVIEW:-false}
     volumes:
-      - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ../configs/explorer.test.yml:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
-      - "traefik.http.routers.$APP_NAME-ui.entrypoints=invariant-explorer-web-test"
-      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=8000"
+      - "traefik.http.routers.explorer-test-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
+      - "traefik.http.routers.explorer-test-ui.entrypoints=invariant-explorer-web-test"
+      - "traefik.http.services.explorer-test-ui.loadbalancer.server.port=8000"
       - "traefik.docker.network=invariant-explorer-web-test"
 
   app-api:
@@ -62,20 +61,17 @@ services:
     env_file:
       - ../.env
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
-      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
-      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
+      - KEYCLOAK_CLIENT_ID_SECRET=local-does-not-use-keycloak
       - TZ=Europe/Berlin
-      - DEV_MODE=${DEV_MODE}
-      - APP_NAME=${APP_NAME}
+      - DEV_MODE=true
+      - APP_NAME=explorer-test
       - CONFIG_FILE=/config/explorer.config.yml
     networks:
       - internal
       - invariant-explorer-web-test
     ports:
-      - "${PORT_API}:8000"
+      - "8001:8000"
     volumes:
       - type: bind
         source: /tmp/invariant-explorer-test/data/datasets
@@ -83,13 +79,17 @@ services:
       - type: bind
         source: /tmp/invariant-explorer-test/data/images
         target: /srv/images
-      - ../configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ../configs/explorer.test.yml:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
-      - "traefik.http.routers.$APP_NAME-api.entrypoints=invariant-explorer-web-test"
-      - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.explorer-test-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
+      - "traefik.http.routers.explorer-test-api.entrypoints=invariant-explorer-web-test"
+      - "traefik.http.services.explorer-test-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=invariant-explorer-web-test"
+    healthcheck:
+      test: curl -X GET -I http://localhost:8000/api/v1 --fail
+      interval: 1s
+      timeout: 5s
 
   database:
     image: postgres:16
