@@ -6,6 +6,7 @@ PORT_API := 8001
 
 test-env:
 	@echo "Building test environment..."
+	docker network inspect invariant-explorer-web-test >/dev/null 2>&1 || docker network create invariant-explorer-web-test
 	docker compose -f tests/docker-compose.test.yml build
 	docker compose -f tests/docker-compose.test.yml up -d
 
@@ -28,6 +29,7 @@ tests: test-env tester
         explorer-test
 
 up:
+	docker network inspect invariant-explorer-web >/dev/null 2>&1 || docker network create invariant-explorer-web
 	docker compose -f docker-compose.local.yml up -d
 	@echo "Frontend at http://127.0.0.1, API at http://127.0.0.1/api/v1"
 
