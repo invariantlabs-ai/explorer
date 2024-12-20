@@ -20,7 +20,7 @@ export default function TracePageNUX() {
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");
   const HAS_SEEN_NUX_TRACE_VIEW =
-    "invariant.explorer.enable.guide.trace_view";
+    "invariant.explorer.disable.guide.trace_view";
   const steps: Step[] = [
     {
       target: ".sidebar",
