@@ -1,0 +1,6 @@
+invariant-sdk
+pytest
+pytest-playwright
+pytest-asyncio
+pytest-lazy-fixtures
+pillow
