@@ -15,20 +15,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Stop all running docker containers
-      run: docker stop $(docker ps -a -q) || true
-
     - name: Checkout
       uses: actions/checkout@v1
 
     - name: Build Test Environnement
-      run: ./tests/test-runner build-test-env
+      run: make test-env
 
     - name: Build Test Runner
-      run: ./tests/test-runner build-tester
+      run: make tester
 
     - name: Run CI
-      run: ./tests/test-runner ci
+      run: make tests
         
     - name: tar screenshots
       run: tar czf screenshots.tar.gz ./tests/screenshots
