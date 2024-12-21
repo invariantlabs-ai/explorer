@@ -1,4 +1,4 @@
-PHONY: test-env tests up build down tester
+PHONY: test-env tests tests-setup up build down tester
 
 PORT_HTTP :=  80
 PORT_API := 8001
@@ -17,7 +17,7 @@ test-env:
 tester:
 	docker build -t 'explorer-test' -f ./tests/Dockerfile.test ./tests
 
-tests: test-env tester
+tests:
 	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' explorer-test-app-api-1)" = "healthy" ]; do \
 		echo "Container starting"; \
 		sleep 2; \
@@ -30,6 +30,9 @@ tests: test-env tester
         --mount type=bind,source=./tests,target=/tests \
         --network host \
         explorer-test
+
+tests-setup: test-env tester tests
+	@echo "Test runned"
 
 up:
 	docker network inspect invariant-explorer-web >/dev/null 2>&1 || docker network create invariant-explorer-web

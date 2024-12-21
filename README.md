@@ -41,7 +41,7 @@ make down
 ```
 And then run tests
 ```bash
-make tests
+make tests-setup
 make down
 ```
 The `make down` guarantees that you can then run `make up` again. You can skip it if you are planning un run tests again.
