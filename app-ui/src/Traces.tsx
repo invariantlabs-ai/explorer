@@ -477,7 +477,7 @@ function useSearch() {
   const searching = searchQueue.current.filter(q => q.status === 'searching').length > 0 || searchTimeout.current !== null
 
   const search = (query) => {
-    if (query.status !== 'waiting') return;
+    if (!query || query.status !== 'waiting') return;
     query.status = 'searching'
     const encodedQuery = encodeURIComponent(query.query);
     return sharedFetch(`/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${encodedQuery}`)
@@ -548,7 +548,7 @@ function useSearch() {
     dispatchSearch(searchQuery)
   }, [searchQuery])
   
-  return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] as const;
+  return [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching, setHighlightMappings] as const;
 }
 
 /**
@@ -577,7 +577,7 @@ export function Traces() {
   // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared((traces && props.traceIndex != null) ? traces.get(props.traceIndex)?.id : null, userInfo)
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
-  const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching] = useSearch();
+  const [displayedIndices, highlightMappings, searchQuery, setSearchQuery, searchNow, searching, setHighlightMappings] = useSearch();
   // tracks whether the current user owns the dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id
   // tracks the currently selected trace
@@ -709,6 +709,7 @@ export function Traces() {
         displayedIndices={displayedIndices}
         searchNow={searchNow}
         searching={searching}
+        setHighlightMappings={setHighlightMappings}
       />}
       {/* actual trace viewer */}
       {<AnnotationAugmentedTraceView
@@ -757,45 +758,76 @@ export function Traces() {
 function SearchBox(props) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
+  const [inputValue, setInputValue] = React.useState(searchQuery || '');
+  const [hasChanged, setHasChanged] = React.useState(false);
 
-  const update = (e) => {
+  useEffect(() => {
+    setInputValue(searchQuery || '');
+    setHasChanged(false);
+  }, [searchQuery]);
+
+  const handleInputChange = (e) => {
+    // Clear search query if input is empty
+    if (e.target.value === '') {
+      resetSearch();
+    }
+
+    // Otherwise, prepare new search
+    setInputValue(e.target.value);
+    setHasChanged(e.target.value !== searchQuery);
+  };
+
+  const handleKeyDown = (e) => {
+    // Do actual search on Enter, reset on Escape
     if (e.key === 'Enter') {
-      props.searchNow()
+      handleSearch();
     } else if (e.key === 'Escape') {
-      //reset()
-      e.target.value = ''
-      setSearchQuery('')
-    } else {
-      setSearchQuery(e.target.value)
+      e.target.value = '';
+      resetSearch();
     }
   }
 
-  const hasSearch = !props.searching && props.searchQuery != ''
+  const handleSearch = () => {
+    setSearchQuery(inputValue);
+    setHasChanged(false);
+  }
 
-  return <>
+  const resetSearch = () => {
+    setInputValue('');
+    setSearchQuery('');
+    setHasChanged(false);
+
+    // Whenever the search is reset, clear the highlight mappings so
+    // that the search highlights are removed from the trace view
+    props.setHighlightMappings({});
+  }
+
+  const hasSearch = inputValue == '' || hasChanged;
+
+  return (
     <div className='search'>
-      <input className='search-text' type="text" onChange={update} value={searchQuery} placeholder="Search" />
-      <button className='search-submit' onClick={hasSearch ? props.onSave : props.searchNow} data-tooltip-id="button-tooltip" data-tooltip-content={hasSearch ? "Save Search" : ""}>
-        {!props.searching ? 
-          (props.searchQuery == '' ? 
-            <BsSearch /> : 
-            <BsBookmark />
-          ) : null}
-        {props.searching && <ClockLoader size={'15px'} className='spinner' />}
+      <input className='search-text' type="text" value={inputValue} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="Search" />
+      <button className='search-submit' onClick={hasSearch ? handleSearch : props.onSave} data-tooltip-id="button-tooltip" data-tooltip-content={!hasChanged && inputValue !== '' ? "Save Search" : ""}>
+        {!props.searching ? (
+          hasSearch ? <BsSearch /> : <BsBookmark />
+        ) : (
+          <ClockLoader size={'15px'} className='spinner' />
+        )}
       </button>
     </div>
-  </>
+  );
 }
 
 /**
  * Displays the list of traces in a dataset.
  */
 
-function Sidebar(props: { traces: LightweightTraces | null, username: string, datasetname: string, activeTraceIndex: number | null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: DisplayedTracesT | null, searchNow: () => void, searching: boolean, hierarchyPaths: Record<string, HierarchyPath> }) {
+function Sidebar(props: { traces: LightweightTraces | null, username: string, datasetname: string, activeTraceIndex: number | null, onRefresh: () => void, searchQuery: string | null, setSearchQuery: (value: string) => void, displayedIndices: DisplayedTracesT | null, searchNow: () => void, searching: boolean, hierarchyPaths: Record<string, HierarchyPath>, setHighlightMappings: (value: any) => void }) {
   const searchQuery = props.searchQuery
   const setSearchQuery = props.setSearchQuery
   const displayedIndices = props.displayedIndices
   const hierarchyPaths = props.hierarchyPaths
+  const setHighlightMappings = props.setHighlightMappings
   const { username, datasetname, traces } = props
   const [visible, setVisible] = React.useState(true)
   const [activeIndices, setActiveIndices] = React.useState<DisplayedTracesT>({});
@@ -944,7 +976,14 @@ function Sidebar(props: { traces: LightweightTraces | null, username: string, da
 
   return <div className={'sidebar ' + (visible ? 'visible' : 'collapsed')}>
     <header>
-      <SearchBox setSearchQuery={props.setSearchQuery} searchQuery={props.searchQuery} searchNow={props.searchNow} searching={props.searching} onSave={onSave} />
+      <SearchBox
+       setSearchQuery={props.setSearchQuery} 
+       searchQuery={props.searchQuery} 
+       searchNow={props.searchNow} 
+       searching={props.searching} 
+       onSave={onSave} 
+       setHighlightMappings={props.setHighlightMappings}
+      />
       {/* <button className='header-short toggle icon' onClick={onRefresh}
         data-tooltip-id="button-tooltip" data-tooltip-content="Refresh">
         <BsArrowClockwise />
