@@ -19,13 +19,13 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Build Test Environnement
-      run: make test-env
+      run: ./run.sh test-env
 
     - name: Build Test Runner
-      run: make tester
+      run: ./run.sh build-tester
 
     - name: Run CI
-      run: make tests
+      run: ./run.sh tests
         
     - name: tar screenshots
       run: tar czf screenshots.tar.gz ./tests/screenshots
