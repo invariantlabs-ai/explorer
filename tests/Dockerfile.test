@@ -5,5 +5,4 @@ COPY ./requirements.txt /tests/requirements.txt
 WORKDIR /tests
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["pytest", "--capture=tee-sys", "--tracing", "off"]
-CMD ["--junit-xml=/tests/results/test-results-all.xml", "."]
+ENTRYPOINT ["pytest", "--capture=tee-sys", "--tracing", "off", "--junit-xml=/tests/results/test-results-all.xml"]

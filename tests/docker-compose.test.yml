@@ -35,7 +35,8 @@ services:
         - PREVIEW=${PREVIEW:-false}
         - CONFIG_FILE_NAME=explorer.test.yml
     depends_on:
-      - app-api
+      app-api:
+        condition: service_healthy
     networks:
       - invariant-explorer-web-test
     environment:
