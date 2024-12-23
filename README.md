@@ -11,7 +11,7 @@ Prerequisites: [Docker Compose](https://docs.docker.com/compose/install/)
 To pull and launch Explorer, run the following commands:
 
 ```
-# install Invariant package
+# install Invariant package 
 pip install invariant-ai
 
 # pull and launch Explorer application
@@ -33,6 +33,12 @@ To open the Explorer interface go to `http://localhost`.
 This will automatically launch a local Explorer instance on your machine.
 
 All data will be stored in `./data`. To reset the data, simply delete the `./data` directory.
+
+### Add dependencies
+If new dependencies are needed for `api` or `tester`, add them to respectively `app-api/requirements.in` or `tests/requirements.in`. Then run,
+```bash
+./run.sh compile-requirements
+```
 
 ### Tests
 To run tests locally first turn off the app,

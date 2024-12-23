@@ -88,6 +88,19 @@ down() {
   docker compose -f docker-compose.local.yml down
 }
 
+setup-venv() {
+  python -m venv venv
+  source venv/bin/activate
+  pip install --upgrade pip
+  pip install pip-tools
+}
+
+compile_requirements() {
+  # Compile requirements.txt
+  setup-venv
+  pip-compile --output-file=tests/requirements.txt tests/requirements.in
+  pip-compile --output-file=app-api/requirements.txt app-api/requirements.in
+}
 # -----------------------------
 # Command dispatcher
 # -----------------------------
@@ -115,8 +128,11 @@ case "$1" in
   "down")
     down
     ;;
+  "compile-requirements")
+    compile_requirements
+    ;;
   *)
-    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down]"
+    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down|compile-requirements]"
     exit 1
     ;;
 esac
