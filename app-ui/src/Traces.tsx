@@ -745,6 +745,7 @@ export function Traces() {
         onAnnotationCreate={onAnnotationCreate}
         onAnnotationDelete={onAnnotationDelete}
         enableNux={enableNux}
+        datasetname={props.datasetname}
       />}
       {renderNux && <TracePageNUX/>}
     </div>

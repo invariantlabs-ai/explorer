@@ -42,7 +42,7 @@ function createDataset(name: string, isPublic: boolean = false) {
 /**
  * Uploads a new dataset to the current user's account.
  */
-function uploadDataset(name: string, file: File, isPublic: boolean = false) {
+export function uploadDataset(name: string, file: File, isPublic: boolean = false) {
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData()
     formData.append('name', name)
@@ -276,7 +276,7 @@ export function UploadDatasetModalContent(props) {
  * 
  * Supports drag and drop, by rendering a 0.0 opacity file <input/> on top of the custom UI.
  */
-function FileUploadMask(props) {
+export function FileUploadMask(props) {
   return <div className='file-upload-mask'>
     <div className='overlay'>
       {props.file ? <span className='selected'><BsFileBinaryFill /> {props.file.name} ({(props.file.size / 1024 / 1024).toFixed(2)} MB)
