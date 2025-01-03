@@ -59,7 +59,7 @@ tests() {
 }
 
 tests_local() {
-  build_test_env
+  test_env
   build_tester
   tests $@
 }
