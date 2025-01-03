@@ -1,5 +1,4 @@
 import os
-# add tests folder (parent) to sys.path
 import sys
 
 import pytest
@@ -20,6 +19,7 @@ pytest_plugins = ('pytest_asyncio',)
 HAS_SEEN_NUX_HOME = "invariant.explorer.disable.guide.home"
 HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view"
 
+# This test is for local running only, to run it just remove the pytest.mark.skip
 @pytest.mark.skip(reason="Requires nux to be enabled")
 async def test_home_page(context, url, screenshot):
     page = await context.new_page()
