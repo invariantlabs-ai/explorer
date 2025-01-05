@@ -1960,9 +1960,16 @@ div.empty.instructions {
   width: calc(100% - 10pt);
   height: auto;
   margin: auto;
+  margin-top: -45pt !important;
   color: $text-color;
   opacity: 1.0;
   text-align: center;
+
+  .error {
+    color: #ED707B;
+    border-left: 2pt solid #ED707B;
+    padding-left: 3pt;
+  }
 
   h3 {
     opacity: 1.0;
@@ -1973,6 +1980,10 @@ div.empty.instructions {
 
   >p {
     margin: 0pt 30pt;
+  }
+
+  .push-api-option {
+    margin-top: 8pt;
   }
 
   .options {
@@ -1986,9 +1997,10 @@ div.empty.instructions {
     >div {
       background-color: white;
       border-radius: 5pt;
+      height: auto;
       border: 1pt solid $border-color;
       margin: 10pt;
-      padding: 15pt 10pt;
+      padding: 15pt 10pt 10pt 10pt;
       width: 400pt;
       text-align: left;
 

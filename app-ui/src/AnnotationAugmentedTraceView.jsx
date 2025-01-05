@@ -261,10 +261,14 @@ function TraceViewContent(props) {
   const { datasetname, activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
   const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
 
+  const onSuccess = () => {
+    window.location.reload();
+  };
+
   // if no trace ID set
   if (activeTraceId === null) {
     return <div className='explorer panel'>
-      <EmptyComponent datasetname={datasetname}/>
+      <EmptyComponent datasetname={datasetname} onSuccess={onSuccess}/>
     </div>
   }
   return <RenderedTrace
