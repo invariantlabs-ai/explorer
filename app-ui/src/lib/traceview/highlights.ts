@@ -8,6 +8,7 @@ export interface HighlightData {
   source?: string;
   extra_metadata?: Record<string, any>;
   annotationId?: string;
+  type?: string;
 }
 
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */
@@ -24,6 +25,14 @@ export interface Highlight extends HighlightData {
   source?: string;
   extra_metadata?: Record<string, any>;
   annotationId?: string;
+}
+
+export interface BoundingBoxHighlight extends HighlightData {
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+    content: any
 }
 
 /** Like a regular highlight, but stores a list of highlights per range. */
@@ -114,7 +123,7 @@ export class HighlightedJSON {
         );
       }
       for (let key in current) {
-        if (key !== "$highlights") {
+        if (key !== "$highlights" && key !== "$bbox-highlights") {
           // extend address, but use [<int>] for array indices
           queue.push([
             current_address + (current_address.length > 0 ? "." : "") + key,
@@ -213,6 +222,11 @@ export class HighlightedJSON {
    */
   static disjunct(highlights: Highlight[]): GroupedHighlight[] {
     return disjunct_overlaps(highlights);
+  }
+
+  static bounding_boxes(highlights: Highlight[]): GroupedHighlight[] {
+      let bbox_highlights = highlights.filter((a) => a.type && a.type === "bbox")
+      return bbox_highlights;
   }
 
   static by_lines(
@@ -438,6 +452,21 @@ function to_text_offsets(
       });
       continue;
     }
+
+        if (key === "$bbox-highlights") {
+            highlightMap[key].forEach((a: any) => {
+                located_highlights.push({
+                    "x1": a["x1"],
+                    "y1": a["y1"],
+                    "x2": a["x2"],
+                    "y2": a["y2"],
+                    "content": a["content"],
+                    "type": "bbox"
+                })
+            })
+            continue;
+        }
+
     if (sourceRangeMap[key]) {
       to_text_offsets(
         highlightMap[key],
@@ -463,51 +492,44 @@ function highlightsToMap(
     highlights = Object.entries(highlights);
   }
 
-  const map: HighlightMap = { $highlights: [] };
-  const highlightsPerKey: Record<string, Record<string, any>> = {};
-  const directHighlights: {
-    key: string;
-    start: number | null;
-    end: number | null;
-    content: any;
-  }[] = [];
+    const map: HighlightMap = { $highlights: [] }
+    const highlightsPerKey: Record<string, Record<string, any>> = {}
+    const directHighlights: { key: string, start: number | null, end: number | null, content: any }[] = []
+    const bboxHighlights: { key: string, x1: number | null, y1: number | null, x2: number | null, y2: number | null, content: any }[] = []
 
-  for (const [key, value] of highlights as [string, any][]) {
-    // group keys by first segment (if it is not already a range), then recurse late
-    const parts = key.split(".");
-    const firstSegment = parts[0];
-    const rest = parts.slice(1).join(".");
+    for (const [key, value] of highlights as [string,any][]) {
+        // group keys by first segment (if it is not already a range), then recurse late
+        const parts = key.split('.')
+        const firstSegment = parts[0]
+        const rest = parts.slice(1).join('.')
 
-    if (firstSegment.includes(":")) {
-      const [last_prop, range] = firstSegment.split(":");
-      let [start, end] = range.split("-");
-      let parsedStart = parseInt(start);
-      let parsedEnd = parseFloat(end);
-      if (isNaN(parsedStart) || isNaN(parsedEnd)) {
-        throw new Error(
-          `Failed to parse range ${range} in key ${prefix + key}`,
-        );
-      }
-      directHighlights.push({
-        key: last_prop,
-        start: parsedStart,
-        end: parsedEnd,
-        content: value,
-      });
-    } else if (rest.length === 0) {
-      directHighlights.push({
-        key: firstSegment,
-        start: null,
-        end: null,
-        content: value,
-      });
-    } else {
-      if (!highlightsPerKey[firstSegment]) {
-        highlightsPerKey[firstSegment] = [];
-      }
-      highlightsPerKey[firstSegment].push([rest, value]);
+        if (firstSegment.includes('bbox-')) {
+            //console.log('first', firstSegment, parts)
+            
+            // Split the `key` string of the form {_something_}:bbox-[0.0,0.0,0.0,0.0] into an array of floats
+            const bbox = key.split('bbox-[')[1].split(',').map(parseFloat)
+            bboxHighlights.push({ key: firstSegment.split(':')[0], x1: bbox[0], y1: bbox[1], x2: bbox[2], y2: bbox[3], content: value })
+            continue
+        }
+
+        if (firstSegment.includes(':')) {
+            const [last_prop, range] = firstSegment.split(':')
+            let [start, end] = range.split('-')
+            let parsedStart = parseInt(start)
+            let parsedEnd = parseFloat(end)
+            if (isNaN(parsedStart) || isNaN(parsedEnd)) {
+                throw new Error(`Failed to parse range ${range} in key ${prefix + key}`)
+            }
+            directHighlights.push({ key: last_prop, start: parsedStart, end: parsedEnd, content: value })
+        } else if (rest.length === 0) {
+            directHighlights.push({ key: firstSegment, start: null, end: null, content: value })
+        } else {
+            if (!highlightsPerKey[firstSegment]) {
+                highlightsPerKey[firstSegment] = []
+            }
+            highlightsPerKey[firstSegment].push([rest, value])
+        }
     }
-  }
 
   for (const key in highlightsPerKey) {
     try {
@@ -519,19 +541,27 @@ function highlightsToMap(
     }
   }
 
-  for (const highlight of directHighlights) {
-    if (!map[highlight.key]) {
-      map[highlight.key] = {};
+    for (const highlight of directHighlights) {
+        if (!map[highlight.key]) {
+            map[highlight.key] = {}
+        }
+        if (!map[highlight.key]["$highlights"]) {
+            map[highlight.key]["$highlights"] = []
+        }
+        map[highlight.key]["$highlights"].push({ start: highlight.start, end: highlight.end, content: highlight.content })
     }
-    if (!map[highlight.key]["$highlights"]) {
-      map[highlight.key]["$highlights"] = [];
-    }
-    map[highlight.key]["$highlights"].push({
-      start: highlight.start,
-      end: highlight.end,
-      content: highlight.content,
-    });
-  }
+    
+    
+    for (const bboxHighlight of bboxHighlights) {
+        if (!map[bboxHighlight.key]) {
+            map[bboxHighlight.key] = {}
+        }
 
-  return map;
+        if (!map[bboxHighlight.key]["$bbox-highlights"]) {
+            map[bboxHighlight.key]["$bbox-highlights"] = []
+        }
+        map[bboxHighlight.key]["$bbox-highlights"].push({ x1: bboxHighlight.x1, y1: bboxHighlight.y1, x2: bboxHighlight.x2, y2: bboxHighlight.y2, content: bboxHighlight.content })
+    }
+
+    return map
 }

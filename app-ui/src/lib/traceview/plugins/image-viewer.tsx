@@ -114,6 +114,41 @@ class ImageViewer extends React.Component<
     }
   }
 
+    addBoundingBox(x1, y1, x2, y2, index) {
+        const paddingPx = 0.5; // Add slight padding to boxes to make them more visible
+    
+        // Adjust coordinates to add padding
+        const adjustedX1 = Math.min(1, Math.max(0, x1 - paddingPx / 100));
+        const adjustedY1 = Math.min(1, Math.max(0, y1 - paddingPx / 100)); 
+        const adjustedX2 = Math.min(1, Math.max(0, x2 + paddingPx / 100));
+        const adjustedY2 = Math.min(1, Math.max(0, y2 + paddingPx / 100));
+    
+        // Calculate new dimensions and position
+        const newLeft = adjustedX1 * 100;
+        const newTop = adjustedY1 * 100;
+        const newWidth = (adjustedX2 - adjustedX1) * 100;
+        const newHeight = (adjustedY2 - adjustedY1) * 100;
+    
+        return (
+            <div
+                key={`bounding-box-${index}`}
+                className="bounding-box"
+                style={{
+                    position: 'absolute',
+                    top: `${newTop + 0.01}%`,
+                    left: `${newLeft}%`,
+                    width: `${newWidth}%`,
+                    height: `${newHeight}%`,
+                    border: '1px solid rgb(88 85 255)',
+                    boxSizing: 'border-box',
+                    pointerEvents: 'none',
+                    borderRadius: '2px'
+                }}
+            />
+        );
+    }
+
+
   /**
    * Get annotations for image and update the higlights for it by either:
    *      - Wrapping it in a span with annotation data
@@ -124,6 +159,7 @@ class ImageViewer extends React.Component<
     let highlights_in_text = this.props.highlights.in_text(
       JSON.stringify(this.props.content, null, 2),
     );
+    let bounding_boxes = HighlightedJSON.bounding_boxes(highlights_in_text)
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
@@ -150,72 +186,40 @@ class ImageViewer extends React.Component<
             )
             .join("\n");
 
-          // We assume that we will have exactly one highlight and that this is for the image,
-          // so only push a new line if find a highlight AND it is the first highlight.
-          if (this.state.imageUrl && !highligthed_found) {
-            image.push(
-              <span
-                key={
-                  elements.length +
-                  "-" +
-                  image.length +
-                  "-" +
-                  interval.start +
-                  "-" +
-                  interval.end
+                    // We assume that we will have exactly one highlight and that this is for the image,
+                    // so only push a new line if find a highlight AND it is the first highlight.
+                    if (this.state.imageUrl && !highligthed_found) { 
+                        image.push(
+                            <span key={(elements.length) + '-' + (image.length) + "-" + (interval.start) + "-" + (interval.end)} className={`image-wrapper ${className}`} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>
+                            <div className="image-container" style={{ position: 'relative' }}>
+                                <img src={this.state.imageUrl} className={`trace-image ${className} ${this.state.isModalOpen ? 'full-size' : ''}`} />
+                                {bounding_boxes.map(({ x1, y1, x2, y2 }, index) => this.addBoundingBox(x1, y1, x2, y2, index))}
+                            </div>
+                        </span>
+                    );
+                        highligthed_found = true;
+                    }
                 }
-                className={`image-wrapper ${className}`}
-                data-tooltip-id={"highlight-tooltip"}
-                data-tooltip-content={tooltip}
-              >
-                <img
-                  src={this.state.imageUrl}
-                  className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
-                />
-              </span>,
-            );
-            highligthed_found = true;
-          }
-        }
-      }
-
-      // We still need to render the image if we do not have annotattions
-      if (!highligthed_found) {
-        image.push(
-          <span
-            key={"line-" + elements.length}
-            className="image-wrapper unannotated"
-          >
-            {
-              <img
-                src={this.state.imageUrl || ""}
-                className={`trace-image unannotated`}
-              />
             }
-          </span>,
-        );
-      }
-
-      // Push the image as a line (gives us the option to add comments, thumbs up/down and tooltips)
-      elements.push(
-        <Line
-          key={"line-" + elements.length}
-          highlights={highlights}
-          highlightContext={this.props.highlightContext}
-          address={this.props.address + ":L" + elements.length}
-          traceIndex={this.props.traceIndex}
-          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
-        >
-          {image}
-          {"\n"}
-        </Line>,
-      );
+            
+            // We still need to render the image if we do not have annotattions
+            if (!highligthed_found) {
+                image.push(<span key={'line-' + elements.length} className='image-wrapper unannotated'>
+                    {<img src={this.state.imageUrl || ''} className={`trace-image unannotated`} />}
+                </span>);
+            }
+            
+            // Push the image as a line (gives us the option to add comments, thumbs up/down and tooltips)
+            elements.push(
+                <Line key={'line-' + elements.length} highlights={highlights} highlightContext={this.props.highlightContext} address={this.props.address + ":L" + elements.length}>
+                    {image}{'\n'}
+                </Line>
+            )
+        }
+        
+        // Update the nodes for render method
+        return elements
     }
-
-    // Update the nodes for render method
-    return elements;
-  }
 
   render() {
     let elements = this.updateHighlights();
