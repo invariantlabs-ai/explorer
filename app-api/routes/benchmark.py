@@ -12,7 +12,6 @@ from fastapi.responses import StreamingResponse
 from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
                                         SavedQueries, SharedLinks, Trace, User,
                                         db)
-from models.importers import import_jsonl
 from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
                             load_dataset, load_trace, query_traces,
                             search_term_mappings, trace_to_exported_json,
