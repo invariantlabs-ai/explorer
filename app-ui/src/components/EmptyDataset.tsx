@@ -20,15 +20,14 @@ export function EmptyDatasetInstructions(props) {
     }
     setLoading(true)
     uploadDataset(datasetname, file).then(() => {
-      // on success, close the modal
-      setLoading(false)
-      props.onSuccess()
-      props.onClose()
-      telemetry.capture('dataset-created', { name: datasetname, from_file: true})
+      setLoading(false);
+      telemetry.capture('dataset-uploaded', { name: datasetname, from_file: true});
+      props.onSuccess();
     }).catch(err => {
-      setLoading(false)
-      setError(err.detail || 'An unknown error occurred, please try again.')
-      telemetry.capture('dataset-create-failed', { name: datasetname, error: err.detail })
+      console.log(err);
+      setLoading(false);
+      setError(err.detail || 'An unknown error occurred, please try again.');
+      telemetry.capture('dataset-upload-failed', { name: datasetname, error: err.detail });
     })
   }
 
@@ -38,10 +37,9 @@ export function EmptyDatasetInstructions(props) {
       <h3>Empty Dataset</h3>
       <p>This dataset does not contain any traces yet.</p>
       <div className="options">
-        <div style={{height: '220pt'}}>
+        <div>
           <h2>Upload a JSON Lines file</h2>
           <p>
-            {" "}
             Before uploading traces make sure they are in the{" "}
             <a
               target="_blank"
@@ -65,7 +63,8 @@ export function EmptyDatasetInstructions(props) {
           >
             {loading ? "Uploading..." : "Upload"}
           </button>
-          <p style={{display: 'none'}}>
+          {error && <span className="error">{error}</span>}
+          <p className="push-api-option">
             <i>
               You can also upload traces using the{" "}
               <a
