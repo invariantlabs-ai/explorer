@@ -29,7 +29,9 @@ export function DeploymentName() {
 export function DeploymentInfo() {
     const [userPopoverVisible, setUserPopoverVisible] = useState(false);
 
-    if (import.meta.env.VITE_PREVIEW != '1') {
+    const isPreview = import.meta.env.VITE_PREVIEW == '1' || window.location.hostname.startsWith("preview-");
+
+    if (isPreview) {
         return <DeploymentName/>
     }
 
