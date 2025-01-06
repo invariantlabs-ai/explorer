@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main   # Trigger on main branch pushes
+      - prod   # Trigger on prod branch pushes
     tags:
       - 'v*'   # Trigger on tags (e.g., v1.0.0)
   pull_request:
