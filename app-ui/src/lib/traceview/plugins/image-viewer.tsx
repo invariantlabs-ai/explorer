@@ -114,9 +114,7 @@ class ImageViewer extends React.Component<
     }
   }
 
-    addBoundingBox(x1, y1, x2, y2, index) {
-        const paddingPx = 0.5; // Add slight padding to boxes to make them more visible
-    
+    addBoundingBox(x1, y1, x2, y2, index, borderSize = 1, paddingPx = 0) {
         // Adjust coordinates to add padding
         const adjustedX1 = Math.min(1, Math.max(0, x1 - paddingPx / 100));
         const adjustedY1 = Math.min(1, Math.max(0, y1 - paddingPx / 100)); 
@@ -139,7 +137,7 @@ class ImageViewer extends React.Component<
                     left: `${newLeft}%`,
                     width: `${newWidth}%`,
                     height: `${newHeight}%`,
-                    border: '1px solid rgb(88 85 255)',
+                    border: `${borderSize}px solid rgb(88 85 255)`,
                     boxSizing: 'border-box',
                     pointerEvents: 'none',
                     borderRadius: '2px'
@@ -149,23 +147,21 @@ class ImageViewer extends React.Component<
     }
 
 
-  /**
-   * Get annotations for image and update the higlights for it by either:
-   *      - Wrapping it in a span with annotation data
-   *      - Wrapping it in an unannotated span
-   * This image is the set in the nodes object.
-   */
-  updateHighlights() {
-    let highlights_in_text = this.props.highlights.in_text(
-      JSON.stringify(this.props.content, null, 2),
-    );
-    let bounding_boxes = HighlightedJSON.bounding_boxes(highlights_in_text)
-    highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
-    let highlights_per_line = HighlightedJSON.by_lines(
-      highlights_in_text,
-      '"' + this.props.content + '"',
-    );
-    let elements: React.ReactNode[] = [];
+    /**
+     * Get annotations for image and update the higlights for it by either:
+     *      - Wrapping it in a span with annotation data
+     *      - Wrapping it in an unannotated span
+     * This image is the set in the nodes object.
+     */
+    updateHighlights() {
+        let highlights_in_text = this.props.highlights.in_text(JSON.stringify(this.props.content, null, 2))
+        let bounding_boxes_data = HighlightedJSON.bounding_boxes(highlights_in_text)
+
+        highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
+        let highlights_per_line = HighlightedJSON.by_lines(highlights_in_text, '"' + this.props.content + '"');
+        let elements: React.ReactNode[] = [];
+
+        let bounding_boxes = bounding_boxes_data.map(({ x1, y1, x2, y2 }, index) => this.addBoundingBox(x1, y1, x2, y2, index, 1, 0.25));
 
     // Loop over the highlighted structure
     let highligthed_found = false;
@@ -193,7 +189,7 @@ class ImageViewer extends React.Component<
                             <span key={(elements.length) + '-' + (image.length) + "-" + (interval.start) + "-" + (interval.end)} className={`image-wrapper ${className}`} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>
                             <div className="image-container" style={{ position: 'relative' }}>
                                 <img src={this.state.imageUrl} className={`trace-image ${className} ${this.state.isModalOpen ? 'full-size' : ''}`} />
-                                {bounding_boxes.map(({ x1, y1, x2, y2 }, index) => this.addBoundingBox(x1, y1, x2, y2, index))}
+                                {bounding_boxes}
                             </div>
                         </span>
                     );
@@ -206,6 +202,7 @@ class ImageViewer extends React.Component<
             if (!highligthed_found) {
                 image.push(<span key={'line-' + elements.length} className='image-wrapper unannotated'>
                     {<img src={this.state.imageUrl || ''} className={`trace-image unannotated`} />}
+                    {bounding_boxes}
                 </span>);
             }
             
@@ -217,6 +214,25 @@ class ImageViewer extends React.Component<
             )
         }
         
+        // Conditionally render the full screen image
+        if (this.state.isModalOpen) {
+                elements.push(
+                <div
+                    className='image-full-screen'
+                    onClick={() => this.setState({ isModalOpen: false })}
+                >
+                    <div className="image-container" style={{ position: 'relative', display: 'flex'}}>
+                        <img
+                            src={this.state.imageUrl || ''}
+                            alt="Image in the trace fullscreen"
+                            className='image-full-screen-opened'
+                        />
+                        {bounding_boxes}
+                    </div>
+                </div>
+            );
+        }
+        
         // Update the nodes for render method
         return elements
     }
@@ -224,40 +240,19 @@ class ImageViewer extends React.Component<
   render() {
     let elements = this.updateHighlights();
 
-    const image_view = (
-      <div className="plugin code-image-viewer">
-        {this.state.imageUrl && (
-          <>
-            {elements}
-            <button
-              className="full-screen-button"
-              onClick={() => this.setState({ isModalOpen: true })}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-              </svg>
-            </button>
-            {this.state.isModalOpen && (
-              <div
-                className="image-full-screen"
-                onClick={() => this.setState({ isModalOpen: false })}
-              >
-                <img
-                  src={this.state.imageUrl}
-                  alt="Image in the trace fullscreen"
-                  className="image-full-screen-opened"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    );
+        const image_view = (
+            <div className='plugin code-image-viewer'>
+                {this.state.imageUrl && (
+                    <>
+                        {elements}
+                        <button className='full-screen-button' onClick={() => this.setState({ isModalOpen: true })}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                            </svg>
+                        </button>
+                    </>
+                )}
+            </div>);
 
     return image_view;
   }

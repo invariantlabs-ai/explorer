@@ -165,32 +165,32 @@ export class HighlightedJSON {
       return EMPTY_ANNOTATIONS;
     }
 
-    let highlightsMap = highlightsToMap(mappings);
-    return new HighlightedJSON(highlightsMap);
-  }
+        let highlightsMap = highlightsToMap(mappings)
+        return new HighlightedJSON(highlightsMap)
+    }
 
-  /**
-   * Returns the highlights referenced by this highlight tree, as a list of {start, end, content} objects
-   * relative to the provided object string representation (e.g. JSON representation of the highlighted object).
-   *
-   * Uses JSON source maps internally, to point from an highlight into the object string. This means the object string
-   * must be valid JSON.
-   */
-  in_text(object_string: string): Highlight[] {
-    // extract source map pointers
-    try {
-      let map = null as any;
-      try {
-        // try to parse source map
-        map = jsonMap.parse(object_string);
-      } catch (e) {
-        // if parsing fails, assume it's a string and try again
-        map = {
-          pointers: {
-            "": { value: { pos: 0 }, valueEnd: { pos: object_string.length } },
-          },
-        };
-      }
+    /**
+     * Returns the highlights referenced by this highlight tree, as a list of {start, end, content} objects
+     * relative to the provided object string representation (e.g. JSON representation of the highlighted object).
+     * 
+     * Uses JSON source maps internally, to point from an highlight into the object string. This means the object string
+     * must be valid JSON.
+     */
+    in_text(object_string: string): Array<Highlight | BoundingBoxHighlight> {
+        // extract source map pointers
+        try {
+            let map = null as any
+            try {
+                // try to parse source map
+                map = jsonMap.parse(object_string)
+            } catch (e) {
+                // if parsing fails, assume it's a string and try again
+                map = {
+                    pointers: {
+                        "": { value: { pos: 0 }, valueEnd: { pos: object_string.length } }
+                    }
+                }
+            }
 
       const pointers: { start: number; end: number; content: string }[] = [];
       for (const key in map.pointers) {
@@ -224,10 +224,10 @@ export class HighlightedJSON {
     return disjunct_overlaps(highlights);
   }
 
-  static bounding_boxes(highlights: Highlight[]): GroupedHighlight[] {
-      let bbox_highlights = highlights.filter((a) => a.type && a.type === "bbox")
-      return bbox_highlights;
-  }
+    // Returns the list of bounding boxes from the list of highlights
+    static bounding_boxes(highlights: Array<BoundingBoxHighlight | Highlight>): BoundingBoxHighlight[] {
+        return highlights.filter((a): a is BoundingBoxHighlight => a.type === "bbox")
+    }
 
   static by_lines(
     disjunct_highlights: Highlight[],
@@ -329,11 +329,11 @@ function disjunct_overlaps(
   // collects all interval boundaries
   let boundaries = [0, Infinity];
 
-  for (const item of items) {
-    tree.insert([item.start, item.end], item);
-    boundaries.push(item.start);
-    boundaries.push(item.end);
-  }
+    for (const item of items) {
+        tree.insert([item.start, item.end], item)
+        boundaries.push(item.start)
+        boundaries.push(item.end)
+    }
 
   // make boundaries unique
   boundaries = Array.from(new Set(boundaries));
@@ -504,11 +504,10 @@ function highlightsToMap(
         const rest = parts.slice(1).join('.')
 
         if (firstSegment.includes('bbox-')) {
-            //console.log('first', firstSegment, parts)
-            
-            // Split the `key` string of the form {_something_}:bbox-[0.0,0.0,0.0,0.0] into an array of floats
+            // Split the `key` string of the form {...}:bbox-[F,F,F,F] into an array of floats
             const bbox = key.split('bbox-[')[1].split(',').map(parseFloat)
-            bboxHighlights.push({ key: firstSegment.split(':')[0], x1: bbox[0], y1: bbox[1], x2: bbox[2], y2: bbox[3], content: value })
+            const bbox_key = firstSegment.split(':')[0]
+            bboxHighlights.push({ key: bbox_key, x1: bbox[0], y1: bbox[1], x2: bbox[2], y2: bbox[3], content: value })
             continue
         }
 
@@ -551,8 +550,8 @@ function highlightsToMap(
         map[highlight.key]["$highlights"].push({ start: highlight.start, end: highlight.end, content: highlight.content })
     }
     
-    
     for (const bboxHighlight of bboxHighlights) {
+
         if (!map[bboxHighlight.key]) {
             map[bboxHighlight.key] = {}
         }
@@ -560,7 +559,13 @@ function highlightsToMap(
         if (!map[bboxHighlight.key]["$bbox-highlights"]) {
             map[bboxHighlight.key]["$bbox-highlights"] = []
         }
-        map[bboxHighlight.key]["$bbox-highlights"].push({ x1: bboxHighlight.x1, y1: bboxHighlight.y1, x2: bboxHighlight.x2, y2: bboxHighlight.y2, content: bboxHighlight.content })
+        map[bboxHighlight.key]["$bbox-highlights"].push({ 
+            x1: bboxHighlight.x1, 
+            y1: bboxHighlight.y1, 
+            x2: bboxHighlight.x2, 
+            y2: bboxHighlight.y2, 
+            content: bboxHighlight.content 
+        })
     }
 
     return map
