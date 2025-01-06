@@ -488,7 +488,7 @@ function AnnotationEditor(props) {
       <textarea value={content} onChange={(e) => setContent(e.target.value)} ref={textareaRef} onKeyDown={onKeyDown} />
       <div className='actions'>
         <button className='secondary' onClick={props.onClose}>Close</button>
-        <button className='primary' disabled={submitting || content == ''} onClick={onSave}>
+        <button className='primary' disabled={submitting || (content == '' && userInfo?.loggedIn)} onClick={onSave}>
           {!userInfo?.loggedIn ? 'Sign Up To Annotate' : (submitting ? 'Saving...' : <>
             Save <span className='shortcut'><BsCommand /> + Enter</span>
           </>)}
