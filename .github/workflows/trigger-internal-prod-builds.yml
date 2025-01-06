@@ -1,0 +1,22 @@
+name: Trigger Internal Production Builds
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Explorer CI"]
+    types:
+      - completed
+    branches:
+      - prod
+
+jobs:
+  trigger-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: trigger production build
+        run: |
+          curl -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.PROD_REPO_PAT }}" \
+          https://api.github.com/repos/invariantlabs-ai/explorer-prod/actions/workflows/build-prod-images.yaml/dispatches \
+          -d '{"ref":"main"}'
