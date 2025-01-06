@@ -36,7 +36,7 @@ export function SignUpModal() {
             <h1>Sign Up for Explorer</h1>
             To {action} you need to sign up for an account.
             <br /><br />
-            <Link to={'/login'} className='button primary' style={{lineHeight: "35pt"}} onClick={() => setAction(null)}>
+            <Link reloadDocument to={'/login'} className='button primary' style={{lineHeight: "35pt"}} onClick={() => setAction(null)}>
                 Sign Up
             </Link>
             <button onClick={() => setAction(null)}>
