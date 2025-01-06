@@ -142,6 +142,8 @@ async def test_create_delete_dataset(context, url, dataset_name, content, screen
 
     # we should be back at the home page
     # check if the dataset is deleted
+    await page.wait_for_url(url + "/")
+    await screenshot(page)
     dataset_mentions = await page.locator(f"text={dataset_name}").all()
     assert len(dataset_mentions) == 0
 
@@ -164,9 +166,7 @@ async def test_create_empty_dataset_and_then_upload_file(context, url, dataset_n
     # go to the dataset page
     await page.goto(url)
     await page.locator(f"text={dataset_name}").click()
-    await screenshot(page)
     await page.get_by_role("link", name="All").click()
-    await screenshot(page)
 
     # upload traces via file upload
     async with page.expect_file_chooser() as fc_info:
@@ -190,12 +190,13 @@ async def test_create_empty_dataset_and_then_upload_file(context, url, dataset_n
     await page.locator(f"text={dataset_name}").click()
     await page.get_by_role("button", name="settings").click()
     await page.get_by_label("delete").click()
-    await screenshot(page)
     await page.get_by_label("confirm delete").click()
     await screenshot(page)
 
     # we should be back at the home page
     # check if the dataset is deleted
+    await page.wait_for_url(url + "/")
+    await screenshot(page)
     dataset_mentions = await page.locator(f"text={dataset_name}").all()
     assert len(dataset_mentions) == 0
 
