@@ -690,7 +690,7 @@ export function Traces() {
   const isTest = activeTrace?.extra_metadata && typeof activeTrace?.extra_metadata['invariant.num-failures'] === 'number'
   return <div className="panel fullscreen app">
     {/* controls for link sharing */}
-    {sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
+    {isUserOwned && sharingEnabled != null && showShareModal && <Modal title="Link Sharing" onClose={() => setShowShareModal(false)} hasWindowControls cancelText="Close">
       <ShareModalContent sharingEnabled={sharingEnabled} setSharingEnabled={setSharingEnabled} traceId={activeTrace?.id} traceName={getFullDisplayName(activeTrace)} />
     </Modal>}
     {/* shown when the user confirms deletion of a trace */}
@@ -746,6 +746,7 @@ export function Traces() {
         onAnnotationDelete={onAnnotationDelete}
         enableNux={enableNux}
         datasetname={props.datasetname}
+        isUserOwned={isUserOwned}
       />}
       {renderNux && <TracePageNUX/>}
     </div>

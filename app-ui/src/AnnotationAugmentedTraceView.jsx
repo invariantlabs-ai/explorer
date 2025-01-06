@@ -69,6 +69,7 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.is_public - whether the trace is public
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
+ * @param {boolean} props.isUserOwned - whether the trace is owned by the user
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -231,7 +232,7 @@ export function AnnotationAugmentedTraceView(props) {
         {props.actions}
         <div className='vr' />
         {config('sharing') && <button className='inline' onClick={onOpenInPlayground}> <BsTerminal /> Open In Invariant</button>}
-        {config('sharing') && props.onShare && <button className={'inline guide-step-4' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
+        {props.isUserOwned && config('sharing') && props.onShare && <button className={'inline guide-step-4' + (props.sharingEnabled ? 'primary' : '')} onClick={onShare}>
           {!props.sharingEnabled ? <><BsShare /> Share</> : <><BsCheck /> Shared</>}
         </button>}
       </>}
