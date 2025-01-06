@@ -52,3 +52,21 @@ span.image-wrapper {
   stroke-linecap: "round";
   stroke-linejoin: "round";
 }
+
+.bounding-box {
+    box-sizing: border-box;
+    pointer-events: none;
+    border-radius: 2px;
+    border-style: solid;
+    border-color: rgb(88 85 255);
+
+    &.test-assertion-passed {
+        background-color: #0f9d0f2d;
+        border-color: #0f9d0f;
+    }
+
+    &.annotated {
+        background-color: #ff00002d;
+        border-color: #ff0000;
+    }
+}
