@@ -31,7 +31,7 @@ export function DeploymentInfo() {
 
     const isPreview = import.meta.env.VITE_PREVIEW == '1' || window.location.hostname.startsWith("preview-");
 
-    if (isPreview) {
+    if (!isPreview) {
         return <DeploymentName/>
     }
 
