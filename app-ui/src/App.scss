@@ -1960,9 +1960,16 @@ div.empty.instructions {
   width: calc(100% - 10pt);
   height: auto;
   margin: auto;
+  margin-top: -45pt !important;
   color: $text-color;
   opacity: 1.0;
   text-align: center;
+
+  .error {
+    color: #ED707B;
+    border-left: 2pt solid #ED707B;
+    padding-left: 3pt;
+  }
 
   h3 {
     opacity: 1.0;
@@ -1975,9 +1982,13 @@ div.empty.instructions {
     margin: 0pt 30pt;
   }
 
+  .push-api-option {
+    margin-top: 8pt;
+  }
+
   .options {
     display: flex;
-    margin-top: 30pt;
+    margin-top: 15pt;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
@@ -1986,9 +1997,10 @@ div.empty.instructions {
     >div {
       background-color: white;
       border-radius: 5pt;
+      height: auto;
       border: 1pt solid $border-color;
       margin: 10pt;
-      padding: 30pt 20pt;
+      padding: 15pt 10pt 10pt 10pt;
       width: 400pt;
       text-align: left;
 
@@ -2001,24 +2013,24 @@ div.empty.instructions {
       h2 {
         border: none;
         font-weight: bold;
-        text-align: center;
-        font-size: 18pt;
+        text-align: left;
+        font-size: 14pt;
       }
 
       p {
         color: $text-color;
         opacity: 0.9;
-        font-size: 14pt;
+        font-size: 12pt;
       }
+    }
 
-      pre {
-        border-radius: 5pt;
-        text-align: left;
-        display: block;
-        overflow-x: auto;
-        padding: 10pt;
-        background-color: #f1f1f1;
-      }
+    input[type=file] {
+      opacity: 0.0;
+      height: 100pt;
+    }
+
+    button { 
+      width: 70%;
     }
   }
 }

@@ -239,6 +239,7 @@ export function AnnotationAugmentedTraceView(props) {
     <div className='explorer panel traceview'>
       <TraceViewContent
         empty={props.empty}
+        datasetname={props.datasetname}
         activeTrace={activeTrace}
         activeTraceId={activeTraceId}
         highlights={traceHighlights}
@@ -257,13 +258,17 @@ export function AnnotationAugmentedTraceView(props) {
  * Show the rendered trace or an `props.empty` component if no trace is selected.
  */
 function TraceViewContent(props) {
-  const { activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
+  const { datasetname, activeTrace, activeTraceId, highlights, errors, decorator, setEvents } = props
   const EmptyComponent = props.empty || (() => <div className='empty'>No trace selected</div>)
+
+  const onSuccess = () => {
+    window.location.reload();
+  };
 
   // if no trace ID set
   if (activeTraceId === null) {
     return <div className='explorer panel'>
-      <EmptyComponent />
+      <EmptyComponent datasetname={datasetname} onSuccess={onSuccess}/>
     </div>
   }
   return <RenderedTrace

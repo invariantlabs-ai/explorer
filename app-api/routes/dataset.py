@@ -148,13 +148,35 @@ async def upload_file(
             status_code=401, detail="Must be authenticated to upload a dataset"
         )
     validate_dataset_name(name)
-    # Fail eagerly if a dataset with the same name already exists.
-    if is_duplicate(user_id, name):
-        raise HTTPException(status_code=400, detail="Dataset with the same name already exists")
+
+    # Fail eagerly if a dataset with the same name already exists with some traces
+    existing_dataset = None
+    with Session(db()) as session:
+        existing_dataset = (
+            session.query(Dataset)
+            .filter(and_(Dataset.user_id == user_id, Dataset.name == name))
+            .first()
+        )
+        if existing_dataset is not None:
+            trace_count = (
+                session.query(Trace).filter(Trace.dataset_id == existing_dataset.id).count()
+            )
+            if trace_count > 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Dataset with the same name already exists with traces, to add new traces use the push API",
+                )
 
     with Session(db()) as session:
         lines = file.file.readlines()
-        dataset = import_jsonl(session, name, user_id, lines, is_public=is_public)
+        dataset = import_jsonl(
+            session,
+            name,
+            user_id,
+            lines,
+            existing_dataset=existing_dataset,
+            is_public=is_public,
+        )
         session.commit()
         return dataset_to_json(dataset)
 
