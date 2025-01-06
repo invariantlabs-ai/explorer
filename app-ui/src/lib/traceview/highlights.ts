@@ -176,7 +176,7 @@ export class HighlightedJSON {
      * Uses JSON source maps internally, to point from an highlight into the object string. This means the object string
      * must be valid JSON.
      */
-    in_text(object_string: string): Array<Highlight | BoundingBoxHighlight> {
+    in_text(object_string: string): Highlight[] {
         // extract source map pointers
         try {
             let map = null as any
@@ -215,14 +215,15 @@ export class HighlightedJSON {
     }
   }
 
-  /**
-   * Turns a list of highlights into a list of fully separated intervals, where the list of
-   * returned intervals is guaranteed to have no overlaps between each other and the 'content' field contains
-   * the list of item contents that overlap in that interval.
-   */
-  static disjunct(highlights: Highlight[]): GroupedHighlight[] {
-    return disjunct_overlaps(highlights);
-  }
+    /**
+     * Turns a list of highlights into a list of fully separated intervals, where the list of
+     * returned intervals is guaranteed to have no overlaps between each other and the 'content' field contains
+     * the list of item contents that overlap in that interval.
+     */
+    static disjunct(highlights: Highlight[]): GroupedHighlight[] {
+        // Only include highlights that are not bbox highlights
+        return disjunct_overlaps(highlights.filter((a) => !("type" in a && a.type === "bbox")))
+    }
 
     // Returns the list of bounding boxes from the list of highlights
     static bounding_boxes(highlights: Array<BoundingBoxHighlight | Highlight>): BoundingBoxHighlight[] {
@@ -505,7 +506,7 @@ function highlightsToMap(
 
         if (firstSegment.includes('bbox-')) {
             // Split the `key` string of the form {...}:bbox-[F,F,F,F] into an array of floats
-            const bbox = key.split('bbox-[')[1].split(',').map(parseFloat)
+            const bbox = key.split('bbox-')[1].split(',').map(parseFloat)
             const bbox_key = firstSegment.split(':')[0]
             bboxHighlights.push({ key: bbox_key, x1: bbox[0], y1: bbox[1], x2: bbox[2], y2: bbox[3], content: value })
             continue

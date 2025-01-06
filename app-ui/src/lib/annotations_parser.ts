@@ -56,31 +56,26 @@ export class AnnotationsParser {
       // mappings
       let substr = key.substring(key.indexOf(":"));
             // Match either a character range or a bounding box
-      if (substr.match(/:\d+-\d+/) || substr.match(/:bbox-\[\d.\d+,\s*\d.\d+,\s*\d.\d+,\s*\d.\d+\]/)) {
-        for (let i = 0; i < annotations[key].length; i++) {
-          let annotation = annotations[key][i]; // TODO: what do multiple indices here mean{
-          let highlight: HighlightData = {
-            content: annotation.content,
-            // allows us to identify the annotation from the highlight
-            source: annotation.extra_metadata
-              ? annotation.extra_metadata["source"]
-              : "unknown",
-            annotationId: key + ":" + i,
-          };
-
-          if (annotation.extra_metadata) {
-            highlight.extra_metadata = Object.assign(
-              {},
-              annotation.extra_metadata,
-            );
-            // remove source if present
-            delete highlight.extra_metadata!["source"];
-          }
-
-          highlights.push([key, highlight]);
+            if (substr.match(/:\d+-\d+/) || substr.match(/:bbox-\d.\d+,\s*\d.\d+,\s*\d.\d+,\s*\d.\d+/)) {
+                for (let i=0; i<annotations[key].length; i++) {
+                    let annotation = annotations[key][i] // TODO: what do multiple indices here mean{
+                    let highlight: HighlightData = { 
+                        "content": annotation.content,
+                        // allows us to identify the annotation from the highlight
+                        source: annotation.extra_metadata ? annotation.extra_metadata["source"] : "unknown",
+                        "annotationId": key + ":" + i
+                    }
+                    
+                    if (annotation.extra_metadata) {
+                        highlight.extra_metadata = Object.assign({}, annotation.extra_metadata)
+                        // remove source if present
+                        delete highlight.extra_metadata!["source"]
+                    }
+                    
+                    highlights.push([key, highlight])
+                }
+            }
         }
-      }
-    }
 
     // Filter all annotations with "analyzer" as source from all the keys
     // NOTE: Long term might be good to separate analysis results from the other annotations to avoid this kind of filtering logic
