@@ -832,3 +832,55 @@ async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
             assert response.status == 200
         else:
             assert 400 <= response.status < 500
+
+async def test_create_empty_dataset_and_upload_traces(context, url, data_abc):
+    """Tests that creating an empty dataset and uploading traces works."""
+    dataset_name = f"some_name-{uuid.uuid4()}"
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/create",
+        data={"name": dataset_name},
+    )
+    await expect(response).to_be_ok()
+
+    dataset_json = await response.json()
+    assert dataset_json["name"] == dataset_name
+
+    response = await context.request.post(
+        f"{url}/api/v1/dataset/upload",
+        multipart={
+            "name": dataset_name,
+            "file": {
+                "name": dataset_name + ".json",
+                "mimeType": "application/octet-stream",
+                "buffer": data_abc.encode("utf-8"),
+            },
+        },
+    )
+    await expect(response).to_be_ok()
+
+    dataset_json = await response.json()
+    assert dataset_json["name"] == dataset_name
+
+    # Cleanup the dataset.
+    _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
+
+
+async def test_upload_traces_fails_for_non_empty_dataset(context, url, data_abc):
+    """Tests that uploading traces to a non-empty dataset fails."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        response = await context.request.post(
+            f"{url}/api/v1/dataset/upload",
+            multipart={
+                "name": dataset["name"],
+                "file": {
+                    "name": dataset["name"] + ".json",
+                    "mimeType": "application/octet-stream",
+                    "buffer": data_abc.encode("utf-8"),
+                },
+            },
+        )
+        assert response.status == 400
+        assert (
+            "Dataset with the same name already exists with traces, to add new traces use the push API"
+            in await response.text()
+        )
