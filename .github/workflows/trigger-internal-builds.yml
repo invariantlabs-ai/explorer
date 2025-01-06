@@ -14,9 +14,19 @@ jobs:
   trigger-workflow:
     runs-on: ubuntu-latest
     steps:
+      - name: Check if manually triggered or via workflow_run
+        # this step determines if the workflow was triggered manually or via another workflow. It then sets REF to either the name of the previous workflow run or the current branch name
+        run: |
+          if [ -n "${{ github.event.inputs.ref }}" ]; then
+            echo "Setting REF to ${{ github.event.inputs.ref }}"
+            echo "::set-env name=REF::${{ github.event.inputs.ref }}"
+          else
+            echo "Setting REF to ${{ github.ref }}"
+            echo "::set-env name=REF::${{ github.ref }}"
+          fi
       - name: trigger production build
         # only on production branch
-        if: github.ref == 'refs/heads/prod'
+        if: env.REF == 'refs/heads/prod'
         run: |
           curl -X POST \
           -H "Accept: application/vnd.github+json" \
@@ -25,7 +35,7 @@ jobs:
           -d '{"ref":"main"}'
       - name: trigger pre-production build
         # only on 'main' branch
-        if: github.ref == 'refs/heads/main'
+        if: env.REF == 'refs/heads/main'
         run: |
           curl -X POST \
           -H "Accept: application/vnd.github+json" \

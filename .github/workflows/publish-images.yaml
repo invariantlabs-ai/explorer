@@ -6,6 +6,9 @@ on:
       - Explorer CI  # Name of the first workflow
     types:
       - completed
+    branches:
+      - main
+      - v*
 
 
 jobs:
