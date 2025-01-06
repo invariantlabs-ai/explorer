@@ -611,15 +611,23 @@ class MessageView extends React.Component<MessageViewProps, { error: Error | nul
     constructor(props: MessageViewProps) {
         super(props)
 
+        let collapsed = false; // default to expanded message display
+        if (typeof props.allExpanded !== "undefined") {
+            // if all messages are expanded/collapsed, use that state
+            // to initialize the expanded state of this message
+            // even if we have all collapsed, we still want to show the user messages
+            collapsed = !props.allExpanded && this.props.message.role !== "user";
+        }
+
         this.state = {
             error: null,
-            collapsed: typeof props.allExpanded !== "undefined" ? !props.allExpanded : false
+            collapsed: collapsed
         }
 
         this.collapse = () => this.setState({ collapsed: true })
         this.expand = () => this.setState({ collapsed: false })
     }
-
+    
     componentDidMount(): void {
         this.props.events.collapseAll.on(this.collapse)
         this.props.events.expandAll.on(this.expand)
