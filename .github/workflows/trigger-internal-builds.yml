@@ -15,17 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check if manually triggered or via workflow_run
-        # this step determines if the workflow was triggered manually or via another workflow. It then sets REF to either the name of the previous workflow run or the current branch name
         run: |
-          if [ -n "${{ github.event.inputs.ref }}" ]; then
-            echo "Setting REF to ${{ github.event.inputs.ref }}"
-            echo "::set-env name=REF::${{ github.event.inputs.ref }}"
-          else
-            echo "Setting REF to ${{ github.ref }}"
-            echo "::set-env name=REF::${{ github.ref }}"
-          fi
+          REF="${{ github.event.inputs.ref || github.ref }}"
+          echo "REF=$REF" >> $GITHUB_ENV
+
       - name: trigger production build
-        # only on production branch
         if: env.REF == 'refs/heads/prod'
         run: |
           curl -X POST \
@@ -33,8 +27,8 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.PROD_REPO_PAT }}" \
           https://api.github.com/repos/invariantlabs-ai/explorer-prod/actions/workflows/build-prod-images.yaml/dispatches \
           -d '{"ref":"main"}'
+
       - name: trigger pre-production build
-        # only on 'main' branch
         if: env.REF == 'refs/heads/main'
         run: |
           curl -X POST \
