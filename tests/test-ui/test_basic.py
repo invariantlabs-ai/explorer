@@ -166,7 +166,6 @@ async def test_create_empty_dataset_and_then_upload_file(context, url, dataset_n
     # go to the dataset page
     await page.goto(url)
     await page.locator(f"text={dataset_name}").click()
-    await page.get_by_role("link", name="All").click()
 
     # upload traces via file upload
     async with page.expect_file_chooser() as fc_info:
@@ -223,7 +222,6 @@ async def test_reupload_ui(context, url, data_webarena_with_metadata, screenshot
                 async with util.TemporaryExplorerDataset(url, context, download_data) as dataset_reupload:
                     await page.goto(url) 
                     await page.locator(f"text={dataset_reupload['name']}").click()
-                    await page.get_by_role("link", name="All").click()
                     await screenshot(page)
 
                     # TODO this currently fails, because the dataset reimport does not work well
@@ -242,10 +240,6 @@ async def test_search(context, url, data_abc_with_trace_metadata, screenshot):
         await screenshot(page)
         
         await page.locator(f"text={dataset['name']}").click()
-        await screenshot(page)
-
-        # share dataset
-        await page.get_by_role("link", name="All").click()
         await screenshot(page)
        
         # both traces should be shown
@@ -283,8 +277,6 @@ async def test_share_trace(context, url, data_webarena_with_metadata, screenshot
         await screenshot(page)
 
         # share dataset
-        await page.get_by_role("link", name="All").click()
-        await screenshot(page)
         await page.get_by_role("button", name="Share").click()
         await screenshot(page)
         await page.locator("text=Enable Sharing").click()
@@ -317,7 +309,7 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
         await page.locator(f"text={dataset['name']}").click()
 
         # View policies.
-        await page.locator("text=Policies").click()
+        await page.locator("text=Metadata").click()
         await page.wait_for_selector("div.no-policies")
         no_policies_found_text = await page.locator("div.no-policies").inner_text()
         assert "No policies found for the dataset" in no_policies_found_text
@@ -376,14 +368,11 @@ async def test_thumbs_up_down(context, url, data_abc, screenshot):
         await screenshot(page)
 
         await page.locator(f"text={dataset['name']}").click()
-        await screenshot(page)
-
-        # go to All tab
-        await page.get_by_role("link", name="All").click()
-        await screenshot(page)
-
         # wait for load
         await page.wait_for_selector("text=User")
+        # wait for 1s to ensure that the trace messages are unexpanded
+        time.sleep(1)
+        await screenshot(page)
 
         # hover over a line to show thumbs up/down
         # role is unexpanded
