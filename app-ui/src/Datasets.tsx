@@ -396,7 +396,7 @@ export function DatasetLinkList(props) {
         {datasets.map((dataset, i) => (
           <Link
             className="item"
-            to={`/u/${dataset.user.username}/${dataset.name}`}
+            to={`/u/${dataset.user.username}/${dataset.name}/t`}
             key={i}
           >
             <li>

@@ -21,6 +21,7 @@ import { Metadata } from "./lib/metadata";
 import { config } from "./Config";
 import { useTelemetry } from "./telemetry";
 import { DatasetNotFound, isClientError } from "./NotFound";
+import { Traces } from "./Traces";
 
 interface Query {
   id: string;
@@ -44,7 +45,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`
     );
     //@ts-ignore
     this.username = username;
@@ -212,81 +213,37 @@ function DatasetView() {
 
   // if the dataset is not found, display a message
   return (
-    <div className="panel entity-list">
-      <header>
-        <h1>
-          <Link
-            to={
-              userInfo?.id == dataset?.user.username
-                ? "/"
-                : "/u/" + dataset.user.username
-            }
-          >
-            {dataset.user.username || "Datasets"}
-          </Link>{" "}
-          / {dataset?.name}
-          {dataset.is_public && <span className="badge">Shared</span>}
-        </h1>
-      </header>
-      {/* dataset metadata (e.g. time uploaded, uploader, num traces) */}
-      <Metadata
-        extra_metadata={filterMetadata({
-          ...dataset?.extra_metadata,
-          id: dataset.id,
-        })}
-      />
-
-      {/* Tabs for Traces, Policies, and Settings */}
-      <div className="dataset-tab-group">
+    <div className="dataset-view">
+      <div className="tabs">
         <button
-          className={selectedTab === "traces" ? "active" : ""}
+          key="traces"
+          className={`tab ${"traces" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("traces")}
         >
-          {" "}
-          <BsCollection /> Traces
+          <BsCollection />Traces
         </button>
-        {/* Only show the Policies tab if the user is the owner of the dataset. */}
-        {dataset?.user?.id == userInfo?.id && (
-          <button
-            className={selectedTab === "policies" ? "active" : ""}
-            onClick={() => setSelectedTab("policies")}
-          >
-            <BsCodeSlash /> Policies
-          </button>
-        )}
         <button
-          className={selectedTab === "settings" ? "active" : ""}
+          key="metadata"
+          className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
+          onClick={() => setSelectedTab("metadata")}
+        >
+          <BsCodeSlash />Metadata
+        </button>
+        <button
+          key="settings"
+          className={`tab ${"settings" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("settings")}
         >
-          {" "}
-          <BsGear />
-          Settings
+          <BsGear />Settings
         </button>
       </div>
 
-      {selectedTab === "traces" && (
-        <>
-          <h2>Summary</h2>
-          <div className="query-list">
-            {dataset.queries.map((query) => {
-              return (
-                <Query
-                  dataset={dataset}
-                  {...query}
-                  key={query.name}
-                  refresh={() => {
-                    datasetLoader.refresh();
-                  }}
-                />
-              );
-            })}
-          </div>
-          {/* TODO: Add trace details here. */}
-        </>
-      )}
+      {selectedTab === "traces" && <Traces />}
 
-      {selectedTab === "policies" && (
-        <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />
+      {selectedTab === "metadata" && (
+        <div className="metadata-policies">
+          <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />
+        </div>
       )}
 
       {selectedTab === "settings" && (
@@ -305,45 +262,47 @@ function DatasetView() {
               ></DeleteDatasetModalContent>
             </Modal>
           )}
-          <div className="actions">
-            {dataset?.user?.id == userInfo?.id && (
+          <div className="panel entity-list">
+            <div className="settings-actions">
+              {dataset?.user?.id == userInfo?.id && (
+                <div className="box full setting">
+                  <div>
+                    <h3>Delete Entire Dataset</h3>
+                    Delete this dataset and all associated data. This action
+                    cannot be undone.
+                  </div>
+                  <button
+                    aria-label="delete"
+                    className="danger"
+                    onClick={() => setSelectedDatasetForDelete(dataset)}
+                  >
+                    <BsTrash /> Delete
+                  </button>
+                </div>
+              )}
+              {config("sharing") && (
+                <PublicControls
+                  dataset={dataset}
+                  datasetLoader={datasetLoader}
+                  onPublicChange={onPublicChange}
+                  userInfo={userInfo}
+                />
+              )}
               <div className="box full setting">
                 <div>
-                  <h3>Delete Entire Dataset</h3>
-                  Delete this dataset and all associated data. This action
-                  cannot be undone.
+                  <h3>Export Dataset</h3>
+                  Download a copy of the dataset.
                 </div>
                 <button
-                  aria-label="delete"
-                  className="danger"
-                  onClick={() => setSelectedDatasetForDelete(dataset)}
+                  aria-label="download"
+                  className="primary"
+                  onClick={() => onDownloadDataset()}
                 >
-                  <BsTrash /> Delete
+                  <>
+                    <BsDownload /> Download
+                  </>
                 </button>
               </div>
-            )}
-            {config("sharing") && (
-              <PublicControls
-                dataset={dataset}
-                datasetLoader={datasetLoader}
-                onPublicChange={onPublicChange}
-                userInfo={userInfo}
-              />
-            )}
-            <div className="box full setting">
-              <div>
-                <h3>Export Dataset</h3>
-                Download a copy of the dataset.
-              </div>
-              <button
-                aria-label="download"
-                className="primary"
-                onClick={() => onDownloadDataset()}
-              >
-                <>
-                  <BsDownload /> Download
-                </>
-              </button>
             </div>
           </div>
         </>
