@@ -34,7 +34,7 @@ export default function TracePageNUX() {
       locale: { next: "Next", skip: "Skip", back: "Back" },
     },
     {target: className_event,
-      content: "Click on any line inside a message to add an annotation.",
+  content: "Click on any line inside a message to add an annotation.",
       placement: "top",},
   ];
 
