@@ -69,13 +69,9 @@ export const routes = [
     },
   },
   {
-    path: "/u/:username/:datasetname/t/:traceIndex",
-    label: "Dataset",
-    element: (
-      <Layout fullscreen>
-        <Traces />
-      </Layout>
-    ),
+    path: '/u/:username/:datasetname/t/:traceIndex',
+    label: 'Dataset',
+    element: <Layout fullscreen><DatasetView /></Layout>,
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,
@@ -85,13 +81,9 @@ export const routes = [
     },
   },
   {
-    path: "/u/:username/:datasetname/t",
-    label: "Dataset",
-    element: (
-      <Layout fullscreen>
-        <Traces />
-      </Layout>
-    ),
+    path: '/u/:username/:datasetname/t',
+    label: 'Dataset',
+    element: <Layout fullscreen><DatasetView /></Layout>,
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,
