@@ -11,6 +11,7 @@ from models.queries import *
 
 from typing import Annotated
 from routes.auth import UserIdentity, AuthenticatedUserIdentity
+from uuid import UUID
 
 # dataset routes
 apikeys = FastAPI()
@@ -130,3 +131,18 @@ async def APIIdentity(request: Request):
             }
     except Exception as e:
         raise HTTPException(status_code=401, detail="You must provide a valid API key.")
+
+
+async def UserOrAPIIdentity(request: Request) -> UUID | None:
+    apikey = request.headers.get("Authorization")
+    if apikey is not None:
+        identity = await APIIdentity(request)
+    else:
+        identity = await UserIdentity(request)
+    return UUID(identity["sub"]) if identity["sub"] else None
+
+
+async def AuthenticatedUserOrAPIIdentity(identity: Annotated[UUID | None, Depends(UserOrAPIIdentity)]) -> UUID:
+    if identity is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    return identity
