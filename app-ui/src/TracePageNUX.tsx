@@ -27,8 +27,7 @@ export default function TracePageNUX() {
       placement: "right",
       disableBeacon: true,
     },
-    {
-      target: "button.inline.guide-step-3",
+    {target: "button.inline.guide-step-3",
       content:
         "Collapse All / Expand All messages in the current trace selected",
       placement: "bottom",
