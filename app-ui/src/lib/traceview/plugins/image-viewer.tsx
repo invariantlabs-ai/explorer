@@ -5,6 +5,7 @@ import { HighlightedJSON } from "../highlights";
 import { truncate } from "../utils";
 import "./image-viewer.scss";
 
+
 // component properties of the code-highlighter plugin
 interface ImageViewerProps {
   content: string;
@@ -136,11 +137,11 @@ class ImageViewer extends React.Component<
         
         return (
             <div
-                key={`${x1}-${y1}-${x2}-${y2}-${index}`} // Ensure unique key for each bounding box
+                key={`bbox-${x1}-${y1}-${x2}-${y2}-${index}`}
                 className={`bounding-box ${content?.source}`}
                 style={{
                     position: 'absolute',
-                    top: `${newTop + 0.01}%`,
+                    top: `${newTop}%`,
                     left: `${newLeft}%`,
                     width: `${newWidth}%`,
                     height: `${newHeight}%`,
