@@ -29,8 +29,7 @@ export default function TracePageNUX() {
     {target: "button.inline.guide-step-3",
       content:
         "Collapse All / Expand All messages in the current trace selected",
-      placement: "bottom",
-      locale: { next: "Next", skip: "Skip", back: "Back" },
+      placement: "bottom",locale: { next: "Next", skip: "Skip", back: "Back" },
     },
     {target:className_event,
       content:"Click on any line inside a message to add an annotation.",
