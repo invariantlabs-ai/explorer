@@ -20,6 +20,7 @@ export default function TracePageNUX() {
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");
   const HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view";
+  const x;
   const steps: Step[] = [
     {target: ".sidebar",
       content: "Explore and browse all traces from your dataset.",
