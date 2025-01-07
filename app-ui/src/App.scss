@@ -1929,15 +1929,15 @@ table.api-keys {
 .dataset-view {
   .tabs {
     display: flex;
-    border-bottom: 2px solid #ddd;
-    background: #e0e0e0;
+    border-bottom: 1px solid #ddd;
+    background: #f6f6f6;
     justify-content: flex-start;
     margin-bottom: 10pt;
   }
 
   .tab {
     border: none;
-    background: #e0e0e0;
+    background: #f6f6f6;
     padding: 10px 20px;
     cursor: pointer;
     font-size: 16px;
