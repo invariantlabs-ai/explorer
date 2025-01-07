@@ -19,25 +19,22 @@ export default function TracePageNUX() {
   const [run, setRun] = useState(true);
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");
-  const HAS_SEEN_NUX_TRACE_VIEW =
-    "invariant.explorer.disable.guide.trace_view";
+  const HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view";
   const steps: Step[] = [
-    {
-      target: ".sidebar",
+    {target: ".sidebar",
       content: "Explore and browse all traces from your dataset.",
       placement: "right",
       disableBeacon: true,
     },
-    {
-      target: "button.inline.guide-step-3",
+    {target: "button.inline.guide-step-3",
       content:
         "Collapse All / Expand All messages in the current trace selected",
       placement: "bottom",
       locale: { next: "Next", skip: "Skip", back: "Back" },
     },
     {
-      target: className_event,
-      content: "Click on any line inside a message to add an annotation.",
+      target:className_event,
+      content:"Click on any line inside a message to add an annotation.",
       placement: "top",
     },
   ];
