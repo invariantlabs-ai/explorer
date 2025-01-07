@@ -35,8 +35,7 @@ export default function TracePageNUX() {
     },
     {target: className_event,
       content: "Click on any line inside a message to add an annotation.",
-      placement: "top",
-    },
+      placement: "top",},
   ];
 
   // Add the sharing step if sharing is enabled
