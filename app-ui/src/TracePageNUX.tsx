@@ -1,4 +1,4 @@
-import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
+import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useEffect, useState } from "react";
 import { config } from "./Config";
 
@@ -20,20 +20,22 @@ export default function TracePageNUX() {
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");
   const HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view";
-  const x;
   const steps: Step[] = [
     {target: ".sidebar",
       content: "Explore and browse all traces from your dataset.",
       placement: "right",
       disableBeacon: true,
     },
-    {target: "button.inline.guide-step-3",
+    {
+      target: "button.inline.guide-step-3",
       content:
         "Collapse All / Expand All messages in the current trace selected",
-      placement: "bottom",locale: { next: "Next", skip: "Skip", back: "Back" },
+      placement: "bottom",
+      locale: { next: "Next", skip: "Skip", back: "Back" },
     },
-    {target:className_event,
-      content:"Click on any line inside a message to add an annotation.",
+    {
+      target: className_event,
+      content: "Click on any line inside a message to add an annotation.",
       placement: "top",
     },
   ];
@@ -55,7 +57,7 @@ export default function TracePageNUX() {
       // Note the expanded status is contracted, when the event is collapsed it has the class expanded
       const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"])`;
       const eventFind = document.querySelector(selector);
-      let new_className_event =
+      const new_className_event =
         "." + eventFind?.className.replace(/\s+/g, ".") || "";
       if (
         className_event != new_className_event &&
@@ -80,7 +82,7 @@ export default function TracePageNUX() {
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, type } = data;
+    const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finishedStatuses.includes(status)) {
       setRun(false);
