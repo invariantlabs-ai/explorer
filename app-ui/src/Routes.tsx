@@ -1,130 +1,199 @@
-import { BsHouse, BsFillPersonFill, BsCircleFill, BsCircle, BsKeyFill, BsHouseFill, BsFillTerminalFill, BsSpeedometer2, BsThreeDots, BsListColumns, BsRobot, BsSearch } from 'react-icons/bs'
-import Home from './Home.tsx'
-import Layout from './Layout.tsx'
-import { Traces, SingleTrace } from './Traces.tsx'
-import './App.scss'
-import DatasetView from './Dataset.tsx'
-import { New } from './New.tsx'
-import { SignUp } from './SignUp.tsx'
-import User from './User.tsx'
-import { Snippets } from './Snippets.tsx'
-import { Settings } from './Settings.tsx'
-import { Datasets } from './Datasets.tsx'
-import { config } from './Config.ts'
-import MarkdownFile from './MarkdownFile.tsx'
+import {
+  BsHouse,
+  BsFillPersonFill,
+  BsCircleFill,
+  BsCircle,
+  BsKeyFill,
+  BsHouseFill,
+  BsFillTerminalFill,
+  BsSpeedometer2,
+  BsThreeDots,
+  BsListColumns,
+  BsRobot,
+  BsSearch,
+} from "react-icons/bs";
+import Home from "./Home.tsx";
+import Layout from "./Layout.tsx";
+import { Traces, SingleTrace } from "./Traces.tsx";
+import "./App.scss";
+import DatasetView from "./Dataset.tsx";
+import { New } from "./New.tsx";
+import { SignUp } from "./SignUp.tsx";
+import User from "./User.tsx";
+import { Snippets } from "./Snippets.tsx";
+import { Settings } from "./Settings.tsx";
+import { Datasets } from "./Datasets.tsx";
+import { config } from "./Config.ts";
+import MarkdownFile from "./MarkdownFile.tsx";
 
-import privacyPolicy from './assets/policy.md?raw'
-import terms from './assets/terms.md?raw'
+import privacyPolicy from "./assets/policy.md?raw";
+import terms from "./assets/terms.md?raw";
 
 export const routes = [
   {
-    path: '/',
-    label: 'Home',
+    path: "/",
+    label: "Home",
     icon: <BsSpeedometer2 />,
-    element: <Layout><Home /></Layout>,
-    category: 'home'
+    element: (
+      <Layout>
+        <Home />
+      </Layout>
+    ),
+    category: "home",
   },
   {
-    path: '/u/:username',
-    label: 'User',
-    element: <Layout><User /></Layout>,
+    path: "/u/:username",
+    label: "User",
+    element: (
+      <Layout>
+        <User />
+      </Layout>
+    ),
     loader: async (user: any) => {
-      return { "username": user.params.username }
-    }
+      return { username: user.params.username };
+    },
   },
   {
-    path: '/u/:username/:datasetname',
-    label: 'Dataset',
-    element: <Layout><DatasetView /></Layout>,
+    path: "/u/:username/:datasetname",
+    label: "Dataset",
+    element: (
+      <Layout>
+        <DatasetView />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
-        "datasetname": task.params.datasetname,
-        "username": task.params.username
-      }
-    }
+        datasetname: task.params.datasetname,
+        username: task.params.username,
+      };
+    },
   },
   {
-    path: '/u/:username/:datasetname/t/:traceIndex',
-    label: 'Dataset',
-    element: <Layout fullscreen><Traces /></Layout>,
+    path: "/u/:username/:datasetname/t/:traceIndex",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen>
+        <Traces />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
-        "datasetname": task.params.datasetname,
-        "username": task.params.username,
-        "traceIndex": parseInt(task.params.traceIndex) || 0
-      }
-    }
+        datasetname: task.params.datasetname,
+        username: task.params.username,
+        traceIndex: parseInt(task.params.traceIndex) || 0,
+      };
+    },
   },
   {
-    path: '/u/:username/:datasetname/t',
-    label: 'Dataset',
-    element: <Layout fullscreen><Traces /></Layout>,
+    path: "/u/:username/:datasetname/t",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen>
+        <Traces />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
-        "datasetname": task.params.datasetname,
-        "username": task.params.username,
-        "traceId": null
-      }
-    }
+        datasetname: task.params.datasetname,
+        username: task.params.username,
+        traceId: null,
+      };
+    },
   },
   {
-    path: '/trace/:traceId',
-    label: 'Dataset',
-    element: <Layout needsLogin={false} fullscreen><SingleTrace /></Layout>,
+    path: "/trace/:traceId",
+    label: "Dataset",
+    element: (
+      <Layout needsLogin={false} fullscreen>
+        <SingleTrace />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
-        "traceId": task.params.traceId
-      }
-    }
+        traceId: task.params.traceId,
+      };
+    },
   },
   {
-    path: '/new',
-    label: 'Upload New Trace',
-    element: <Layout needsLogin fullscreen><New /></Layout>,
+    path: "/new",
+    label: "Upload New Trace",
+    element: (
+      <Layout needsLogin fullscreen>
+        <New />
+      </Layout>
+    ),
     loader: async (task: any) => {
-      return {}
-    }
+      return {};
+    },
   },
   {
-    path: '/signup',
-    label: 'Sign Up',
-    element: <Layout needsLogin><SignUp /></Layout>
+    path: "/signup",
+    label: "Sign Up",
+    element: (
+      <Layout needsLogin>
+        <SignUp />
+      </Layout>
+    ),
   },
   // /snippets
   {
-    path: '/snippets',
-    label: 'Snippets',
-    element: <Layout needsLogin><Snippets /></Layout>,
+    path: "/snippets",
+    label: "Snippets",
+    element: (
+      <Layout needsLogin>
+        <Snippets />
+      </Layout>
+    ),
   },
   // /datasets
   {
-    path: '/datasets',
-    label: 'Datasets',
-    element: <Layout needsLogin><Datasets /></Layout>,
+    path: "/datasets",
+    label: "Datasets",
+    element: (
+      <Layout needsLogin>
+        <Datasets />
+      </Layout>
+    ),
   },
   // /settings
   {
-    path: '/settings',
-    label: 'Settings',
-    element: <Layout needsLogin><Settings /></Layout>,
+    path: "/settings",
+    label: "Settings",
+    element: (
+      <Layout needsLogin>
+        <Settings />
+      </Layout>
+    ),
   },
   {
-    path: '/terms',
-    label: 'Terms & Conditions',
-    element: <Layout><MarkdownFile contents={terms}></MarkdownFile></Layout>
+    path: "/terms",
+    label: "Terms & Conditions",
+    element: (
+      <Layout>
+        <MarkdownFile contents={terms}></MarkdownFile>
+      </Layout>
+    ),
   },
   {
-    path: '/policy',
-    label: 'Terms & Conditions',
-    element: <Layout><MarkdownFile contents={privacyPolicy}></MarkdownFile></Layout>
+    path: "/policy",
+    label: "Terms & Conditions",
+    element: (
+      <Layout>
+        <MarkdownFile contents={privacyPolicy}></MarkdownFile>
+      </Layout>
+    ),
   },
   // 404
   {
-    path: '*',
-    label: 'Not Found',
-    element: <Layout><div className='empty'>
-      <h3>Not Found</h3>
-    </div></Layout>,
-    category: 'hidden'
-  }
-]
+    path: "*",
+    label: "Not Found",
+    element: (
+      <Layout>
+        <div className="empty">
+          <h3>Not Found</h3>
+        </div>
+      </Layout>
+    ),
+    category: "hidden",
+  },
+];

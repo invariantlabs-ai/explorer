@@ -1,30 +1,30 @@
 div.code-highlighter {
-    // background-color: #f6f6f6;
-    overflow-x: auto;
-    overflow-y: visible;
-    padding: 0pt;
-    padding-bottom: -10pt;
+  // background-color: #f6f6f6;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 0pt;
+  padding-bottom: -10pt;
 
-    font-family: monospace;
-    white-space: pre-wrap;
+  font-family: monospace;
+  white-space: pre-wrap;
 
-    position: relative;
+  position: relative;
 
-    span.language {
-        display: block;
-        position: absolute;
-        top: 5pt;
-        right: 5pt;
-        background-color: #0000001c;
-        color: black;
-        opacity: 0.6;
-        font-size: 6pt;
-        padding: 2pt;
-        border-radius: 2pt;
-        font-weight: bold;
-    }
+  span.language {
+    display: block;
+    position: absolute;
+    top: 5pt;
+    right: 5pt;
+    background-color: #0000001c;
+    color: black;
+    opacity: 0.6;
+    font-size: 6pt;
+    padding: 2pt;
+    border-radius: 2pt;
+    font-weight: bold;
+  }
 }
 
 .plugin.code-highlighter {
-    overflow: visible;
+  overflow: visible;
 }
