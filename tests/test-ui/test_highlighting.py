@@ -50,6 +50,8 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
 
         # wait for load ('Tool' message)
         await page.wait_for_selector("text=Tool")
+        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
+        await util.expand_messages(page)
 
         # # first construct a frame for the first .event on screen (0th .event is the metadata)
         user_msg = page.locator("css=.event").nth(1)

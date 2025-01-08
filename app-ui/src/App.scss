@@ -1961,7 +1961,7 @@ table.api-keys {
   .metadata-policies {
     width: 90%; 
     margin: auto;
-    margin-top: 20pt;
+    margin-top: 80px;
   }
 
   .policies-header {
@@ -2069,7 +2069,12 @@ table.api-keys {
   .settings-actions {
     width: 90%; 
     margin: auto;
-    margin-top: 10pt;
+    margin-top: 80px;
+  }
+
+  header.toolbar {
+    height: 40pt;
+    opacity: 0.8;
   }
 }
 

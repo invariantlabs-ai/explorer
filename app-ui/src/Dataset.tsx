@@ -241,9 +241,19 @@ function DatasetView() {
       {selectedTab === "traces" && <Traces />}
 
       {selectedTab === "metadata" && (
-        <div className="metadata-policies">
-          <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />
-        </div>
+        <>
+          <div className="panel">
+            <header className='toolbar'>
+              <h1>
+                <Link to='/'> /</Link>
+                <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
+              </h1>
+            </header>
+          </div>
+          <div className="metadata-policies">
+            <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />
+          </div>
+        </>
       )}
 
       {selectedTab === "settings" && (
@@ -263,6 +273,12 @@ function DatasetView() {
             </Modal>
           )}
           <div className="panel entity-list">
+            <header className='toolbar'>
+              <h1>
+                <Link to='/'> /</Link>
+                <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
+              </h1>
+            </header>
             <div className="settings-actions">
               {dataset?.user?.id == userInfo?.id && (
                 <div className="box full setting">
