@@ -1,5 +1,5 @@
 //@ts-nocheck
-import React from "react";
+import React, {useEffect} from "react";
 import {
   BsCheckCircleFill,
   BsCodeSlash,
@@ -158,6 +158,13 @@ function DatasetView() {
   // state to track the selected tab
   const [selectedTab, _setSelectedTab] = React.useState("traces");
   const setSelectedTab = telemetry.wrap(_setSelectedTab, "dataset.select-tab");
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "hidden";
+    };
+  }, []);
 
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
