@@ -80,8 +80,11 @@ async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
         await screenshot(page)
 
         await page.locator(f"text={dataset['name']}").click()
+        
         # wait for load
         await page.wait_for_selector("text=Tool")
+        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
+        await util.expand_messages(page)
         await screenshot(page)
 
         snippet_1 = page.locator("css=.event").nth(1)
