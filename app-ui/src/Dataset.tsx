@@ -249,6 +249,9 @@ function DatasetView() {
                 <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
               </h1>
             </header>
+            <div className="metadata-summary">
+              <Metadata extra_metadata={filterMetadata({ ...dataset?.extra_metadata, id: dataset.id })} />
+            </div>
           </div>
           <div className="metadata-policies">
             <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />

@@ -1961,7 +1961,13 @@ table.api-keys {
   .metadata-policies {
     width: 90%; 
     margin: auto;
-    margin-top: 80px;
+    margin-top: 10px;
+  }
+
+  .metadata-summary {
+    margin-top: 60px !important;
+    width: 90%;
+    margin: auto;
   }
 
   .policies-header {
