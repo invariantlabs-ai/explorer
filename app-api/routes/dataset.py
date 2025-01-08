@@ -261,7 +261,7 @@ def delete_dataset_by_name(request: Request, username:str, dataset_name:str, use
 
 def get_dataset(by: dict, user_id: UUID | None) -> dict:
     # may be None in case of anonymous users/public datasets or traces
-    
+    print(f"type(user_id): {user_id, type(user_id)}")
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         # count all traces
@@ -269,7 +269,6 @@ def get_dataset(by: dict, user_id: UUID | None) -> dict:
         return dataset_to_json(dataset, user,
                                num_traces=num_traces,
                                queries=get_savedqueries(session, dataset, user_id, num_traces))
-
 
 @dataset.get("/byid/{id}")
 def get_dataset_by_id(request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
@@ -455,7 +454,7 @@ def get_traces(request: Request, by: dict, user_id: UUID | None, indices: list[i
 
 
 @dataset.get("/byid/{id}/traces")
-def get_traces_by_id(request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]):
+def get_traces_by_id(request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
     return get_traces(request, {'id': id}, user_id=user_id)
 
 class DBJSONEncoder(json.JSONEncoder):
@@ -490,7 +489,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
 Download the dataset in JSONL format.
 """
 @dataset.get("/byid/{id}/download")
-async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+async def download_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
         dataset, user = load_dataset(session, {'id': id}, userinfo['sub'], allow_public=True, 
         return_user=True)
