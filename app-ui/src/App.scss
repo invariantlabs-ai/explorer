@@ -2036,6 +2036,22 @@ table.api-keys {
     margin-bottom: 0pt !important;
   }
 
+  .policy-delete {
+    margin-right: 10pt;
+  }
+
+  .settings-actions {
+    width: 90%;
+    margin: auto;
+    margin-top: 80px;
+  }
+
+  header.toolbar {
+    height: 40pt;
+    opacity: 0.8;
+  }
+}
+
 .deployment-info {
   background-color: $color-primary;
   color: white;
@@ -2074,19 +2090,7 @@ table.api-keys {
     position: relative;
     top: 1pt;
     margin-right: 1pt;
-  .policy-delete {
-    margin-right: 10pt;
-  }
 
-  .settings-actions {
-    width: 90%; 
-    margin: auto;
-    margin-top: 80px;
-  }
-
-  header.toolbar {
-    height: 40pt;
-    opacity: 0.8;
   }
 }
 
