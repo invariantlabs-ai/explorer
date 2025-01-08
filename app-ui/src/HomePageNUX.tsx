@@ -39,15 +39,12 @@ export default function HomePageNUX(props) {
   }
   // Activity box and public dataset only shows up in production
   if (config("instance_name") != "local") {
-    steps.push(
-      {
-        target: ".box.featureddataset",
-        content: "Explore public datasets from top agent benchmarks.",
-        placement: "top",
-        disableBeacon: true,
-        locale: { next: "Next", skip: "Skip", back: "Back" },
-      }
-    );
+    steps.push({
+      target: ".box.featureddataset",
+      content: "Explore public datasets from top agent benchmarks.",
+      placement: "top",
+      disableBeacon: true,
+    });
     steps.push({
       target: ".box.activity",
       content: "Once you annotate a trace the activity shows up here.",
@@ -84,6 +81,9 @@ export default function HomePageNUX(props) {
           disableScrolling={true}
           styles={defaultOptions}
           callback={handleJoyrideCallback}
+          locale={{
+            last: "Finish Tour",
+          }}
         ></Joyride>
       )}
     </div>
