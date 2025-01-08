@@ -735,10 +735,12 @@ table.json {
 
   tr td:first-child {
     min-width: 100pt;
+    max-width: 100pt;
     padding-left: 0pt;
     text-align: right;
     vertical-align: top;
     padding-left: 20pt;
+    overflow-wrap: break-word;
   }
 
   tr td:nth-child(2) {
