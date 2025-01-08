@@ -14,6 +14,9 @@ interface ImageViewerProps {
   highlights: any;
   highlightContext: any;
   address: string;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }
 
 function extractImageId(content: string): {
@@ -200,6 +203,9 @@ class ImageViewer extends React.Component<
           highlights={highlights}
           highlightContext={this.props.highlightContext}
           address={this.props.address + ":L" + elements.length}
+          traceIndex={this.props.traceIndex}
+          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
         >
           {image}
           {"\n"}
