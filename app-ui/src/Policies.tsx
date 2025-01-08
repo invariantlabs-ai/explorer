@@ -180,7 +180,7 @@ export function PoliciesView(props) {
                 Policies
                 <button className='primary new-policy-button' onClick={() => setShowCreatePolicyModal(true)}> <BsPlusCircle /> New Policy</button>
             </h2>
-            <div>
+            <div className="policies-list">
                 {
                     (!dataset.extra_metadata?.policies || dataset.extra_metadata.policies.length === 0) && (
                         <div className="no-policies">

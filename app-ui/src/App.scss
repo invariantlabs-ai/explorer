@@ -2021,6 +2021,11 @@ table.api-keys {
   .policy-editor {
     margin-bottom: 20pt;
   }
+
+  .policies-list {
+    height: 1000px;
+    overflow-y: auto;
+  }
   
   .no-policies {
     margin-top: 30pt;
