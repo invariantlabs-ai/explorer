@@ -32,7 +32,7 @@ from models.queries import (
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity
+from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -40,6 +40,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import func, exists
 from util.util import validate_dataset_name
+from uuid import UUID
 import os
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
@@ -192,8 +193,7 @@ class DatasetKind(Enum):
 
 
 @dataset.get("/list")
-def list_datasets(kind: DatasetKind, user: Annotated[dict, Depends(UserIdentity)], limit: int | None = None):
-    user_id = user.get("sub")
+def list_datasets(kind: DatasetKind, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)], limit: int | None = None):
     with Session(db()) as session:
         query = session.query(Dataset, User)\
             .join(User, User.id == Dataset.user_id)
@@ -259,10 +259,9 @@ def delete_dataset_by_name(request: Request, username:str, dataset_name:str, use
 # gets details on a dataset (including collections, but without traces)
 ########################################
 
-def get_dataset(by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
+def get_dataset(by: dict, user_id: UUID | None) -> dict:
     # may be None in case of anonymous users/public datasets or traces
-    user_id = userinfo["sub"]
-    
+    print(f"type(user_id): {user_id, type(user_id)}")
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
         # count all traces
@@ -271,14 +270,13 @@ def get_dataset(by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
                                num_traces=num_traces,
                                queries=get_savedqueries(session, dataset, user_id, num_traces))
 
-
 @dataset.get("/byid/{id}")
-def get_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_dataset({"id": id}, userinfo)
+def get_dataset_by_id(request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
+    return get_dataset({"id": id}, user_id=user_id)
 
 @dataset.get("/byuser/{username}/{dataset_name}")
-def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_dataset({'User.username': username, 'name': dataset_name}, userinfo)
+def get_dataset_by_name(request: Request, username: str, dataset_name:str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
+    return get_dataset({'User.username': username, 'name': dataset_name}, user_id=user_id)
 
 ########################################
 # search
@@ -409,16 +407,15 @@ Only returns the traces, if the provided user has access to corresponding datase
 
 Parameters:
 - by: dictionary of filtering parameters
-- userinfo: user identity information
+- user_id: user identity information, None for non authenticated users
 - indices: list of trace indices to filter by (optional)
 """
-def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)], indices: list[int] = None):
+def get_traces(request: Request, by: dict, user_id: UUID | None, indices: list[int] = None):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
 
-    # users can be anonymous
-    user_id = userinfo["sub"]
+    # users can be anonymous, so user_id can be None
     
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
@@ -457,8 +454,8 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
 
 
 @dataset.get("/byid/{id}/traces")
-def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_traces(request, {'id': id}, userinfo)
+def get_traces_by_id(request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
+    return get_traces(request, {'id': id}, user_id=user_id)
 
 class DBJSONEncoder(json.JSONEncoder):
     """
@@ -492,7 +489,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
 Download the dataset in JSONL format.
 """
 @dataset.get("/byid/{id}/download")
-async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+async def download_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
         dataset, user = load_dataset(session, {'id': id}, userinfo['sub'], allow_public=True, 
         return_user=True)
@@ -506,10 +503,10 @@ async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, 
 
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
-def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+def get_traces_by_name(request: Request, username:str, dataset_name:str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)]):
     indices = request.query_params.get("indices")
     indices = [int(i) for i in indices.split(",")] if indices is not None else None
-    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo, indices=indices)
+    return get_traces(request, {'User.username': username, 'name': dataset_name}, user_id=user_id, indices=indices)
 
 # lightweight version of /traces above that only returns the indices+ids (saving performance on the full join and prevents loading all columns of the traces table)
 @dataset.get("/byuser/{username}/{dataset_name}/indices")

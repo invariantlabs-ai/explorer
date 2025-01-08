@@ -80,6 +80,9 @@ services:
       - type: bind
         source: /tmp/invariant-explorer-test/data/images
         target: /srv/images
+      - type: bind
+        source: ../app-api
+        target: /srv/app
       - ../configs/explorer.test.yml:/config/explorer.config.yml
     labels:
       - "traefik.enable=true"
