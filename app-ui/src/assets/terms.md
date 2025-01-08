@@ -14,28 +14,20 @@ The words of which the initial letter is capitalized have meanings defined under
 
 For the purposes of these Terms and Conditions:
 
+- **Affiliate** means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
+- **Account** means a unique account created for You to access our Service or parts of our Service.
+- **Country** refers to: Switzerland
+- **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Invariant Labs AG, Josefstrasse 219, 8005 Zurich.
+- **Content** refers to content such as text, images, or other information that can be posted, uploaded, linked to or otherwise made available by You, regardless of the form of that content.
+- **Device** means any device that can access the Service such as a computer, a cellphone or a digital tablet.
+- **Feedback** means feedback, innovations or suggestions sent by You regarding the attributes, performance or features of our Service.
 
+- **Service** refers to the Website.
 
-- __Affiliate__ means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
-- __Account__ means a unique account created for You to access our Service or parts of our Service.
-- __Country__ refers to:  Switzerland
-- __Company__ (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Invariant Labs AG, Josefstrasse 219, 8005 Zurich.
-- __Content__ refers to content such as text, images, or other information that can be posted, uploaded, linked to or otherwise made available by You, regardless of the form of that content.
-- __Device__ means any device that can access the Service such as a computer, a cellphone or a digital tablet.
-- __Feedback__ means feedback, innovations or suggestions sent by You regarding the attributes, performance or features of our Service.
-
-
-
-
-
-
-- __Service__ refers to the Website.
-
-
-- __Terms and Conditions__ (also referred as "Terms") mean these Terms and Conditions that form the entire agreement between You and the Company regarding the use of the Service. 
-- __Third-party Social Media Service__ means any services or content (including data, information, products or services) provided by a third-party that may be displayed, included or made available by the Service.
-- __Website__ refers to Invariant Labs Explorer, accessible from [explorer.invariantlabs.ai](explorer.invariantlabs.ai)
-- __You__ means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
+- **Terms and Conditions** (also referred as "Terms") mean these Terms and Conditions that form the entire agreement between You and the Company regarding the use of the Service.
+- **Third-party Social Media Service** means any services or content (including data, information, products or services) provided by a third-party that may be displayed, included or made available by the Service.
+- **Website** refers to Invariant Labs Explorer, accessible from [explorer.invariantlabs.ai](explorer.invariantlabs.ai)
+- **You** means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
 
 ## Acknowledgment
 
@@ -45,20 +37,9 @@ Your access to and use of the Service is conditioned on Your acceptance of and c
 
 By accessing or using the Service You agree to be bound by these Terms and Conditions. If You disagree with any part of these Terms and Conditions then You may not access the Service.
 
-
 You represent that you are over the age of 18. The Company does not permit those under 18 to use the Service.
 
-
 Your access to and use of the Service is also conditioned on Your acceptance of and compliance with the Privacy Policy of the Company. Our Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your personal information when You use the Application or the Website and tells You about Your privacy rights and how the law protects You. Please read Our Privacy Policy carefully before using Our Service.
-
-
-
-
-
-
-
-
-
 
 ## User Accounts
 
@@ -69,8 +50,6 @@ You are responsible for safeguarding the password that You use to access the Ser
 You agree not to disclose Your password to any third party. You must notify Us immediately upon becoming aware of any breach of security or unauthorized use of Your account.
 
 You may not use as a username the name of another person or entity or that is not lawfully available for use, a name or trademark that is subject to any rights of another person or entity other than You without appropriate authorization, or a name that is otherwise offensive, vulgar or obscene.
-
-
 
 ## Content
 
@@ -110,8 +89,6 @@ The Company will provide support and attempt to troubleshoot any known or discov
 
 You agree to maintain a complete and accurate copy of any Content in a location independent of the Service.
 
-
-
 ## Copyright Policy
 
 ### Intellectual Property Infringement
@@ -121,7 +98,6 @@ We respect the intellectual property rights of others. It is Our policy to respo
 If You are a copyright owner, or authorized on behalf of one, and You believe that the copyrighted work has been copied in a way that constitutes copyright infringement that is taking place through the Service, You must submit Your notice in writing to the attention of our copyright agent via email at dmca@invariantlabs.ai and include in Your notice a detailed description of the alleged infringement.
 
 You may be held accountable for damages (including costs and attorneys' fees) for misrepresenting that any Content is infringing Your copyright.
-
 
 ### DMCA Notice and DMCA Procedure for Copyright Infringement Claims
 
@@ -137,15 +113,9 @@ You may submit a notification pursuant to the Digital Millennium Copyright Act (
 You can contact our copyright agent via email at dmca@invariantlabs.ai.
 Upon receipt of a notification, the Company will take whatever action, in its sole discretion, it deems appropriate, including removal of the challenged content from the Service.
 
-
-
-
-
-
 ## Your Feedback to Us
 
 You assign all rights, title and interest in any Feedback You provide the Company. If for any reason such assignment is ineffective, You agree to grant the Company a non-exclusive, perpetual, irrevocable, royalty free, worldwide right and license to use, reproduce, disclose, sub-license, distribute, modify and exploit such Feedback without restriction.
-
 
 ## Links to Other Websites
 
@@ -160,7 +130,6 @@ We strongly advise You to read the terms and conditions and privacy policies of 
 We may terminate or suspend Your Account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if You breach these Terms and Conditions.
 
 Upon termination, Your right to use the Service will cease immediately. If You wish to terminate Your Account, You may simply discontinue using the Service.
-
 
 ## Limitation of Liability
 
@@ -186,19 +155,13 @@ The laws of the Country, excluding its conflicts of law rules, shall govern this
 
 If You have any concern or dispute about the Service, You agree to first try to resolve the dispute informally by contacting the Company.
 
-
 ## For European Union (EU) Users
 
 If You are a European Union consumer, you will benefit from any mandatory provisions of the law of the country in which You are resident.
 
-
-
-
-
 ## United States Legal Compliance
 
 You represent and warrant that (i) You are not located in a country that is subject to the United States government embargo, or that has been designated by the United States government as a "terrorist supporting" country, and (ii) You are not listed on any United States government list of prohibited or restricted parties.
-
 
 ## Severability and Waiver
 
@@ -224,6 +187,5 @@ By continuing to access or use Our Service after those revisions become effectiv
 ## Contact Us
 
 If you have any questions about these Terms and Conditions, You can contact us:
-
 
 - By email: office@invariantlabs.ai

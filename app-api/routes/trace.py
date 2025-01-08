@@ -5,15 +5,17 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
-from models.queries import *
+from models.queries import load_trace, trace_to_json, load_annoations, has_link_sharing, annotation_to_json
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.apikeys import AuthenticatedUserOrAPIIdentity, UserOrAPIIdentity
+from uuid import UUID
 from sqlalchemy.orm import Session
 
 trace = FastAPI()
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
-async def get_image(request: Request, userInfo: Annotated[dict, Depends(UserIdentity)], dataset_name: str, trace_id: str, image_id: str):
-    user_id = userInfo["sub"]
+async def get_image(request: Request, dataset_name: str, trace_id: str, image_id: str, user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None):
+
     with Session(db()) as session:
         trace = load_trace(session, trace_id, user_id, allow_public=True, allow_shared=True)
 
@@ -26,8 +28,7 @@ async def get_image(request: Request, userInfo: Annotated[dict, Depends(UserIden
     raise HTTPException(status_code=404, detail="Image not found")
 
 @trace.get("/snippets")
-def get_trace_snippets(request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    user_id = userinfo["sub"]
+def get_trace_snippets(request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserOrAPIIdentity)]):
 
     limit = request.query_params.get("limit")
     limit = limit if limit != '' else None
@@ -57,10 +58,13 @@ def delete_trace(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIde
         return {"message": "deleted"}
 
 @trace.get("/{id}")
-def get_trace(request: Request, id: str, annotated:bool=False, max_length: int = None, userinfo: Annotated[dict, Depends(UserIdentity)] = None):
-    # may be None for anonymous users
-    user_id = userinfo["sub"]
-
+def get_trace(
+    request: Request,
+    id: str,
+    annotated: bool=False,
+    max_length: int = None,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None
+):
     with Session(db()) as session:
         trace, user = load_trace(session, id, user_id, allow_public=True, allow_shared=True, return_user=True)
         return trace_to_json(trace, load_annoations(session, id), user=user.username, max_length=max_length)

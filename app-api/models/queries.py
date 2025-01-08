@@ -36,7 +36,7 @@ def load_trace(session, by, user_id, allow_shared=False, allow_public=False, ret
 
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
     
-    if not (str(trace.user_id) == user_id or # correct user
+    if not (str(trace.user_id) == str(user_id) or # correct user
             (allow_shared and has_link_sharing(session, trace.id)) or # in sharing mode
             (dataset is not None and allow_public and dataset.is_public) # public dataset
             ):
@@ -80,10 +80,10 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
     
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
-    if not (allow_public and dataset.is_public or str(dataset.user_id) == user_id):
+    if not (allow_public and dataset.is_public or str(dataset.user_id) == str(user_id)):
         raise HTTPException(status_code=401, detail="Unauthorized get")
     # If the dataset is public but the requestor is not the owner, remove the policies from the dataset response.
-    if dataset.is_public and str(dataset.user_id) != user_id:
+    if dataset.is_public and str(dataset.user_id) != str(user_id):
         dataset.extra_metadata.pop('policies', None)
     if return_user:
         return dataset, user

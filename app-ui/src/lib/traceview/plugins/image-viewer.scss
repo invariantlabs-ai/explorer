@@ -1,55 +1,54 @@
 img.trace-image {
-    max-width: 100%;
-    display: block;
+  max-width: 100%;
+  display: block;
 }
 
 span.image-wrapper {
-    display: inline-block;
-    position: relative;
-    padding: 5px;
-    padding-right: 5px !important; 
-    max-width: 50%;
+  display: inline-block;
+  position: relative;
+  padding: 5px;
+  padding-right: 5px !important;
+  max-width: 50%;
 }
 
 .full-screen-button {
-    position: absolute;
-    top: 4px;
-    left: 11px;
-    transform: translate(5px, 5px);
-    -ms-transform: translate(5px, 5px);
-    background-color: #ffffff00;
-    cursor: pointer;
-    padding-left: 0px;
-    padding-right: 0px;
-    height: auto;
-    width: 25px;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 3px;
+  position: absolute;
+  top: 4px;
+  left: 11px;
+  transform: translate(5px, 5px);
+  -ms-transform: translate(5px, 5px);
+  background-color: #ffffff00;
+  cursor: pointer;
+  padding-left: 0px;
+  padding-right: 0px;
+  height: auto;
+  width: 25px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
 }
 
 .full-screen-button:hover {
-    background-color: #f1f1f1db;
+  background-color: #f1f1f1db;
 }
 
-
 .full-screen-button svg {
-    margin-left: auto;
-    margin-right: auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .image-full-screen-opened img {
-    max-height: 90vh;
-    max-width: 90vw;
-    object-fit: contain;
+  max-height: 90vh;
+  max-width: 90vw;
+  object-fit: contain;
 }
 
 .full-screen-button svg {
-    fill: none;
-    stroke: rgba(0, 0, 0, 0.5);
-    stroke-width: 2;
-    stroke-linecap: 'round';
-    stroke-linejoin: 'round';
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 2;
+  stroke-linecap: "round";
+  stroke-linejoin: "round";
 }
