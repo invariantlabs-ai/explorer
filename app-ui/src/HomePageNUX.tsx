@@ -44,7 +44,6 @@ export default function HomePageNUX(props) {
       content: "Explore public datasets from top agent benchmarks.",
       placement: "top",
       disableBeacon: true,
-      locale: { next: "Next", skip: "Skip", back: "Back" },
     });
     steps.push({
       target: ".box.activity",
@@ -82,6 +81,9 @@ export default function HomePageNUX(props) {
           disableScrolling={true}
           styles={defaultOptions}
           callback={handleJoyrideCallback}
+          locale={{
+            last: "Finish Tour",
+          }}
         ></Joyride>
       )}
     </div>
