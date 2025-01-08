@@ -32,7 +32,6 @@ export default function TracePageNUX() {
       content:
         "Collapse All / Expand All messages in the current trace selected",
       placement: "bottom",
-      locale: { next: "Next", skip: "Skip", back: "Back" },
     },
     {
       target: className_event,
@@ -102,6 +101,9 @@ export default function TracePageNUX() {
           disableScrolling={true}
           styles={defaultOptions}
           callback={handleJoyrideCallback}
+          locale={{
+            last: "Finish Tour",
+          }}
         ></Joyride>
       )}
     </div>
