@@ -29,6 +29,7 @@ test_env() {
   
   # Start containers
   docker compose -f tests/docker-compose.test.yml down
+  docker compose -f tests/docker-compose.test.yml build
   docker compose -f tests/docker-compose.test.yml up -d
 }
 
