@@ -50,6 +50,9 @@ export function Line(props: {
   highlightContext?: HighlightContext;
   address?: string;
   highlights?: GroupedHighlight[];
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const decorator = props.highlightContext?.decorator;
   const telemetry = useTelemetry();
@@ -131,7 +134,14 @@ export function Line(props: {
     let existing =
       userInfo?.id &&
       existingThumbAnnotations.find((a) => a["user"]["id"] === userInfo?.id);
+    let isToggle = existing?.["content"] === THUMBS_DOWN;
     if (existing) {
+      if (
+        props.onUpvoteDownvoteDelete &&
+        props.traceIndex !== undefined &&
+        !isToggle
+      )
+        props.onUpvoteDownvoteDelete(props.traceIndex);
       annotator
         ?.delete(existing["id"])
         .then(() => {
@@ -143,7 +153,7 @@ export function Line(props: {
       e.stopPropagation();
 
       // if same as before, untoggle it
-      if (existing["content"] === THUMBS_UP) {
+      if (!isToggle) {
         return;
       }
       // otherwise add opposite
@@ -155,6 +165,12 @@ export function Line(props: {
       ?.create({ address: props.address, content: THUMBS_UP })
       .then(() => {
         annotator?.refresh();
+        if (
+          props.onUpvoteDownvoteCreate &&
+          props.traceIndex !== undefined &&
+          !isToggle
+        )
+          props.onUpvoteDownvoteCreate(props.traceIndex);
       })
       .catch((error) => {
         console.error("error saving thumbs up", error);
@@ -177,7 +193,14 @@ export function Line(props: {
     let existing =
       userInfo?.id &&
       existingThumbAnnotations.find((a) => a["user"]["id"] === userInfo?.id);
+    let isToggle = existing?.["content"] === THUMBS_UP;
     if (existing) {
+      if (
+        props.onUpvoteDownvoteDelete &&
+        props.traceIndex !== undefined &&
+        !isToggle
+      )
+        props.onUpvoteDownvoteDelete(props.traceIndex);
       annotator
         ?.delete(existing["id"])
         .then(() => {
@@ -189,7 +212,7 @@ export function Line(props: {
       e.stopPropagation();
 
       // if same as before, untoggle it
-      if (existing["content"] === THUMBS_DOWN) {
+      if (!isToggle) {
         return;
       }
       // otherwise add opposite
@@ -201,6 +224,12 @@ export function Line(props: {
       ?.create({ address: props.address, content: THUMBS_DOWN })
       .then(() => {
         annotator?.refresh();
+        if (
+          props.onUpvoteDownvoteCreate &&
+          props.traceIndex !== undefined &&
+          !isToggle
+        )
+          props.onUpvoteDownvoteCreate(props.traceIndex);
       })
       .catch((error) => {
         console.error("error saving thumbs down", error);
