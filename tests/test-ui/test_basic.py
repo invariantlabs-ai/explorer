@@ -370,8 +370,8 @@ async def test_thumbs_up_down(context, url, data_abc, screenshot):
         await page.locator(f"text={dataset['name']}").click()
         # wait for load
         await page.wait_for_selector("text=User")
-        # wait for 1s to ensure that the trace messages are unexpanded
-        time.sleep(1)
+        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
+        await util.expand_messages(page)
         await screenshot(page)
 
         # hover over a line to show thumbs up/down
