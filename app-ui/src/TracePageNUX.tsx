@@ -28,7 +28,7 @@ export default function TracePageNUX() {
       disableBeacon: true,
     },
     {
-      target: "button.inline.guide-step-3",
+      target: "button.inline.nux-step-3",
       content:
         "Collapse All / Expand All messages in the current trace selected",
       placement: "bottom",
@@ -43,7 +43,7 @@ export default function TracePageNUX() {
   // Add the sharing step if sharing is enabled
   if (config("sharing")) {
     steps.push({
-      target: "button.inline.guide-step-4",
+      target: "button.inline.nux-step-4",
       content:
         "Share the trace with a collaborator. The annotations that you left on it are sticky and will follow the trace in their own Explorer view.",
       placement: "bottom",

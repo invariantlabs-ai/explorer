@@ -180,9 +180,12 @@ def save_user(session, userinfo):
         # Import the sample traces
         import_jsonl(session, "Welcome-to-Explorer", user['id'], sample_jsonl, existing_dataset=dataset)
 
-def trace_to_json(trace, annotations=None, user=None, max_length=None):
+def trace_to_json(trace, annotations=None, user=None, max_length=None, download=False):
     if max_length is None:
         max_length = config('server_truncation_limit')
+    if download:
+        if "uploader" in trace.extra_metadata:
+            trace.extra_metadata.pop("uploader")
     out = {
         "id": trace.id,
         "index": trace.index,
@@ -218,6 +221,8 @@ def annotation_to_json(annotation, user=None, **kwargs):
 ###
 
 def trace_to_exported_json(trace, annotations=None, user=None):
+    if "uploader" in trace.extra_metadata:
+        trace.extra_metadata.pop("uploader")
     out = {
         "index": trace.index,
         "messages": trace.content,
