@@ -58,10 +58,7 @@ function FeaturedDatasets(props) {
               }`}
             >
               <div className="featured-dataset-info">
-                <Link
-                  className="item"
-                  to={`/u/${dataset.user.username}/${dataset.name}`}
-                >
+                <Link className="item" to={`/u/${dataset.user.username}/${dataset.name}/t`}>
                   <h3>
                     <BsGlobe /> {dataset.nice_name}
                   </h3>

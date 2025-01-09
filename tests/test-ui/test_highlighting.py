@@ -3,6 +3,7 @@ import os
 import re
 # add tests folder (parent) to sys.path
 import sys
+import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from util import * # needed for pytest fixtures
 import util
@@ -19,10 +20,6 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
         await screenshot(page)
         
         await page.locator(f"text={dataset['name']}").click()
-        await screenshot(page)
-
-        # share dataset
-        await page.get_by_role("link", name="All").click()
         await screenshot(page)
 
         # wait for load ('Tool' message)
@@ -51,12 +48,10 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
         await page.locator(f"text={dataset['name']}").click()
         await screenshot(page)
 
-        # share dataset
-        await page.get_by_role("link", name="All").click()
-        await screenshot(page)
-
         # wait for load ('Tool' message)
         await page.wait_for_selector("text=Tool")
+        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
+        await util.expand_messages(page)
 
         # # first construct a frame for the first .event on screen (0th .event is the metadata)
         user_msg = page.locator("css=.event").nth(1)
@@ -85,14 +80,13 @@ async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
         await screenshot(page)
 
         await page.locator(f"text={dataset['name']}").click()
+        
+        # wait for load
+        await page.wait_for_selector("text=Tool")
+        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
+        await util.expand_messages(page)
         await screenshot(page)
 
-        # share dataset
-        await page.get_by_role("link", name="All").click()
-        await screenshot(page)
-
-        # wait for load ('Tool' message)
-        await page.wait_for_selector("text=TOOL")
         snippet_1 = page.locator("css=.event").nth(1)
         snippet_2 = page.locator("css=.event").nth(2)
 
@@ -123,10 +117,6 @@ async def test_line_numbers_are_not_removed_from_non_code(context, url, data_lin
         await page.locator(f"text={dataset['name']}").click()
         await screenshot(page)
 
-        # share dataset
-        await page.get_by_role("link", name="All").click()
-        await screenshot(page)
-
         # Find table with list data (looks like line numbers)
         table = page.locator("table").nth(0)
         table_screenshot = await screenshot(table)
@@ -145,10 +135,6 @@ async def test_highlights_python_correctly(context, url, data_line_numbers, scre
         await screenshot(page)
 
         await page.locator(f"text={dataset['name']}").click()
-        await screenshot(page)
-
-        # share dataset
-        await page.get_by_role("link", name="All").click()
         await screenshot(page)
 
         # Find table with list data (looks like line numbers)

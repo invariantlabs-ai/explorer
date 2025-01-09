@@ -161,101 +161,49 @@ export function PoliciesView(props) {
   const dataset = props.dataset;
   const datasetLoader = props.datasetLoader;
 
-  return (
-    <div className="panel">
-      {/* create modal */}
-      {showCreatePolicyModal && (
-        <Modal
-          title="Create Policy"
-          onClose={() => setShowCreatePolicyModal(false)}
-          hasWindowControls
-        >
-          <MutatePolicyModalContent
-            dataset_id={dataset.id}
-            policy={null}
-            action="create"
-            onClose={() => setShowCreatePolicyModal(false)}
-            onSuccess={() => datasetLoader.refresh()}
-          ></MutatePolicyModalContent>
-        </Modal>
-      )}
-      {/* delete modal */}
-      {selectedPolicyForDeletion && (
-        <Modal
-          title="Delete Policy"
-          onClose={() => setSelectedPolicyForDeletion(null)}
-          hasWindowControls
-        >
-          <DeletePolicyModalContent
-            dataset_id={dataset.id}
-            policy={selectedPolicyForDeletion}
-            onClose={() => setSelectedPolicyForDeletion(null)}
-            onSuccess={() => datasetLoader.refresh()}
-          ></DeletePolicyModalContent>
-        </Modal>
-      )}
-      {/* update modal */}
-      {selectedPolicyForUpdation && (
-        <Modal
-          title="Update Policy"
-          onClose={() => setSelectedPolicyForUpdation(null)}
-          hasWindowControls
-        >
-          <MutatePolicyModalContent
-            dataset_id={dataset.id}
-            policy={selectedPolicyForUpdation}
-            action="update"
-            onClose={() => setSelectedPolicyForUpdation(null)}
-            onSuccess={() => datasetLoader.refresh()}
-          ></MutatePolicyModalContent>
-        </Modal>
-      )}
-      <h2>
-        Policies
-        <button
-          className="primary new-policy-button"
-          onClick={() => setShowCreatePolicyModal(true)}
-        >
-          {" "}
-          <BsPlusCircle /> New Policy
-        </button>
-      </h2>
-      <div className="actions">
-        {(!dataset.extra_metadata?.policies ||
-          dataset.extra_metadata.policies.length === 0) && (
-          <div className="no-policies">
-            No policies found for the dataset. Click on the 'New Policy' button
-            to create a new policy.
-          </div>
-        )}
-        {dataset.extra_metadata?.policies &&
-          dataset.extra_metadata.policies.length > 0 &&
-          dataset.extra_metadata.policies.map((policy) => {
-            return (
-              <div key={policy.id}>
-                <div className="box full setting">
-                  <div>
-                    <h3 className="policy-label">{policy.name}</h3>
-                  </div>
-                  <button
-                    aria-label="delete"
-                    className="danger"
-                    onClick={() => setSelectedPolicyForDeletion(policy)}
-                  >
-                    <BsTrash /> Delete
-                  </button>
-                  <button
-                    aria-label="edit"
-                    className="primary"
-                    onClick={() => setSelectedPolicyForUpdation(policy)}
-                  >
-                    <BsPencilFill /> Edit
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
+    return (
+        <div>
+            {/* create modal */}
+            {showCreatePolicyModal && <Modal title="Create Policy" onClose={() => setShowCreatePolicyModal(false)} hasWindowControls>
+                <MutatePolicyModalContent dataset_id={dataset.id} policy={null} action="create" onClose={() => setShowCreatePolicyModal(false)} onSuccess={() => datasetLoader.refresh()}></MutatePolicyModalContent>
+            </Modal>
+            }
+            {/* delete modal */}
+            {selectedPolicyForDeletion && <Modal title="Delete Policy" onClose={() => setSelectedPolicyForDeletion(null)} hasWindowControls>
+                <DeletePolicyModalContent dataset_id={dataset.id} policy={selectedPolicyForDeletion} onClose={() => setSelectedPolicyForDeletion(null)} onSuccess={() => datasetLoader.refresh()}></DeletePolicyModalContent>
+            </Modal>}
+            {/* update modal */}
+            {selectedPolicyForUpdation && <Modal title="Update Policy" onClose={() => setSelectedPolicyForUpdation(null)} hasWindowControls>
+                <MutatePolicyModalContent dataset_id={dataset.id} policy={selectedPolicyForUpdation} action="update" onClose={() => setSelectedPolicyForUpdation(null)} onSuccess={() => datasetLoader.refresh()}></MutatePolicyModalContent>
+            </Modal>}
+            <h2 className="policies-header">
+                Policies
+                <button className='primary new-policy-button' onClick={() => setShowCreatePolicyModal(true)}> <BsPlusCircle /> New Policy</button>
+            </h2>
+            <div className="policies-list">
+                {
+                    (!dataset.extra_metadata?.policies || dataset.extra_metadata.policies.length === 0) && (
+                        <div className="no-policies">
+                            No policies found for the dataset. Click on the 'New Policy' button to create a new policy.
+                        </div>
+                    )
+                }
+                {dataset.extra_metadata?.policies && dataset.extra_metadata.policies.length > 0 && dataset.extra_metadata.policies.map(policy => {
+                    return <div key={policy.id}>
+                        <div className='box full setting'>
+                            <div>
+                                <h3 className='policy-label'>{policy.name}</h3>
+                            </div>
+                            <button aria-label="delete" className='danger policy-delete' onClick={() => setSelectedPolicyForDeletion(policy)}>
+                                <BsTrash /> Delete
+                            </button>
+                            <button aria-label="edit" className='primary' onClick={() => setSelectedPolicyForUpdation(policy)}>
+                                <BsPencilFill /> Edit
+                            </button>
+                        </div>
+                    </div>
+                })}
+            </div>
+        </div>
+    );
 }
