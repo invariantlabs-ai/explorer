@@ -183,9 +183,8 @@ def save_user(session, userinfo):
 def trace_to_json(trace, annotations=None, user=None, max_length=None, download=False):
     if max_length is None:
         max_length = config('server_truncation_limit')
-    if download:
-        if "uploader" in trace.extra_metadata:
-            trace.extra_metadata.pop("uploader")
+    if download and "uploader" in trace.extra_metadata:
+        trace.extra_metadata.pop("uploader")
     out = {
         "id": trace.id,
         "index": trace.index,
