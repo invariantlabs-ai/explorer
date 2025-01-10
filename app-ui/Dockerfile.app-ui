@@ -32,7 +32,8 @@ ARG CONFIG_FILE_NAME=explorer.prod.yml
 COPY --from=configs $CONFIG_FILE_NAME /config/explorer.config.yml
 
 ARG PREVIEW=0
-RUN VITE_PREVIEW=$PREVIEW yarn run build
+ARG COMMIT=unknown
+RUN VITE_COMMIT=$COMMIT VITE_PREVIEW=$PREVIEW yarn run build
 
 WORKDIR /app/app-ui/server
 COPY server /app/app-ui/server
