@@ -1,5 +1,5 @@
 @use "sass:color";
-@import "Colors.scss";
+@use "Colors.scss" as *;
 
 .app {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

@@ -1,4 +1,4 @@
-@import "../Colors.scss";
+@use "../Colors.scss" as *;
 
 .traces {
   .event.metadata {
