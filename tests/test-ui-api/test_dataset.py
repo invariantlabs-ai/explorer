@@ -730,27 +730,27 @@ async def test_create_dataset_for_is_public_cases(context, url, is_public):
     # Cleanup the dataset.
     _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
 
+
 async def test_create_dataset_validate_field_types(context, url):
     """Tests that creating a dataset with invalid field types fails."""
     dataset_name = f"some_name-{uuid.uuid4()}"
     response = await context.request.post(
         f"{url}/api/v1/dataset/create",
-        data={"name": dataset_name, "is_public": "random"
-        })
+        data={"name": dataset_name, "is_public": "random"},
+    )
     assert response.status == 400
     assert "is_public must be a boolean" in await response.text()
 
     response = await context.request.post(
-        f"{url}/api/v1/dataset/create",
-        data={"name": 1234, "is_public": "random"
-        })
+        f"{url}/api/v1/dataset/create", data={"name": 1234, "is_public": "random"}
+    )
     assert response.status == 400
     assert "name must be a string" in await response.text()
 
     response = await context.request.post(
         f"{url}/api/v1/dataset/create",
-        data={"name": dataset_name, "is_public": True, "metadata": "random"
-        })
+        data={"name": dataset_name, "is_public": True, "metadata": "random"},
+    )
     assert response.status == 400
     assert "metadata must be a dict" in await response.text()
 
@@ -782,6 +782,7 @@ async def test_upload_dataset_for_is_public_cases(context, url, data_abc, is_pub
     # Cleanup the dataset.
     _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
 
+
 async def test_upload_dataset_validate_field_types(context, url, data_abc):
     """Tests that uploading a dataset with invalid field types fails."""
     dataset_name = f"some_name-{uuid.uuid4()}"
@@ -795,7 +796,7 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
                 "buffer": data_abc.encode("utf-8"),
             },
             # is_public is not a string representing a boolean
-            "is_public": "random"
+            "is_public": "random",
         },
     )
 
@@ -816,7 +817,7 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
         ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}/indices", False),
         ("{url}/api/v1/dataset/list/byuser/{valid_user}", True),
         ("{url}/api/v1/dataset/list/byuser/{invalid_user}", False),
-    ]
+    ],
 )
 async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
@@ -824,14 +825,15 @@ async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
             url=url,
             valid_user="developer",
             invalid_user="developer-does-not-exists",
-            valid_datset=dataset['name'],
-            invalid_datset="dataset-that-does-not-exist"
+            valid_datset=dataset["name"],
+            invalid_datset="dataset-that-does-not-exist",
         )
         response = await context.request.get(endpoint_formatted)
         if valid:
             assert response.status == 200
         else:
             assert 400 <= response.status < 500
+
 
 async def test_create_empty_dataset_and_upload_traces(context, url, data_abc):
     """Tests that creating an empty dataset and uploading traces works."""

@@ -1,13 +1,19 @@
-name: Trigger Production Build
+name: Trigger Internal Production Builds
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Explorer CI"]
+    types:
+      - completed
+    branches:
+      - prod
 
 jobs:
   trigger-workflow:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger workflow in another repository
+      - name: trigger production build
         run: |
           curl -X POST \
           -H "Accept: application/vnd.github+json" \

@@ -1,18 +1,18 @@
-$scale: 1.0;
+$scale: 1;
 $content-width: 1000pt;
-$text-color: #2E2E2E;
-$footer-color: #17161E;
+$text-color: #2e2e2e;
+$footer-color: #17161e;
 
 // colors
-$color-primary: #3E3AFF;
-$color-button: #AEADBF;
-$color-button-primary: #3A3E60;
-$color-button-blue: #948FE4;
+$color-primary: #3e3aff;
+$color-button: #aeadbf;
+$color-button-primary: #3a3e60;
+$color-button-blue: #948fe4;
 
 // $border-color: #aeadbf51;
 $border-color: rgb(218, 217, 217);
 
-$color-green: #4AEC9B;
+$color-green: #4aec9b;
 
 body {
   margin: 0;
@@ -65,7 +65,7 @@ header.top {
       height: 100vh;
     }
 
-    >ul {
+    > ul {
       background-color: white;
       border-right: 1pt solid $border-color;
       width: auto;
@@ -129,7 +129,18 @@ header.top {
         padding-top: 10pt;
         margin-top: 15pt;
         border-top: 1pt solid $border-color;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Oxygen,
+          Ubuntu,
+          Cantarell,
+          "Open Sans",
+          "Helvetica Neue",
+          sans-serif;
         margin-bottom: -5pt;
 
         a,
@@ -191,7 +202,6 @@ header.top {
           color: $text-color;
         }
       }
-      
 
       li.separator {
         border-bottom: 1pt solid $border-color;
@@ -199,16 +209,14 @@ header.top {
       }
     }
 
-
     &:not(.open) {
       .sidebar-background {
-        background-color: rgba(0, 0, 0, 0.0);
+        background-color: rgba(0, 0, 0, 0);
       }
 
       ul {
         left: -250pt;
       }
-
     }
   }
 
@@ -281,7 +289,7 @@ header.top {
       }
     }
 
-    >p {
+    > p {
       z-index: 2;
     }
 
@@ -640,7 +648,7 @@ button.tool {
   padding: 5pt 10pt;
 
   &.danger {
-    color: #ED707B;
+    color: #ed707b;
   }
 
   &:hover {
@@ -701,19 +709,19 @@ button.tool {
     margin-bottom: 15pt;
   }
 
-  >button {
+  > button {
     margin-bottom: 15pt;
   }
 
-  input[type=file] {
-    opacity: 0.0;
+  input[type="file"] {
+    opacity: 0;
     height: 100pt;
   }
 
   .error {
-    color: #ED707B;
+    color: #ed707b;
     font-size: 18pt;
-    border-left: 2pt solid #ED707B;
+    border-left: 2pt solid #ed707b;
     padding-left: 10pt;
     display: block;
     margin-bottom: 15pt;
@@ -722,14 +730,14 @@ button.tool {
 }
 
 button.danger {
-  background-color: #ED707B;
+  background-color: #ed707b;
 
   &:hover {
-    background-color: #E64C5E;
+    background-color: #e64c5e;
   }
 
   &:active {
-    background-color: #D63A4A;
+    background-color: #d63a4a;
   }
 }
 
@@ -840,7 +848,7 @@ div.empty {
     transition: background-color 0.1s;
     border: 1pt solid $border-color;
 
-    >a {
+    > a {
       text-decoration: none;
       color: $text-color;
     }
@@ -911,16 +919,27 @@ div.panel.explorer {
 }
 
 div.panel {
-  >h2 {
+  > h2 {
     font-size: 12pt;
     margin-top: 10pt;
     font-weight: bold;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
   }
 
   header.toolbar {
     position: absolute;
-    top: 41pt;
+    top: 81pt;
     right: 0pt;
     left: 0pt;
     z-index: 1;
@@ -1012,7 +1031,7 @@ button.primary .shortcut {
         padding: 0pt 2pt;
         border-left: 2pt solid transparent;
 
-        &>* {
+        & > * {
           white-space: nowrap;
           overflow-x: hidden;
           text-overflow: ellipsis;
@@ -1022,13 +1041,13 @@ button.primary .shortcut {
         &.level-0 {
           margin-left: 0pt;
         }
-        
+
         &.level-1 {
           margin-left: 10pt;
           width: calc(100% - 10pt - 2pt);
           border-left: 1pt solid $border-color;
         }
-        
+
         a {
           display: block;
           text-decoration: none;
@@ -1057,14 +1076,14 @@ button.primary .shortcut {
           background-color: #dbdbdb;
         }
       }
-      
+
       li.hidden {
         display: none;
       }
-      
+
       li.spacer {
         margin-top: 10pt;
-        border-top: 1pt solid $border-color; 
+        border-top: 1pt solid $border-color;
       }
 
       li.trace {
@@ -1088,7 +1107,7 @@ button.primary .shortcut {
         }
 
         .warnings {
-          color: #AFAFAF;
+          color: #afafaf;
           font-size: 9pt;
           margin-left: 10pt;
           margin-right: 6pt;
@@ -1096,7 +1115,7 @@ button.primary .shortcut {
         }
 
         .test-result {
-          display: inline-block; 
+          display: inline-block;
           text-align: center;
           padding: 2pt 4pt;
           font-size: 9pt;
@@ -1105,14 +1124,13 @@ button.primary .shortcut {
           border-radius: 2pt;
           width: 24pt;
           min-width: 24pt;
-          
 
           &.pass {
-            background-color: #1E883E;
+            background-color: #1e883e;
           }
 
           &.fail {
-            background-color: #BA2929;
+            background-color: #ba2929;
           }
         }
 
@@ -1124,11 +1142,9 @@ button.primary .shortcut {
         }
 
         .path {
-          color: lightgray
+          color: lightgray;
         }
-       
       }
-     
 
       li.seperator:first-of-type {
         margin-top: 0pt;
@@ -1293,7 +1309,7 @@ button.primary .shortcut {
       margin-left: -265pt;
 
       ul {
-        opacity: 0.0;
+        opacity: 0;
       }
     }
   }
@@ -1350,7 +1366,7 @@ button.share {
   margin: auto;
   border-radius: 5pt;
 
-  p>a {
+  p > a {
     color: $color-primary;
     text-decoration: none;
 
@@ -1368,7 +1384,7 @@ button.share {
     align-items: center;
 
     a.button {
-      line-height: 35pt;;
+      line-height: 35pt;
     }
 
     button {
@@ -1377,24 +1393,35 @@ button.share {
   }
 }
 
-.thumbs-up-icon, .thumbs-down-icon {
+.thumbs-up-icon,
+.thumbs-down-icon {
   font-style: italic;
   svg {
     position: relative;
     bottom: -1.5pt;
     margin-right: 2pt;
   }
-
 }
 
 .thumbs::before {
-  content: '';
+  content: "";
   width: 20pt;
   height: 31pt;
   background-color: transparent;
   position: absolute;
-  left: 20pt;
+  left: 50pt;
   top: 0pt;
+}
+
+// adjust thumbs position for json table lines
+.json .thumbs::before {
+  width: 240pt;
+  background-color: transparent;
+  left: 50qb;
+}
+
+.json .thumbs {
+  left: -233pt;
 }
 
 .traceview span.line .selectable:hover .thumbs {
@@ -1414,7 +1441,7 @@ button.share {
   z-index: 999;
   transform: scale(0.8) translateY(-50%);
   transform-origin: top left;
-  opacity: 0.0;
+  opacity: 0;
 
   &.visible {
     display: inline-block;
@@ -1422,7 +1449,7 @@ button.share {
   }
 
   &:hover {
-    opacity: 1.0 !important;
+    opacity: 1 !important;
   }
 
   svg {
@@ -1449,8 +1476,8 @@ button.share {
   }
 
   svg.toggled {
-    background-color: #DECFEE;
-    border-radius: 3pt ;
+    background-color: #decfee;
+    border-radius: 3pt;
   }
 
   svg.toggled.up {
@@ -1509,7 +1536,7 @@ button.share {
 }
 
 .traceview span.line.hovered-up {
-  background-color: #ffffff !important; 
+  background-color: #ffffff !important;
 
   .selectable {
     background-color: var(--color-thumbs-up-highlight) !important;
@@ -1517,7 +1544,7 @@ button.share {
 }
 
 .traceview span.line.hovered-down {
-  background-color: #ffffff !important; 
+  background-color: #ffffff !important;
 
   .selectable {
     background-color: var(--color-thumbs-down-highlight) !important;
@@ -1612,7 +1639,18 @@ header.top .sidebar {
   h2 {
     font-size: 12pt;
     font-weight: bold;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
 
     display: flex;
     flex-direction: row;
@@ -1709,7 +1747,7 @@ table.data {
     font-size: 10pt;
   }
 
-  td>svg {
+  td > svg {
     position: relative;
     top: 1pt;
     margin-right: 4pt;
@@ -1755,7 +1793,7 @@ table.api-keys {
     opacity: 0.5;
 
     .actions {
-      opacity: 0.0;
+      opacity: 0;
     }
   }
 }
@@ -1773,7 +1811,7 @@ table.api-keys {
   border-radius: 10pt;
   border-radius: 5pt;
 
-  &>* {
+  & > * {
     display: inline-block;
     background-color: white;
     color: black;
@@ -1826,12 +1864,12 @@ table.api-keys {
     width: 100%;
     padding: 0;
     margin: 0;
-      
-      .spinner {
-        margin-left: 12pt;
-        margin-right: 4pt;
-        opacity: 0.6;
-      }
+
+    .spinner {
+      margin-left: 12pt;
+      margin-right: 4pt;
+      opacity: 0.6;
+    }
   }
 
   .search-select:active,
@@ -1840,7 +1878,6 @@ table.api-keys {
   .search-submit:hover {
     background-color: white;
   }
-
 }
 
 /* Tab styles for the Dataset page. */
@@ -1868,61 +1905,6 @@ table.api-keys {
 
 .dataset-tab-group button.active {
   background-color: #d1d1d157;
-}
-
-.new-policy-button {
-  margin-top: -10pt;
-  float: right;
-}
-
-.policy-editor-form {
-  height: 400pt;
-  width: 550pt;
-
-  input {
-    background-color: #ebebeb;
-    display: block;
-    padding: 5pt;
-    font-size: 24pt;
-    border-radius: 5pt;
-    border: none;
-    margin-bottom: 5pt;
-    width: 535pt;
-  }
-
-  label {
-    font-size: 16pt;
-    opacity: 0.5;
-    margin-top: 1lvh;
-    margin-bottom: 5pt;
-  }
-
-  .error {
-    color: #ED707B;
-    font-size: 18pt;
-    border-left: 2pt solid #ED707B;
-    padding-left: 10pt;
-    display: block;
-    margin-bottom: 15pt;
-    margin-top: 0pt;
-  }
-
-  button {
-    width: 100%;
-  }
-}
-
-.policy-editor {
-  margin-bottom: 20pt;
-}
-
-.no-policies {
-  margin-top: 30pt;
-  text-align: center;
-}
-
-.policy-label {
-  margin-bottom: 0pt !important;
 }
 
 .deployment-info {
@@ -1955,6 +1937,175 @@ table.api-keys {
   }
 }
 
+.dataset-view {
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    background: #f6f6f6;
+    justify-content: flex-start;
+    margin-bottom: 10pt;
+  }
+
+  .tab {
+    border: none;
+    background: #f6f6f6;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    outline: none;
+    border-bottom: 2px solid transparent;
+    color: black;
+    transition: all 0.1s;
+    border-radius: 2pt;
+  }
+
+  .tab:hover {
+    background: #d8d8d8;
+  }
+
+  .tab.active {
+    background: white;
+    border-bottom: 2px solid blue;
+    font-weight: bold;
+  }
+
+  .metadata-policies {
+    width: 90%; 
+    margin: auto;
+    margin-top: 10px;
+  }
+
+  .metadata-summary {
+    margin-top: 60px !important;
+    width: 90%;
+    margin: auto;
+  }
+
+  .policies-header {
+    font-size: 24px;
+    margin-bottom: 10pt;
+  }
+
+  .new-policy-button {
+    margin-top: -10pt;
+    float: right;
+  }
+  
+  .policy-editor-form {
+    height: 400pt;
+    width: 550pt;
+  
+    input {
+      background-color: #ebebeb;
+      display: block;
+      padding: 5pt;
+      font-size: 24pt;
+      border-radius: 5pt;
+      border: none;
+      margin-bottom: 5pt;
+      width: 535pt;
+    }
+  
+    label {
+      font-size: 16pt;
+      opacity: 0.5;
+      margin-top: 1lvh;
+      margin-bottom: 5pt;
+    }
+  
+    .error {
+      color: #ed707b;
+      font-size: 18pt;
+      border-left: 2pt solid #ed707b;
+      padding-left: 10pt;
+      display: block;
+      margin-bottom: 15pt;
+      margin-top: 0pt;
+    }
+  
+    button {
+      width: 100%;
+    }
+  }
+  
+  .policy-editor {
+    margin-bottom: 20pt;
+  }
+
+  .policies-list {
+    height: 1000px;
+    overflow-y: auto;
+  }
+  
+  .no-policies {
+    margin-top: 30pt;
+    text-align: center;
+  }
+  
+  .policy-label {
+    margin-bottom: 0pt !important;
+  }
+
+  .policy-delete {
+    margin-right: 10pt;
+  }
+
+  .settings-actions {
+    width: 90%;
+    margin: auto;
+    margin-top: 80px;
+  }
+
+  header.toolbar {
+    height: 40pt;
+    opacity: 0.8;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  }
+}
+
+.deployment-info {
+  background-color: $color-primary;
+  color: white;
+  line-height: 17pt;
+  transform: scale(0.95);
+  font-size: 8pt;
+  border-radius: 10pt;
+  padding: 1pt 6pt;
+  font-weight: 800;
+  position: relative;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
+  top: 1pt;
+  font-weight: bold;
+
+  &:hover {
+    cursor: pointer;
+    background-color: lighten($color-primary, 10%);
+  }
+
+  &:active {
+    background-color: darken($color-primary, 10%);
+  }
+
+  svg {
+    position: relative;
+    top: 1pt;
+    margin-right: 1pt;
+
+  }
+}
+
 // shown when an empty dataset is opened
 div.empty.instructions {
   width: calc(100% - 10pt);
@@ -1962,23 +2113,23 @@ div.empty.instructions {
   margin: auto;
   margin-top: -45pt !important;
   color: $text-color;
-  opacity: 1.0;
+  opacity: 1;
   text-align: center;
 
   .error {
-    color: #ED707B;
-    border-left: 2pt solid #ED707B;
+    color: #ed707b;
+    border-left: 2pt solid #ed707b;
     padding-left: 3pt;
   }
 
   h3 {
-    opacity: 1.0;
+    opacity: 1;
     font-weight: bold;
     color: $text-color;
     font-size: 22pt;
   }
 
-  >p {
+  > p {
     margin: 0pt 30pt;
   }
 
@@ -1994,7 +2145,7 @@ div.empty.instructions {
     align-items: center;
     justify-content: center;
 
-    >div {
+    > div {
       background-color: white;
       border-radius: 5pt;
       height: auto;
@@ -2024,12 +2175,12 @@ div.empty.instructions {
       }
     }
 
-    input[type=file] {
-      opacity: 0.0;
+    input[type="file"] {
+      opacity: 0;
       height: 100pt;
     }
 
-    button { 
+    button {
       width: 70%;
     }
   }
@@ -2041,7 +2192,7 @@ div.empty.instructions {
   border-radius: 4pt;
   z-index: 2;
   transform: scale(0.8);
-  background-color: #5855FF;
+  background-color: #5855ff;
   color: #fff;
   display: flex;
   align-items: center;
@@ -2051,7 +2202,6 @@ div.empty.instructions {
   font-weight: bold;
   text-transform: uppercase;
 }
-
 
 .consent-banner {
   background: #fff;
@@ -2080,7 +2230,7 @@ div.empty.instructions {
     &:hover {
       opacity: 0.5;
     }
-    
+
     svg {
       position: relative;
       left: -5pt;
@@ -2111,10 +2261,21 @@ div.empty.instructions {
 
   pre {
     white-space: pre-wrap;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
     font-size: 10pt;
     background-color: #f1f1f1;
-    
+
     padding: 5pt 10pt;
   }
 
@@ -2137,16 +2298,22 @@ p.footer-links {
 }
 
 .markdown {
-  h1 { font-size: 18pt; }
-  h2 { font-size: 16pt; }
-  h3 { font-size: 14pt; }
+  h1 {
+    font-size: 18pt;
+  }
+  h2 {
+    font-size: 16pt;
+  }
+  h3 {
+    font-size: 14pt;
+  }
 }
 
 *[data-anchor-highlight] {
   border-color: #3d3aff31;
   transition: background-color 0.1s;
   background-color: transparent;
-  
+
   // style of the flashing permalinked items
   &[data-anchor-flash] {
     background-color: #3d3aff1b !important;
@@ -2161,7 +2328,7 @@ p.footer-links {
 
 .permalink {
   font-size: 10pt;
-  color: #3E3AFF;
+  color: #3e3aff;
   margin-right: 5pt;
 
   &:hover {
@@ -2228,11 +2395,11 @@ p.footer-links {
 }
 
 .home-banner {
-  background: linear-gradient(92deg, #434DA6 7.93%, #10135C 94.43%);
+  background: linear-gradient(92deg, #434da6 7.93%, #10135c 94.43%);
   color: white;
   padding: 10pt 20pt;
   border-radius: 5pt;
-  margin: 0 10pt;
+  margin: 0 10pt 10pt 10pt;
   display: flex;
   flex-wrap: wrap; /* Allow items to wrap if space is limited */
   justify-content: space-between;
@@ -2271,14 +2438,16 @@ p.footer-links {
   border-radius: 20pt;
   font-size: 10pt;
   cursor: pointer;
-  transition: background-color 0.5s, color 0.5s;
+  transition:
+    background-color 0.5s,
+    color 0.5s;
   line-height: normal;
   height: 35px;
   padding: 5pt 15pt;
 }
 
 .home-banner-button:hover {
-  background-color: #6C79f7;
+  background-color: #6c79f7;
   color: white;
 }
 
@@ -2403,25 +2572,25 @@ p.footer-links {
 
   label {
     font-size: 14pt;
-    opacity: 1.0;
+    opacity: 1;
     margin-top: 1lvh;
     margin-bottom: 5pt;
   }
 
-  >button {
+  > button {
     margin-top: 15px;
     margin-bottom: 0px;
   }
 
-  input[type=file] {
-    opacity: 0.0;
+  input[type="file"] {
+    opacity: 0;
     height: 100pt;
   }
 
   .error {
-    color: #ED707B;
+    color: #ed707b;
     font-size: 14px;
-    border-left: 2pt solid #ED707B;
+    border-left: 2pt solid #ed707b;
     padding-left: 10pt;
     display: block;
     margin-bottom: 0px;
