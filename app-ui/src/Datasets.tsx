@@ -463,7 +463,7 @@ export function Datasets() {
         actions={
           <>
             {userInfo?.loggedIn && (
-              <button onClick={() => setShowUploadModal(true)}>
+              <button className="primary" onClick={() => setShowUploadModal(true)}>
                 <BsUpload /> Upload New Dataset
               </button>
             )}

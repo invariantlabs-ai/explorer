@@ -27,6 +27,7 @@ services:
 
   app-api:
     image: ghcr.io/invariantlabs-ai/explorer/app-api:${VERSION}
+    pull_policy: always
     platform: linux/amd64
     depends_on:
       database:
@@ -56,6 +57,7 @@ services:
 
   app-ui:
     image: ghcr.io/invariantlabs-ai/explorer/app-ui:${VERSION}
+    pull_policy: always
     platform: linux/amd64
     networks:
       - invariant-explorer-web
