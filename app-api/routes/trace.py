@@ -61,13 +61,13 @@ def delete_trace(id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIde
 def get_trace(
     request: Request,
     id: str,
-    annotated: bool=False,
+    download: bool=False,
     max_length: int = None,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None
 ):
     with Session(db()) as session:
         trace, user = load_trace(session, id, user_id, allow_public=True, allow_shared=True, return_user=True)
-        return trace_to_json(trace, load_annoations(session, id), user=user.username, max_length=max_length)
+        return trace_to_json(trace, load_annoations(session, id), user=user.username, max_length=max_length, download=download)
         
 @trace.get("/{id}/shared")
 def get_trace_sharing(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):

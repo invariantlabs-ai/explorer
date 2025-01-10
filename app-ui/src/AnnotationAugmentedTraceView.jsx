@@ -261,7 +261,7 @@ export function AnnotationAugmentedTraceView(props) {
           <>
             {is_all_expanded ? (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onCollapseAll}
                 data-tooltip-id="button-tooltip"
                 data-tooltip-content="Collapse All"
@@ -270,7 +270,7 @@ export function AnnotationAugmentedTraceView(props) {
               </button>
             ) : (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onExpandAll}
                 data-tooltip-id="button-tooltip"
                 data-tooltip-content="Expand All"
@@ -279,7 +279,7 @@ export function AnnotationAugmentedTraceView(props) {
               </button>
             )}
             <a
-              href={"/api/v1/trace/" + activeTraceId + "?annotated=1"}
+              href={"/api/v1/trace/" + activeTraceId + "?download=1"}
               download={activeTraceId + ".json"}
             >
               <button
@@ -305,8 +305,7 @@ export function AnnotationAugmentedTraceView(props) {
             {props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={
-                  "inline guide-step-4" +
-                  (props.sharingEnabled ? "primary" : "")
+                  "inline nux-step-4" + (props.sharingEnabled ? "primary" : "")
                 }
                 onClick={onShare}
               >
