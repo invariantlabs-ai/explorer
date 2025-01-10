@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $scale: 1;
 $content-width: 1000pt;
 $text-color: #2e2e2e;
@@ -518,7 +520,7 @@ div.panel {
       }
 
       &:hover {
-        background-color: darken(white, 1%);
+        background-color: color.adjust(white, $lightness: -1%);
       }
     }
   }
@@ -1151,31 +1153,30 @@ button.primary .shortcut {
       }
 
       li.seperator-severity-0 {
-        background-color: lighten($color-primary, 27.5%);
+        background-color: color.adjust($color-primary, $lightness: 27.5%);
       }
 
       li.seperator-severity-1 {
-        background-color: lighten($color-primary, 25%);
+        background-color: color.adjust($color-primary, $lightness: 25%);
       }
 
       li.seperator-severity-2 {
-        background-color: lighten($color-primary, 22.5%);
+        background-color: color.adjust($color-primary, $lightness: 22.5%);
       }
 
       li.seperator-severity-3 {
-        background-color: lighten($color-primary, 20%);
+        background-color: color.adjust($color-primary, $lightness: 20%);
       }
 
       li.seperator-severity-4 {
-        background-color: lighten($color-primary, 17.5%);
+        background-color: color.adjust($color-primary, $lightness: 17.5%);
       }
 
       li.seperator-severity-5 {
-        background-color: lighten($color-primary, 15%);
+        background-color: color.adjust($color-primary, $lightness: 15%);
       }
 
       li.seperator {
-        //background-color: lighten($color-primary, 15%);
         color: white; //$color-button-primary;
         box-shadow: 0pt 0pt 1pt 0pt $color-primary;
         border-radius: 3pt;
@@ -1409,8 +1410,19 @@ button.share {
   height: 31pt;
   background-color: transparent;
   position: absolute;
-  left: 20pt;
+  left: 50pt;
   top: 0pt;
+}
+
+// adjust thumbs position for json table lines
+.json .thumbs::before {
+  width: 240pt;
+  background-color: transparent;
+  left: 50qb;
+}
+
+.json .thumbs {
+  left: -233pt;
 }
 
 .traceview span.line .selectable:hover .thumbs {
@@ -1912,11 +1924,11 @@ table.api-keys {
 
   &:hover {
     cursor: pointer;
-    background-color: lighten($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: 10%);
   }
 
   &:active {
-    background-color: darken($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: -10%);
   }
 
   svg {
@@ -2080,11 +2092,11 @@ table.api-keys {
 
   &:hover {
     cursor: pointer;
-    background-color: lighten($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: 10%);
   }
 
   &:active {
-    background-color: darken($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: -10%);
   }
 
   svg {

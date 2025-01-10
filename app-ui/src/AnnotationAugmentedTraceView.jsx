@@ -336,6 +336,9 @@ export function AnnotationAugmentedTraceView(props) {
           setEvents={setEvents}
           allExpanded={is_all_expanded}
           topLevelAnnotations={top_level_annotations}
+          traceIndex={activeTraceIndex}
+          onUpvoteDownvoteCreate={onAnnotationCreate}
+          onUpvoteDownvoteDelete={onAnnotationDelete}
         />
       </div>
       <Tooltip
@@ -359,6 +362,9 @@ function TraceViewContent(props) {
     errors,
     decorator,
     setEvents,
+    traceIndex,
+    onUpvoteDownvoteCreate,
+    onUpvoteDownvoteDelete
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
@@ -401,6 +407,9 @@ function TraceViewContent(props) {
       }
       allExpanded={props.allExpanded}
       traceId={activeTraceId}
+      traceIndex={traceIndex}
+      onUpvoteDownvoteCreate={onUpvoteDownvoteCreate}
+      onUpvoteDownvoteDelete={onUpvoteDownvoteDelete}
     />
   );
 }

@@ -1,4 +1,5 @@
-@import "Colors.scss";
+@use "sass:color";
+@use "Colors.scss" as *;
 
 .app {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -96,7 +97,7 @@ div[data-panel] {
 
   button.green {
     background-color: $color-green;
-    color: darken($color-green, 90%);
+    color: color.adjust($color-green, $lightness: -90%);
 
     &.with-arrow {
       background-image: url("/theme/images/arrow-right-dark.svg");
@@ -223,7 +224,7 @@ button.inline {
 
 .badge {
   background-color: $color-primary;
-  color: darken($color-primary, 90%);
+  color: color.adjust($color-primary, $lightness: -90%);
   padding: 2pt;
   font-family: monospace;
   font-size: 10pt;
@@ -236,7 +237,7 @@ button.inline {
 
   &.badge-2 {
     background-color: #aeadbf;
-    color: darken($color-button, 90%) !important;
+    color: color.adjust($color-button, $lightness: -90%) !important;
   }
 
   &.badge-3 {
@@ -251,7 +252,7 @@ button.inline {
 
   &.badge-5 {
     background-color: #4aec9b;
-    color: darken($color-green, 90%) !important;
+    color: color.adjust($color-green, $lightness: -90%) !important;
   }
 
   &.badge-6 {
@@ -276,11 +277,11 @@ button.inline.primary {
   transition: background-color 0.01s;
 
   &:hover {
-    background-color: darken($color-button-primary, 10%);
+    background-color: color.adjust($color-button-primary, $lightness: -10%);
   }
 
   &:active {
-    background-color: darken($color-button-primary, 20%);
+    background-color: color.adjust($color-button-primary, $lightness: -20%);
   }
 }
 
