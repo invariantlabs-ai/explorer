@@ -59,7 +59,7 @@ jobs:
             APP_NAME=explorer
             DEV_MODE=false
             CONFIG_FILE=explorer.local.yml
-            COMMIT=$(git rev-parse HEAD)
+            COMMIT=${{ github.event.head_commit.message }}
 
       - name: Build app-ui
         uses: docker/build-push-action@v5
@@ -73,6 +73,6 @@ jobs:
             APP_NAME=explorer
             PREVIEW=false
             CONFIG_FILE_NAME=explorer.local.yml
-            COMMIT=$(git rev-parse HEAD)
+            COMMIT=${{ github.event.head_commit.message }}
           build-contexts: |
             configs=./configs
