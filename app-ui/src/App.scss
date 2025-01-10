@@ -1950,25 +1950,37 @@ table.api-keys {
 
   .tab {
     border: none;
-    background: #f6f6f6;
-    padding: 10px 20px;
+    background: transparent;
+    padding: 2pt 4pt;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 11pt;
     outline: none;
     border-bottom: 2px solid transparent;
     color: black;
     transition: all 0.1s;
-    border-radius: 2pt;
+    border-radius: 0pt;
   }
 
   .tab:hover {
-    background: #d8d8d8;
+    .inner {
+      background: #efefef;
+    }
   }
 
   .tab.active {
-    background: white;
     border-bottom: 2px solid blue;
     font-weight: bold;
+    
+    .inner {
+      background: white;
+    }
+  }
+
+  .tab .inner {
+    background: transparent;
+    padding: 4pt 10pt;
+    margin-top: 0pt;
+    border-radius: 5pt;
   }
 
   .metadata-policies {

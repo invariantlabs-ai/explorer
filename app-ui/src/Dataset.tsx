@@ -227,21 +227,27 @@ function DatasetView() {
           className={`tab ${"traces" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("traces")}
         >
+          <div className="inner">
           <BsCollection />Traces
+          </div>
         </button>
         <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("metadata")}
         >
+          <div className="inner">
           <BsCodeSlash />Metadata
+          </div>
         </button>
         <button
           key="settings"
           className={`tab ${"settings" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("settings")}
         >
+          <div className="inner">
           <BsGear />Settings
+          </div>
         </button>
       </div>
 

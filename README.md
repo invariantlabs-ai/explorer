@@ -56,3 +56,13 @@ You can run subset of tests by running
 ```
 ./run.sh tests-local /tests/path-to-my-test
 ```
+
+
+#### Showing the logs
+
+To show the logs of the services, run the following command:
+```bash
+./run.sh logs
+```
+
+This will continuously show the logs of the services. To stop showing the logs, press `Ctrl+C`.

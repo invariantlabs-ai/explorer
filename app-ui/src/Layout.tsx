@@ -111,7 +111,7 @@ function SidebarContent(props: {
           </>
         )}
         {/* unicode copyright */}
-        <p className="secondary">&copy; 2024 Invariant Labs <DeploymentCommit /></p>
+        <p className="secondary">&copy; 2025 Invariant Labs <DeploymentCommit /></p>
         <p className="footer-links">
           <a href="https://invariantlabs.ai" target="_blank">
             About
