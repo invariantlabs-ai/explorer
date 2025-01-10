@@ -315,9 +315,11 @@ function Layout(props: {
                       Documentation
                     </a>
                   </li>
-                  <li>
-                    <a href="/logout">Log Out</a>
-                  </li>
+                  {config("instance_name") != "local" && (
+                    <li>
+                      <a href="/logout">Log Out</a>
+                    </li>
+                  )}
                 </ul>
               </div>
             </>

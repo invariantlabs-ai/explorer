@@ -1409,8 +1409,19 @@ button.share {
   height: 31pt;
   background-color: transparent;
   position: absolute;
-  left: 20pt;
+  left: 50pt;
   top: 0pt;
+}
+
+// adjust thumbs position for json table lines
+.json .thumbs::before {
+  width: 240pt;
+  background-color: transparent;
+  left: 50qb;
+}
+
+.json .thumbs {
+  left: -233pt;
 }
 
 .traceview span.line .selectable:hover .thumbs {
