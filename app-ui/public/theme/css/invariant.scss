@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $scale: 1;
 $content-width: 1000pt;
 $text-color: #2e2e2e;
@@ -300,11 +302,11 @@ button {
     background-color: $color-button-primary;
 
     &:hover {
-      background-color: darken($color-button-primary, 10%);
+      background-color: color.adjust($color-button-primary, $lightness: -10%);
     }
 
     &:active {
-      background-color: darken($color-button-primary, 20%);
+      background-color: color.adjust($color-button-primary, $lightness: -20%);
     }
   }
 
@@ -849,11 +851,11 @@ button.white {
   }
 
   &:hover {
-    background-color: darken(white, 10%);
+    background-color: color.adjust(white, $lightness: -10%);
   }
 
   &:active {
-    background-color: darken(white, 20%);
+    background-color: color.adjust(white, $lightness: -20%);
   }
 }
 
@@ -1059,11 +1061,11 @@ section.dark section {
   }
 
   &:hover {
-    background-color: darken($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: -10%);
   }
 
   &:active {
-    background-color: darken($color-primary, 20%);
+    background-color: color.adjust($color-primary, $lightness: -20%);
   }
 }
 
@@ -2695,11 +2697,11 @@ a.button {
     background-color: $color-button-primary;
 
     &:hover {
-      background-color: darken($color-button-primary, 10%);
+      background-color: color.adjust($color-button-primary, $lightness: -10%);
     }
 
     &:active {
-      background-color: darken($color-button-primary, 20%);
+      background-color: color.adjust($color-button-primary, $lightness: -20%);
     }
   }
 }
