@@ -8,6 +8,7 @@ import {
   reveal,
 } from "./lib/permalink-navigator";
 import { safeAnchorId } from "./HighlightDetails";
+import { Tooltip } from "react-tooltip";
 
 /**
  * Create a navigation anchor for a highlight.
@@ -203,7 +204,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
           <button
             disabled={selectedHighlight === 1}
             onClick={() => setSelectedHighlight((s) => s - 1)}
-            data-tooltip-id="button-tooltip"
+            data-tooltip-id="highlight-button-tooltip"
             data-tooltip-content="Previous"
           >
             <BsArrowUp />
@@ -211,13 +212,14 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
           <button
             disabled={selectedHighlight === highlights.length}
             onClick={() => setSelectedHighlight((s) => s + 1)}
-            data-tooltip-id="button-tooltip"
+            data-tooltip-id="highlight-button-tooltip"
             data-tooltip-content="Next"
           >
             <BsArrowDown />
           </button>
         </>
       )}
+      <Tooltip id="highlight-button-tooltip" place="bottom" />
     </div>
   );
 }
