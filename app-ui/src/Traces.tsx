@@ -925,7 +925,7 @@ export function Traces() {
               <h1>
                 <Link to="/"> /</Link>
                 <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                <Link to={`/u/${props.username}/${props.datasetname}`}>
+                <Link to={`/u/${props.username}/${props.datasetname}/t`}>
                   {props.datasetname}
                 </Link>
                 {activeTrace && (
@@ -1704,7 +1704,7 @@ export function SingleTrace() {
           </Link>
           <Link
             aria-label="path-dataset"
-            to={`/u/${trace?.user}/${dataset.name}`}
+            to={`/u/${trace?.user}/${dataset.name}/t`}
           >
             {dataset.name}
           </Link>

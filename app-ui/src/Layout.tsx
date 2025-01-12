@@ -22,7 +22,7 @@ import { useSnippetsList } from "./lib/snippets";
 import { CompactSnippetList } from "./Snippets";
 import { DatasetLinkList } from "./Datasets";
 import { SignUp } from "./SignUp";
-import { DeploymentInfo } from "./components/DeploymentInfo";
+import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
 import { SignUpModal } from "./SignUpModal";
@@ -111,7 +111,7 @@ function SidebarContent(props: {
           </>
         )}
         {/* unicode copyright */}
-        <p className="secondary">&copy; 2024 Invariant Labs</p>
+        <p className="secondary">&copy; 2025 Invariant Labs <DeploymentCommit /></p>
         <p className="footer-links">
           <a href="https://invariantlabs.ai" target="_blank">
             About

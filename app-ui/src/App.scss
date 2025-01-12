@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $scale: 1;
 $content-width: 1000pt;
 $text-color: #2e2e2e;
@@ -518,7 +520,7 @@ div.panel {
       }
 
       &:hover {
-        background-color: darken(white, 1%);
+        background-color: color.adjust(white, $lightness: -1%);
       }
     }
   }
@@ -939,7 +941,7 @@ div.panel {
 
   header.toolbar {
     position: absolute;
-    top: 41pt;
+    top: 81pt;
     right: 0pt;
     left: 0pt;
     z-index: 1;
@@ -1151,31 +1153,30 @@ button.primary .shortcut {
       }
 
       li.seperator-severity-0 {
-        background-color: lighten($color-primary, 27.5%);
+        background-color: color.adjust($color-primary, $lightness: 27.5%);
       }
 
       li.seperator-severity-1 {
-        background-color: lighten($color-primary, 25%);
+        background-color: color.adjust($color-primary, $lightness: 25%);
       }
 
       li.seperator-severity-2 {
-        background-color: lighten($color-primary, 22.5%);
+        background-color: color.adjust($color-primary, $lightness: 22.5%);
       }
 
       li.seperator-severity-3 {
-        background-color: lighten($color-primary, 20%);
+        background-color: color.adjust($color-primary, $lightness: 20%);
       }
 
       li.seperator-severity-4 {
-        background-color: lighten($color-primary, 17.5%);
+        background-color: color.adjust($color-primary, $lightness: 17.5%);
       }
 
       li.seperator-severity-5 {
-        background-color: lighten($color-primary, 15%);
+        background-color: color.adjust($color-primary, $lightness: 15%);
       }
 
       li.seperator {
-        //background-color: lighten($color-primary, 15%);
         color: white; //$color-button-primary;
         box-shadow: 0pt 0pt 1pt 0pt $color-primary;
         border-radius: 3pt;
@@ -1907,59 +1908,173 @@ table.api-keys {
   background-color: #d1d1d157;
 }
 
-.new-policy-button {
-  margin-top: -10pt;
-  float: right;
+.deployment-info {
+  background-color: $color-primary;
+  color: white;
+  line-height: 17pt;
+  transform: scale(0.95);
+  font-size: 8pt;
+  border-radius: 10pt;
+  padding: 1pt 6pt;
+  font-weight: 800;
+  position: relative;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  top: 1pt;
+  font-weight: bold;
+
+  &:hover {
+    cursor: pointer;
+    background-color: color.adjust($color-primary, $lightness: 10%);
+  }
+
+  &:active {
+    background-color: color.adjust($color-primary, $lightness: -10%);
+  }
+
+  svg {
+    position: relative;
+    top: 1pt;
+    margin-right: 1pt;
+  }
 }
 
-.policy-editor-form {
-  height: 400pt;
-  width: 550pt;
+.dataset-view {
 
-  input {
-    background-color: #ebebeb;
-    display: block;
-    padding: 5pt;
-    font-size: 24pt;
-    border-radius: 5pt;
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    background: #f6f6f6;
+    justify-content: flex-start;
+    margin-bottom: 10pt;
+  }
+
+  .tab {
     border: none;
-    margin-bottom: 5pt;
-    width: 535pt;
+    background: transparent;
+    padding: 2pt 4pt;
+    cursor: pointer;
+    font-size: 11pt;
+    outline: none;
+    border-bottom: 2px solid transparent;
+    color: black;
+    transition: all 0.1s;
+    border-radius: 0pt;
   }
 
-  label {
-    font-size: 16pt;
-    opacity: 0.5;
-    margin-top: 1lvh;
-    margin-bottom: 5pt;
+  .tab:hover {
+    .inner {
+      background: #efefef;
+    }
   }
 
-  .error {
-    color: #ed707b;
-    font-size: 18pt;
-    border-left: 2pt solid #ed707b;
-    padding-left: 10pt;
-    display: block;
-    margin-bottom: 15pt;
+  .tab.active {
+    border-bottom: 2px solid blue;
+    font-weight: bold;
+    
+    .inner {
+      background: white;
+    }
+  }
+
+  .tab .inner {
+    background: transparent;
+    padding: 4pt 10pt;
     margin-top: 0pt;
+    border-radius: 5pt;
   }
 
-  button {
-    width: 100%;
+  .metadata-policies {
+    width: 90%; 
+    margin: auto;
+    margin-top: 10px;
   }
-}
 
-.policy-editor {
-  margin-bottom: 20pt;
-}
+  .metadata-summary {
+    margin-top: 60px !important;
+    width: 90%;
+    margin: auto;
+  }
 
-.no-policies {
-  margin-top: 30pt;
-  text-align: center;
-}
+  .policies-header {
+    font-size: 24px;
+    margin-bottom: 10pt;
+  }
 
-.policy-label {
-  margin-bottom: 0pt !important;
+  .new-policy-button {
+    margin-top: -10pt;
+    float: right;
+  }
+  
+  .policy-editor-form {
+    height: 400pt;
+    width: 550pt;
+  
+    input {
+      background-color: #ebebeb;
+      display: block;
+      padding: 5pt;
+      font-size: 24pt;
+      border-radius: 5pt;
+      border: none;
+      margin-bottom: 5pt;
+      width: 535pt;
+    }
+  
+    label {
+      font-size: 16pt;
+      opacity: 0.5;
+      margin-top: 1lvh;
+      margin-bottom: 5pt;
+    }
+  
+    .error {
+      color: #ed707b;
+      font-size: 18pt;
+      border-left: 2pt solid #ed707b;
+      padding-left: 10pt;
+      display: block;
+      margin-bottom: 15pt;
+      margin-top: 0pt;
+    }
+  
+    button {
+      width: 100%;
+    }
+  }
+  
+  .policy-editor {
+    margin-bottom: 20pt;
+  }
+
+  .policies-list {
+    height: 1000px;
+    overflow-y: auto;
+  }
+  
+  .no-policies {
+    margin-top: 30pt;
+    text-align: center;
+  }
+  
+  .policy-label {
+    margin-bottom: 0pt !important;
+  }
+
+  .policy-delete {
+    margin-right: 10pt;
+  }
+
+  .settings-actions {
+    width: 90%;
+    margin: auto;
+    margin-top: 80px;
+  }
+
+  header.toolbar {
+    height: 40pt;
+    opacity: 0.8;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  }
 }
 
 .deployment-info {
@@ -1989,17 +2104,18 @@ table.api-keys {
 
   &:hover {
     cursor: pointer;
-    background-color: lighten($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: 10%);
   }
 
   &:active {
-    background-color: darken($color-primary, 10%);
+    background-color: color.adjust($color-primary, $lightness: -10%);
   }
 
   svg {
     position: relative;
     top: 1pt;
     margin-right: 1pt;
+
   }
 }
 
@@ -2517,4 +2633,12 @@ p.footer-links {
     margin-right: 8px;
     margin-left: 8px;
   }
+}
+
+.deployment-commit {
+  font-family: monospace;
+  font-size: 9pt;
+  margin-left: 2pt;
+  color: #666;
+  opacity: 0.5;
 }

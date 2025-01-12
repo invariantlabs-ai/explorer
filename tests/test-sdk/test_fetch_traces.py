@@ -1,16 +1,14 @@
+import json
 import os
 import sys
-import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from util import *  # needed for pytest fixtures
 
 pytest_plugins = ("pytest_asyncio",)
 
-async def test_fetch_dataset_byid(
-    context, url, invariant_client, data_abc
-):
 
+async def test_fetch_dataset_byid(context, url, invariant_client, data_abc):
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Download the trace
         dataset_fetched = invariant_client.request(
@@ -25,10 +23,7 @@ async def test_fetch_dataset_byid(
         assert dataset[key] == dataset_fetched[key]
 
 
-async def test_fetch_dataset_byuser(
-    context, url, invariant_client, data_abc
-):
-    
+async def test_fetch_dataset_byuser(context, url, invariant_client, data_abc):
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Download the trace
         dataset_fetched = invariant_client.request(
@@ -43,9 +38,7 @@ async def test_fetch_dataset_byuser(
         assert dataset[key] == dataset_fetched[key]
 
 
-async def test_list_datasets(
-    context, url, invariant_client, data_abc
-):
+async def test_list_datasets(context, url, invariant_client, data_abc):
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Download the trace
         list_dataset_fetched = invariant_client.request(
@@ -68,10 +61,7 @@ def fetch_trace_byid_sdk(id: str, invariant_client) -> dict:
     return json.loads(trace_fetched.content)
 
 
-async def test_fetch_traces_byid(
-    context, url, invariant_client, data_abc
-):
-
+async def test_fetch_traces_byid(context, url, invariant_client, data_abc):
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Download the trace
         traces_fetched = invariant_client.request(
@@ -81,14 +71,15 @@ async def test_fetch_traces_byid(
         )
         assert traces_fetched.status_code == 200
         traces_fetched = json.loads(traces_fetched.content)
-        traces = [fetch_trace_byid_sdk(tf["id"], invariant_client) for tf in traces_fetched]
-    assert [trace["messages"] for trace in traces] == [json.loads(row) for row in data_abc.split("\n")[:-1]]
+        traces = [
+            fetch_trace_byid_sdk(tf["id"], invariant_client) for tf in traces_fetched
+        ]
+    assert [trace["messages"] for trace in traces] == [
+        json.loads(row) for row in data_abc.split("\n")[:-1]
+    ]
 
 
-async def test_fetch_traces_byuser(
-    context, url, invariant_client, data_abc
-):
-    
+async def test_fetch_traces_byuser(context, url, invariant_client, data_abc):
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Download the trace
         traces_fetched = invariant_client.request(
@@ -98,5 +89,9 @@ async def test_fetch_traces_byuser(
         )
         assert traces_fetched.status_code == 200
         traces_fetched = json.loads(traces_fetched.content)
-        traces = [fetch_trace_byid_sdk(tf["id"], invariant_client) for tf in traces_fetched]
-    assert [trace["messages"] for trace in traces] == [json.loads(row) for row in data_abc.split("\n")[:-1]]
+        traces = [
+            fetch_trace_byid_sdk(tf["id"], invariant_client) for tf in traces_fetched
+        ]
+    assert [trace["messages"] for trace in traces] == [
+        json.loads(row) for row in data_abc.split("\n")[:-1]
+    ]

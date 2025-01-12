@@ -396,7 +396,7 @@ export function DatasetLinkList(props) {
         {datasets.map((dataset, i) => (
           <Link
             className="item"
-            to={`/u/${dataset.user.username}/${dataset.name}`}
+            to={`/u/${dataset.user.username}/${dataset.name}/t`}
             key={i}
           >
             <li>
@@ -463,7 +463,7 @@ export function Datasets() {
         actions={
           <>
             {userInfo?.loggedIn && (
-              <button onClick={() => setShowUploadModal(true)}>
+              <button className="primary" onClick={() => setShowUploadModal(true)}>
                 <BsUpload /> Upload New Dataset
               </button>
             )}

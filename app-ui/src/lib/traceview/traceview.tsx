@@ -387,6 +387,12 @@ interface RenderedTraceProps {
   // (used to initialize expanded state of messages when they are loaded in
   // after the user has already expanded/collapsed all messages)
   allExpanded?: boolean;
+  // The index of the trace.
+  traceIndex?: number;
+  // Callback for the addition of upvote/downvote.
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  // Callback for the removal of upvote/downvote.
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }
 
 // state for the RenderedTrace component
@@ -620,6 +626,9 @@ export class RenderedTrace extends React.Component<
                   address={"messages[" + index + "]"}
                   events={this.state.events}
                   allExpanded={this.props.allExpanded}
+                  traceIndex={this.props.traceIndex}
+                  onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                  onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
                 />
               );
             }}
@@ -679,6 +688,12 @@ interface MessageViewProps {
   // (used to initialize expanded state of messages when they are loaded in
   // after the user has already expanded/collapsed all messages)
   allExpanded?: boolean;
+  // The index of the trace.
+  traceIndex?: number;
+  // Callback for the addition of upvote/downvote.
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  // Callback for the removal of upvote/downvote.
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }
 
 /**
@@ -805,11 +820,18 @@ class MessageView extends React.Component<
   constructor(props: MessageViewProps) {
     super(props);
 
-    this.state = {
-      error: null,
-      collapsed:
-        typeof props.allExpanded !== "undefined" ? !props.allExpanded : false,
-    };
+        let collapsed = false; // default to expanded message display
+        if (typeof props.allExpanded !== "undefined") {
+            // if all messages are expanded/collapsed, use that state
+            // to initialize the expanded state of this message
+            // even if we have all collapsed, we still want to show the user messages
+            collapsed = !props.allExpanded && this.props.message.role !== "user";
+        }
+
+        this.state = {
+            error: null,
+            collapsed: collapsed
+        }
 
     this.collapse = () => this.setState({ collapsed: true });
     this.expand = () => this.setState({ collapsed: false });
@@ -874,6 +896,9 @@ class MessageView extends React.Component<
                       highlightContext={this.props.highlightContext}
                       address={this.props.address}
                       message={message}
+                      traceIndex={this.props.traceIndex}
+                      onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                      onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
                     />
                   </div>
                 </>
@@ -938,6 +963,9 @@ class MessageView extends React.Component<
                         highlightContext={this.props.highlightContext}
                         address={this.props.address + ".content"}
                         message={message}
+                        traceIndex={this.props.traceIndex}
+                        onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                        onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
                       />
                     ) : (
                       <Annotated
@@ -945,6 +973,9 @@ class MessageView extends React.Component<
                         highlightContext={this.props.highlightContext}
                         address={this.props.address + ".content"}
                         message={message}
+                        traceIndex={this.props.traceIndex}
+                        onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                        onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
                       >
                         {truncate_content(
                           message.content,
@@ -973,6 +1004,9 @@ class MessageView extends React.Component<
                             this.props.address + ".tool_calls[" + index + "]"
                           }
                           message={message}
+                          traceIndex={this.props.traceIndex}
+                          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
                         />
                       );
                     })}
@@ -996,6 +1030,9 @@ function MessageJSONContent(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const content = props.content;
   const highlights = props.highlights;
@@ -1016,6 +1053,9 @@ function MessageJSONContent(props: {
                   address={props.address + "." + key}
                   highlightContext={props.highlightContext}
                   message={props.message}
+                  traceIndex={props.traceIndex}
+                  onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+                  onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
                 >
                   {typeof content[key] === "object"
                     ? JSON.stringify(content[key], null, 2)
@@ -1041,6 +1081,9 @@ function ToolCallView(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const tool_call = props.tool_call;
   const highlights = props.highlights;
@@ -1068,6 +1111,9 @@ function ToolCallView(props: {
           highlightContext={props.highlightContext}
           address={props.address + ".function.name"}
           message={props.message}
+          traceIndex={props.traceIndex}
+          onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {f.name || (
             <span className="error">Could Not Parse Function Name</span>
@@ -1083,6 +1129,9 @@ function ToolCallView(props: {
             highlightContext={props.highlightContext}
             address={props.address + ".function.arguments"}
             message={props.message}
+            traceIndex={props.traceIndex}
+            onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+            onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
           ></HighlightedJSONTable>
         </pre>
       </div>
@@ -1103,6 +1152,9 @@ function HighlightedJSONTable(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const tool_call = props.tool_call;
   const highlights = props.highlights;
@@ -1134,6 +1186,9 @@ function HighlightedJSONTable(props: {
           address={props.address}
           message={props.message}
           highlightContext={props.highlightContext}
+          traceIndex={props.traceIndex}
+          onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {truncate_content(args, config("truncation_limit"))}
         </AnnotatedStringifiedJSON>
@@ -1160,6 +1215,9 @@ function HighlightedJSONTable(props: {
                   address={props.address + "." + key}
                   highlightContext={props.highlightContext}
                   message={props.message}
+                  traceIndex={props.traceIndex}
+                  onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+                  onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
                 >
                   {typeof args[key] === "object"
                     ? JSON.stringify(args[key], null, 2)
@@ -1202,6 +1260,9 @@ function Annotated(props: {
   highlightContext?: HighlightContext;
   address?: string;
   message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const parentElement = useRef(null as any);
 
@@ -1313,6 +1374,9 @@ function Annotated(props: {
           highlights={line_highlights}
           highlightContext={props.highlightContext}
           address={props.address + ":L" + elements.length}
+          traceIndex={props.traceIndex}
+          onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {line}
         </Line>,
@@ -1349,6 +1413,9 @@ function AnnotatedStringifiedJSON(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const parentElement = useRef(null as any);
 
@@ -1454,6 +1521,9 @@ function AnnotatedStringifiedJSON(props: {
           highlights={highlights}
           highlightContext={props.highlightContext}
           address={props.address + ":L" + elements.length}
+          traceIndex={props.traceIndex}
+          onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {line}
         </Line>,
