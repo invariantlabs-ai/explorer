@@ -195,7 +195,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
   return (
     <div className="highlights-navigator">
       <span className="content" onClick={onClick}>
-        {selectedHighlight} out of {anchors.length} assertions
+        {selectedHighlight} of {highlights.length} assertions
         {/* {anchors[selectedHighlight - 1] && anchors[selectedHighlight - 1][0]} */}
       </span>
       {anchors.length > 0 && (

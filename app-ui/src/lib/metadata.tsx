@@ -142,7 +142,7 @@ export function Metadata(props) {
   const extra_metadata = props.extra_metadata;
   const excluded_keys = new Set(props.excluded || []);
 
-  if (!extra_metadata) {
+  if (!extra_metadata || Object.keys(extra_metadata).length === 0) {
     return null;
   }
 

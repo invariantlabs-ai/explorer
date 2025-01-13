@@ -922,11 +922,8 @@ export function Traces() {
             // header components to show in the explorer
             header={
               <h1>
-                <Link to="/"> /</Link>
                 <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                <Link to={`/u/${props.username}/${props.datasetname}/t`}>
-                  {props.datasetname}
-                </Link>
+                {props.datasetname}
                 {activeTrace && (
                   <>
                     /{" "}

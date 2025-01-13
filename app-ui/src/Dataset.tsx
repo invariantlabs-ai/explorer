@@ -159,13 +159,6 @@ function DatasetView() {
   const [selectedTab, _setSelectedTab] = React.useState("traces");
   const setSelectedTab = telemetry.wrap(_setSelectedTab, "dataset.select-tab");
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "hidden";
-    };
-  }, []);
-
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
     // log event
@@ -258,7 +251,6 @@ function DatasetView() {
           <div className="panel">
             <header className='toolbar'>
               <h1>
-                <Link to='/'> /</Link>
                 <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
               </h1>
             </header>
@@ -291,7 +283,6 @@ function DatasetView() {
           <div className="panel entity-list">
             <header className='toolbar'>
               <h1>
-                <Link to='/'> /</Link>
                 <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
               </h1>
             </header>
