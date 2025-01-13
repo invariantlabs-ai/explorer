@@ -84,7 +84,7 @@ class ImageViewer extends React.Component<
         },
         () => {
           this.fetchImage();
-        },
+        }
       );
     }
   }
@@ -115,6 +115,41 @@ class ImageViewer extends React.Component<
   }
 
   /**
+   * Create a bounding box using the coordinates given and the content of the annotation.
+   * The `content` and `state` are used to determine the key of the bounding box.
+   * `content` also determines the class of the bounding box (like regular annotations).
+   * The `borderSize` and `paddingPx` are used to adjust the size of the bounding box.
+   */
+  addBoundingBox(x1, y1, x2, y2, content, index, borderWidth = 1, padding = 0) {
+    // Adjust coordinates to add padding
+    const adjustedX1 = Math.min(1, Math.max(0, x1 - padding / 100));
+    const adjustedY1 = Math.min(1, Math.max(0, y1 - padding / 100));
+    const adjustedX2 = Math.min(1, Math.max(0, x2 + padding / 100));
+    const adjustedY2 = Math.min(1, Math.max(0, y2 + padding / 100));
+
+    // Calculate new dimensions and position
+    const newLeft = adjustedX1 * 100;
+    const newTop = adjustedY1 * 100;
+    const newWidth = (adjustedX2 - adjustedX1) * 100;
+    const newHeight = (adjustedY2 - adjustedY1) * 100;
+
+    return (
+      <div
+        key={`bbox-${x1}-${y1}-${x2}-${y2}-${index}`}
+        className={`bounding-box ${content?.source}`}
+        style={{
+          position: "absolute",
+          top: `${newTop}%`,
+          left: `${newLeft}%`,
+          width: `${newWidth}%`,
+          height: `${newHeight}%`,
+          borderWidth: `${borderWidth}px`,
+        }}
+      />
+    );
+  }
+
+  /**
    * Get annotations for image and update the higlights for it by either:
    *      - Wrapping it in a span with annotation data
    *      - Wrapping it in an unannotated span
@@ -122,12 +157,14 @@ class ImageViewer extends React.Component<
    */
   updateHighlights() {
     let highlights_in_text = this.props.highlights.in_text(
-      JSON.stringify(this.props.content, null, 2),
+      JSON.stringify(this.props.content, null, 2)
     );
+    let bounding_boxes_data =
+      HighlightedJSON.bounding_boxes(highlights_in_text);
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      '"' + this.props.content + '"',
+      '"' + this.props.content + '"'
     );
     let elements: React.ReactNode[] = [];
 
@@ -146,7 +183,7 @@ class ImageViewer extends React.Component<
               .join(" ");
           const tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
             .join("\n");
 
@@ -168,11 +205,21 @@ class ImageViewer extends React.Component<
                 data-tooltip-id={"highlight-tooltip"}
                 data-tooltip-content={tooltip}
               >
-                <img
-                  src={this.state.imageUrl}
-                  className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
-                />
-              </span>,
+                <div
+                  className="image-container"
+                  style={{ position: "relative", display: "flex" }}
+                >
+                  <img
+                    src={this.state.imageUrl}
+                    className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
+                  />
+                  {bounding_boxes_data.map(
+                    ({ x1, y1, x2, y2, content }, index) =>
+                      this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25
+                      )
+                  )}
+                </div>
+              </span>
             );
             highligthed_found = true;
           }
@@ -180,6 +227,7 @@ class ImageViewer extends React.Component<
       }
 
       // We still need to render the image if we do not have annotattions
+      // We also add any potential bounding boxes
       if (!highligthed_found) {
         image.push(
           <span
@@ -192,7 +240,10 @@ class ImageViewer extends React.Component<
                 className={`trace-image unannotated`}
               />
             }
-          </span>,
+            {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25)
+            )}
+          </span>
         );
       }
 
@@ -203,13 +254,35 @@ class ImageViewer extends React.Component<
           highlights={highlights}
           highlightContext={this.props.highlightContext}
           address={this.props.address + ":L" + elements.length}
-          traceIndex={this.props.traceIndex}
-          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
         >
           {image}
           {"\n"}
-        </Line>,
+        </Line>
+      );
+    }
+
+    // Conditionally render the full screen image
+    if (this.state.isModalOpen) {
+      elements.push(
+        <div
+          key="image-full-screen"
+          className="image-full-screen"
+          onClick={() => this.setState({ isModalOpen: false })}
+        >
+          <div
+            className="image-container"
+            style={{ position: "relative", display: "flex" }}
+          >
+            <img
+              src={this.state.imageUrl || ""}
+              alt="Image in the trace fullscreen"
+              className="image-full-screen-opened"
+            />
+            {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25)
+            )}
+          </div>
+        </div>
       );
     }
 
@@ -238,18 +311,6 @@ class ImageViewer extends React.Component<
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
               </svg>
             </button>
-            {this.state.isModalOpen && (
-              <div
-                className="image-full-screen"
-                onClick={() => this.setState({ isModalOpen: false })}
-              >
-                <img
-                  src={this.state.imageUrl}
-                  alt="Image in the trace fullscreen"
-                  className="image-full-screen-opened"
-                />
-              </div>
-            )}
           </>
         )}
       </div>
