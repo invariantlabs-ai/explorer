@@ -124,7 +124,6 @@ def parse_and_push_images(dataset, trace_id, messages):
     for msg in messages:
         if msg.get("role") != "tool" or type(msg.get("content")) != str:
             continue
-        print("now at msg: ", msg)
         if msg.get("content").startswith("base64_img: ") or msg.get(
             "content"
         ).startswith("local_base64_img: "):

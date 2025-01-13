@@ -305,7 +305,6 @@ def delete_dataset_by_name(
 
 def get_dataset(by: dict, user_id: UUID | None) -> dict:
     # may be None in case of anonymous users/public datasets or traces
-    print(f"type(user_id): {user_id, type(user_id)}")
     with Session(db()) as session:
         dataset, user = load_dataset(
             session, by, user_id, allow_public=True, return_user=True

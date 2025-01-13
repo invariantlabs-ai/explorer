@@ -19,8 +19,6 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
         "metadata": metadata if is_batched else [metadata],
     }
 
-    print(payload["messages"])
-
     # curl https://localhost/api/v1/keys/test -H "Authorization: Bearer <API>"
     r = requests.post(
         "https://localhost/api/v1/push/trace",
