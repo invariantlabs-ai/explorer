@@ -1,4 +1,4 @@
-import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
+import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useEffect, useState } from "react";
 import { config } from "./Config";
 
@@ -19,8 +19,7 @@ export default function TracePageNUX() {
   const [run, setRun] = useState(true);
   const [enableNux, setEnableNux] = useState(false);
   const [className_event, setClassNameEvent] = useState("undefined");
-  const HAS_SEEN_NUX_TRACE_VIEW =
-    "invariant.explorer.disable.guide.trace_view";
+  const HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view";
   const steps: Step[] = [
     {
       target: ".sidebar",
@@ -33,7 +32,6 @@ export default function TracePageNUX() {
       content:
         "Collapse All / Expand All messages in the current trace selected",
       placement: "bottom",
-      locale: { next: "Next", skip: "Skip", back: "Back" },
     },
     {
       target: className_event,
@@ -59,7 +57,7 @@ export default function TracePageNUX() {
       // Note the expanded status is contracted, when the event is collapsed it has the class expanded
       const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"])`;
       const eventFind = document.querySelector(selector);
-      let new_className_event =
+      const new_className_event =
         "." + eventFind?.className.replace(/\s+/g, ".") || "";
       if (
         className_event != new_className_event &&
@@ -84,7 +82,7 @@ export default function TracePageNUX() {
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, type } = data;
+    const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finishedStatuses.includes(status)) {
       setRun(false);
@@ -103,6 +101,9 @@ export default function TracePageNUX() {
           disableScrolling={true}
           styles={defaultOptions}
           callback={handleJoyrideCallback}
+          locale={{
+            last: "Finish Tour",
+          }}
         ></Joyride>
       )}
     </div>

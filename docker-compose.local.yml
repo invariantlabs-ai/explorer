@@ -1,7 +1,7 @@
 services:
   traefik:
     image: traefik:v2.0
-    container_name: "${APP_NAME}-local-traefik"
+    container_name: "explorer-test-local-traefik"
     command:
       - --providers.docker=true
       # Enable the API handler in insecure mode,
@@ -14,7 +14,7 @@ services:
     networks:
       - invariant-explorer-web
     ports:
-      - '${PORT_HTTP}:80'
+      - '${PORT_HTTP:-80}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
@@ -32,31 +32,28 @@ services:
     env_file:
       - .env
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
-      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
-      - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
+      - KEYCLOAK_CLIENT_ID_SECRET=local-does-not-use-keycloak
       - TZ=Europe/Berlin
-      - DEV_MODE=${DEV_MODE}
-      - APP_NAME=${APP_NAME}
+      - DEV_MODE=true
+      - APP_NAME=explorer-test
       - CONFIG_FILE=/config/explorer.config.yml
     networks:
       - internal
       - invariant-explorer-web
     ports:
-      - "${PORT_API}:8000"
+      - "8001:8000"
     volumes:
       - type: bind
         source: ./app-api
         target: /srv/app
-      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ./configs/explorer.test.yml:/config/explorer.config.yml
       - ./data/images:/srv/images
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
-      - "traefik.http.routers.$APP_NAME-api.entrypoints=invariant-explorer-web"
-      - "traefik.http.services.$APP_NAME-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.explorer-test-api.rule=(Host(`localhost`) && PathPrefix(`/api/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/`))"
+      - "traefik.http.routers.explorer-test-api.entrypoints=invariant-explorer-web"
+      - "traefik.http.services.explorer-test-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=invariant-explorer-web"
 
   app-ui:
@@ -69,15 +66,16 @@ services:
       - type: bind
         source: ./app-ui
         target: /srv/app
-      - ./configs/$CONFIG_FILE_NAME:/config/explorer.config.yml
+      - ./configs/explorer.local.yml:/config/explorer.config.yml
     environment:
-      - APP_NAME=${APP_NAME}
+      - APP_NAME=explorer-test
       - VITE_CONFIG_FILE=/config/explorer.config.yml
+      - PREVIEW=${PREVIEW:-false}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.$APP_NAME-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
-      - "traefik.http.routers.$APP_NAME-ui.entrypoints=invariant-explorer-web"
-      - "traefik.http.services.$APP_NAME-ui.loadbalancer.server.port=5173"
+      - "traefik.http.routers.explorer-test-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
+      - "traefik.http.routers.explorer-test-ui.entrypoints=invariant-explorer-web"
+      - "traefik.http.services.explorer-test-ui.loadbalancer.server.port=5173"
       - "traefik.docker.network=invariant-explorer-web"
 
   database:

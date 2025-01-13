@@ -1,12 +1,14 @@
 """Defines routes for APIs related to dataset."""
 
-import copy
 import datetime
 import json
+import os
 import re
 import uuid
-from typing import Annotated
 from enum import Enum
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from models.datasets_and_traces import (
@@ -25,28 +27,31 @@ from models.queries import (
     get_savedqueries,
     load_annoations,
     load_dataset,
-    load_trace,
     query_traces,
     search_term_mappings,
     trace_to_exported_json,
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity
+from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from sqlalchemy.sql import func, exists
+from sqlalchemy.sql import exists, func
 from util.util import validate_dataset_name
-import os
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
-homepage_dataset_ids = homepage_dataset_ids["DEV"] if os.getenv("DEV_MODE") == "true" else homepage_dataset_ids["PROD"]
+homepage_dataset_ids = (
+    homepage_dataset_ids["DEV"]
+    if os.getenv("DEV_MODE") == "true"
+    else homepage_dataset_ids["PROD"]
+)
 
 # dataset routes
 dataset = FastAPI()
+
 
 def is_duplicate(user_id, name) -> bool:
     """Check if a dataset with the same name already exists."""
@@ -60,6 +65,7 @@ def is_duplicate(user_id, name) -> bool:
             return True
     return False
 
+
 def handle_dataset_creation_integrity_error(error: IntegrityError):
     """Handle integrity error for dataset creation."""
     if "_user_id_name_uc" in str(error.orig):
@@ -69,6 +75,7 @@ def handle_dataset_creation_integrity_error(error: IntegrityError):
     raise HTTPException(
         status_code=400, detail="An integrity error occurred"
     ) from error
+
 
 def str_to_bool(key: str, value: str) -> bool:
     """Convert a string to a boolean."""
@@ -81,8 +88,9 @@ def str_to_bool(key: str, value: str) -> bool:
         return False
     raise HTTPException(
         status_code=400,
-        detail=f"{key} must be a string representing a boolean like 'true' or 'false'"
+        detail=f"{key} must be a string representing a boolean like 'true' or 'false'",
     )
+
 
 @dataset.post("/create")
 async def create(
@@ -129,6 +137,7 @@ async def create(
             handle_dataset_creation_integrity_error(e)
         return dataset_to_json(dataset)
 
+
 @dataset.post("/upload")
 async def upload_file(
     request: Request,
@@ -141,7 +150,7 @@ async def upload_file(
     name = form.get("name")
     # is_public is a string because of Multipart request, convert to boolean
     is_public = str_to_bool("is_public", form.get("is_public", "false"))
-    
+
     user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(
@@ -159,7 +168,9 @@ async def upload_file(
         )
         if existing_dataset is not None:
             trace_count = (
-                session.query(Trace).filter(Trace.dataset_id == existing_dataset.id).count()
+                session.query(Trace)
+                .filter(Trace.dataset_id == existing_dataset.id)
+                .count()
             )
             if trace_count > 0:
                 raise HTTPException(
@@ -180,9 +191,11 @@ async def upload_file(
         session.commit()
         return dataset_to_json(dataset)
 
+
 ########################################
 # list all datasets, but without their traces
 ########################################
+
 
 class DatasetKind(Enum):
     PRIVATE = "private"
@@ -192,112 +205,171 @@ class DatasetKind(Enum):
 
 
 @dataset.get("/list")
-def list_datasets(kind: DatasetKind, user: Annotated[dict, Depends(UserIdentity)], limit: int | None = None):
-    user_id = user.get("sub")
+def list_datasets(
+    kind: DatasetKind,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    limit: int | None = None,
+):
     with Session(db()) as session:
-        query = session.query(Dataset, User)\
-            .join(User, User.id == Dataset.user_id)
+        query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
         if kind == DatasetKind.PRIVATE:
             query = query.filter(Dataset.user_id == user_id)
         elif kind == DatasetKind.PUBLIC:
             query = query.filter(Dataset.is_public)
         elif kind == DatasetKind.HOMEPAGE:
-            query = query.filter(and_(Dataset.is_public,Dataset.id.in_(homepage_dataset_ids)))
+            query = query.filter(
+                and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids))
+            )
         elif kind == DatasetKind.ANY:
-            query = query.filter(or_(Dataset.is_public,Dataset.user_id == user_id))
+            query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
 
-        datasets = query.order_by(Dataset.time_created.desc())\
-            .limit(limit)\
-            .all()
+        datasets = query.order_by(Dataset.time_created.desc()).limit(limit).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
 
+
 @dataset.get("/list/byuser/{user_name}")
-def list_datasets_by_user(request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]):
+def list_datasets_by_user(
+    request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]
+):
     with Session(db()) as session:
         user_exists = session.query(exists().where(User.username == user_name)).scalar()
         if not user_exists:
             raise HTTPException(status_code=404, detail="User not found")
-        datasets = session.query(Dataset, User).join(User, User.id == Dataset.user_id).filter(and_(User.username == user_name, Dataset.is_public)).all()
+        datasets = (
+            session.query(Dataset, User)
+            .join(User, User.id == Dataset.user_id)
+            .filter(and_(User.username == user_name, Dataset.is_public))
+            .all()
+        )
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
-    
+
+
 ########################################
 # delete dataset
 ########################################
 
-def delete_dataset(by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+
+def delete_dataset(
+    by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+):
     user_id = userinfo["sub"]
-    
+
     with Session(db()) as session:
         dataset = load_dataset(session, by, user_id)
-        
+
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
 
         # delete all annotations
-        session.query(Annotation).filter(Annotation.trace_id.in_([trace.id for trace in traces])).delete()
+        session.query(Annotation).filter(
+            Annotation.trace_id.in_([trace.id for trace in traces])
+        ).delete()
         # delete all shared links
-        session.query(SharedLinks).filter(SharedLinks.trace_id.in_([trace.id for trace in traces])).delete()
+        session.query(SharedLinks).filter(
+            SharedLinks.trace_id.in_([trace.id for trace in traces])
+        ).delete()
         # delete all traces
         session.query(Trace).filter(Trace.dataset_id == dataset.id).delete()
 
         # delete dataset
         session.delete(dataset)
-        
+
         session.commit()
-        
+
         return {"message": "Deleted"}
-    
+
+
 @dataset.delete("/byid/{id}")
-def delete_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+def delete_dataset_by_id(
+    request: Request,
+    id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
     return delete_dataset({"id": id}, userinfo)
 
+
 @dataset.delete("/byuser/{username}/{dataset_name}")
-def delete_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return delete_dataset({'User.username': username, 'name': dataset_name}, userinfo)
+def delete_dataset_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
+    return delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
+
 
 ########################################
 # gets details on a dataset (including collections, but without traces)
 ########################################
 
-def get_dataset(by: dict, userinfo: Annotated[dict, Depends(UserIdentity)]):
+
+def get_dataset(by: dict, user_id: UUID | None) -> dict:
     # may be None in case of anonymous users/public datasets or traces
-    user_id = userinfo["sub"]
-    
+    print(f"type(user_id): {user_id, type(user_id)}")
     with Session(db()) as session:
-        dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+        dataset, user = load_dataset(
+            session, by, user_id, allow_public=True, return_user=True
+        )
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
-        return dataset_to_json(dataset, user,
-                               num_traces=num_traces,
-                               queries=get_savedqueries(session, dataset, user_id, num_traces))
+        return dataset_to_json(
+            dataset,
+            user,
+            num_traces=num_traces,
+            queries=get_savedqueries(session, dataset, user_id, num_traces),
+        )
 
 
 @dataset.get("/byid/{id}")
-def get_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_dataset({"id": id}, userinfo)
+def get_dataset_by_id(
+    request: Request,
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+):
+    return get_dataset({"id": id}, user_id=user_id)
+
 
 @dataset.get("/byuser/{username}/{dataset_name}")
-def get_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_dataset({'User.username': username, 'name': dataset_name}, userinfo)
+def get_dataset_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+):
+    return get_dataset(
+        {"User.username": username, "name": dataset_name}, user_id=user_id
+    )
+
 
 ########################################
 # search
 ########################################
 
+
 @dataset.get("/byuser/{username}/{dataset_name}/s")
-def search_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)], query:str = None):
-    user_id = userinfo['sub']
+def search_dataset_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(UserIdentity)],
+    query: str = None,
+):
+    user_id = userinfo["sub"]
     with Session(db()) as session:
-        by = {'User.username': username, 'name': dataset_name}
-        dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+        by = {"User.username": username, "name": dataset_name}
+        dataset, _ = load_dataset(
+            session, by, user_id, allow_public=True, return_user=True
+        )
 
-        mappings = {} 
+        mappings = {}
         result = {}
-        result['Other Traces'] = {'traces': [],
-                                  'description': 'Traces without Analyzer results',
-                                  'severity': 0}
+        result["Other Traces"] = {
+            "traces": [],
+            "description": "Traces without Analyzer results",
+            "severity": 0,
+        }
 
-        if query.strip() == 'is:invariant': 
+        if query.strip() == "is:invariant":
             pattern = re.compile(r"[a-zA-Z]+\((.*)\)")
             traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
             for trace in traces:
@@ -305,68 +377,90 @@ def search_dataset_by_name(request: Request, username:str, dataset_name:str, use
                 trace_with_match = False
                 for annotation, _ in annotations:
                     # TODO replace with actual parsing
-                    if annotation.content.startswith('Invariant analyzer result'):
-                        violations = annotation.content[len('Invariant analyzer result: '):].strip()
-                        for line in violations.split('\n'):
+                    if annotation.content.startswith("Invariant analyzer result"):
+                        violations = annotation.content[
+                            len("Invariant analyzer result: ") :
+                        ].strip()
+                        for line in violations.split("\n"):
                             line = line.strip()
                             if match := pattern.match(line):
                                 trace_with_match = True
-                                title = match.group(1).split(',')[0]
-                                if title not in result: result[title] = {'traces': []}
-                                result[title]['traces'].append(trace.index)
+                                title = match.group(1).split(",")[0]
+                                if title not in result:
+                                    result[title] = {"traces": []}
+                                result[title]["traces"].append(trace.index)
                 if not trace_with_match:
-                    result['Other Traces']['traces'].append(trace.index)
+                    result["Other Traces"]["traces"].append(trace.index)
         elif query.strip().startswith("filter"):
             # e.g. query=filter:some message:16,21,25,26,35
-            filter_query = query.strip()[len("filter:"):].strip()
+            filter_query = query.strip()[len("filter:") :].strip()
             filter_message, indices = filter_query.split(":")
             indices = [int(i) for i in indices.split(",")]
             result["Filtered Traces"] = {
                 "traces": indices,
-                "description": filter_message
+                "description": filter_message,
             }
         else:
-            selected_traces, search_term, filter_terms = query_traces(session, dataset, query)
+            selected_traces, search_term, filter_terms = query_traces(
+                session, dataset, query
+            )
             for trace in selected_traces:
                 mappings[trace.index] = search_term_mappings(trace, search_term)
-                
+
             result[query] = {}
-            result[query]['traces'] = list(sorted([trace.index for trace in selected_traces]))
-            has_search_term = search_term is not None and len(search_term) > 0 
+            result[query]["traces"] = list(
+                sorted([trace.index for trace in selected_traces])
+            )
+            has_search_term = search_term is not None and len(search_term) > 0
             has_filter = len(filter_terms) > 0
             if has_search_term and has_filter:
-                result[query]['description'] = 'filtered search result'
+                result[query]["description"] = "filtered search result"
             elif has_search_term:
-                result[query]['description'] = 'search result'
+                result[query]["description"] = "search result"
             elif has_filter:
-                result[query]['description'] = 'filtered result'
+                result[query]["description"] = "filtered result"
 
-        return {'result': result, 'mappings': mappings}
-    
+        return {"result": result, "mappings": mappings}
+
+
 @dataset.put("/byuser/{username}/{dataset_name}/s")
-async def save_query(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    user_id = userinfo['sub']
+async def save_query(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
+    user_id = userinfo["sub"]
     with Session(db()) as session:
-        by = {'User.username': username, 'name': dataset_name}
-        dataset, _ = load_dataset(session, by, user_id, allow_public=True, return_user=True)
+        by = {"User.username": username, "name": dataset_name}
+        dataset, _ = load_dataset(
+            session, by, user_id, allow_public=True, return_user=True
+        )
         data = await request.json()
-        savedquery = SavedQueries(user_id=user_id,
-                                  dataset_id=dataset.id,
-                                  query=data['query'],
-                                  name=data['name'])
+        savedquery = SavedQueries(
+            user_id=user_id,
+            dataset_id=dataset.id,
+            query=data["query"],
+            name=data["name"],
+        )
         session.add(savedquery)
         session.commit()
 
+
 @dataset.delete("/query/{query_id}")
-async def delete_query(request: Request, query_id:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    user_id = userinfo['sub']
+async def delete_query(
+    request: Request,
+    query_id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
+    user_id = userinfo["sub"]
     with Session(db()) as session:
         query = session.query(SavedQueries).filter(SavedQueries.id == query_id).first()
-        
+
         if str(query.user_id) != user_id:
             raise HTTPException(status_code=403, detail="Not allowed to delete query")
-      
-        session.delete(query)  
+
+        session.delete(query)
         session.commit()
 
 
@@ -374,32 +468,54 @@ async def delete_query(request: Request, query_id:str, userinfo: Annotated[dict,
 # update the dataset, currently only allows to change the visibility
 ########################################
 
-async def update_dataset(request: Request, by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
+
+async def update_dataset(
+    request: Request,
+    by: dict,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
     # never None, 'userinfo' is authenticated
     user_id = userinfo["sub"]
-  
+
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, return_user=True)
         payload = await request.json()
         is_public = bool(payload.get("content"))
-        dataset.is_public = is_public        
+        dataset.is_public = is_public
         session.commit()
-        
+
         # count all traces
         num_traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).count()
-        return dataset_to_json(dataset, num_traces=num_traces,
-                               queries=get_savedqueries(session, dataset, user_id, num_traces))
+        return dataset_to_json(
+            dataset,
+            num_traces=num_traces,
+            queries=get_savedqueries(session, dataset, user_id, num_traces),
+        )
+
 
 @dataset.put("/byid/{id}")
-async def update_dataset_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return await update_dataset(request, {'id': id}, userinfo)
+async def update_dataset_by_id(
+    request: Request,
+    id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
+    return await update_dataset(request, {"id": id}, userinfo)
+
 
 @dataset.put("/byuser/{username}/{dataset_name}")
-async def update_dataset_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]):
-    return await update_dataset(request, {'User.username': username, 'name': dataset_name}, userinfo)
+async def update_dataset_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+):
+    return await update_dataset(
+        request, {"User.username": username, "name": dataset_name}, userinfo
+    )
+
 
 ########################################
-# get all traces of a dataset 
+# get all traces of a dataset
 ########################################
 
 """
@@ -409,32 +525,45 @@ Only returns the traces, if the provided user has access to corresponding datase
 
 Parameters:
 - by: dictionary of filtering parameters
-- userinfo: user identity information
+- user_id: user identity information, None for non authenticated users
 - indices: list of trace indices to filter by (optional)
 """
-def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(UserIdentity)], indices: list[int] = None):
+
+
+def get_traces(
+    request: Request, by: dict, user_id: UUID | None, indices: list[int] = None
+):
     # extra query parameter to filter by index
     limit = request.query_params.get("limit")
     offset = request.query_params.get("offset")
 
-    # users can be anonymous
-    user_id = userinfo["sub"]
-    
+    # users can be anonymous, so user_id can be None
+
     with Session(db()) as session:
-        dataset, user = load_dataset(session, by, user_id, allow_public=True, return_user=True)
-        
+        dataset, user = load_dataset(
+            session, by, user_id, allow_public=True, return_user=True
+        )
+
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
 
         # if indices are provided, filter by them (match on column 'index')
         if indices is not None:
             traces = traces.filter(Trace.index.in_(indices))
-                
+
         # with join, count number of annotations per trace
-        traces = traces\
-            .outerjoin(Annotation, Trace.id == Annotation.trace_id)\
-            .group_by(Trace.id)\
-            .add_columns(Trace.name, Trace.hierarchy_path, Trace.id, Trace.index, Trace.extra_metadata, func.count(Annotation.id).label("num_annotations"))
-        
+        traces = (
+            traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
+            .group_by(Trace.id)
+            .add_columns(
+                Trace.name,
+                Trace.hierarchy_path,
+                Trace.id,
+                Trace.index,
+                Trace.extra_metadata,
+                func.count(Annotation.id).label("num_annotations"),
+            )
+        )
+
         if limit is not None:
             traces = traces.limit(int(limit))
         if offset is not None:
@@ -442,28 +571,37 @@ def get_traces(request: Request, by: dict, userinfo: Annotated[dict, Depends(Use
 
         # order by index
         traces = traces.order_by(Trace.index)
-        
+
         traces = traces.all()
-        
-        return [{
-            "id": trace.id,
-            "index": trace.index,
-            "messages": [],
-            "num_annotations": trace.num_annotations,
-            "extra_metadata": trace.extra_metadata,
-            "name": trace.name,
-            "hierarchy_path": trace.hierarchy_path,
-        } for trace in traces]
+
+        return [
+            {
+                "id": trace.id,
+                "index": trace.index,
+                "messages": [],
+                "num_annotations": trace.num_annotations,
+                "extra_metadata": trace.extra_metadata,
+                "name": trace.name,
+                "hierarchy_path": trace.hierarchy_path,
+            }
+            for trace in traces
+        ]
 
 
 @dataset.get("/byid/{id}/traces")
-def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_traces(request, {'id': id}, userinfo)
+def get_traces_by_id(
+    request: Request,
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+):
+    return get_traces(request, {"id": id}, user_id=user_id)
+
 
 class DBJSONEncoder(json.JSONEncoder):
     """
     JSON encoder that can handle UUIDs and datetime objects.
     """
+
     def default(self, obj):
         if isinstance(obj, uuid.UUID):
             return str(obj)
@@ -471,14 +609,22 @@ class DBJSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
 
+
 """
 Used to stream out the trace data as JSONL to download the dataset.
 """
+
+
 async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
     # write out metadata message
     yield json.dumps(dataset_info) + "\n"
 
-    traces = session.query(Trace).filter(Trace.dataset_id == dataset_id).order_by(Trace.index).all()
+    traces = (
+        session.query(Trace)
+        .filter(Trace.dataset_id == dataset_id)
+        .order_by(Trace.index)
+        .all()
+    )
     for trace in traces:
         # load annotations for this trace
         annotations = load_annoations(session, trace.id)
@@ -491,96 +637,164 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
 """
 Download the dataset in JSONL format.
 """
+
+
 @dataset.get("/byid/{id}/download")
-async def get_traces_by_id(request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+async def download_traces_by_id(
+    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+):
     with Session(db()) as session:
-        dataset, user = load_dataset(session, {'id': id}, userinfo['sub'], allow_public=True, 
-        return_user=True)
+        dataset, user = load_dataset(
+            session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
+        )
         internal_dataset_info = dataset_to_json(dataset)
         dataset_info = {
             "metadata": {**internal_dataset_info["extra_metadata"]},
         }
 
         # streaming response, but triggers a download
-        return StreamingResponse(stream_jsonl(session, id, dataset_info, userinfo['sub']), media_type='application/json', headers={'Content-Disposition': 'attachment; filename="' + internal_dataset_info['name'] + '.jsonl"'})
+        return StreamingResponse(
+            stream_jsonl(session, id, dataset_info, userinfo["sub"]),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": 'attachment; filename="'
+                + internal_dataset_info["name"]
+                + '.jsonl"'
+            },
+        )
 
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
-def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+def get_traces_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+):
     indices = request.query_params.get("indices")
     indices = [int(i) for i in indices.split(",")] if indices is not None else None
-    return get_traces(request, {'User.username': username, 'name': dataset_name}, userinfo, indices=indices)
+    return get_traces(
+        request,
+        {"User.username": username, "name": dataset_name},
+        user_id=user_id,
+        indices=indices,
+    )
+
 
 # lightweight version of /traces above that only returns the indices+ids (saving performance on the full join and prevents loading all columns of the traces table)
 @dataset.get("/byuser/{username}/{dataset_name}/indices")
-def get_trace_indices_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
+def get_trace_indices_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(UserIdentity)],
+):
     with Session(db()) as session:
-        user_id = userinfo['sub']
-        dataset, user = load_dataset(session, {'User.username': username, 'name': dataset_name}, user_id, allow_public=True, return_user=True)
+        user_id = userinfo["sub"]
+        dataset, user = load_dataset(
+            session,
+            {"User.username": username, "name": dataset_name},
+            user_id,
+            allow_public=True,
+            return_user=True,
+        )
         # traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).offset(offset).limit(limit)
         # only select the index
-        trace_rows = session.query(Trace.index, Trace.id, Trace.name, Trace.hierarchy_path).filter(Trace.dataset_id == dataset.id).order_by(Trace.index).all()
-        return [{'index': row[0], 'id': row[1], 'name': row[2], 'messages': [], "hierarchy_path": row[3]} for row in trace_rows]
+        trace_rows = (
+            session.query(Trace.index, Trace.id, Trace.name, Trace.hierarchy_path)
+            .filter(Trace.dataset_id == dataset.id)
+            .order_by(Trace.index)
+            .all()
+        )
+        return [
+            {
+                "index": row[0],
+                "id": row[1],
+                "name": row[2],
+                "messages": [],
+                "hierarchy_path": row[3],
+            }
+            for row in trace_rows
+        ]
+
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
-def get_traces_by_name(request: Request, username:str, dataset_name:str, userinfo: Annotated[dict, Depends(UserIdentity)]):
-    return get_all_traces({'User.username': username, 'name': dataset_name}, userinfo)
+def get_traces_by_name(
+    request: Request,
+    username: str,
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(UserIdentity)],
+):
+    return get_all_traces({"User.username": username, "name": dataset_name}, userinfo)
 
 
 ########################################
 # get the full dataset with all traces and annotations
 ########################################
 
-def get_all_traces(by: dict,  user: Annotated[dict, Depends(UserIdentity)]):
+
+def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
     with Session(db()) as session:
-        dataset, user = load_dataset(session, by, user['sub'], allow_public=True, return_user=True)
-        
-        out = dataset_to_json(dataset) 
-        out['traces'] = []
+        dataset, user = load_dataset(
+            session, by, user["sub"], allow_public=True, return_user=True
+        )
+
+        out = dataset_to_json(dataset)
+        out["traces"] = []
 
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
         for trace in traces:
             annotations = load_annoations(session, trace.id)
-            out['traces'].append(trace_to_json(trace, annotations))
+            out["traces"].append(trace_to_json(trace, annotations))
         return out
+
 
 @dataset.post("/{dataset_id}/policy")
 async def create_policy(
     request: Request,
     dataset_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
     """Creates a new policy for a dataset."""
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        dataset = load_dataset(
+            session, dataset_id, user_id, allow_public=True, return_user=False
+        )
         # Only the owner of the dataset can create a policy for the dataset.
         if str(dataset.user_id) != user_id:
-            raise HTTPException(status_code=403, detail="Not allowed to create policy for this dataset")
+            raise HTTPException(
+                status_code=403, detail="Not allowed to create policy for this dataset"
+            )
         payload = await request.json()
 
         # Validate payload
         if not payload:
             raise HTTPException(status_code=400, detail="Request should not be empty")
         if not payload.get("name"):
-            raise HTTPException(status_code=400, detail="Name must be provided and non-empty")
+            raise HTTPException(
+                status_code=400, detail="Name must be provided and non-empty"
+            )
         if not payload.get("policy"):
-            raise HTTPException(status_code=400, detail="Policy content must be provided and non-empty")
-
+            raise HTTPException(
+                status_code=400, detail="Policy content must be provided and non-empty"
+            )
 
         policies = dataset.extra_metadata.get("policies", [])
         try:
-            policies.append(DatasetPolicy(
-                id=str(uuid.uuid4()),
-                name=payload.get("name"),
-                content=payload.get("policy"),
-            ).to_dict())
+            policies.append(
+                DatasetPolicy(
+                    id=str(uuid.uuid4()),
+                    name=payload.get("name"),
+                    content=payload.get("policy"),
+                ).to_dict()
+            )
         except ValidationError as e:
             raise HTTPException(status_code=400, detail="Invalid Policy string") from e
 
         dataset.extra_metadata["policies"] = policies
-        flag_modified(dataset, 'extra_metadata')
+        flag_modified(dataset, "extra_metadata")
         session.commit()
         return dataset_to_json(dataset)
 
@@ -590,25 +804,33 @@ async def update_policy(
     request: Request,
     dataset_id: str,
     policy_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
     """Updates a policy for a dataset."""
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        dataset = load_dataset(
+            session, dataset_id, user_id, allow_public=True, return_user=False
+        )
         # Only the owner of the dataset can update a policy for the dataset.
         if str(dataset.user_id) != user_id:
-            raise HTTPException(status_code=403, detail="Not allowed to update policy for this dataset")
+            raise HTTPException(
+                status_code=403, detail="Not allowed to update policy for this dataset"
+            )
         payload = await request.json()
 
         # Validate payload
         if not payload:
             raise HTTPException(status_code=400, detail="Request should not be empty")
         if "name" in payload and not payload["name"]:
-            raise HTTPException(status_code=400, detail="Name must be non-empty if provided")
+            raise HTTPException(
+                status_code=400, detail="Name must be non-empty if provided"
+            )
         if "policy" in payload and not payload["policy"]:
-            raise HTTPException(status_code=400, detail="Policy must be non-empty if provided")
+            raise HTTPException(
+                status_code=400, detail="Policy must be non-empty if provided"
+            )
 
         policies = dataset.extra_metadata.get("policies", [])
         existing_policy = next((p for p in policies if p["id"] == policy_id), None)
@@ -620,31 +842,36 @@ async def update_policy(
             updated_policy = DatasetPolicy(
                 id=existing_policy["id"],
                 name=payload.get("name", existing_policy["name"]),
-                content=payload.get("policy", existing_policy["content"])
+                content=payload.get("policy", existing_policy["content"]),
             ).to_dict()
             policies.append(updated_policy)
             policies.remove(existing_policy)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail="Invalid Policy string") from e
 
-        flag_modified(dataset, 'extra_metadata')
+        flag_modified(dataset, "extra_metadata")
         session.commit()
         return dataset_to_json(dataset)
+
 
 @dataset.delete("/{dataset_id}/policy/{policy_id}")
 async def delete_policy(
     dataset_id: str,
     policy_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
     """Deletes a policy for a dataset."""
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, dataset_id, user_id, allow_public=True, return_user=False)
+        dataset = load_dataset(
+            session, dataset_id, user_id, allow_public=True, return_user=False
+        )
         # Only the owner of the dataset can delete a policy for the dataset.
         if str(dataset.user_id) != user_id:
-            raise HTTPException(status_code=403, detail="Not allowed to delete policy for this dataset")
+            raise HTTPException(
+                status_code=403, detail="Not allowed to delete policy for this dataset"
+            )
         policies = dataset.extra_metadata.get("policies", [])
 
         policy = next((p for p in policies if p["id"] == policy_id), None)
@@ -653,9 +880,10 @@ async def delete_policy(
         policies.remove(policy)
         dataset.extra_metadata["policies"] = policies
 
-        flag_modified(dataset, 'extra_metadata')
+        flag_modified(dataset, "extra_metadata")
         session.commit()
         return dataset_to_json(dataset)
+
 
 @dataset.get("/metadata/{dataset_name}")
 async def get_metadata(
@@ -667,7 +895,11 @@ async def get_metadata(
 
     with Session(db()) as session:
         dataset_response = load_dataset(
-            session, {"name": dataset_name}, user_id, allow_public=True, return_user=False
+            session,
+            {"name": dataset_name},
+            user_id,
+            allow_public=True,
+            return_user=False,
         )
         metadata_response = dataset_response.extra_metadata
         metadata_response.pop("policies", None)
@@ -757,10 +989,7 @@ async def update_metadata(
             {"key": "num_tests", "type": int},
             {"key": "num_passed", "type": int},
         ]:
-            if (
-                invariant_test_results.get(key_and_type["key"])
-                is not None
-            ):
+            if invariant_test_results.get(key_and_type["key"]) is not None:
                 if not isinstance(
                     invariant_test_results.get(key_and_type["key"]),
                     key_and_type["type"],
@@ -805,9 +1034,9 @@ async def update_metadata(
             dataset_response.extra_metadata["invariant.test_results"] = {}
             for key in ["num_tests", "num_passed"]:
                 if metadata.get("invariant.test_results").get(key) is not None:
-                    dataset_response.extra_metadata["invariant.test_results"][
-                        key
-                    ] = metadata.get("invariant.test_results").get(key)
+                    dataset_response.extra_metadata["invariant.test_results"][key] = (
+                        metadata.get("invariant.test_results").get(key)
+                    )
 
         flag_modified(dataset_response, "extra_metadata")
         session.commit()

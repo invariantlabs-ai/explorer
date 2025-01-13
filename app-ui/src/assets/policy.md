@@ -4,7 +4,7 @@ Last updated: November 09, 2024
 
 This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 
-We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy. 
+We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy.
 
 ## Interpretation and Definitions
 
@@ -16,63 +16,51 @@ The words of which the initial letter is capitalized have meanings defined under
 
 For the purposes of this Privacy Policy:
 
-- __Account__ means a unique account created for You to access our Service or parts of our Service.
-- __Affiliate__ means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
+- **Account** means a unique account created for You to access our Service or parts of our Service.
+- **Affiliate** means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
 
+- **Business**, for the purpose of CCPA/CPRA, refers to the Company as the legal entity that collects Consumers' personal information and determines the purposes and means of the processing of Consumers' personal information, or on behalf of which such information is collected and that alone, or jointly with others, determines the purposes and means of the processing of consumers' personal information, that does business in the State of California.
 
-- __Business__, for the purpose of CCPA/CPRA, refers to the Company as the legal entity that collects Consumers' personal information and determines the purposes and means of the processing of Consumers' personal information, or on behalf of which such information is collected and that alone, or jointly with others, determines the purposes and means of the processing of consumers' personal information, that does business in the State of California.
+- **CCPA** and/or **CPRA** refers to the California Consumer Privacy Act (the "CCPA") as amended by the California Privacy Rights Act of 2020 (the "CPRA").
 
+- **Company** (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Invariant Labs AG, Josefstrasse 219, 8005 Zürich.
 
-- __CCPA__ and/or __CPRA__ refers to the California Consumer Privacy Act (the "CCPA") as amended by the California Privacy Rights Act of 2020 (the "CPRA").
+  For the purpose of the GDPR, the Company is the Data Controller.
 
-- __Company__ (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Invariant Labs AG, Josefstrasse 219, 8005 Zürich.
+- **Consumer**, for the purpose of the CCPA/CPRA, means a natural person who is a California resident. A resident, as defined in the law, includes (1) every individual who is in the USA for other than a temporary or transitory purpose, and (2) every individual who is domiciled in the USA who is outside the USA for a temporary or transitory purpose.
 
-    For the purpose of the GDPR, the Company is the Data Controller.
+- **Cookies** are small files that are placed on Your computer, mobile device or any other device by a website, containing the details of Your browsing history on that website among its many uses.
 
+- **Country** refers to: Switzerland
 
-- __Consumer__, for the purpose of the CCPA/CPRA, means a natural person who is a California resident. A resident, as defined in the law, includes (1) every individual who is in the USA for other than a temporary or transitory purpose, and (2) every individual who is domiciled in the USA who is outside the USA for a temporary or transitory purpose.
+- **Data Controller**, for the purposes of the GDPR (General Data Protection Regulation), refers to the Company as the legal person which alone or jointly with others determines the purposes and means of the processing of Personal Data.
 
+- **Device** means any device that can access the Service such as a computer, a cellphone or a digital tablet.
 
-- __Cookies__ are small files that are placed on Your computer, mobile device or any other device by a website, containing the details of Your browsing history on that website among its many uses.
+- **Do Not Track** (DNT) is a concept that has been promoted by US regulatory authorities, in particular the U.S. Federal Trade Commission (FTC), for the Internet industry to develop and implement a mechanism for allowing internet users to control the tracking of their online activities across websites.
 
-- __Country__ refers to:  Switzerland
+- **GDPR** refers to EU General Data Protection Regulation.
 
-- __Data Controller__, for the purposes of the GDPR (General Data Protection Regulation), refers to the Company as the legal person which alone or jointly with others determines the purposes and means of the processing of Personal Data.
+- **Personal Data** is any information that relates to an identified or identifiable individual.
 
-- __Device__ means any device that can access the Service such as a computer, a cellphone or a digital tablet.
+  For the purposes of GDPR, Personal Data means any information relating to You such as a name, an identification number, location data, online identifier or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural or social identity.
 
-- __Do Not Track__ (DNT) is a concept that has been promoted by US regulatory authorities, in particular the U.S. Federal Trade Commission (FTC), for the Internet industry to develop and implement a mechanism for allowing internet users to control the tracking of their online activities across websites.
+  For the purposes of the CCPA/CPRA, Personal Data means any information that identifies, relates to, describes or is capable of being associated with, or could reasonably be linked, directly or indirectly, with You.
 
+- **Service** refers to the Website.
 
+- **Service Provider** means any natural or legal person who processes the data on behalf of the Company. It refers to third-party companies or individuals employed by the Company to facilitate the Service, to provide the Service on behalf of the Company, to perform services related to the Service or to assist the Company in analyzing how the Service is used.
+  For the purpose of the GDPR, Service Providers are considered Data Processors.
 
-- __GDPR__ refers to EU General Data Protection Regulation.
+- **Third-party Social Media Service** refers to any website or any social network website through which a User can log in or create an account to use the Service.
 
-- __Personal Data__ is any information that relates to an identified or identifiable individual.
+- **Usage Data** refers to data collected automatically, either generated by the use of the Service or from the Service infrastructure itself (for example, the duration of a page visit).
 
-    For the purposes of GDPR, Personal Data means any information relating to You such as a name, an identification number, location data, online identifier or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural or social identity.
+- **Website** refers to Invariant Labs Explorer, including the Invariant Labs Benchmark Registry, accessible from [explorer.invariantlabs.ai](explorer.invariantlabs.ai)
 
+- **You** means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
 
-    For the purposes of the CCPA/CPRA, Personal Data means any information that identifies, relates to, describes or is capable of being associated with, or could reasonably be linked, directly or indirectly, with You.
-
-
-
-- __Service__ refers to the Website.
-
-- __Service Provider__ means any natural or legal person who processes the data on behalf of the Company. It refers to third-party companies or individuals employed by the Company to facilitate the Service, to provide the Service on behalf of the Company, to perform services related to the Service or to assist the Company in analyzing how the Service is used.
-    For the purpose of the GDPR, Service Providers are considered Data Processors.
-
-- __Third-party Social Media Service__ refers to any website or any social network website through which a User can log in or create an account to use the Service.
-
-- __Usage Data__ refers to data collected automatically, either generated by the use of the Service or from the Service infrastructure itself (for example, the duration of a page visit).
-
-
-- __Website__ refers to Invariant Labs Explorer, including the Invariant Labs Benchmark Registry, accessible from [explorer.invariantlabs.ai](explorer.invariantlabs.ai)
-
-- __You__ means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
-
-
-    Under GDPR, You can be referred to as the Data Subject or as the User as you are the individual using the Service.
-
+  Under GDPR, You can be referred to as the Data Subject or as the User as you are the individual using the Service.
 
 ## Collecting and Using Your Personal Data
 
@@ -85,12 +73,7 @@ While using Our Service, We may ask You to provide Us with certain personally id
 - Email address
 - First name and last name
 
-
-
-
 - Usage Data
-
-
 
 #### Usage Data
 
@@ -102,7 +85,6 @@ When You access the Service by or through a mobile device, We may collect certai
 
 We may also collect information that Your browser sends whenever You visit our Service or when You access the Service by or through a mobile device.
 
-
 #### Information from Third-Party Social Media Services
 
 The Company allows You to create an account and log in to use the Service through the following Third-party Social Media Services:
@@ -113,78 +95,73 @@ If You decide to register through or otherwise grant us access to a Third-Party 
 
 You may also have the option of sharing additional information with the Company through Your Third-Party Social Media Service's account. If You choose to provide such information and Personal Data, during registration or otherwise, You are giving the Company permission to use, share, and store it in a manner consistent with this Privacy Policy.
 
-
-
-
-
 #### Tracking Technologies and Cookies
 
 We use Cookies and similar tracking technologies to track the activity on Our Service and store certain information. Tracking technologies used are beacons, tags, and scripts to collect and track information and to improve and analyze Our Service. The technologies We use may include:
 
-- __Cookies or Browser Cookies.__ A cookie is a small file placed on Your Device. You can instruct Your browser to refuse all Cookies or to indicate when a Cookie is being sent. However, if You do not accept Cookies, You may not be able to use some parts of our Service. Unless you have adjusted Your browser setting so that it will refuse Cookies, our Service may use Cookies.
-- __Web Beacons.__ Certain sections of our Service and our emails may contain small electronic files known as web beacons (also referred to as clear gifs, pixel tags, and single-pixel gifs) that permit the Company, for example, to count users who have visited those pages or opened an email and for other related website statistics (for example, recording the popularity of a certain section and verifying system and server integrity).
+- **Cookies or Browser Cookies.** A cookie is a small file placed on Your Device. You can instruct Your browser to refuse all Cookies or to indicate when a Cookie is being sent. However, if You do not accept Cookies, You may not be able to use some parts of our Service. Unless you have adjusted Your browser setting so that it will refuse Cookies, our Service may use Cookies.
+- **Web Beacons.** Certain sections of our Service and our emails may contain small electronic files known as web beacons (also referred to as clear gifs, pixel tags, and single-pixel gifs) that permit the Company, for example, to count users who have visited those pages or opened an email and for other related website statistics (for example, recording the popularity of a certain section and verifying system and server integrity).
 
 Cookies can be "Persistent" or "Session" Cookies. Persistent Cookies remain on Your personal computer or mobile device when You go offline, while Session Cookies are deleted as soon as You close Your web browser. You can learn more about cookies on [TermsFeed website](https://www.termsfeed.com/blog/cookies/#What_Are_Cookies) article.
 
 We use both Session and Persistent Cookies for the purposes set out below:
 
-- __Necessary / Essential Cookies__
+- **Necessary / Essential Cookies**
 
-    Type: Session Cookies
+  Type: Session Cookies
 
-    Administered by: Us
+  Administered by: Us
 
-    Purpose: These Cookies are essential to provide You with services available through the Website and to enable You to use some of its features. They help to authenticate users and prevent fraudulent use of user accounts. Without these Cookies, the services that You have asked for cannot be provided, and We only use these Cookies to provide You with those services.
-- __Cookies Policy / Notice Acceptance Cookies__
+  Purpose: These Cookies are essential to provide You with services available through the Website and to enable You to use some of its features. They help to authenticate users and prevent fraudulent use of user accounts. Without these Cookies, the services that You have asked for cannot be provided, and We only use these Cookies to provide You with those services.
 
-    Type: Persistent Cookies
+- **Cookies Policy / Notice Acceptance Cookies**
 
-    Administered by: Us
+  Type: Persistent Cookies
 
-    Purpose: These Cookies identify if users have accepted the use of cookies on the Website.
-- __Functionality Cookies__
+  Administered by: Us
 
-    Type: Persistent Cookies
+  Purpose: These Cookies identify if users have accepted the use of cookies on the Website.
 
-    Administered by: Us
+- **Functionality Cookies**
 
-    Purpose: These Cookies allow us to remember choices You make when You use the Website, such as remembering your login details or language preference. The purpose of these Cookies is to provide You with a more personal experience and to avoid You having to re-enter your preferences every time You use the Website.
+  Type: Persistent Cookies
 
-- __Tracking and Performance Cookies__
+  Administered by: Us
 
-    Type: Persistent Cookies
+  Purpose: These Cookies allow us to remember choices You make when You use the Website, such as remembering your login details or language preference. The purpose of these Cookies is to provide You with a more personal experience and to avoid You having to re-enter your preferences every time You use the Website.
 
-    Administered by: Third-Parties
+- **Tracking and Performance Cookies**
 
-    Purpose: These Cookies are used to track information about traffic to the Website and how users use the Website. The information gathered via these Cookies may directly or indirectly identify you as an individual visitor. This is because the information collected is typically linked to a pseudonymous identifier associated with the device you use to access the Website. We may also use these Cookies to test new pages, features or new functionality of the Website to see how our users react to them.
+  Type: Persistent Cookies
 
+  Administered by: Third-Parties
 
+  Purpose: These Cookies are used to track information about traffic to the Website and how users use the Website. The information gathered via these Cookies may directly or indirectly identify you as an individual visitor. This is because the information collected is typically linked to a pseudonymous identifier associated with the device you use to access the Website. We may also use these Cookies to test new pages, features or new functionality of the Website to see how our users react to them.
 
 For more information about the cookies we use and your choices regarding cookies, please visit our Cookies Policy or the Cookies section of our Privacy Policy.
-
 
 ### Use of Your Personal Data
 
 The Company may use Personal Data for the following purposes:
 
-- __To provide and maintain our Service__, including to monitor the usage of our Service.
-- __To manage Your Account:__ to manage Your registration as a user of the Service. The Personal Data You provide can give You access to different functionalities of the Service that are available to You as a registered user.
-- __For the performance of a contract:__ the development, compliance and undertaking of the purchase contract for the products, items or services You have purchased or of any other contract with Us through the Service.
-- __To contact You:__ To contact You by email, telephone calls, SMS, or other equivalent forms of electronic communication, such as a mobile application's push notifications regarding updates or informative communications related to the functionalities, products or contracted services, including the security updates, when necessary or reasonable for their implementation.
-- __To provide You__ with news, special offers and general information about other goods, services and events which we offer that are similar to those that you have already purchased or enquired about unless You have opted not to receive such information.
-- __To manage Your requests:__ To attend and manage Your requests to Us.
+- **To provide and maintain our Service**, including to monitor the usage of our Service.
+- **To manage Your Account:** to manage Your registration as a user of the Service. The Personal Data You provide can give You access to different functionalities of the Service that are available to You as a registered user.
+- **For the performance of a contract:** the development, compliance and undertaking of the purchase contract for the products, items or services You have purchased or of any other contract with Us through the Service.
+- **To contact You:** To contact You by email, telephone calls, SMS, or other equivalent forms of electronic communication, such as a mobile application's push notifications regarding updates or informative communications related to the functionalities, products or contracted services, including the security updates, when necessary or reasonable for their implementation.
+- **To provide You** with news, special offers and general information about other goods, services and events which we offer that are similar to those that you have already purchased or enquired about unless You have opted not to receive such information.
+- **To manage Your requests:** To attend and manage Your requests to Us.
 
-- __For business transfers:__ We may use Your information to evaluate or conduct a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of Our assets, whether as a going concern or as part of bankruptcy, liquidation, or similar proceeding, in which Personal Data held by Us about our Service users is among the assets transferred.
-- __For other purposes__: We may use Your information for other purposes, such as data analysis, identifying usage trends, determining the effectiveness of our promotional campaigns and to evaluate and improve our Service, products, services, marketing and your experience. 
+- **For business transfers:** We may use Your information to evaluate or conduct a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of Our assets, whether as a going concern or as part of bankruptcy, liquidation, or similar proceeding, in which Personal Data held by Us about our Service users is among the assets transferred.
+- **For other purposes**: We may use Your information for other purposes, such as data analysis, identifying usage trends, determining the effectiveness of our promotional campaigns and to evaluate and improve our Service, products, services, marketing and your experience.
 
 We may share Your personal information in the following situations:
 
-- __With Service Providers:__ We may share Your personal information with Service Providers to monitor and analyze the use of our Service,  to contact You.
-- __For business transfers:__ We may share or transfer Your personal information in connection with, or during negotiations of, any merger, sale of Company assets, financing, or acquisition of all or a portion of Our business to another company.
-- __With Affiliates:__ We may share Your information with Our affiliates, in which case we will require those affiliates to honor this Privacy Policy. Affiliates include Our parent company and any other subsidiaries, joint venture partners or other companies that We control or that are under common control with Us.
-- __With business partners:__ We may share Your information with Our business partners to offer You certain products, services or promotions.
-- __With other users:__ when You share personal information or otherwise interact in the public areas with other users, such information may be viewed by all users and may be publicly distributed outside. If You interact with other users or register through a Third-Party Social Media Service, Your contacts on the Third-Party Social Media Service may see Your name, profile, pictures and description of Your activity. Similarly, other users will be able to view descriptions of Your activity, communicate with You and view Your profile.
-- __With Your consent__: We may disclose Your personal information for any other purpose with Your consent.
+- **With Service Providers:** We may share Your personal information with Service Providers to monitor and analyze the use of our Service, to contact You.
+- **For business transfers:** We may share or transfer Your personal information in connection with, or during negotiations of, any merger, sale of Company assets, financing, or acquisition of all or a portion of Our business to another company.
+- **With Affiliates:** We may share Your information with Our affiliates, in which case we will require those affiliates to honor this Privacy Policy. Affiliates include Our parent company and any other subsidiaries, joint venture partners or other companies that We control or that are under common control with Us.
+- **With business partners:** We may share Your information with Our business partners to offer You certain products, services or promotions.
+- **With other users:** when You share personal information or otherwise interact in the public areas with other users, such information may be viewed by all users and may be publicly distributed outside. If You interact with other users or register through a Third-Party Social Media Service, Your contacts on the Third-Party Social Media Service may see Your name, profile, pictures and description of Your activity. Similarly, other users will be able to view descriptions of Your activity, communicate with You and view Your profile.
+- **With Your consent**: We may disclose Your personal information for any other purpose with Your consent.
 
 ### Retention of Your Personal Data
 
@@ -234,44 +211,27 @@ The Company may disclose Your Personal Data in the good faith belief that such a
 
 The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While We strive to use commercially acceptable means to protect Your Personal Data, We cannot guarantee its absolute security.
 
-
 ## Detailed Information on the Processing of Your Personal Data
 
 The Service Providers We use may have access to Your Personal Data. These third-party vendors collect, store, use, process and transfer information about Your activity on Our Service in accordance with their Privacy Policies.
-
 
 ### Analytics
 
 We may use third-party Service providers to monitor and analyze the use of our Service.
 
+- **PostHog**
 
+  Their Privacy Policy can be viewed at [https://posthog.com/privacy](https://posthog.com/privacy).
 
+- **Cloudflare Analytics**
+  We use Cloudflare Analytics to monitor and analyze traffic to our Site. Cloudflare Analytics collects anonymized, non-personal data such as:
+  Pages visited,
+  Time spent on pages,
+  Browser type,
+  Geographic region (without exact locations),
 
-
-
-
-
-
-
-
-- __PostHog__
-
-    Their Privacy Policy can be viewed at [https://posthog.com/privacy](https://posthog.com/privacy).
-
-
-
-- __Cloudflare Analytics__
-    We use Cloudflare Analytics to monitor and analyze traffic to our Site. Cloudflare Analytics collects anonymized, non-personal data such as:
-    Pages visited,
-    Time spent on pages,
-    Browser type,
-    Geographic region (without exact locations),
-
-    Cloudflare does not use tracking cookies, and the data collected is anonymized and cannot be used to identify individual users.
-    Their Privacy Policy can be viewed at [https://www.cloudflare.com/privacypolicy/](https://www.cloudflare.com/privacypolicy/).
-
-
-
+  Cloudflare does not use tracking cookies, and the data collected is anonymized and cannot be used to identify individual users.
+  Their Privacy Policy can be viewed at [https://www.cloudflare.com/privacypolicy/](https://www.cloudflare.com/privacypolicy/).
 
 ### Email Marketing
 
@@ -279,26 +239,11 @@ We may use Your Personal Data to contact You with newsletters, marketing or prom
 
 We may use Email Marketing Service Providers to manage and send emails to You.
 
+- **Mailchimp**
 
-- __Mailchimp__
+  Mailchimp is an email marketing sending service provided by The Rocket Science Group LLC.
 
-    Mailchimp is an email marketing sending service provided by The Rocket Science Group LLC.
-
-    For more information on the privacy practices of Mailchimp, please visit their Privacy policy: [https://mailchimp.com/legal/privacy/](https://mailchimp.com/legal/privacy/)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  For more information on the privacy practices of Mailchimp, please visit their Privacy policy: [https://mailchimp.com/legal/privacy/](https://mailchimp.com/legal/privacy/)
 
 ## GDPR Privacy
 
@@ -306,12 +251,12 @@ We may use Email Marketing Service Providers to manage and send emails to You.
 
 We may process Personal Data under the following conditions:
 
-- __Consent:__ You have given Your consent for processing Personal Data for one or more specific purposes.
-- __Performance of a contract:__ Provision of Personal Data is necessary for the performance of an agreement with You and/or for any pre-contractual obligations thereof.
-- __Legal obligations:__ Processing Personal Data is necessary for compliance with a legal obligation to which the Company is subject.
-- __Vital interests:__ Processing Personal Data is necessary in order to protect Your vital interests or of another natural person.
-- __Public interests:__ Processing Personal Data is related to a task that is carried out in the public interest or in the exercise of official authority vested in the Company.
-- __Legitimate interests:__ Processing Personal Data is necessary for the purposes of the legitimate interests pursued by the Company.
+- **Consent:** You have given Your consent for processing Personal Data for one or more specific purposes.
+- **Performance of a contract:** Provision of Personal Data is necessary for the performance of an agreement with You and/or for any pre-contractual obligations thereof.
+- **Legal obligations:** Processing Personal Data is necessary for compliance with a legal obligation to which the Company is subject.
+- **Vital interests:** Processing Personal Data is necessary in order to protect Your vital interests or of another natural person.
+- **Public interests:** Processing Personal Data is related to a task that is carried out in the public interest or in the exercise of official authority vested in the Company.
+- **Legitimate interests:** Processing Personal Data is necessary for the purposes of the legitimate interests pursued by the Company.
 
 In any case, the Company will gladly help to clarify the specific legal basis that applies to the processing, and in particular whether the provision of Personal Data is a statutory or contractual requirement, or a requirement necessary to enter into a contract.
 
@@ -321,24 +266,18 @@ The Company undertakes to respect the confidentiality of Your Personal Data and 
 
 You have the right under this Privacy Policy, and by law if You are within the EU, to:
 
-- __Request access to Your Personal Data.__ The right to access, update or delete the information We have on You. Whenever made possible, you can access, update or request deletion of Your Personal Data directly within Your account settings section. If you are unable to perform these actions yourself, please contact Us to assist You. This also enables You to receive a copy of the Personal Data We hold about You.
-- __Request correction of the Personal Data that We hold about You.__ You have the right to have any incomplete or inaccurate information We hold about You corrected.
-- __Object to processing of Your Personal Data.__ This right exists where We are relying on a legitimate interest as the legal basis for Our processing and there is something about Your particular situation, which makes You want to object to our processing of Your Personal Data on this ground. You also have the right to object where We are processing Your Personal Data for direct marketing purposes.
-- __Request erasure of Your Personal Data.__ You have the right to ask Us to delete or remove Personal Data when there is no good reason for Us to continue processing it.
-- __Request the transfer of Your Personal Data.__ We will provide to You, or to a third-party You have chosen, Your Personal Data in a structured, commonly used, machine-readable format. Please note that this right only applies to automated information which You initially provided consent for Us to use or where We used the information to perform a contract with You.
-- __Withdraw Your consent.__ You have the right to withdraw Your consent on using your Personal Data. If You withdraw Your consent, We may not be able to provide You with access to certain specific functionalities of the Service.
+- **Request access to Your Personal Data.** The right to access, update or delete the information We have on You. Whenever made possible, you can access, update or request deletion of Your Personal Data directly within Your account settings section. If you are unable to perform these actions yourself, please contact Us to assist You. This also enables You to receive a copy of the Personal Data We hold about You.
+- **Request correction of the Personal Data that We hold about You.** You have the right to have any incomplete or inaccurate information We hold about You corrected.
+- **Object to processing of Your Personal Data.** This right exists where We are relying on a legitimate interest as the legal basis for Our processing and there is something about Your particular situation, which makes You want to object to our processing of Your Personal Data on this ground. You also have the right to object where We are processing Your Personal Data for direct marketing purposes.
+- **Request erasure of Your Personal Data.** You have the right to ask Us to delete or remove Personal Data when there is no good reason for Us to continue processing it.
+- **Request the transfer of Your Personal Data.** We will provide to You, or to a third-party You have chosen, Your Personal Data in a structured, commonly used, machine-readable format. Please note that this right only applies to automated information which You initially provided consent for Us to use or where We used the information to perform a contract with You.
+- **Withdraw Your consent.** You have the right to withdraw Your consent on using your Personal Data. If You withdraw Your consent, We may not be able to provide You with access to certain specific functionalities of the Service.
 
 ### Exercising of Your GDPR Data Protection Rights
 
 You may exercise Your rights of access, rectification, cancellation and opposition by contacting Us. Please note that we may ask You to verify Your identity before responding to such requests. If You make a request, We will try our best to respond to You as soon as possible.
 
 You have the right to complain to a Data Protection Authority about Our collection and use of Your Personal Data. For more information, if You are in the European Economic Area (EEA), please contact Your local data protection authority in the EEA.
-
-
-
-
-
-
 
 ## CCPA/CPRA Privacy Notice (California Privacy Rights)
 
@@ -350,77 +289,83 @@ We collect information that identifies, relates to, describes, references, is ca
 
 Please note that the categories and examples provided in the list below are those defined in the CCPA/CPRA. This does not mean that all examples of that category of personal information were in fact collected by Us, but reflects our good faith belief to the best of Our knowledge that some of that information from the applicable category may be and may have been collected. For example, certain categories of personal information would only be collected if You provided such personal information directly to Us.
 
-- __Category A: Identifiers.__
+- **Category A: Identifiers.**
 
-     Examples: A real name, alias, postal address, unique personal identifier, online identifier, Internet Protocol address, email address, account name, driver's license number, passport number, or other similar identifiers.
-     
-     Collected: Yes.
-- __Category B: Personal information categories listed in the California Customer Records statute (Cal. Civ. Code § 1798.80(e)).__
+  Examples: A real name, alias, postal address, unique personal identifier, online identifier, Internet Protocol address, email address, account name, driver's license number, passport number, or other similar identifiers.
 
-     Examples: A name, signature, Social Security number, physical characteristics or description, address, telephone number, passport number, driver's license or state identification card number, insurance policy number, education, employment, employment history, bank account number, credit card number, debit card number, or any other financial information, medical information, or health insurance information. Some personal information included in this category may overlap with other categories. 
-     
-     Collected: Yes.
-- __Category C: Protected classification characteristics under California or federal law.__
+  Collected: Yes.
 
-     Examples: Age (40 years or older), race, color, ancestry, national origin, citizenship, religion or creed, marital status, medical condition, physical or mental disability, sex (including gender, gender identity, gender expression, pregnancy or childbirth and related medical conditions), sexual orientation, veteran or military status, genetic information (including familial genetic information).
-     
-     Collected: No.
-- __Category D: Commercial information.__
+- **Category B: Personal information categories listed in the California Customer Records statute (Cal. Civ. Code § 1798.80(e)).**
 
-     Examples: Records and history of products or services purchased or considered.
-     
-     
-     Collected: No.
-     
-- __Category E: Biometric information.__
+  Examples: A name, signature, Social Security number, physical characteristics or description, address, telephone number, passport number, driver's license or state identification card number, insurance policy number, education, employment, employment history, bank account number, credit card number, debit card number, or any other financial information, medical information, or health insurance information. Some personal information included in this category may overlap with other categories.
 
-     Examples: Genetic, physiological, behavioral, and biological characteristics, or activity patterns used to extract a template or other identifier or identifying information, such as, fingerprints, faceprints, and voiceprints, iris or retina scans, keystroke, gait, or other physical patterns, and sleep, health, or exercise data. 
-     
-     Collected: No.
-- __Category F: Internet or other similar network activity.__
+  Collected: Yes.
 
-     Examples: Interaction with our Service or advertisement.
-     
-     Collected: Yes.
-- __Category G: Geolocation data.__
+- **Category C: Protected classification characteristics under California or federal law.**
 
-     Examples: Approximate physical location.
-     
-     
-     Collected: No.
-     
-- __Category H: Sensory data.__
+  Examples: Age (40 years or older), race, color, ancestry, national origin, citizenship, religion or creed, marital status, medical condition, physical or mental disability, sex (including gender, gender identity, gender expression, pregnancy or childbirth and related medical conditions), sexual orientation, veteran or military status, genetic information (including familial genetic information).
 
-     Examples: Audio, electronic, visual, thermal, olfactory, or similar information. 
-     
-     Collected: No.
-- __Category I: Professional or employment-related information.__
+  Collected: No.
 
-     Examples: Current or past job history or performance evaluations. 
-     
-     Collected: No.
-- __Category J: Non-public education information (per the Family Educational Rights and Privacy Act (20 U.S.C. Section 1232g, 34 C.F.R. Part 99)).__
+- **Category D: Commercial information.**
 
-     Examples: Education records directly related to a student maintained by an educational institution or party acting on its behalf, such as grades, transcripts, class lists, student schedules, student identification codes, student financial information, or student disciplinary records. 
-     
-     Collected: No.
-- __Category K: Inferences drawn from other personal information.__
+  Examples: Records and history of products or services purchased or considered.
 
-     Examples: Profile reflecting a person's preferences, characteristics, psychological trends, predispositions, behavior, attitudes, intelligence, abilities, and aptitudes. 
-     
-     Collected: No.
+  Collected: No.
 
-- __Category L: Sensitive personal information.__
+- **Category E: Biometric information.**
 
-     Examples: Account login and password information, geolocation data.
-     
-     Collected: Yes.
+  Examples: Genetic, physiological, behavioral, and biological characteristics, or activity patterns used to extract a template or other identifier or identifying information, such as, fingerprints, faceprints, and voiceprints, iris or retina scans, keystroke, gait, or other physical patterns, and sleep, health, or exercise data.
 
-Under CCPA/CPRA, personal information does not include: 
+  Collected: No.
+
+- **Category F: Internet or other similar network activity.**
+
+  Examples: Interaction with our Service or advertisement.
+
+  Collected: Yes.
+
+- **Category G: Geolocation data.**
+
+  Examples: Approximate physical location.
+
+  Collected: No.
+
+- **Category H: Sensory data.**
+
+  Examples: Audio, electronic, visual, thermal, olfactory, or similar information.
+
+  Collected: No.
+
+- **Category I: Professional or employment-related information.**
+
+  Examples: Current or past job history or performance evaluations.
+
+  Collected: No.
+
+- **Category J: Non-public education information (per the Family Educational Rights and Privacy Act (20 U.S.C. Section 1232g, 34 C.F.R. Part 99)).**
+
+  Examples: Education records directly related to a student maintained by an educational institution or party acting on its behalf, such as grades, transcripts, class lists, student schedules, student identification codes, student financial information, or student disciplinary records.
+
+  Collected: No.
+
+- **Category K: Inferences drawn from other personal information.**
+
+  Examples: Profile reflecting a person's preferences, characteristics, psychological trends, predispositions, behavior, attitudes, intelligence, abilities, and aptitudes.
+
+  Collected: No.
+
+- **Category L: Sensitive personal information.**
+
+  Examples: Account login and password information, geolocation data.
+
+  Collected: Yes.
+
+Under CCPA/CPRA, personal information does not include:
 
 - Publicly available information from government records
 - Deidentified or aggregated consumer information
-- Information excluded from the CCPA/CPRA's scope, such as: 
+- Information excluded from the CCPA/CPRA's scope, such as:
   - Health or medical information covered by the Health Insurance Portability and Accountability Act of 1996 (HIPAA) and the California Confidentiality of Medical Information Act (CMIA) or clinical trial data
   - Personal Information covered by certain sector-specific privacy laws, including the Fair Credit Reporting Act (FRCA), the Gramm-Leach-Bliley Act (GLBA) or California Financial Information Privacy Act (FIPA), and the Driver's Privacy Protection Act of 1994
 
@@ -428,10 +373,10 @@ Under CCPA/CPRA, personal information does not include:
 
 We obtain the categories of personal information listed above from the following categories of sources:
 
-- __Directly from You__. For example, from the forms You complete on our Service, preferences You express or provide through our Service.
-- __Indirectly from You__. For example, from observing Your activity on our Service.
-- __Automatically from You__. For example, through cookies We or our Service Providers set on Your Device as You navigate through our Service.
-- __From Service Providers__. For example, third-party vendors to monitor and analyze the use of our Service,  or other third-party vendors that We use to provide the Service to You.
+- **Directly from You**. For example, from the forms You complete on our Service, preferences You express or provide through our Service.
+- **Indirectly from You**. For example, from observing Your activity on our Service.
+- **Automatically from You**. For example, through cookies We or our Service Providers set on Your Device as You navigate through our Service.
+- **From Service Providers**. For example, third-party vendors to monitor and analyze the use of our Service, or other third-party vendors that We use to provide the Service to You.
 
 ### Use of Personal Information
 
@@ -439,7 +384,7 @@ We may use or disclose personal information We collect for "business purposes" o
 
 - To operate our Service and provide You with Our Service.
 - To provide You with support and to respond to Your inquiries, including to investigate and address Your concerns and monitor and improve our Service.
-- To fulfill or meet the reason You provided the information. For example, if You share Your contact information to ask a question about our Service, We will use that personal information to respond to Your inquiry. 
+- To fulfill or meet the reason You provided the information. For example, if You share Your contact information to ask a question about our Service, We will use that personal information to respond to Your inquiry.
 - To respond to law enforcement requests and as required by applicable law, court order, or governmental regulations.
 - As described to You when collecting Your personal information or as otherwise set forth in the CCPA/CPRA.
 - For internal administrative and auditing purposes.
@@ -459,8 +404,6 @@ We may use or disclose and may have used or disclosed in the last twelve (12) mo
 
 - Category F: Internet or other similar network activity
 
-
-
 Please note that the categories listed above are those defined in the CCPA/CPRA. This does not mean that all examples of that category of personal information were in fact disclosed, but reflects our good faith belief to the best of our knowledge that some of that information from the applicable category may be and may have been disclosed.
 
 When We disclose personal information for a business purpose or a commercial purpose, We enter a contract that describes the purpose and requires the recipient to both keep that personal information confidential and not use it for any purpose except performing the contract.
@@ -475,7 +418,7 @@ We may share, and have shared in the last twelve (12) months, Your personal info
 - Our business partners
 - Third party vendors to whom You or Your agents authorize Us to disclose Your personal information in connection with products or services We provide to You
 
-### Sale of Personal Information 
+### Sale of Personal Information
 
 As defined in the CCPA/CPRA, "sell" and "sale" mean selling, renting, releasing, disclosing, disseminating, making available, transferring, or otherwise communicating orally, in writing, or by electronic or other means, a Consumer's personal information by the Business to a third party for valuable consideration. This means that We may have received some kind of benefit in return for sharing personal information, but not necessarily a monetary benefit.
 
@@ -488,15 +431,11 @@ We may sell and may have sold in the last twelve (12) months the following categ
 
 - Category F: Internet or other similar network activity
 
-
-
 Please note that the categories listed above are those defined in the CCPA/CPRA. This does not mean that all examples of that category of personal information were in fact sold, but reflects our good faith belief to the best of Our knowledge that some of that information from the applicable category may be and may have been shared for value in return.
 
 ### Sale of Personal Information of Minors Under 16 Years of Age
 
-
 We do not knowingly collect personal information from minors under the age of 16 through our Service, although certain third party websites that we link to may do so. These third-party websites have their own terms of use and privacy policies and We encourage parents and legal guardians to monitor their children's Internet usage and instruct their children to never provide information on other websites without their permission.
-
 
 We do not sell the personal information of Consumers We actually know are less than 16 years of age, unless We receive affirmative authorization (the "right to opt-in") from either the Consumer who is between 13 and 16 years of age, or the parent or guardian of a Consumer less than 13 years of age. Consumers who opt-in to the sale of personal information may opt-out of future sales at any time. To exercise the right to opt-out, You (or Your authorized representative) may submit a request to Us by contacting Us.
 
@@ -506,34 +445,34 @@ If You have reason to believe that a child under the age of 13 (or 16) has provi
 
 The CCPA/CPRA provides California residents with specific rights regarding their personal information. If You are a resident of California, You have the following rights:
 
-- __The right to notice.__ You have the right to be notified which categories of Personal Data are being collected and the purposes for which the Personal Data is being used.
-- __The right to know/access.__ Under CCPA/CPRA, You have the right to request that We disclose information to You about Our collection, use, sale, disclosure for business purposes and share of personal information. Once We receive and confirm Your request, We will disclose to You:
-    - The categories of personal information We collected about You
-    - The categories of sources for the personal information We collected about You
-    - Our business or commercial purposes for collecting or selling that personal information
-    - The categories of third parties with whom We share that personal information
-    - The specific pieces of personal information We collected about You
-    - If we sold Your personal information or disclosed Your personal information for a business purpose, We will disclose to You:
-        - The categories of personal information categories sold
-        - The categories of personal information categories disclosed
-- __The right to say no to the sale or sharing of Personal Data (opt-out).__ You have the right to direct Us to not sell Your personal information. To submit an opt-out request, please see the "Do Not Sell My Personal Information" section or contact Us. 
-- __The right to correct Personal Data.__ You have the right to correct or rectify any inaccurate personal information about You that We collected. Once We receive and confirm Your request, We will use commercially reasonable efforts to correct (and direct our Service Providers to correct) Your personal information, unless an exception applies.
-- __The right to limit use and disclosure of sensitive Personal Data.__ You have the right to request to limit the use or disclosure of certain sensitive personal information We collected about You, unless an exception applies. To submit, please see the "Limit the Use or Disclosure of My Sensitive Personal Information" section or contact Us.
-- __The right to delete Personal Data.__ You have the right to request the deletion of Your Personal Data under certain circumstances, subject to certain exceptions. Once We receive and confirm Your request, We will delete (and direct Our Service Providers to delete) Your personal information from our records, unless an exception applies. We may deny Your deletion request if retaining the information is necessary for Us or Our Service Providers to:
-    - Complete the transaction for which We collected the personal information, provide a good or service that You requested, take actions reasonably anticipated within the context of our ongoing business relationship with You, or otherwise perform our contract with You.
-    - Detect security incidents, protect against malicious, deceptive, fraudulent, or illegal activity, or prosecute those responsible for such activities.
-    - Debug products to identify and repair errors that impair existing intended functionality.
-    - Exercise free speech, ensure the right of another consumer to exercise their free speech rights, or exercise another right provided for by law.
-    - Comply with the California Electronic Communications Privacy Act (Cal. Penal Code § 1546 et. seq.).
-    - Engage in public or peer-reviewed scientific, historical, or statistical research in the public interest that adheres to all other applicable ethics and privacy laws, when the information's deletion may likely render impossible or seriously impair the research's achievement, if You previously provided informed consent.
-    - Enable solely internal uses that are reasonably aligned with consumer expectations based on Your relationship with Us.
-    - Comply with a legal obligation.
-    - Make other internal and lawful uses of that information that are compatible with the context in which You provided it.
-- __The right not to be discriminated against.__ You have the right not to be discriminated against for exercising any of Your consumer's rights, including by:
-    - Denying goods or services to You
-    - Charging different prices or rates for goods or services, including the use of discounts or other benefits or imposing penalties
-    - Providing a different level or quality of goods or services to You
-    - Suggesting that You will receive a different price or rate for goods or services or a different level or quality of goods or services
+- **The right to notice.** You have the right to be notified which categories of Personal Data are being collected and the purposes for which the Personal Data is being used.
+- **The right to know/access.** Under CCPA/CPRA, You have the right to request that We disclose information to You about Our collection, use, sale, disclosure for business purposes and share of personal information. Once We receive and confirm Your request, We will disclose to You:
+  - The categories of personal information We collected about You
+  - The categories of sources for the personal information We collected about You
+  - Our business or commercial purposes for collecting or selling that personal information
+  - The categories of third parties with whom We share that personal information
+  - The specific pieces of personal information We collected about You
+  - If we sold Your personal information or disclosed Your personal information for a business purpose, We will disclose to You:
+    - The categories of personal information categories sold
+    - The categories of personal information categories disclosed
+- **The right to say no to the sale or sharing of Personal Data (opt-out).** You have the right to direct Us to not sell Your personal information. To submit an opt-out request, please see the "Do Not Sell My Personal Information" section or contact Us.
+- **The right to correct Personal Data.** You have the right to correct or rectify any inaccurate personal information about You that We collected. Once We receive and confirm Your request, We will use commercially reasonable efforts to correct (and direct our Service Providers to correct) Your personal information, unless an exception applies.
+- **The right to limit use and disclosure of sensitive Personal Data.** You have the right to request to limit the use or disclosure of certain sensitive personal information We collected about You, unless an exception applies. To submit, please see the "Limit the Use or Disclosure of My Sensitive Personal Information" section or contact Us.
+- **The right to delete Personal Data.** You have the right to request the deletion of Your Personal Data under certain circumstances, subject to certain exceptions. Once We receive and confirm Your request, We will delete (and direct Our Service Providers to delete) Your personal information from our records, unless an exception applies. We may deny Your deletion request if retaining the information is necessary for Us or Our Service Providers to:
+  - Complete the transaction for which We collected the personal information, provide a good or service that You requested, take actions reasonably anticipated within the context of our ongoing business relationship with You, or otherwise perform our contract with You.
+  - Detect security incidents, protect against malicious, deceptive, fraudulent, or illegal activity, or prosecute those responsible for such activities.
+  - Debug products to identify and repair errors that impair existing intended functionality.
+  - Exercise free speech, ensure the right of another consumer to exercise their free speech rights, or exercise another right provided for by law.
+  - Comply with the California Electronic Communications Privacy Act (Cal. Penal Code § 1546 et. seq.).
+  - Engage in public or peer-reviewed scientific, historical, or statistical research in the public interest that adheres to all other applicable ethics and privacy laws, when the information's deletion may likely render impossible or seriously impair the research's achievement, if You previously provided informed consent.
+  - Enable solely internal uses that are reasonably aligned with consumer expectations based on Your relationship with Us.
+  - Comply with a legal obligation.
+  - Make other internal and lawful uses of that information that are compatible with the context in which You provided it.
+- **The right not to be discriminated against.** You have the right not to be discriminated against for exercising any of Your consumer's rights, including by:
+  - Denying goods or services to You
+  - Charging different prices or rates for goods or services, including the use of discounts or other benefits or imposing penalties
+  - Providing a different level or quality of goods or services to You
+  - Suggesting that You will receive a different price or rate for goods or services or a different level or quality of goods or services
 
 ### Exercising Your CCPA/CPRA Data Protection Rights
 
@@ -541,12 +480,7 @@ Please see the "Do Not Sell My Personal Information" section and "Limit the Use 
 
 Additionally, in order to exercise any of Your rights under the CCPA/CPRA, and if You are a California resident, You can contact Us:
 
-
 - By email: office@invariantlabs.ai
-
-
-
-
 
 Only You, or a person registered with the California Secretary of State that You authorize to act on Your behalf, may make a verifiable request related to Your personal information.
 
@@ -574,7 +508,6 @@ We do not sell personal information as the term sell is commonly understood. We 
 
 You have the right to opt-out of the sale of Your personal information. Once We receive and confirm a verifiable consumer request from You, we will stop selling Your personal information. To exercise Your right to opt-out, please contact Us.
 
-
 The Service Providers we partner with (for example, our analytics or advertising partners) may use technology on the Service that sells personal information as defined by the CCPA/CPRA law. If you wish to opt out of the use of Your personal information for interest-based advertising purposes and these potential sales as defined under CCPA/CPRA law, you may do so by following the instructions below.
 
 Please note that any opt out is specific to the browser You use. You may need to opt out on every browser that You use.
@@ -600,14 +533,11 @@ Your mobile device may give You the ability to opt out of the use of information
 
 You can also stop the collection of location information from Your mobile device by changing the preferences on Your mobile device.
 
-
 ### Limit the Use or Disclosure of My Sensitive Personal Information
 
 If You are a California resident, You have the right to limit the use and disclosure of Your sensitive personal information to that use which is necessary to perform the services or provide the goods reasonably expected by an average consumer who requests such services or goods.
 
 We collect, use and disclose sensitive personal information in ways that are necessary to provide the Service. For more information on how We use Your personal information, please see the "Use of Your Personal Data" section or contact us.
-
-
 
 ## "Do Not Track" Policy as Required by California Online Privacy Protection Act (CalOPPA)
 
@@ -615,15 +545,11 @@ Our Service does not respond to Do Not Track signals.
 
 However, some third party websites do keep track of Your browsing activities. If You are visiting such websites, You can set Your preferences in Your web browser to inform websites that You do not want to be tracked. You can enable or disable DNT by visiting the preferences or settings page of Your web browser.
 
-
-
 ## Your California Privacy Rights (California's Shine the Light law)
 
 Under California Civil Code Section 1798 (California's Shine the Light law), California residents with an established business relationship with us can request information once a year about sharing their Personal Data with third parties for the third parties' direct marketing purposes.
 
 If you'd like to request more information under the California Shine the Light law, and if You are a California resident, You can contact Us using the contact information provided below.
-
-
 
 ## California Privacy Rights for Minor Users (California Business and Professions Code Section 22581)
 
@@ -633,16 +559,11 @@ To request removal of such data, and if You are a California resident, You can c
 
 Be aware that Your request does not guarantee complete or comprehensive removal of content or information posted online and that the law may not permit or require removal in certain circumstances.
 
-
-
-
-
 ## Children's Privacy
 
 Our Service does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from anyone under the age of 13. If You are a parent or guardian and You are aware that Your child has provided Us with Personal Data, please contact Us. If We become aware that We have collected Personal Data from anyone under the age of 13 without verification of parental consent, We take steps to remove that information from Our servers.
 
 If We need to rely on consent as a legal basis for processing Your information and Your country requires consent from a parent, We may require Your parent's consent before We collect and use that information.
-
 
 ## Links to Other Websites
 
@@ -661,6 +582,5 @@ You are advised to review this Privacy Policy periodically for any changes. Chan
 ## Contact Us
 
 If you have any questions about this Privacy Policy, You can contact us:
-
 
 - By email: office@invariantlabs.ai

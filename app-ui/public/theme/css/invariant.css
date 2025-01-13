@@ -8,7 +8,19 @@
   font-weight: 500;
 }
 body {
-  font-family: NeueMontreal, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family:
+    NeueMontreal,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
   margin: 0;
   padding: 0;
   position: relative;
@@ -18,7 +30,7 @@ body {
 }
 
 body.darker {
-  background-color: #F6F6F6;
+  background-color: #f6f6f6;
 }
 
 img#reference {
@@ -104,30 +116,36 @@ body {
     max-width: calc(100vw - 20pt);
   }
 }
-header nav:not(.mobile), footer nav {
+header nav:not(.mobile),
+footer nav {
   padding-top: 4pt;
   flex: 1;
   text-align: right;
 }
-header nav:not(.mobile) ul, footer nav ul {
+header nav:not(.mobile) ul,
+footer nav ul {
   list-style-type: none;
   margin: 0;
   padding: 0;
 }
-header nav:not(.mobile) ul li, footer nav ul li {
+header nav:not(.mobile) ul li,
+footer nav ul li {
   display: inline-block;
   font-size: 18px;
   margin: 0pt 14.75px;
 }
-header nav:not(.mobile) ul li a, footer nav ul li a {
+header nav:not(.mobile) ul li a,
+footer nav ul li a {
   text-decoration: none;
-  color: #2E2E2E;
+  color: #2e2e2e;
 }
-header nav:not(.mobile) ul li a[aria-current], footer nav ul li a[aria-current] {
+header nav:not(.mobile) ul li a[aria-current],
+footer nav ul li a[aria-current] {
   text-decoration: underline;
 }
 
-header hgroup a, footer hgroup a {
+header hgroup a,
+footer hgroup a {
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -190,7 +208,7 @@ article header {
 
 em {
   font-style: normal;
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 
 .buttons {
@@ -206,7 +224,7 @@ button {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -226,13 +244,13 @@ button a {
   color: white;
 }
 button:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 button:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 button.primary {
-  background-color: #3A3E60;
+  background-color: #3a3e60;
 }
 button.primary:hover {
   background-color: #272940;
@@ -254,7 +272,9 @@ button.discord {
   background-size: 20pt 20pt;
   padding-left: 35pt;
 }
-button:disabled, button:disabled:hover, button:disabled:active {
+button:disabled,
+button:disabled:hover,
+button:disabled:active {
   background-color: #d3d3d3 !important;
   cursor: default;
 }
@@ -265,7 +285,7 @@ input.button {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -284,13 +304,15 @@ input.button a {
   color: white;
 }
 input.button:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 input.button:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 
-button.with-arrow, input.button.with-arrow, a.button.with-arrow {
+button.with-arrow,
+input.button.with-arrow,
+a.button.with-arrow {
   background-image: url("/theme/images/arrow-right.svg");
   background-repeat: no-repeat;
   background-position: right 18px center;
@@ -301,7 +323,7 @@ button.with-arrow, input.button.with-arrow, a.button.with-arrow {
 section.panel {
   width: 850pt;
   max-width: calc(100vw - 80pt);
-  background: linear-gradient(111deg, #F6F6F6 0%, #EEEEEE 100%);
+  background: linear-gradient(111deg, #f6f6f6 0%, #eeeeee 100%);
   border-radius: 73.03px;
   min-height: 200pt;
   margin: 50pt 0pt;
@@ -355,7 +377,11 @@ section.panel > img {
 
 .canvas::before {
   content: "";
-  background: linear-gradient(35deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 100%);
+  background: linear-gradient(
+    35deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
   position: absolute;
   top: -2pt;
   left: -2pt;
@@ -657,17 +683,18 @@ section.panel > img {
   display: none;
 }
 
-.canvas.nogrid::before, .canvas.nograd::before {
+.canvas.nogrid::before,
+.canvas.nograd::before {
   display: none;
 }
 
 .canvas .circle.fg {
-  background-color: #3E3AFF;
+  background-color: #3e3aff;
   z-index: 2;
 }
 
 .canvas .circle.blue {
-  background-color: #BEB8FF;
+  background-color: #beb8ff;
 }
 
 .canvas .circle.white {
@@ -675,11 +702,11 @@ section.panel > img {
 }
 
 .canvas .circle.grey {
-  background-color: #EFEFEF;
+  background-color: #efefef;
 }
 
 .canvas .circle.green {
-  background-color: #4AEC9B;
+  background-color: #4aec9b;
 }
 
 .canvas .circle {
@@ -724,43 +751,43 @@ section.panel > img {
 }
 
 .border-green {
-  box-shadow: 0 0 0 2pt #4AEC9B inset;
+  box-shadow: 0 0 0 2pt #4aec9b inset;
 }
 
 .border-red {
-  box-shadow: 0 0 0 2pt #FF6854 inset;
+  box-shadow: 0 0 0 2pt #ff6854 inset;
 }
 
 .border-blue {
-  box-shadow: 0 0 0 2pt #3E3AFF inset;
+  box-shadow: 0 0 0 2pt #3e3aff inset;
 }
 
 .canvas .circle.blue-dark {
-  background-color: #6A79FF;
+  background-color: #6a79ff;
 }
 
 .canvas .circle.red {
-  background-color: #FF6678;
+  background-color: #ff6678;
 }
 
 .canvas .circle.lred {
-  background-color: #FF6854;
+  background-color: #ff6854;
 }
 
 .canvas .circle.red-purple {
-  background-color: #FF66CB;
+  background-color: #ff66cb;
 }
 
 .canvas .circle.semi-purple {
-  background-color: #FF669D;
+  background-color: #ff669d;
 }
 
 .canvas .circle.purple {
-  background-color: #FF66F9;
+  background-color: #ff66f9;
 }
 
 .canvas .circle.purple-dark {
-  background-color: #D766FF;
+  background-color: #d766ff;
 }
 
 .canvas .circle.down {
@@ -1279,18 +1306,24 @@ section.panel > img {
     opacity: 1;
   }
 }
-.canvas .circle.down.blue, .canvas .circle.down.blue-dark,
-.canvas .circle.left.blue, .canvas .circle.left.blue-dark,
-.canvas .circle.right.blue, .canvas .circle.right.blue-dark,
-.canvas .circle.up.blue, .canvas .circle.up.blue-dark,
-.canvas .circle.up.green, .canvas .circle.down.green,
-.canvas .circle.left.green, .canvas .circle.right.green {
+.canvas .circle.down.blue,
+.canvas .circle.down.blue-dark,
+.canvas .circle.left.blue,
+.canvas .circle.left.blue-dark,
+.canvas .circle.right.blue,
+.canvas .circle.right.blue-dark,
+.canvas .circle.up.blue,
+.canvas .circle.up.blue-dark,
+.canvas .circle.up.green,
+.canvas .circle.down.green,
+.canvas .circle.left.green,
+.canvas .circle.right.green {
   background-image: url("/theme/images/arrow-right-dark.svg");
 }
 
 .canvas .circle.label {
   line-height: 70px;
-  background-color: #F6F6F6;
+  background-color: #f6f6f6;
   padding-right: 1pt;
   z-index: 20;
 }
@@ -1300,7 +1333,7 @@ article header {
 }
 
 footer {
-  background-color: #17161E;
+  background-color: #17161e;
   min-height: 160pt;
   width: 100vw;
   display: flex;
@@ -1350,7 +1383,8 @@ footer p {
     justify-content: center;
     margin-top: 0pt;
   }
-  footer .footer-content p, footer .footer-content a {
+  footer .footer-content p,
+  footer .footer-content a {
     width: 100%;
     justify-content: center;
     text-align: center;
@@ -1369,7 +1403,7 @@ button.blue {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -1383,16 +1417,16 @@ button.blue {
   letter-spacing: 0.5px;
   transition: background-color 0.1s;
   user-select: none;
-  background-color: #948FE4;
+  background-color: #948fe4;
 }
 button.blue a {
   color: white;
 }
 button.blue:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 button.blue:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 button.blue.with-arrow {
   padding-right: 50px;
@@ -1413,7 +1447,7 @@ button.white:active {
 }
 
 section.dark {
-  background: linear-gradient(135deg, #303A94 0%, #232C7B 100%);
+  background: linear-gradient(135deg, #303a94 0%, #232c7b 100%);
   width: 100vw;
   padding: 40pt 0pt;
   overflow: hidden;
@@ -1425,7 +1459,7 @@ section.dark section {
   margin: auto;
 }
 section.dark section.panel {
-  background: linear-gradient(92deg, #434DA6 7.93%, #10135C 94.43%);
+  background: linear-gradient(92deg, #434da6 7.93%, #10135c 94.43%);
   color: white;
 }
 
@@ -1443,7 +1477,9 @@ section.dark section.panel {
   padding: 0pt 40pt;
   padding-right: 0pt;
 }
-.panel.sidebyside h1, .panel.sidebyside h2, .panel.sidebyside button {
+.panel.sidebyside h1,
+.panel.sidebyside h2,
+.panel.sidebyside button {
   margin-top: 20pt;
   white-space: nowrap;
 }
@@ -1501,7 +1537,9 @@ section.dark section.panel {
     font-size: 19px;
     width: 100%;
   }
-  .panel.sidebyside h2, .panel.sidebyside h3, .panel.sidebyside button {
+  .panel.sidebyside h2,
+  .panel.sidebyside h3,
+  .panel.sidebyside button {
     margin-top: 10pt;
   }
 }
@@ -1528,7 +1566,11 @@ section.dark section.panel {
   }
 }
 .canvas.dark::before {
-  background: linear-gradient(92deg, rgba(67, 77, 166, 0) 7.93%, rgba(16, 19, 92, 0.5) 94.43%);
+  background: linear-gradient(
+    92deg,
+    rgba(67, 77, 166, 0) 7.93%,
+    rgba(16, 19, 92, 0.5) 94.43%
+  );
 }
 
 .canvas.dark .circle.bg {
@@ -1567,7 +1609,7 @@ section.dark section.panel {
   display: block;
   margin-top: 2pt;
   text-decoration: none !important;
-  background-color: #3E3AFF;
+  background-color: #3e3aff;
   border-radius: 20pt;
   color: white;
   padding: 10pt;
@@ -1628,7 +1670,7 @@ section.dark section.panel {
   position: relative;
   left: -25px;
   top: -25px;
-  background-color: #D6D5DF;
+  background-color: #d6d5df;
   overflow: hidden;
   margin-bottom: -2pt;
   display: flex;
@@ -1678,7 +1720,7 @@ section.dark section.panel {
     width: 853.3333333333px;
   }
   .blog article.preview h3 {
-    color: #2E2E2E;
+    color: #2e2e2e;
     font-family: "NeueMontreal";
     font-size: 24.795px;
     font-style: normal;
@@ -1710,7 +1752,7 @@ section.dark section.panel {
     margin-right: 0pt;
   }
   .blog article.preview h3 {
-    color: #2E2E2E;
+    color: #2e2e2e;
     font-family: "NeueMontreal";
     font-size: 24.795px;
     font-style: normal;
@@ -1752,7 +1794,7 @@ section.dark section.panel {
   letter-spacing: 0.65px;
 }
 .blog article.full h1 {
-  color: #0C0C13;
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 48px;
   font-style: normal;
@@ -1761,7 +1803,7 @@ section.dark section.panel {
   letter-spacing: 0.48px;
 }
 .blog article.full h2 {
-  color: #0C0C13;
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 34px;
   font-style: normal;
@@ -1770,7 +1812,7 @@ section.dark section.panel {
   letter-spacing: 1.02px;
 }
 .blog article.full h3 {
-  color: #0C0C13;
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 30px;
   font-style: normal;
@@ -1788,7 +1830,7 @@ section.dark section.panel {
   text-align: justify;
 }
 .blog article.full h4 {
-  color: #0C0C13;
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 25px;
   font-style: normal;
@@ -1797,8 +1839,9 @@ section.dark section.panel {
   letter-spacing: 0.75px;
   margin-top: 30pt;
 }
-.blog article.full p, .blog article.full ul {
-  color: #0C0C13;
+.blog article.full p,
+.blog article.full ul {
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 25px;
   font-style: normal;
@@ -1806,7 +1849,8 @@ section.dark section.panel {
   letter-spacing: 0.75px;
   line-height: 35px;
 }
-.blog article.full p li, .blog article.full ul li {
+.blog article.full p li,
+.blog article.full ul li {
   margin-top: 10pt;
 }
 .blog article.full h4.date {
@@ -1814,7 +1858,7 @@ section.dark section.panel {
   font-size: 22px;
   margin-bottom: 10pt;
   text-align: left;
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 .blog article.full.paper h1 {
   text-align: center;
@@ -1836,7 +1880,8 @@ section.dark section.panel {
   margin-top: 20pt;
   margin-bottom: 20pt;
 }
-.blog article.full.paper .paper-buttons button, .blog article.full.paper .paper-buttons a.button {
+.blog article.full.paper .paper-buttons button,
+.blog article.full.paper .paper-buttons a.button {
   display: inline-block;
   margin: 0pt 5pt;
 }
@@ -1849,7 +1894,7 @@ section.dark section.panel {
   margin: 20pt 0pt;
 }
 .blog table th {
-  background-color: #F6F6F6;
+  background-color: #f6f6f6;
   padding: 5pt 10pt;
   font-weight: 400;
   text-align: left;
@@ -1867,12 +1912,14 @@ section.dark section.panel {
   font-size: 22px;
   margin-bottom: 10pt;
   text-align: left;
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 .blog article p {
   position: relative;
 }
-.blog article p img:not(.textwidth), .blog article figure img:not(.textwidth), .blog article figure video {
+.blog article p img:not(.textwidth),
+.blog article figure img:not(.textwidth),
+.blog article figure video {
   margin: 30pt 0pt;
   width: 700pt;
   transform: translateX(-50%);
@@ -1883,13 +1930,16 @@ section.dark section.panel {
   max-width: calc(100vw - 40pt);
   border: 1px solid rgba(116, 116, 116, 0.0823529412);
 }
-.blog article img.masked, .blog article p img.masked {
+.blog article img.masked,
+.blog article p img.masked {
   padding: 0pt;
   margin: 10pt 0pt;
   border-radius: 10px;
   overflow: hidden;
 }
-.blog article p img.textwidth, .blog article figure img.textwidth, .blog article figure video.textwidth {
+.blog article p img.textwidth,
+.blog article figure img.textwidth,
+.blog article figure video.textwidth {
   width: 100%;
   max-width: 100%;
   margin: 10pt 0pt;
@@ -1907,7 +1957,8 @@ section.dark section.panel {
 .blog article figure figcaption {
   text-align: center;
 }
-.blog article.full a:not(.button), .blog article.full a:visited:not(.button) {
+.blog article.full a:not(.button),
+.blog article.full a:visited:not(.button) {
   text-decoration: underline;
   color: inherit;
   cursor: pointer !important;
@@ -1931,8 +1982,9 @@ section.dark section.panel {
 .blog .entry-content pre code {
   line-height: 1.5;
 }
-.blog .entry-content em, .blog .entry-content i {
-  color: #2E2E2E;
+.blog .entry-content em,
+.blog .entry-content i {
+  color: #2e2e2e;
   font-style: italic;
 }
 .blog .authors {
@@ -1942,7 +1994,7 @@ section.dark section.panel {
 }
 @media (max-width: 800pt) {
   .blog article.full h1 {
-    color: #0C0C13;
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 48px;
     font-style: normal;
@@ -1951,7 +2003,7 @@ section.dark section.panel {
     letter-spacing: 0.55px;
   }
   .blog article.full h4 {
-    color: #0C0C13;
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 22px;
     font-style: normal;
@@ -1962,8 +2014,9 @@ section.dark section.panel {
   .blog article.full h4.date {
     margin-top: 15pt;
   }
-  .blog article.full p, .blog article.full ul {
-    color: #0C0C13;
+  .blog article.full p,
+  .blog article.full ul {
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 22px;
     font-style: normal;
@@ -1992,7 +2045,7 @@ section.dark section.panel {
     padding: 10pt 20pt;
   }
   .blog article.full h1 {
-    color: #0C0C13;
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 38px;
     font-style: normal;
@@ -2009,7 +2062,7 @@ section.dark section.panel {
     line-height: 32px;
   }
   .blog article.full h3 {
-    color: #0C0C13;
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 24px;
     font-style: normal;
@@ -2018,7 +2071,7 @@ section.dark section.panel {
     letter-spacing: 0.24px;
   }
   .blog article.full h4 {
-    color: #0C0C13;
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 22px;
     font-style: normal;
@@ -2029,8 +2082,9 @@ section.dark section.panel {
   .blog article.full h4.date {
     margin-top: 15pt;
   }
-  .blog article.full p, .blog article.full ul {
-    color: #0C0C13;
+  .blog article.full p,
+  .blog article.full ul {
+    color: #0c0c13;
     font-family: "NeueMontreal";
     font-size: 19px;
     font-style: normal;
@@ -2058,7 +2112,8 @@ h2.site {
   line-height: 1.2;
 }
 
-h3.subsite, article h3.subsite {
+h3.subsite,
+article h3.subsite {
   text-align: center;
   width: 400pt;
   max-width: calc(100vw - 40pt);
@@ -2078,8 +2133,9 @@ h3.subsite.career {
     font-size: 55px;
     margin-bottom: 5px;
   }
-  h3.subsite, article h3.subsite {
-    color: #2E2E2E;
+  h3.subsite,
+  article h3.subsite {
+    color: #2e2e2e;
     text-align: center;
     font-family: "NeueMontreal";
     font-size: 19px;
@@ -2096,7 +2152,7 @@ h3.subsite.career {
 }
 @media (max-width: 400pt) {
   h2.site {
-    color: #0C0C13;
+    color: #0c0c13;
     text-align: center;
     font-family: "NeueMontreal";
     font-size: 31px;
@@ -2106,8 +2162,9 @@ h3.subsite.career {
     letter-spacing: 0.31px;
     margin-bottom: 15px;
   }
-  h3.subsite, article h3.subsite {
-    color: #2E2E2E;
+  h3.subsite,
+  article h3.subsite {
+    color: #2e2e2e;
     text-align: center;
     font-size: 19px;
     font-style: normal;
@@ -2468,7 +2525,7 @@ nav.mobile li button {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -2487,7 +2544,7 @@ nav.mobile li button {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -2501,7 +2558,7 @@ nav.mobile li button {
   letter-spacing: 0.5px;
   transition: background-color 0.1s;
   user-select: none;
-  background-color: #948FE4;
+  background-color: #948fe4;
   margin-top: 40pt;
   margin-bottom: 0pt;
   line-height: 30pt;
@@ -2511,19 +2568,19 @@ nav.mobile li button a {
   color: white;
 }
 nav.mobile li button:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 nav.mobile li button:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 nav.mobile li button a {
   color: white;
 }
 nav.mobile li button:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 nav.mobile li button:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 nav.mobile.open ul {
   display: block;
@@ -2538,7 +2595,7 @@ nav.mobile ul li {
   font-size: 37px;
   margin: 0pt;
   padding: 2pt 30pt;
-  background-color: #F7F7F7;
+  background-color: #f7f7f7;
 }
 nav.mobile ul li:first-child {
   padding-top: 40pt;
@@ -2550,11 +2607,11 @@ nav.mobile ul li.button:last-child {
   padding-bottom: 20pt;
 }
 nav.mobile ul li a {
-  color: #2E2E2E;
+  color: #2e2e2e;
   text-decoration: none;
   display: block;
 }
-nav.mobile ul li a[aria-current=page] {
+nav.mobile ul li a[aria-current="page"] {
   text-decoration: underline !important;
 }
 
@@ -2620,7 +2677,7 @@ article.about ul li img {
 }
 article.about ul li h1 {
   font-size: 24px;
-  color: #3E3AFF;
+  color: #3e3aff;
   line-height: 1.2;
   margin: 0;
   padding: 0;
@@ -2628,13 +2685,13 @@ article.about ul li h1 {
 article.about ul li h2 {
   font-size: 16px;
   max-width: 250px;
-  color: #9E9E9E;
+  color: #9e9e9e;
   margin: 0;
   padding: 0;
   line-height: 1.5;
 }
 article.about ul li div {
-  color: #0C0C13;
+  color: #0c0c13;
   font-family: "NeueMontreal";
   font-size: 20px;
   font-style: normal;
@@ -2648,7 +2705,7 @@ article.about section.dark {
 }
 
 section.grey {
-  background-color: #EDEDED;
+  background-color: #ededed;
   padding: 40pt 0pt;
   width: 100vw;
 }
@@ -2694,7 +2751,8 @@ div.logos img {
   margin: 20pt;
 }
 
-div.highlight { /* Comment */
+div.highlight {
+  /* Comment */
   /* Keyword */
   /* Operator */
   /* Comment.Hashbang */
@@ -2766,41 +2824,41 @@ div.highlight .hll {
   background-color: #ffffcc;
 }
 div.highlight .c {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .k {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .o {
   color: #666666;
 }
 div.highlight .ch {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .cm {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .cp {
-  color: #9C6500;
+  color: #9c6500;
 }
 div.highlight .cpf {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .c1 {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .cs {
-  color: #3D7B7B;
+  color: #3d7b7b;
   font-style: italic;
 }
 div.highlight .gd {
-  color: #A00000;
+  color: #a00000;
 }
 div.highlight .ge {
   font-style: italic;
@@ -2810,7 +2868,7 @@ div.highlight .ges {
   font-style: italic;
 }
 div.highlight .gr {
-  color: #E40000;
+  color: #e40000;
 }
 div.highlight .gh {
   color: #000080;
@@ -2834,79 +2892,79 @@ div.highlight .gu {
   font-weight: bold;
 }
 div.highlight .gt {
-  color: #0044DD;
+  color: #0044dd;
 }
 div.highlight .kc {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .kd {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .kn {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .kp {
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 div.highlight .kr {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .kt {
-  color: #B00040;
+  color: #b00040;
 }
 div.highlight .m {
   color: #666666;
 }
 div.highlight .s {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .na {
   color: #687822;
 }
 div.highlight .nb {
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 div.highlight .nc {
-  color: #0000FF;
+  color: #0000ff;
   font-weight: bold;
 }
 div.highlight .no {
   color: #880000;
 }
 div.highlight .nd {
-  color: #AA22FF;
+  color: #aa22ff;
 }
 div.highlight .ni {
   color: #717171;
   font-weight: bold;
 }
 div.highlight .ne {
-  color: #CB3F38;
+  color: #cb3f38;
   font-weight: bold;
 }
 div.highlight .nf {
-  color: #0000FF;
+  color: #0000ff;
 }
 div.highlight .nl {
   color: #767600;
 }
 div.highlight .nn {
-  color: #0000FF;
+  color: #0000ff;
   font-weight: bold;
 }
 div.highlight .nt {
-  color: #3E3AFF;
+  color: #3e3aff;
   font-weight: bold;
 }
 div.highlight .nv {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .ow {
-  color: #AA22FF;
+  color: #aa22ff;
   font-weight: bold;
 }
 div.highlight .w {
@@ -2928,64 +2986,64 @@ div.highlight .mo {
   color: #666666;
 }
 div.highlight .sa {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .sb {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .sc {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .dl {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .sd {
-  color: #FF669D;
+  color: #ff669d;
   font-style: italic;
 }
 div.highlight .s2 {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .se {
-  color: #AA5D1F;
+  color: #aa5d1f;
   font-weight: bold;
 }
 div.highlight .sh {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .si {
-  color: #A45A77;
+  color: #a45a77;
   font-weight: bold;
 }
 div.highlight .sx {
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 div.highlight .sr {
-  color: #A45A77;
+  color: #a45a77;
 }
 div.highlight .s1 {
-  color: #FF669D;
+  color: #ff669d;
 }
 div.highlight .ss {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .bp {
-  color: #3E3AFF;
+  color: #3e3aff;
 }
 div.highlight .fm {
-  color: #0000FF;
+  color: #0000ff;
 }
 div.highlight .vc {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .vg {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .vi {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .vm {
-  color: #19177C;
+  color: #19177c;
 }
 div.highlight .il {
   color: #666666;
@@ -3012,7 +3070,7 @@ ul.changing li {
   margin: 0pt;
   padding: 0pt;
   font-style: normal;
-  color: #3E3AFF;
+  color: #3e3aff;
   animation: change 10s infinite;
   opacity: 0;
   position: absolute;
@@ -3209,7 +3267,7 @@ section.panel.about .text h3 {
   width: 100%;
 }
 section.panel.about .text h3 a {
-  color: #0C0C13;
+  color: #0c0c13;
   opacity: 0.6;
 }
 section.panel.about .img {
@@ -3271,7 +3329,10 @@ section.panel.about .img img {
   max-height: calc(100vh - 40pt);
   overflow: auto;
   z-index: 1000;
-  transition: background-color 0.5s, height 0.5s, width 0.5s;
+  transition:
+    background-color 0.5s,
+    height 0.5s,
+    width 0.5s;
 }
 .modal .modal-content button.close {
   position: absolute;
@@ -3291,7 +3352,7 @@ section.panel.about .img img {
   z-index: 0;
 }
 
-#mc_embed_signup_scroll input[type=checkbox] {
+#mc_embed_signup_scroll input[type="checkbox"] {
   margin-top: 6pt;
   display: inline-block;
 }
@@ -3318,7 +3379,8 @@ section.panel.about .img img {
 #mc_embed_signup_scroll .indicates-required {
   display: none;
 }
-#mc_embed_signup_scroll .content__gdpr, #mc_embed_signup_scroll .content__gdprLegal {
+#mc_embed_signup_scroll .content__gdpr,
+#mc_embed_signup_scroll .content__gdprLegal {
   font-size: 8pt;
 }
 #mc_embed_signup_scroll div.mce_inline_error {
@@ -3339,16 +3401,18 @@ section.panel.about .img img {
   border-radius: 22.196px;
   display: block;
   width: calc(100% - 20pt);
-  border: 1pt solid #D6D5DF;
+  border: 1pt solid #d6d5df;
   font-size: 16px;
   padding: 10pt;
 }
-#mc_embed_signup_scroll #close-success, #mc_embed_signup_scroll #mce-success-response {
+#mc_embed_signup_scroll #close-success,
+#mc_embed_signup_scroll #mce-success-response {
   line-height: 35pt;
   text-align: center;
 }
 
-.modal-content.completed #mc_embed_signup_scroll > div:not(#close-success), .modal-content.completed #mc_embed_signup_scroll > h2 {
+.modal-content.completed #mc_embed_signup_scroll > div:not(#close-success),
+.modal-content.completed #mc_embed_signup_scroll > h2 {
   display: none;
 }
 .modal-content.completed #mc_embed_signup_scroll > div#mce-responses {
@@ -3360,7 +3424,8 @@ section.panel.about .img img {
 .modal-content.completed h2 {
   background: transparent;
 }
-.modal-content.completed #mc_embed_signup, .modal-content.completed #mc_embed_signup_scroll {
+.modal-content.completed #mc_embed_signup,
+.modal-content.completed #mc_embed_signup_scroll {
   background: none;
 }
 
@@ -3390,7 +3455,7 @@ a.button {
   line-height: 47px;
   height: 47px;
   border: none;
-  background-color: #AEADBF;
+  background-color: #aeadbf;
   border-radius: 58.52pt;
   text-decoration: none;
   text-align: center;
@@ -3411,10 +3476,10 @@ a.button a {
   color: white;
 }
 a.button:hover {
-  background-color: #8E8D9F;
+  background-color: #8e8d9f;
 }
 a.button:active {
-  background-color: #6E6D7F;
+  background-color: #6e6d7f;
 }
 a.button.discord {
   background-image: url("/theme/images/logos/discord.svg");
@@ -3424,7 +3489,7 @@ a.button.discord {
   padding-left: 38pt;
 }
 a.button.primary {
-  background-color: #3A3E60;
+  background-color: #3a3e60;
 }
 a.button.primary:hover {
   background-color: #272940;

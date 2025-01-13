@@ -1,25 +1,16 @@
-import re
 import os
-import json
+
 import fastapi
 from fastapi import HTTPException
-
-from routes.user import user
-from routes.auth import write_back_refreshed_token
-from routes.dataset import dataset
-from routes.trace import trace
-from routes.apikeys import apikeys
-from routes.push import push
-from routes.benchmark import benchmark
-from util.config import config
-
-from sqlalchemy.orm import Session
-from fastapi.exception_handlers import http_exception_handler
-
-import traceback
-
-from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from metrics.active_users import install_metrics_middleware
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from routes.apikeys import apikeys
+from routes.auth import write_back_refreshed_token
+from routes.benchmark import benchmark
+from routes.dataset import dataset
+from routes.push import push
+from routes.trace import trace
+from routes.user import user
 
 v1 = fastapi.FastAPI()
 
@@ -31,14 +22,17 @@ v1.mount("/keys", apikeys)
 v1.mount("/push", push)
 v1.mount("/benchmark", benchmark)
 
+
 # for debugging, we can check if the API is up
 @v1.get("/")
 async def home():
     return {"message": "Hello v1"}
 
+
 # mount the API under /api/v1
 app = fastapi.FastAPI()
 app.mount("/api/v1", v1)
+
 
 # enforces that the request knows the PROMETHEUS_TOKEN when requesting metrics
 def auth_metrics(request: fastapi.Request):
@@ -50,6 +44,7 @@ def auth_metrics(request: fastapi.Request):
     token = os.getenv("PROMETHEUS_TOKEN", "")
     if not token or request_token != f"Bearer {token}":
         raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 if os.getenv("DEV_MODE") != "true":
     install_metrics_middleware(app)
@@ -68,5 +63,5 @@ Instrumentator().add(
 # serve the API
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

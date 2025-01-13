@@ -1,6 +1,6 @@
 # CAUTION: This docker-compose.yml file should only be used by the `invariant explorer` CLI command and not be used directly.
 # This is not the development setup but what is used for released versions of the explorer.
-# For a development setup (hot-reloading), please see docker-compose.dev.yml.
+# For a development setup (hot-reloading), please see docker-compose.local.yml.
 # This stack will pull in the specified $VERSION of the app-api and app-ui services.
 services:
   traefik:
@@ -27,6 +27,7 @@ services:
 
   app-api:
     image: ghcr.io/invariantlabs-ai/explorer/app-api:${VERSION}
+    pull_policy: always
     platform: linux/amd64
     depends_on:
       database:
@@ -35,9 +36,6 @@ services:
     env_file:
       - .env
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID}
-      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET}
       - PROJECTS_DIR=/srv/projects
       - KEYCLOAK_CLIENT_ID_SECRET=${KEYCLOAK_CLIENT_ID_SECRET}
       - TZ=Europe/Berlin
@@ -59,6 +57,7 @@ services:
 
   app-ui:
     image: ghcr.io/invariantlabs-ai/explorer/app-ui:${VERSION}
+    pull_policy: always
     platform: linux/amd64
     networks:
       - invariant-explorer-web

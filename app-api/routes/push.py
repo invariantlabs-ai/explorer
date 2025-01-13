@@ -1,27 +1,19 @@
 """
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
-import base64
-import json
+
 import logging
-import os
 import uuid
-
-from fastapi import FastAPI
-from sqlalchemy.orm import Session
-from routes.apikeys import APIIdentity
-from models.datasets_and_traces import db, Dataset, Trace, Annotation
-from models.queries import load_dataset
 from typing import Annotated
-from fastapi import Request, Depends
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
-
-from PIL import Image
-import io
-
-from util.util import validate_dataset_name, parse_and_push_images
+from models.datasets_and_traces import Annotation, Dataset, Trace, db
+from models.queries import load_dataset
+from routes.apikeys import APIIdentity
+from sqlalchemy.orm import Session
+from util.util import parse_and_push_images, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
-
 
 push = FastAPI()
 logger = logging.getLogger(__name__)
@@ -29,14 +21,16 @@ logger = logging.getLogger(__name__)
 """
 Write-only API endpoint to push traces to the server.
 """
+
+
 @push.post("/trace")
 async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
     assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
     userid = userinfo.get("sub")
-    
+
     # extract payload
     payload = await request.json()
-    
+
     messages = payload.get("messages")
     annotations = payload.get("annotations")
     dataset_name = payload.get("dataset", None)
@@ -46,26 +40,43 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         # check messages
         assert type(messages) == list, "messages must be a list of messages"
         assert len(messages) > 0, "messages must not be empty"
-        assert all(type(msg) == list for msg in messages), "messages must be a list of traces"
+        assert all(
+            type(msg) == list for msg in messages
+        ), "messages must be a list of traces"
 
         # check other properties
-        assert annotations is None or type(annotations) == list, "annotations must be a list of annotations"
-        assert dataset_name is None or type(dataset_name) == str, "dataset name must be a string"
-        assert metadata is None or type(metadata) == list, "metadata must be a list of metadata"
-        
+        assert (
+            annotations is None or type(annotations) == list
+        ), "annotations must be a list of annotations"
+        assert (
+            dataset_name is None or type(dataset_name) == str
+        ), "dataset name must be a string"
+        assert (
+            metadata is None or type(metadata) == list
+        ), "metadata must be a list of metadata"
+
         # make sure if present that messages, annotations, and metadata are all the same length
         if annotations is not None:
-            assert len(annotations) == len(messages), "annotations must be the same length as messages"
+            assert len(annotations) == len(
+                messages
+            ), "annotations must be the same length as messages"
         if metadata is not None:
-            assert len(metadata) == len(messages), "metadata must be the same length as messages"
+            assert len(metadata) == len(
+                messages
+            ), "metadata must be the same length as messages"
     except AssertionError as e:
         raise HTTPException(status_code=400, detail=str(e))
     validate_dataset_name(dataset_name)
 
     # make sure metadata is a list of dictionaries
-    metadata = [md if md is not None else {} for md in metadata] if metadata else [{} for _ in messages]
+    metadata = (
+        [md if md is not None else {} for md in metadata]
+        if metadata
+        else [{} for _ in messages]
+    )
     # mark API key id that was used to upload the trace
-    for md in metadata: md["uploader"] = "Via API " + str(userinfo.get("apikey"))
+    for md in metadata:
+        md["uploader"] = "Via API " + str(userinfo.get("apikey"))
 
     traces = []
     with Session(db()) as session:
@@ -109,18 +120,20 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         for i, msg in enumerate(messages):
             trace_id = uuid.uuid4()
             message_content = msg
-            message_content = parse_and_push_images(dataset_name, trace_id, message_content)
+            message_content = parse_and_push_images(
+                dataset_name, trace_id, message_content
+            )
             message_metadata = metadata[i]
 
             trace = Trace(
                 id=trace_id,
                 dataset_id=dataset_id,
                 index=(next_index + i) if dataset_id else 0,
-                name = message_metadata.get("name", f"Run {next_index + i}"),
-                hierarchy_path = message_metadata.get("hierarchy_path", []),
+                name=message_metadata.get("name", f"Run {next_index + i}"),
+                hierarchy_path=message_metadata.get("hierarchy_path", []),
                 user_id=userid,
                 content=message_content,
-                extra_metadata=message_metadata
+                extra_metadata=message_metadata,
             )
             try:
                 validate_trace(trace)
@@ -149,9 +162,9 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                         # TODO: For now we just warn instead of throwing an error
                         logger.warning(f"Error validating annotation {i}: {str(e)}")
                     session.add(new_annotation)
-        
+
         session.commit()
-        
+
         return {
             "id": result_ids,
             **({"dataset": dataset.name} if dataset_id else {}),

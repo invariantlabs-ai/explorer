@@ -1,26 +1,26 @@
 {
-    "name": {
-        "290e885a-cdb4-42d5-b069-2c5fda9b68c6": "SWE-Bench/OpenHands",
-        "1ccc5502-6ee5-4a1a-b4a3-9a17c242fe78": "CYBench/Claude3.5-sonnet",
-        "9a11583f-9fed-48d6-a7df-123856a5123b": "SWE-Bench/OpenHands",
-        "4563101a-e89b-43c8-b8d2-d8bff4be9c1a": "CYBench/Claude3.5-sonnet",
-        "2a708049-980c-4d14-9ceb-e85d380b385f": "CYBench/GPT-4o",
-        "06154973-e4f4-4b3d-824c-1d749fb7363f": "τ-Bench/Claude3.5-sonnet",
-        "e1385525-3b7a-40c5-af03-41e72b1ffe91": "WebArena/JaceAI",
-        "9c3b88f3-5d03-4416-9e8c-18ff7194a7f4": "AgentDojo/GPT-4o",
-        "495cda4f-a6a7-4403-9243-67e9f3b47e06": "AgentDojo/Claude3.5-sonnet",
-        "a6e6118d-99a8-4ced-9446-41db98f352b8": "BerkeleyFunctionCalling/GPT-4o"
-    },
-    "description": {
-        "290e885a-cdb4-42d5-b069-2c5fda9b68c6": "coding, debugging and bug fixing",
-        "1ccc5502-6ee5-4a1a-b4a3-9a17c242fe78": "cybersecurity tasks",
-        "9a11583f-9fed-48d6-a7df-123856a5123b": "coding, debugging and bug fixing",
-        "4563101a-e89b-43c8-b8d2-d8bff4be9c1a": "cybersecurity tasks",
-        "2a708049-980c-4d14-9ceb-e85d380b385f": "cybersecurity tasks",
-        "06154973-e4f4-4b3d-824c-1d749fb7363f": "customer support and database interaction",
-        "e1385525-3b7a-40c5-af03-41e72b1ffe91": "web automation and browsing",
-        "9c3b88f3-5d03-4416-9e8c-18ff7194a7f4": "productivity automation under prompt injection",
-        "495cda4f-a6a7-4403-9243-67e9f3b47e06": "productivity automation under prompt injection",
-        "a6e6118d-99a8-4ced-9446-41db98f352b8": "using tools"
-    }
+  "name": {
+    "290e885a-cdb4-42d5-b069-2c5fda9b68c6": "SWE-Bench/OpenHands",
+    "1ccc5502-6ee5-4a1a-b4a3-9a17c242fe78": "CYBench/Claude3.5-sonnet",
+    "9a11583f-9fed-48d6-a7df-123856a5123b": "SWE-Bench/OpenHands",
+    "4563101a-e89b-43c8-b8d2-d8bff4be9c1a": "CYBench/Claude3.5-sonnet",
+    "2a708049-980c-4d14-9ceb-e85d380b385f": "CYBench/GPT-4o",
+    "06154973-e4f4-4b3d-824c-1d749fb7363f": "τ-Bench/Claude3.5-sonnet",
+    "e1385525-3b7a-40c5-af03-41e72b1ffe91": "WebArena/JaceAI",
+    "9c3b88f3-5d03-4416-9e8c-18ff7194a7f4": "AgentDojo/GPT-4o",
+    "495cda4f-a6a7-4403-9243-67e9f3b47e06": "AgentDojo/Claude3.5-sonnet",
+    "a6e6118d-99a8-4ced-9446-41db98f352b8": "BerkeleyFunctionCalling/GPT-4o"
+  },
+  "description": {
+    "290e885a-cdb4-42d5-b069-2c5fda9b68c6": "coding, debugging and bug fixing",
+    "1ccc5502-6ee5-4a1a-b4a3-9a17c242fe78": "cybersecurity tasks",
+    "9a11583f-9fed-48d6-a7df-123856a5123b": "coding, debugging and bug fixing",
+    "4563101a-e89b-43c8-b8d2-d8bff4be9c1a": "cybersecurity tasks",
+    "2a708049-980c-4d14-9ceb-e85d380b385f": "cybersecurity tasks",
+    "06154973-e4f4-4b3d-824c-1d749fb7363f": "customer support and database interaction",
+    "e1385525-3b7a-40c5-af03-41e72b1ffe91": "web automation and browsing",
+    "9c3b88f3-5d03-4416-9e8c-18ff7194a7f4": "productivity automation under prompt injection",
+    "495cda4f-a6a7-4403-9243-67e9f3b47e06": "productivity automation under prompt injection",
+    "a6e6118d-99a8-4ced-9446-41db98f352b8": "using tools"
+  }
 }

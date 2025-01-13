@@ -1,25 +1,9 @@
 """Defines routes for APIs related to benchmarks."""
 
-import copy
-import datetime
-import json
-import os
-import re
-import uuid
-from typing import Annotated
-from fastapi import Depends, FastAPI, File, UploadFile, Request, HTTPException
-from fastapi.responses import StreamingResponse
-from models.datasets_and_traces import (Annotation, Dataset, DatasetPolicy,
-                                        SavedQueries, SharedLinks, Trace, User,
-                                        db)
-from models.queries import (dataset_to_json, get_savedqueries, load_annoations,
-                            load_dataset, load_trace, query_traces,
-                            search_term_mappings, trace_to_exported_json,
-                            trace_to_json)
-from sqlalchemy import or_
+from fastapi import FastAPI, Request
+from models.datasets_and_traces import Dataset, User, db
+from sqlalchemy import Float, cast, desc, func
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import func
-from util.util import validate_dataset_name
 
 # dataset routes
 benchmark = FastAPI()
@@ -27,36 +11,46 @@ benchmark = FastAPI()
 """
 Public routes for listing and getting all public datasets that are linked to a given benchmark.
 """
+
+
 @benchmark.get("/{benchmark_name}/leaderboard")
-def get_leaderboard(benchmark_name: str, request: Request):
+def get_leaderboard(benchmark_name: str, _: Request):
     """Get leaderboard for a dataset."""
 
-    if request.headers.get('Authorization') != os.getenv("PRIVATE_EXPLORER_APIS_ACCESS_TOKEN", ""):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    # curl -X GET "https://localhost/benchmark/webarena/leaderboard" -H  "accept: application/json" -H  "Authorization: <PRIVATE_EXPLORER_APIS_ACCESS>"
-    
     with Session(db()) as session:
-        datasets = session.query(Dataset, User)\
-            .join(User, User.id == Dataset.user_id)\
-            .filter(or_(Dataset.is_public))\
-            .order_by(Dataset.time_created.desc())\
+        agent_name_expr = func.json_extract_path_text(
+            Dataset.extra_metadata, "name"
+        ).label("agent_name")
+        accuracy_expr = cast(
+            func.json_extract_path_text(Dataset.extra_metadata, "accuracy"), Float
+        ).label("accuracy")
+        benchmark_expr = func.json_extract_path_text(
+            Dataset.extra_metadata, "benchmark"
+        )
+
+        datasets = (
+            session.query(
+                Dataset.name,
+                User.username,
+                agent_name_expr,
+                accuracy_expr,
+            )
+            .join(User, User.id == Dataset.user_id)
+            .filter(
+                Dataset.is_public,
+                benchmark_expr.isnot(None),
+                accuracy_expr.isnot(None),
+                benchmark_expr == benchmark_name,
+            )
+            .order_by(desc(accuracy_expr), agent_name_expr)
             .all()
-    
-    datasets = [(dataset, user) for dataset, user in datasets if dataset.extra_metadata.get('benchmark') == benchmark_name]
+        )
 
-    # get leaderboard entries
-    entries = []
-
-    for (dataset, user) in datasets:
-        dataset_identifier = f'{user.username}/{dataset.name}'
-        dataset_name = dataset.extra_metadata.get('name', dataset_identifier)
-        accuracy = dataset.extra_metadata.get('accuracy')
-        
-        if accuracy:
-            entries.append({'name': dataset_name, 'dataset': dataset_identifier, 'accuracy': accuracy})
-
-    # sort leaderboard by accuracy, descending, by name secondarily
-    entries = sorted(entries, key=lambda x: (-x['accuracy'], x['name']))
-
-    return entries
+    return [
+        {
+            "name": agent_name if agent_name else f"{username}/{name}",
+            "dataset": f"{username}/{name}",
+            "accuracy": accuracy,
+        }
+        for name, username, agent_name, accuracy in datasets
+    ]

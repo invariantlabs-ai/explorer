@@ -1,5 +1,7 @@
 import os
+
 import yaml
+
 
 def config(key: str):
     """

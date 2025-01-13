@@ -161,7 +161,7 @@ async def test_create_request_and_push_trace_without_dataset(
 
     assert len(response.id) == 2
     assert response.dataset is None
-    assert response.username == 'developer'
+    assert response.username == "developer"
 
     trace_response_1 = await context.request.get(f"{url}/api/v1/trace/{response.id[0]}")
     trace_response_2 = await context.request.get(f"{url}/api/v1/trace/{response.id[1]}")
@@ -210,7 +210,7 @@ async def test_create_request_and_push_trace_with_existing_dataset(
 
         assert len(response.id) == 2
         assert response.dataset == dataset["name"]
-        assert response.username == 'developer'
+        assert response.username == "developer"
 
         trace_response_1 = await context.request.get(
             f"{url}/api/v1/trace/{response.id[0]}"
@@ -265,7 +265,7 @@ async def test_create_request_and_push_trace_while_creating_dataset(
 
     assert len(response.id) == 2
     assert response.dataset == dataset_name
-    assert response.username == 'developer'
+    assert response.username == "developer"
 
     trace_response_1 = await context.request.get(f"{url}/api/v1/trace/{response.id[0]}")
     trace_response_2 = await context.request.get(f"{url}/api/v1/trace/{response.id[1]}")
