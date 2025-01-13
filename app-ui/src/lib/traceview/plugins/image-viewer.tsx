@@ -5,7 +5,6 @@ import { HighlightedJSON } from "../highlights";
 import { truncate } from "../utils";
 import "./image-viewer.scss";
 
-
 // component properties of the code-highlighter plugin
 interface ImageViewerProps {
   content: string;
@@ -85,7 +84,7 @@ class ImageViewer extends React.Component<
         },
         () => {
           this.fetchImage();
-        },
+        }
       );
     }
   }
@@ -107,145 +106,215 @@ class ImageViewer extends React.Component<
         await cache.put(url, responseClone);
       }
 
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
-            this.setState({ imageUrl });
-        } catch (error) {
-            console.error("Error fetching image:", error);
-        }
+      const blob = await response.blob();
+      const imageUrl = URL.createObjectURL(blob);
+      this.setState({ imageUrl });
+    } catch (error) {
+      console.error("Error fetching image:", error);
     }
+  }
 
-    /**
-     * Create a bounding box using the coordinates given and the content of the annotation.
-     * The `content` and `state` are used to determine the key of the bounding box.
-     * `content` also determines the class of the bounding box (like regular annotations).
-     * The `borderSize` and `paddingPx` are used to adjust the size of the bounding box.
-     */
-    addBoundingBox(x1, y1, x2, y2, content, index, borderWidth = 1, padding = 0) {
-        
-        // Adjust coordinates to add padding
-        const adjustedX1 = Math.min(1, Math.max(0, x1 - padding / 100));
-        const adjustedY1 = Math.min(1, Math.max(0, y1 - padding / 100)); 
-        const adjustedX2 = Math.min(1, Math.max(0, x2 + padding / 100));
-        const adjustedY2 = Math.min(1, Math.max(0, y2 + padding / 100));
-    
-        // Calculate new dimensions and position
-        const newLeft = adjustedX1 * 100;
-        const newTop = adjustedY1 * 100;
-        const newWidth = (adjustedX2 - adjustedX1) * 100;
-        const newHeight = (adjustedY2 - adjustedY1) * 100;
-        
-        return (
-            <div
-                key={`bbox-${x1}-${y1}-${x2}-${y2}-${index}`}
-                className={`bounding-box ${content?.source}`}
-                style={{
-                    position: 'absolute',
-                    top: `${newTop}%`,
-                    left: `${newLeft}%`,
-                    width: `${newWidth}%`,
-                    height: `${newHeight}%`,
-                    borderWidth: `${borderWidth}px`,
-                }}
-            />
-        );
-    }
+  /**
+   * Create a bounding box using the coordinates given and the content of the annotation.
+   * The `content` and `state` are used to determine the key of the bounding box.
+   * `content` also determines the class of the bounding box (like regular annotations).
+   * The `borderSize` and `paddingPx` are used to adjust the size of the bounding box.
+   */
+  addBoundingBox(x1, y1, x2, y2, content, index, borderWidth = 1, padding = 0) {
+    // Adjust coordinates to add padding
+    const adjustedX1 = Math.min(1, Math.max(0, x1 - padding / 100));
+    const adjustedY1 = Math.min(1, Math.max(0, y1 - padding / 100));
+    const adjustedX2 = Math.min(1, Math.max(0, x2 + padding / 100));
+    const adjustedY2 = Math.min(1, Math.max(0, y2 + padding / 100));
 
-    /**
-     * Get annotations for image and update the higlights for it by either:
-     *      - Wrapping it in a span with annotation data
-     *      - Wrapping it in an unannotated span
-     * This image is the set in the nodes object.
-     */
-    updateHighlights() {
-        let highlights_in_text = this.props.highlights.in_text(JSON.stringify(this.props.content, null, 2))
-        let bounding_boxes_data = HighlightedJSON.bounding_boxes(highlights_in_text)
-        highlights_in_text = HighlightedJSON.disjunct(highlights_in_text)
-        let highlights_per_line = HighlightedJSON.by_lines(highlights_in_text, '"' + this.props.content + '"');
-        let elements: React.ReactNode[] = [];
+    // Calculate new dimensions and position
+    const newLeft = adjustedX1 * 100;
+    const newTop = adjustedY1 * 100;
+    const newWidth = (adjustedX2 - adjustedX1) * 100;
+    const newHeight = (adjustedY2 - adjustedY1) * 100;
 
-        // Loop over the highlighted structure
-        let highligthed_found = false;
-        for (const highlights of highlights_per_line) {
-            let image: React.ReactNode[] = [];
-            for (const interval of highlights) {
-                if (interval.content !== null) {
-                    let className = 'annotated' + ' ' + interval.content.filter(c => c['source']).map(c => "source-" + c['source']).join(" ");
-                    const tooltip = interval.content.map(c => truncate('[' + c['source'] + ']' + ' ' + c['content'], 100)).join("\n");
+    return (
+      <div
+        key={`bbox-${x1}-${y1}-${x2}-${y2}-${index}`}
+        className={`bounding-box ${content?.source}`}
+        style={{
+          position: "absolute",
+          top: `${newTop}%`,
+          left: `${newLeft}%`,
+          width: `${newWidth}%`,
+          height: `${newHeight}%`,
+          borderWidth: `${borderWidth}px`,
+        }}
+      />
+    );
+  }
 
-                    // We assume that we will have exactly one highlight and that this is for the image,
-                    // so only push a new line if find a highlight AND it is the first highlight.
-                    if (this.state.imageUrl && !highligthed_found) { 
-                        image.push(
-                            <span key={(elements.length) + '-' + (image.length) + "-" + (interval.start) + "-" + (interval.end)} className={`image-wrapper ${className}`} data-tooltip-id={'highlight-tooltip'} data-tooltip-content={tooltip}>
-                            <div className="image-container" style={{ position: 'relative', display: 'flex' }}>
-                                <img src={this.state.imageUrl} className={`trace-image ${className} ${this.state.isModalOpen ? 'full-size' : ''}`} />
-                                {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) => this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25))}
-                            </div>
-                        </span>
-                    );
-                        highligthed_found = true;
-                    }
-                }
-            }
-            
-            // We still need to render the image if we do not have annotattions
-            // We also add any potential bounding boxes
-            if (!highligthed_found) {
-                image.push(<span key={'line-' + elements.length} className='image-wrapper unannotated'>
-                    {<img src={this.state.imageUrl || ''} className={`trace-image unannotated`} />}
-                    {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) => this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25))}
-                </span>);
-            }
-            
-            // Push the image as a line (gives us the option to add comments, thumbs up/down and tooltips)
-            elements.push(
-                <Line key={'line-' + elements.length} highlights={highlights} highlightContext={this.props.highlightContext} address={this.props.address + ":L" + elements.length}>
-                    {image}{'\n'}
-                </Line>
+  /**
+   * Get annotations for image and update the higlights for it by either:
+   *      - Wrapping it in a span with annotation data
+   *      - Wrapping it in an unannotated span
+   * This image is the set in the nodes object.
+   */
+  updateHighlights() {
+    let highlights_in_text = this.props.highlights.in_text(
+      JSON.stringify(this.props.content, null, 2)
+    );
+    let bounding_boxes_data =
+      HighlightedJSON.bounding_boxes(highlights_in_text);
+    highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
+    let highlights_per_line = HighlightedJSON.by_lines(
+      highlights_in_text,
+      '"' + this.props.content + '"'
+    );
+    let elements: React.ReactNode[] = [];
+
+    // Loop over the highlighted structure
+    let highligthed_found = false;
+    for (const highlights of highlights_per_line) {
+      let image: React.ReactNode[] = [];
+      for (const interval of highlights) {
+        if (interval.content !== null) {
+          let className =
+            "annotated" +
+            " " +
+            interval.content
+              .filter((c) => c["source"])
+              .map((c) => "source-" + c["source"])
+              .join(" ");
+          const tooltip = interval.content
+            .map((c) =>
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
-        }
-        
-        // Conditionally render the full screen image
-        if (this.state.isModalOpen) {
-                elements.push(
-                <div
-                    key='image-full-screen'
-                    className='image-full-screen'
-                    onClick={() => this.setState({ isModalOpen: false })}
-                >
-                    <div className="image-container" style={{ position: 'relative', display: 'flex'}}>
-                        <img
-                            src={this.state.imageUrl || ''}
-                            alt="Image in the trace fullscreen"
-                            className='image-full-screen-opened'
-                        />
-                        {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) => this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25))}
-                    </div>
-                </div>
-            );
-        }
+            .join("\n");
 
-        // Update the nodes for render method
-        return elements
+          // We assume that we will have exactly one highlight and that this is for the image,
+          // so only push a new line if find a highlight AND it is the first highlight.
+          if (this.state.imageUrl && !highligthed_found) {
+            image.push(
+              <span
+                key={
+                  elements.length +
+                  "-" +
+                  image.length +
+                  "-" +
+                  interval.start +
+                  "-" +
+                  interval.end
+                }
+                className={`image-wrapper ${className}`}
+                data-tooltip-id={"highlight-tooltip"}
+                data-tooltip-content={tooltip}
+              >
+                <div
+                  className="image-container"
+                  style={{ position: "relative", display: "flex" }}
+                >
+                  <img
+                    src={this.state.imageUrl}
+                    className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
+                  />
+                  {bounding_boxes_data.map(
+                    ({ x1, y1, x2, y2, content }, index) =>
+                      this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25
+                      )
+                  )}
+                </div>
+              </span>
+            );
+            highligthed_found = true;
+          }
+        }
+      }
+
+      // We still need to render the image if we do not have annotattions
+      // We also add any potential bounding boxes
+      if (!highligthed_found) {
+        image.push(
+          <span
+            key={"line-" + elements.length}
+            className="image-wrapper unannotated"
+          >
+            {
+              <img
+                src={this.state.imageUrl || ""}
+                className={`trace-image unannotated`}
+              />
+            }
+            {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25)
+            )}
+          </span>
+        );
+      }
+
+      // Push the image as a line (gives us the option to add comments, thumbs up/down and tooltips)
+      elements.push(
+        <Line
+          key={"line-" + elements.length}
+          highlights={highlights}
+          highlightContext={this.props.highlightContext}
+          address={this.props.address + ":L" + elements.length}
+        >
+          {image}
+          {"\n"}
+        </Line>
+      );
     }
+
+    // Conditionally render the full screen image
+    if (this.state.isModalOpen) {
+      elements.push(
+        <div
+          key="image-full-screen"
+          className="image-full-screen"
+          onClick={() => this.setState({ isModalOpen: false })}
+        >
+          <div
+            className="image-container"
+            style={{ position: "relative", display: "flex" }}
+          >
+            <img
+              src={this.state.imageUrl || ""}
+              alt="Image in the trace fullscreen"
+              className="image-full-screen-opened"
+            />
+            {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25)
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Update the nodes for render method
+    return elements;
+  }
 
   render() {
     let elements = this.updateHighlights();
 
-        const image_view = (
-            <div className='plugin code-image-viewer'>
-                {this.state.imageUrl && (
-                    <>
-                        {elements}
-                        <button className='full-screen-button' onClick={() => this.setState({ isModalOpen: true })}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                            </svg>
-                        </button>
-                    </>
-                )}
-            </div>);
+    const image_view = (
+      <div className="plugin code-image-viewer">
+        {this.state.imageUrl && (
+          <>
+            {elements}
+            <button
+              className="full-screen-button"
+              onClick={() => this.setState({ isModalOpen: true })}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+    );
 
     return image_view;
   }
