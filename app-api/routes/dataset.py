@@ -886,20 +886,46 @@ async def delete_policy(
 
 @dataset.get("/metadata/{dataset_name}")
 async def get_metadata(
-    dataset_name: str, userinfo: Annotated[dict, Depends(APIIdentity)]
+    dataset_name: str,
+    userinfo: Annotated[dict, Depends(APIIdentity)],
+    owner_user_id: str = None,
 ):
-    """Get metadata for a dataset."""
+    """
+    Get metadata for a dataset.
+    - If `owner_user_id` is provided, return the metadata for the dataset if
+      it is public. If the dataset is private and the caller is not the owner
+      of the dataset, return a 403.
+    - If no `owner_user_id` is provided, return the metadata for the dataset if
+      the caller is the owner of the dataset.
+    """
     assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
     user_id = userinfo.get("sub")
 
     with Session(db()) as session:
-        dataset_response = load_dataset(
-            session,
-            {"name": dataset_name},
-            user_id,
-            allow_public=True,
-            return_user=False,
-        )
+        if owner_user_id:
+            dataset_response = load_dataset(
+                session,
+                by={"name": dataset_name, "user_id": uuid.UUID(owner_user_id)},
+                user_id=owner_user_id,
+                allow_public=True,
+                return_user=False,
+            )
+            # If the dataset is private and the caller is not the owner of the dataset,
+            # return a 403.
+            if not dataset_response.is_public and user_id != owner_user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Not allowed to view metadata for this dataset",
+                )
+        else:
+            dataset_response = load_dataset(
+                session,
+                by={"name": dataset_name, "user_id": uuid.UUID(user_id)},
+                user_id=user_id,
+                allow_public=True,
+                return_user=False,
+            )
+
         metadata_response = dataset_response.extra_metadata
         metadata_response.pop("policies", None)
         return {
@@ -911,7 +937,7 @@ async def get_metadata(
 async def update_metadata(
     dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
 ):
-    """Update metadata for a dataset."""
+    """Update metadata for a dataset. Only the owner of a dataset can update its metadata."""
     assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
     user_id = userinfo.get("sub")
 
@@ -1001,16 +1027,11 @@ async def update_metadata(
     with Session(db()) as session:
         dataset_response = load_dataset(
             session,
-            {"name": dataset_name},
+            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
             user_id,
             allow_public=True,
             return_user=False,
         )
-        if str(dataset_response.user_id) != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Not allowed to update metadata for this dataset",
-            )
         if replace_all:
             # Delete the fields in extra_metadata if they are not provided in
             # the payload when replace_all is True.
