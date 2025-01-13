@@ -65,8 +65,9 @@ span.image-wrapper {
         border-color: #0f9d0f;
     }
 
-    &.annotated {
-        background-color: #ff00002d;
-        border-color: #ff0000;
+    // Failed assertion
+    &.test-assertion {
+        background-color: #ba29292d;
+        border: 1pt solid #BA2929;
     }
 }
