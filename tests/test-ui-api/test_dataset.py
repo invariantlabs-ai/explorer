@@ -116,8 +116,15 @@ async def test_get_own_metadata(context, url, data_abc):
 
 async def test_get_metadata_for_non_existent_dataset_fails(context, url):
     """Tests that getting metadata of a non-existent dataset fails."""
+    # Get metadata for a non-existent dataset for the caller user_id.
     get_metadata_response = await context.request.get(
         f"{url}/api/v1/dataset/metadata/some_dataset"
+    )
+    assert get_metadata_response.status == 404
+    
+    # Get metadata for a non-existent dataset for a different user_id.
+    get_metadata_response = await context.request.get(
+        f"{url}/api/v1/dataset/metadata/some_dataset?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce"
     )
     assert get_metadata_response.status == 404
 
