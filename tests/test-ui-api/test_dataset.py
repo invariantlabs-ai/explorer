@@ -79,6 +79,7 @@ async def test_recreate_dataset_with_same_name_fails(context, url, data_abc):
 async def test_get_own_metadata(context, url, data_abc):
     """Tests that getting metadata of a dataset works (both public and private)."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        # The dataset is private.
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -88,9 +89,9 @@ async def test_get_own_metadata(context, url, data_abc):
         assert "policies" not in metadata
         assert metadata == dataset['extra_metadata']
 
-        # Query the metadata with the owner_user_id parameter set to the dataset owner user_id.
+        # Query the metadata with the owner_username parameter set to the dataset owner.
         get_metadata_response = await context.request.get(
-            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
         )
         assert get_metadata_response.status == 200
         metadata = await get_metadata_response.json()
@@ -105,9 +106,9 @@ async def test_get_own_metadata(context, url, data_abc):
         assert "policies" not in metadata
         assert dataset['extra_metadata'] == metadata
 
-        # Query the metadata with the owner_user_id parameter set to the dataset owner user_id.
+        # Query the metadata with the owner_username parameter set to the dataset owner user_id.
         get_metadata_response = await context.request.get(
-            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
         )
         assert get_metadata_response.status == 200
         metadata = await get_metadata_response.json()
@@ -122,9 +123,9 @@ async def test_get_metadata_for_non_existent_dataset_fails(context, url):
     )
     assert get_metadata_response.status == 404
     
-    # Get metadata for a non-existent dataset for a different user_id.
+    # Get metadata for a non-existent dataset for a user.
     get_metadata_response = await context.request.get(
-        f"{url}/api/v1/dataset/metadata/some_dataset?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce"
+        f"{url}/api/v1/dataset/metadata/some_dataset?owner_username=developer"
     )
     assert get_metadata_response.status == 404
 
@@ -137,12 +138,12 @@ async def test_get_metadata_created_by_different_user(context, url, data_abc):
 
         # A different user tries to get the metadata for the dataset when it is private.
         get_metadata_response = await context.request.get(
-            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
             headers={"referer": "noauth=user1"},
         )
         assert get_metadata_response.status == 403
 
-        # If no owner_user_id is provided, the request should fail with 404 since the lookup is done by the caller user_id.
+        # If no owner_username is provided, the request should fail with 404 since the lookup is done by the caller user_id.
         get_metadata_response = await context.request.get(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",
             headers={"referer": "noauth=user1"},
@@ -153,9 +154,9 @@ async def test_get_metadata_created_by_different_user(context, url, data_abc):
         await update_dataset(context, url, dataset["id"], is_dataset_public=True)
 
         # A different user tries to get the metadata for the dataset when it is public.
-        # The lookup is done by the owner_user_id for which a dataset with the same name exists and the dataset is public.
+        # The lookup is done by the owner_username for which a dataset with the same name exists and the dataset is public.
         get_metadata_response = await context.request.get(
-            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_user_id=3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
             headers={"referer": "noauth=user1"},
         )
         expected_metadata = {
@@ -166,7 +167,7 @@ async def test_get_metadata_created_by_different_user(context, url, data_abc):
         assert metadata == expected_metadata
         assert "policies" not in metadata
 
-        # If no owner_user_id is provided and the caller is not the owner, the request should fail with 404.
+        # If no owner_username is provided and the caller is not the owner, the request should fail with 404.
         # The lookup is done by the caller user_id for which a dataset with the same name does not exist.
         get_metadata_response = await context.request.get(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",

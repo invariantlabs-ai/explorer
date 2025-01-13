@@ -888,31 +888,34 @@ async def delete_policy(
 async def get_metadata(
     dataset_name: str,
     userinfo: Annotated[dict, Depends(APIIdentity)],
-    owner_user_id: str = None,
+    owner_username: str = None, # The username of the owner of the dataset (u/<username>).
 ):
     """
-    Get metadata for a dataset.
-    - If `owner_user_id` is provided, return the metadata for the dataset if
-      it is public. If the dataset is private and the caller is not the owner
-      of the dataset, return a 403.
-    - If no `owner_user_id` is provided, return the metadata for the dataset if
+    Get metadata for a dataset. The owner_username is an optional parameter that can be provided
+    to get metadata for a dataset owned by a specific user. This corresponds to the username
+    of the user which is unique.
+    - If `owner_username` is provided, return the metadata for the dataset if
+      it is public or if the caller is the same owner_username. If the dataset is private and 
+      the caller is not the owner of the dataset, return a 403.
+    - If no `owner_username` is provided, return the metadata for the dataset if
       the caller is the owner of the dataset.
     """
     assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
     user_id = userinfo.get("sub")
 
     with Session(db()) as session:
-        if owner_user_id:
+        if owner_username:
+            owner_user = session.query(User).filter(User.username == owner_username).first()
             dataset_response = load_dataset(
                 session,
-                by={"name": dataset_name, "user_id": uuid.UUID(owner_user_id)},
-                user_id=owner_user_id,
+                by={"name": dataset_name, "user_id": owner_user.id},
+                user_id=str(owner_user.id),
                 allow_public=True,
                 return_user=False,
             )
             # If the dataset is private and the caller is not the owner of the dataset,
             # return a 403.
-            if not dataset_response.is_public and user_id != owner_user_id:
+            if not dataset_response.is_public and user_id != str(owner_user.id):
                 raise HTTPException(
                     status_code=403,
                     detail="Not allowed to view metadata for this dataset",
