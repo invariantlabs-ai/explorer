@@ -345,6 +345,7 @@ export function AnnotationAugmentedTraceView(props) {
         place="bottom"
         style={{ whiteSpace: "pre" }}
       />
+      <Tooltip id="highlights-navigator-tooltip" place="bottom" />
     </>
   );
 }
@@ -363,7 +364,7 @@ function TraceViewContent(props) {
     setEvents,
     traceIndex,
     onUpvoteDownvoteCreate,
-    onUpvoteDownvoteDelete
+    onUpvoteDownvoteDelete,
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
