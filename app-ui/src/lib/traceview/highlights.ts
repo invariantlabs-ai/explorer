@@ -8,6 +8,7 @@ export interface HighlightData {
   source?: string;
   extra_metadata?: Record<string, any>;
   annotationId?: string;
+  type?: string;
 }
 
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */
@@ -24,6 +25,14 @@ export interface Highlight extends HighlightData {
   source?: string;
   extra_metadata?: Record<string, any>;
   annotationId?: string;
+}
+
+export interface BoundingBoxHighlight extends HighlightData {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  content: any;
 }
 
 /** Like a regular highlight, but stores a list of highlights per range. */
@@ -110,11 +119,11 @@ export class HighlightedJSON {
 
       if (current.$highlights) {
         highlights.push(
-          ...current.$highlights.map((a: any) => [current_address, a]),
+          ...current.$highlights.map((a: any) => [current_address, a])
         );
       }
       for (let key in current) {
-        if (key !== "$highlights") {
+        if (key !== "$highlights" && key !== "$bbox-highlights") {
           // extend address, but use [<int>] for array indices
           queue.push([
             current_address + (current_address.length > 0 ? "." : "") + key,
@@ -212,12 +221,24 @@ export class HighlightedJSON {
    * the list of item contents that overlap in that interval.
    */
   static disjunct(highlights: Highlight[]): GroupedHighlight[] {
-    return disjunct_overlaps(highlights);
+    // Only include highlights that are not bbox highlights
+    return disjunct_overlaps(
+      highlights.filter((a) => !("type" in a && a.type === "bbox"))
+    );
+  }
+
+  // Returns the list of bounding boxes from the list of highlights
+  static bounding_boxes(
+    highlights: Array<BoundingBoxHighlight | Highlight>
+  ): BoundingBoxHighlight[] {
+    return highlights.filter(
+      (a): a is BoundingBoxHighlight => a.type === "bbox"
+    );
   }
 
   static by_lines(
     disjunct_highlights: Highlight[],
-    text: string,
+    text: string
   ): GroupedHighlight[][] {
     let result: GroupedHighlight[][] = [[]];
     let queue: GroupedHighlight[] = disjunct_highlights.map((a) => ({
@@ -299,7 +320,7 @@ export const EMPTY_ANNOTATIONS = new EmptyHighlights();
  *
  */
 function disjunct_overlaps(
-  items: { start: number; end: number; content: any }[],
+  items: { start: number; end: number; content: any }[]
 ): GroupedHighlight[] {
   // create interval tree for efficient interval queries
   const tree = new IntervalTree();
@@ -308,7 +329,7 @@ function disjunct_overlaps(
   function len_overlap(range1: [number, number], range2: [number, number]) {
     return Math.max(
       0,
-      Math.min(range1[1], range2[1]) - Math.max(range1[0], range2[0]),
+      Math.min(range1[1], range2[1]) - Math.max(range1[0], range2[0])
     );
   }
 
@@ -353,7 +374,7 @@ function disjunct_overlaps(
  * of format { 0: { tool_calls: { 0: { function: { arguments: [ { start, end, content } ] } } } } }
  */
 function sourceRangesToMap(
-  ranges: { start: number; end: number; content: string }[],
+  ranges: { start: number; end: number; content: string }[]
 ): Record<string, any> {
   const map: Record<string, any> = {};
 
@@ -413,7 +434,7 @@ function sourceRangesToMap(
 function to_text_offsets(
   highlightMap: any,
   sourceRangeMap: any,
-  located_highlights: any[] = [],
+  located_highlights: any[] = []
 ): Highlight[] {
   for (let key of Object.keys(highlightMap)) {
     if (key === "$highlights") {
@@ -438,11 +459,26 @@ function to_text_offsets(
       });
       continue;
     }
+
+    if (key === "$bbox-highlights") {
+      highlightMap[key].forEach((a: any) => {
+        located_highlights.push({
+          x1: a["x1"],
+          y1: a["y1"],
+          x2: a["x2"],
+          y2: a["y2"],
+          content: a["content"],
+          type: "bbox",
+        });
+      });
+      continue;
+    }
+
     if (sourceRangeMap[key]) {
       to_text_offsets(
         highlightMap[key],
         sourceRangeMap[key],
-        located_highlights,
+        located_highlights
       );
     } else {
       // console.log("key", key, "not found in", sourceRangeMap)
@@ -456,7 +492,7 @@ function to_text_offsets(
 // this makes highlights easier to work with in the UI, as they are grouped by key, index, and prop
 function highlightsToMap(
   highlights: Record<string, any> | [string, any][],
-  prefix = "",
+  prefix = ""
 ): HighlightMap {
   // convert highlights to a list of entries if necessary
   if (!Array.isArray(highlights)) {
@@ -471,12 +507,35 @@ function highlightsToMap(
     end: number | null;
     content: any;
   }[] = [];
+  const bboxHighlights: {
+    key: string;
+    x1: number | null;
+    y1: number | null;
+    x2: number | null;
+    y2: number | null;
+    content: any;
+  }[] = [];
 
   for (const [key, value] of highlights as [string, any][]) {
     // group keys by first segment (if it is not already a range), then recurse late
     const parts = key.split(".");
     const firstSegment = parts[0];
     const rest = parts.slice(1).join(".");
+
+    if (firstSegment.includes("bbox-")) {
+      // Split the `key` string of the form {...}:bbox-[F,F,F,F] into an array of floats
+      const bbox = key.split("bbox-")[1].split(",").map(parseFloat);
+      const bbox_key = firstSegment.split(":")[0];
+      bboxHighlights.push({
+        key: bbox_key,
+        x1: bbox[0],
+        y1: bbox[1],
+        x2: bbox[2],
+        y2: bbox[3],
+        content: value,
+      });
+      continue;
+    }
 
     if (firstSegment.includes(":")) {
       const [last_prop, range] = firstSegment.split(":");
@@ -485,7 +544,7 @@ function highlightsToMap(
       let parsedEnd = parseFloat(end);
       if (isNaN(parsedStart) || isNaN(parsedEnd)) {
         throw new Error(
-          `Failed to parse range ${range} in key ${prefix + key}`,
+          `Failed to parse range ${range} in key ${prefix + key}`
         );
       }
       directHighlights.push({
@@ -514,7 +573,7 @@ function highlightsToMap(
       map[key] = highlightsToMap(highlightsPerKey[key], prefix + key + ".");
     } catch (e: any) {
       throw new Error(
-        `Failed to parse highlights for key ${prefix + key}: ${e.message}`,
+        `Failed to parse highlights for key ${prefix + key}: ${e.message}`
       );
     }
   }
@@ -530,6 +589,23 @@ function highlightsToMap(
       start: highlight.start,
       end: highlight.end,
       content: highlight.content,
+    });
+  }
+
+  for (const bboxHighlight of bboxHighlights) {
+    if (!map[bboxHighlight.key]) {
+      map[bboxHighlight.key] = {};
+    }
+
+    if (!map[bboxHighlight.key]["$bbox-highlights"]) {
+      map[bboxHighlight.key]["$bbox-highlights"] = [];
+    }
+    map[bboxHighlight.key]["$bbox-highlights"].push({
+      x1: bboxHighlight.x1,
+      y1: bboxHighlight.y1,
+      x2: bboxHighlight.x2,
+      y2: bboxHighlight.y2,
+      content: bboxHighlight.content,
     });
   }
 
