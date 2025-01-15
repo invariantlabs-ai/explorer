@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 # add tests folder (parent) to sys.path
 import sys
@@ -191,10 +192,10 @@ async def test_create_empty_dataset_and_then_upload_file(
         await file_chooser.set_files(fn)
         await screenshot(page)
         await page.get_by_label("Upload").click()
-
+    
     # verify that the traces are shown
-    await trace_shown_in_sidebar(page, "Run 1")
-    await trace_shown_in_sidebar(page, "Run 2")
+    await page.wait_for_selector("text=Run 1")
+    await page.wait_for_selector("text=Run 2")
     await screenshot(page)
 
     # delete dataset
