@@ -24,8 +24,8 @@ class DatabaseManager:
                 if DatabaseManager._engine is None:
                     DatabaseManager._engine = create_engine(
                         DatabaseManager.get_db_url(),
-                        pool_size=os.environ.get("DB_POOL_SIZE", 10),
-                        max_overflow=os.environ.get("DB_MAX_OVERFLOW", 5),
+                        pool_size=int(os.environ.get("DB_POOL_SIZE", 10)),
+                        max_overflow=int(os.environ.get("DB_MAX_OVERFLOW", 5)),
                         pool_recycle=1800,
                         pool_pre_ping=True,
                     )
