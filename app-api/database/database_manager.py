@@ -2,8 +2,9 @@
 
 import os
 import threading
+import time
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 
 
 class DatabaseManager:
@@ -29,7 +30,25 @@ class DatabaseManager:
                         pool_recycle=1800,
                         pool_pre_ping=True,
                     )
+                    DatabaseManager.attach_query_logger(DatabaseManager._engine)
         return DatabaseManager._engine
+
+    @staticmethod
+    def attach_query_logger(engine):
+        """Attach event listeners to measure query execution time."""
+
+        @event.listens_for(engine, "before_cursor_execute")
+        def before_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ):
+            context._query_start_time = time.time()
+
+        @event.listens_for(engine, "after_cursor_execute")
+        def after_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ):
+            total_time = time.time() - context._query_start_time
+            print(f"SQL Query: {statement} | Duration: {total_time:.4f} seconds")
 
     @staticmethod
     def get_db_url():
