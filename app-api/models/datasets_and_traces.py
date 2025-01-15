@@ -13,13 +13,12 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    create_engine,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 from sqlalchemy.sql import func
-
+from database.database_manager import DatabaseManager
 
 class Base(DeclarativeBase):
     pass
@@ -185,19 +184,8 @@ class DatasetPolicy(BaseModel):
         """Represents the object as a dictionary."""
         return self.model_dump()
 
-
-def get_db_url():
-    return "postgresql://{}:{}@{}:5432/{}".format(
-        os.environ["POSTGRES_USER"],
-        os.environ["POSTGRES_PASSWORD"],
-        os.environ["POSTGRES_HOST"],
-        os.environ["POSTGRES_DB"],
-    )
-
-
 def db():
     """
     Returns a SQLAlchemy engine object that is connected to the database.
     """
-    client = create_engine(get_db_url())
-    return client
+    return DatabaseManager.get_engine()
