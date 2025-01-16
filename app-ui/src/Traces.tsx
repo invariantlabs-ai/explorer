@@ -682,7 +682,7 @@ function useSearch() {
  *
  * Consists of a Sidebar with a list of traces and an Explorer component for viewing the currently selected trace.
  */
-export function Traces() {
+export function Traces(args) {
   // extract user and dataset name from loader data (populated by site router)
   const props: {
     username: string;
@@ -692,10 +692,7 @@ export function Traces() {
   // used to navigate to a different trace
   const navigate = useNavigate();
   // load the dataset metadata
-  const [dataset, datasetLoadingError] = useDataset(
-    props.username,
-    props.datasetname,
-  );
+  const {dataset, datasetLoadingError} = args;
   // feature set enabled for this dataset
   const featureSet = new FeatureSet(
     dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {},

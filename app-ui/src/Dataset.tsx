@@ -244,7 +244,7 @@ function DatasetView() {
         </button>
       </div>
 
-      {selectedTab === "traces" && <Traces />}
+      {selectedTab === "traces" && <Traces dataset={dataset} datasetLoadingError={datasetError}/>}
 
       {selectedTab === "metadata" && (
         <>
