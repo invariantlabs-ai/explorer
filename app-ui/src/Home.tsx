@@ -4,11 +4,9 @@ import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "./Modal";
 import { Time } from "./components/Time";
-import { useSnippetsList } from "./lib/snippets";
 import { useDatasetList } from "./lib/datasets";
 import {
   DatasetLinkList,
-  DeleteDatasetModalContent,
   UploadDatasetModalContent,
 } from "./Datasets";
 import HomepageDatasetsNames from "./assets/HomepageDatasetsNames.json";
