@@ -44,8 +44,8 @@ function FeaturedDatasets(props) {
 
   return (
     <div>
-      {datasets.length === 0 ? (
-        <div className="featured-dataset-empty">No datasets available</div>
+      {props.datasets === null ? (
+        <div className="featured-dataset-empty">Loading Datasets...</div>
       ) : (
         <div className="featured-dataset-list">
           {datasets.map((dataset, i) => (
@@ -56,7 +56,10 @@ function FeaturedDatasets(props) {
               }`}
             >
               <div className="featured-dataset-info">
-                <Link className="item" to={`/u/${dataset.user.username}/${dataset.name}/t`}>
+                <Link
+                  className="item"
+                  to={`/u/${dataset.user.username}/${dataset.name}/t`}
+                >
                   <h3>
                     <BsGlobe /> {dataset.nice_name}
                   </h3>
@@ -69,6 +72,9 @@ function FeaturedDatasets(props) {
           ))}
         </div>
       )}
+      {props.datasets !== null && datasets.length === 0 && (
+        <div className="featured-dataset-empty">No Datasets available</div>
+      )}
     </div>
   );
 }
@@ -80,26 +86,28 @@ function Home() {
   const userInfo = useUserInfo();
 
   // fetch datasets and snippets
-  let [datasets_homepage, refreshHomepageDataset] = useDatasetList(
+  let [datasetsHomepage, refreshHomepageDataset] = useDatasetList(
     "homepage",
     8,
   );
-  datasets_homepage = datasets_homepage.map((item) => ({
-    ...item,
-    ...(HomepageDatasetsNames["name"][item.id] && {
-      nice_name: HomepageDatasetsNames["name"][item.id],
-    }),
-    ...(HomepageDatasetsNames["description"][item.id] && {
-      description: HomepageDatasetsNames["description"][item.id],
-    }),
-  }));
-  // Sort datasets_homepage by nice_name
-  datasets_homepage.sort((a, b) => {
-    const nameA = a.nice_name || "";
-    const nameB = b.nice_name || "";
-    return nameA.localeCompare(nameB);
-  });
-  const [datasets_private, refreshPrivateDataset] = useDatasetList(
+  if(datasetsHomepage !== null) {
+    datasetsHomepage = datasetsHomepage.map((item) => ({
+      ...item,
+      ...(HomepageDatasetsNames["name"][item.id] && {
+        nice_name: HomepageDatasetsNames["name"][item.id],
+      }),
+      ...(HomepageDatasetsNames["description"][item.id] && {
+        description: HomepageDatasetsNames["description"][item.id],
+      }),
+    }));
+    // Sort datasets_homepage by nice_name
+    datasetsHomepage.sort((a, b) => {
+      const nameA = a.nice_name || "";
+      const nameB = b.nice_name || "";
+      return nameA.localeCompare(nameB);
+    });
+  }
+  const [datasetsPrivate, refreshPrivateDataset] = useDatasetList(
     "private",
     8,
   );
@@ -164,7 +172,7 @@ function Home() {
               </button>
             </h2>
             <DatasetLinkList
-              datasets={datasets_private}
+              datasets={datasetsPrivate}
               icon={<BsDatabase />}
             />
           </div>
@@ -193,7 +201,7 @@ function Home() {
               Featured Datasets
             </a>
           </h2>
-          <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
+          <FeaturedDatasets datasets={datasetsHomepage} icon={<BsGlobe />} />
         </div>
       )}
       {/* user activity */}

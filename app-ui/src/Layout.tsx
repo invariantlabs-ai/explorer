@@ -98,9 +98,7 @@ function SidebarContent(props: {
               <Link to="/datasets">Recent Datasets</Link>
             </h2>
             <DatasetLinkList
-              datasets={(datasets || []).filter(
-                (dataset) => dataset.user?.id == userInfo?.id,
-              )}
+              datasets={datasets}
             />
             <h2>
               <Link to="/snippets">Recent Snippets</Link>
