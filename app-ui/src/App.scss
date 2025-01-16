@@ -941,7 +941,9 @@ div.panel {
 
   header.toolbar {
     position: absolute;
-    top: 81pt;
+    // positions the panel toolbar right below the site header
+    // (different when .with-tabs is also set)
+    top: 40pt;
     right: 0pt;
     left: 0pt;
     z-index: 1;
@@ -1013,7 +1015,8 @@ button.primary .shortcut {
     overflow-y: auto;
     position: relative;
     transition: margin-left 0.2s;
-    height: calc(100vh - 88pt);
+    // 122pt leaves space for the topbar and tabs
+    height: calc(100vh - 122pt);
 
     ul {
       overflow-y: auto;
@@ -1316,8 +1319,10 @@ button.primary .shortcut {
   }
 
   .explorer {
+    // .explorer is the content without topbar and tabs
     margin-top: 40pt;
-    height: calc(100vh - 85pt);
+    // 120pt leaves space for the topbar and tabs
+    height: calc(100vh - 120pt);
   }
 }
 
@@ -1939,13 +1944,21 @@ table.api-keys {
 }
 
 .dataset-view {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0pt;
+
+  .panel {
+    flex: 1;
+  }
 
   .tabs {
-    display: flex;
+    display: flex;  
     border-bottom: 1px solid #ddd;
     background: #f6f6f6;
     justify-content: flex-start;
-    margin-bottom: 10pt;
+    // fixed height tab bar
+    height: 34pt;
   }
 
   .tab {
@@ -2641,4 +2654,10 @@ p.footer-links {
   margin-left: 2pt;
   color: #666;
   opacity: 0.5;
+}
+
+// when we have tabs like in the trace view (e.g. traces|metadata|settings)
+// we make space for it and position the header toolbar lower
+.with-tabs div.panel header.toolbar {
+  top: 75pt;
 }
