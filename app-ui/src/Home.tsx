@@ -105,7 +105,6 @@ function Home() {
     "private",
     8,
   );
-  const [snippets, refreshSnippets] = useSnippetsList();
   // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false);
   // fetch user activity
@@ -183,7 +182,6 @@ function Home() {
             </h2>
             <CompactSnippetList
               icon={<BsJustify />}
-              snippets={snippets}
               limit={8}
             />
           </div>
