@@ -183,11 +183,13 @@ function Sidebar(props) {
  *                         This is not a security feature, as the API will still enforce
  *                         permissions, but it is a convenience feature to prevent users
  *                         from seeing empty UI for inaccessible content.
+ * @param props.withTabs Whether the content has a separate set of tabs.
  */
 function Layout(props: {
   children: React.ReactNode;
   fullscreen?: boolean;
   needsLogin?: boolean;
+  withTabs?: boolean;
 }) {
   const userInfo = useUserInfo();
   const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
@@ -326,7 +328,7 @@ function Layout(props: {
           )}
         </div>
       </header>
-      <div className={"content " + (props.fullscreen ? "fullscreen" : "")}>
+      <div className={"content " + (props.fullscreen ? "fullscreen" : "") + (props.withTabs ? " with-tabs" : "")}>
         {pageShouldRedirectToLogin && (
           <div className="empty">
             <p>Please sign in to view this page.</p>

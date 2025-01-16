@@ -71,7 +71,7 @@ export const routes = [
   {
     path: '/u/:username/:datasetname/t/:traceIndex',
     label: 'Dataset',
-    element: <Layout fullscreen><DatasetView /></Layout>,
+    element: <Layout fullscreen withTabs><DatasetView /></Layout>,
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,

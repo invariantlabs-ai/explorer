@@ -535,18 +535,12 @@ export class RenderedTrace extends React.Component<
       typeof segments[1] === "number"
     ) {
       this.viewportRef.current.scrollToIndex({ index: segments[1] });
-      // if last segment is L<NUM>
-      if (
-        segments.length > 2 &&
-        segments[segments.length - 1].startsWith &&
-        segments[segments.length - 1].startsWith("L")
-      ) {
-        if (operation == "annotations") {
-          this.setState({
-            selectedHighlightAddress: anchorToAddress(segments),
-          });
-        }
-      }
+      // on reveal, open the annotation editor for the relevant line, i.e.
+      // set the revealed address as selected highlight address (can be line or 
+      // char range)
+      this.setState({
+        selectedHighlightAddress: anchorToAddress(segments),
+      });
     }
   }
 

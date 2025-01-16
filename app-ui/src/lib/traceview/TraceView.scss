@@ -404,6 +404,10 @@ body {
       margin-left: -5pt;
     }
 
+    table.json {
+      margin-bottom: 0pt;
+    }
+
     .default-renderer {
       // padding-top: 5pt;
       padding-bottom: 0pt;
@@ -869,3 +873,4 @@ pre.marked-line {
   background: transparent;
   border: none;
 }
+
