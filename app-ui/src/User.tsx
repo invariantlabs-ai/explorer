@@ -23,13 +23,6 @@ function User() {
       );
     }
   }
-  if (!datasets) {
-    return (
-      <div className="empty">
-        <p>Loading...</p>
-      </div>
-    );
-  }
   return (
     <div className="panel entity-list">
       <header>

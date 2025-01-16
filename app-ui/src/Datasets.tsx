@@ -392,24 +392,30 @@ export function DatasetLinkList(props) {
   return (
     <>
       <EntityList title={null} actions={null} className={props.className}>
-        {datasets.length === 0 && <div className="empty">No datasets</div>}
-        {datasets.map((dataset, i) => (
-          <Link
-            className="item"
-            to={`/u/${dataset.user.username}/${dataset.name}/t`}
-            key={i}
-          >
-            <li>
-              <h3>
-                {props.icon}
-                {dataset.nice_name}
-              </h3>
-              {dataset.description && (
-                <span className="description">{dataset.description}</span>
-              )}
-            </li>
-          </Link>
-        ))}
+        {props.datasets === null ? (
+          <div className="empty">Loading Datasets...</div>
+        ) : (
+          datasets.map((dataset, i) => (
+            <Link
+              className="item"
+              to={`/u/${dataset.user.username}/${dataset.name}/t`}
+              key={i}
+            >
+              <li>
+                <h3>
+                  {props.icon}
+                  {dataset.nice_name}
+                </h3>
+                {dataset.description && (
+                  <span className="description">{dataset.description}</span>
+                )}
+              </li>
+            </Link>
+          ))
+        )}
+        {props.datasets !== null && datasets.length === 0 && (
+          <div className="empty">No datasets</div>
+        )}
       </EntityList>
     </>
   );
