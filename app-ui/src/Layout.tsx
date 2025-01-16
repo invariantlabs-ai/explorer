@@ -18,7 +18,6 @@ import {
 } from "react-icons/bs";
 import { BiSolidHome } from "react-icons/bi";
 import { useDatasetList } from "./lib/datasets";
-import { useSnippetsList } from "./lib/snippets";
 import { CompactSnippetList } from "./Snippets";
 import { DatasetLinkList } from "./Datasets";
 import { SignUp } from "./SignUp";

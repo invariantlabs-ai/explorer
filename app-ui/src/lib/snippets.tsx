@@ -99,8 +99,8 @@ export function DeleteSnippetModal(props: {
  */
 export function useSnippetsList(
   limit: number | null = null,
-): [any[], () => void] {
-  const [snippets, setSnippets] = React.useState<any[]>([]);
+): [any[] | null, () => void] {
+  const [snippets, setSnippets] = React.useState<any[] | null>(null);
   const userInfo = useUserInfo();
 
   // fetch the list of snippets from the server
