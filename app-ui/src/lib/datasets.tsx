@@ -5,8 +5,8 @@ import { sharedFetch } from "../SharedFetch";
 export function useDatasetList(
   kind: "private" | "public" | "homepage" | "any", // Restrict kind to valid values
   limit: number | null = null,
-): [any[], () => void] {
-  const [datasets, setDatasets] = React.useState<any[]>([]);
+): [any[] | null, () => void] {
+  const [datasets, setDatasets] = React.useState<any[] | null>(null);
   const refresh = () => {
     // Build the query string with kind and limit
     const queryParams = new URLSearchParams({
