@@ -2,7 +2,7 @@
  * Page components for displaying single and all dataset traces.
  */
 
-import React, { act, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   BsBookmark,
   BsCaretDownFill,

@@ -8,8 +8,6 @@ import {
   BsChatFill,
   BsCheck2,
   BsExclamationCircleFill,
-  BsMagic,
-  BsLink,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";

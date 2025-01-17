@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { EntityList } from "./EntityList";
 import { useUserInfo } from "./UserInfo";
-import { BsTrash, BsUpload, BsX } from "react-icons/bs";
+import { BsUpload } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Time } from "./components/Time";
 import { DeleteSnippetModal, useSnippetsList } from "./lib/snippets";

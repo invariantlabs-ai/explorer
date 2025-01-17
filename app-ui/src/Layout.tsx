@@ -4,11 +4,10 @@ import { Tooltip } from "react-tooltip";
 import logo from "./assets/invariant.svg";
 import { useUserInfo } from "./UserInfo";
 import UserIcon from "./lib/UserIcon";
-import { Link, useLoaderData, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BsCodeSlash,
   BsDatabase,
-  BsFillGearFill,
   BsGear,
   BsHouse,
   BsList,
@@ -16,7 +15,6 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { BiSolidHome } from "react-icons/bi";
 import { useDatasetList } from "./lib/datasets";
 import { CompactSnippetList } from "./Snippets";
 import { DatasetLinkList } from "./Datasets";

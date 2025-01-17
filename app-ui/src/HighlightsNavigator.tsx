@@ -4,7 +4,6 @@ import { BsArrowDown, BsArrowUp } from "react-icons/bs";
 import {
   ACTIVE_HASH,
   permalink,
-  Reveal,
   reveal,
 } from "./lib/permalink-navigator";
 import { safeAnchorId } from "./HighlightDetails";

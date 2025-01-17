@@ -1,20 +1,9 @@
 import {
-  BsHouse,
-  BsFillPersonFill,
-  BsCircleFill,
-  BsCircle,
-  BsKeyFill,
-  BsHouseFill,
-  BsFillTerminalFill,
   BsSpeedometer2,
-  BsThreeDots,
-  BsListColumns,
-  BsRobot,
-  BsSearch,
 } from "react-icons/bs";
 import Home from "./Home.tsx";
 import Layout from "./Layout.tsx";
-import { Traces, SingleTrace } from "./Traces.tsx";
+import { SingleTrace } from "./Traces.tsx";
 import "./App.scss";
 import DatasetView from "./Dataset.tsx";
 import { New } from "./New.tsx";
@@ -23,7 +12,6 @@ import User from "./User.tsx";
 import { Snippets } from "./Snippets.tsx";
 import { Settings } from "./Settings.tsx";
 import { Datasets } from "./Datasets.tsx";
-import { config } from "./Config.ts";
 import MarkdownFile from "./MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";
