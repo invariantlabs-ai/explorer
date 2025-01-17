@@ -7,14 +7,12 @@ export function useDatasetList(
   limit: number | null = null,
 ): [any[] | null, () => void] {
   const [datasets, setDatasets] = React.useState<any[] | null>(null);
-  const refresh = () => {
-    // Build the query string with kind and limit
+  const refresh = React.useCallback(() => {
     const queryParams = new URLSearchParams({
-      kind: kind, // Required parameter
-      ...(limit !== null && { limit: limit.toString() }), // Optional parameter
+      kind,
+      ...(limit !== null && { limit: limit.toString() }),
     }).toString();
 
-    // Fetch from the backend using the constructed query string
     sharedFetch(`/api/v1/dataset/list?${queryParams}`)
       .then((data) => {
         setDatasets(data);
@@ -23,9 +21,7 @@ export function useDatasetList(
         setDatasets([]);
         alert("Failed to fetch datasets");
       });
-  };
-
-  React.useEffect(() => refresh(), []);
+  }, [kind, limit]);
 
   return [datasets, refresh];
 }

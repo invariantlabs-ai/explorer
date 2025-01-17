@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import { useUserInfo } from "./UserInfo";
 import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
@@ -86,31 +86,49 @@ function Home() {
   const userInfo = useUserInfo();
 
   // fetch datasets and snippets
-  let [datasetsHomepage, refreshHomepageDataset] = useDatasetList(
+  let [featuredDatasets, refreshFeaturedDatasets] = useDatasetList(
     "homepage",
     8,
   );
-  if(datasetsHomepage !== null) {
-    datasetsHomepage = datasetsHomepage.map((item) => ({
-      ...item,
-      ...(HomepageDatasetsNames["name"][item.id] && {
-        nice_name: HomepageDatasetsNames["name"][item.id],
-      }),
-      ...(HomepageDatasetsNames["description"][item.id] && {
-        description: HomepageDatasetsNames["description"][item.id],
-      }),
-    }));
-    // Sort datasets_homepage by nice_name
-    datasetsHomepage.sort((a, b) => {
-      const nameA = a.nice_name || "";
-      const nameB = b.nice_name || "";
-      return nameA.localeCompare(nameB);
-    });
-  }
-  const [datasetsPrivate, refreshPrivateDataset] = useDatasetList(
+
+  useEffect(() => {
+    refreshFeaturedDatasets();
+  }, [refreshFeaturedDatasets]);
+
+  const [featuredDatasetsTransformed, setFeaturedDatasetsTransformed] = React.useState<any[] | null>(null);
+  useEffect(() => {
+    if(featuredDatasets !== null) {
+      const transformed = featuredDatasets.map((item) => ({
+        ...item,
+        ...(HomepageDatasetsNames["name"][item.id] && {
+          nice_name: HomepageDatasetsNames["name"][item.id],
+        }),
+        ...(HomepageDatasetsNames["description"][item.id] && {
+          description: HomepageDatasetsNames["description"][item.id],
+        }),
+      }));
+
+      transformed.sort((a, b) => {
+        const nameA = a.nice_name || "";
+        const nameB = b.nice_name || "";
+        return nameA.localeCompare(nameB);
+      });
+
+      setFeaturedDatasetsTransformed(transformed);
+    }
+  }, [featuredDatasets]);
+
+  const [privateDatasets, refreshPrivateDatasets] = useDatasetList(
     "private",
     8,
   );
+
+  useEffect(() => {
+    if (userInfo?.loggedIn) {
+      refreshPrivateDatasets();
+    }
+  }, [userInfo?.loggedIn, refreshPrivateDatasets]);
+
   // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false);
   // fetch user activity
@@ -129,7 +147,7 @@ function Home() {
         >
           <UploadDatasetModalContent
             onClose={() => setShowUploadModal(false)}
-            onSuccess={refreshPrivateDataset}
+            onSuccess={refreshPrivateDatasets}
           />
         </Modal>
       )}
@@ -172,7 +190,7 @@ function Home() {
               </button>
             </h2>
             <DatasetLinkList
-              datasets={datasetsPrivate}
+              datasets={privateDatasets}
               icon={<BsDatabase />}
             />
           </div>
@@ -201,7 +219,7 @@ function Home() {
               Featured Datasets
             </a>
           </h2>
-          <FeaturedDatasets datasets={datasetsHomepage} icon={<BsGlobe />} />
+          <FeaturedDatasets datasets={featuredDatasetsTransformed} icon={<BsGlobe />} />
         </div>
       )}
       {/* user activity */}

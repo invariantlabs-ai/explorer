@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BsFileBinaryFill, BsUpload } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { EntityList } from "./EntityList";
@@ -434,6 +434,12 @@ export function Datasets() {
   // tracks whether we are currently showing a delete modal for a particular dataset (null if none)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] =
     React.useState(null);
+
+  useEffect(() => {
+      if (userInfo?.loggedIn) {
+        refresh();
+      }
+    }, [userInfo?.loggedIn, refresh]);
 
   return (
     <>

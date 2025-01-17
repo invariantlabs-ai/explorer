@@ -76,6 +76,12 @@ function SidebarContent(props: {
 
   const [datasets, refresh] = useDatasetList("private", 4);
 
+  useEffect(() => {
+      if (userInfo?.loggedIn) {
+        refresh();
+      }
+    }, [userInfo?.loggedIn, refresh]);
+
   return (
     <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
       <div
