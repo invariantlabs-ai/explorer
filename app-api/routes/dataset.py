@@ -6,8 +6,9 @@ import os
 import re
 import uuid
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any, Optional
 from uuid import UUID
+from cachetools import TTLCache, cached
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -203,23 +204,42 @@ class DatasetKind(Enum):
     HOMEPAGE = "homepage"
     ANY = "any"
 
+@cached(TTLCache(maxsize=1, ttl=1800))
+def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]:
+    """
+    Fetches and caches the homepage datasets with a time-to-live (TTL) cache.
+    """
+    if not homepage_dataset_ids:
+        return []
+
+    with Session(db()) as session:
+        datasets = (
+            session.query(Dataset, User)
+            .join(User, User.id == Dataset.user_id)
+            .filter(and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids)))
+            .order_by(Dataset.time_created.desc())
+            .limit(limit)
+            .all()
+        )
+    return [dataset_to_json(dataset, user) for dataset, user in datasets]
+
 
 @dataset.get("/list")
 def list_datasets(
     kind: DatasetKind,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
-    limit: int | None = None,
+    limit: Optional[int] = None,
 ):
     with Session(db()) as session:
+        if kind == DatasetKind.HOMEPAGE:
+            # Use cached results for HOMEPAGE datasets
+            return fetch_homepage_datasets(limit)
+
         query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
         if kind == DatasetKind.PRIVATE:
             query = query.filter(Dataset.user_id == user_id)
         elif kind == DatasetKind.PUBLIC:
             query = query.filter(Dataset.is_public)
-        elif kind == DatasetKind.HOMEPAGE:
-            query = query.filter(
-                and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids))
-            )
         elif kind == DatasetKind.ANY:
             query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
 
