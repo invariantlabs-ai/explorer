@@ -87,8 +87,8 @@ def delete_trace(
 def get_trace(
     request: Request,
     id: str,
-    annotated: bool = False,
     max_length: int = None,
+    include_annotations: bool = False,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
@@ -97,7 +97,7 @@ def get_trace(
         )
         return trace_to_json(
             trace,
-            load_annotations(session, id),
+            annotations=load_annotations(session, id) if include_annotations else None,
             user=user.username,
             max_length=max_length,
         )
