@@ -340,9 +340,9 @@ function Layout(props: {
           !pageShouldRedirectToLogin &&
           props.children}
       </div>
-      <Tooltip id="button-tooltip" place="bottom" />
       <ConsentBanner />
       <SignUpModal />
+      <Tooltip id="button-tooltip" place="bottom" />
     </>
   );
 }

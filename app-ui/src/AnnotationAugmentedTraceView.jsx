@@ -224,7 +224,6 @@ export function AnnotationAugmentedTraceView(props) {
       if (props.enableNux)
         props.enableNux(); // Mark rendering as stabilized
     }, 500); // Adjust the timeout based on the rendering frequency
-
     return () => {
       clearTimeout(timer); // Clear the timeout if re-render occurs
     };
@@ -264,7 +263,7 @@ export function AnnotationAugmentedTraceView(props) {
               <button
                 className="inline icon guide-step-3"
                 onClick={onCollapseAll}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Collapse All"
               >
                 <BsArrowsCollapse />
@@ -273,7 +272,7 @@ export function AnnotationAugmentedTraceView(props) {
               <button
                 className="inline icon guide-step-3"
                 onClick={onExpandAll}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Expand All"
               >
                 <BsArrowsExpand />
@@ -289,7 +288,7 @@ export function AnnotationAugmentedTraceView(props) {
                   e.stopPropagation();
                   telemetry.capture("traceview.download");
                 }}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Download"
               >
                 <BsDownload />
@@ -347,6 +346,7 @@ export function AnnotationAugmentedTraceView(props) {
         place="bottom"
         style={{ whiteSpace: "pre" }}
       />
+      <Tooltip id="highlights-navigator-tooltip" place="bottom" />
     </>
   );
 }
@@ -365,7 +365,7 @@ function TraceViewContent(props) {
     setEvents,
     traceIndex,
     onUpvoteDownvoteCreate,
-    onUpvoteDownvoteDelete
+    onUpvoteDownvoteDelete,
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
