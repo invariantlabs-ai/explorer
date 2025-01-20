@@ -682,25 +682,25 @@ function useSearch() {
  *
  * Consists of a Sidebar with a list of traces and an Explorer component for viewing the currently selected trace.
  */
-export function Traces(args) {
+export function Traces(props) {
   // extract user and dataset name from loader data (populated by site router)
-  const props: {
-    username: string;
-    datasetname: string;
-    traceIndex: number | null;
+  const {
+    username,
+    datasetname,
+    traceIndex,
   } = useLoaderData() as any;
   // used to navigate to a different trace
   const navigate = useNavigate();
   // load the dataset metadata
-  const {dataset, datasetLoadingError} = args;
+  const {dataset, datasetLoadingError} = props;
   // feature set enabled for this dataset
   const featureSet = new FeatureSet(
     dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {},
   );
   // load information about the traces in the dataset
   const [traces, hierarchyPaths, refresh] = useTraces(
-    props.username,
-    props.datasetname,
+    username,
+    datasetname,
   );
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false);
@@ -711,8 +711,8 @@ export function Traces(args) {
   const userInfo = useUserInfo();
   // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(
-    traces && props.traceIndex != null
-      ? traces.get(props.traceIndex)?.id
+    traces && traceIndex != null
+      ? traces.get(traceIndex)?.id
       : null,
     userInfo,
   );
@@ -741,13 +741,13 @@ export function Traces(args) {
 
     if (
       traces &&
-      props.traceIndex !== null &&
-      props.traceIndex !== undefined &&
-      traces.has(props.traceIndex) &&
+      traceIndex !== null &&
+      traceIndex !== undefined &&
+      traces.has(traceIndex) &&
       (flattenedDisplayedIndices.length == 0 ||
-        flattenedDisplayedIndices.includes(props.traceIndex))
+        flattenedDisplayedIndices.includes(traceIndex))
     ) {
-      setActiveTrace(traces.get(props.traceIndex));
+      setActiveTrace(traces.get(traceIndex));
     } else if (!traces) {
       setActiveTrace(null);
     } else {
@@ -758,13 +758,13 @@ export function Traces(args) {
       if (flattenedDisplayedIndices.length > 0)
         new_index = flattenedDisplayedIndices[0];
       navigate(
-        `/u/${props.username}/${props.datasetname}/t/${new_index}` +
+        `/u/${username}/${datasetname}/t/${new_index}` +
           window.location.search +
           window.location.hash,
         { replace: true },
       );
     }
-  }, [props.traceIndex, traces, displayedIndices]);
+  }, [traceIndex, traces, displayedIndices]);
 
   // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
   useEffect(() => {
@@ -785,13 +785,13 @@ export function Traces(args) {
   const navigateToTrace = useCallback(
     (traceIndex: number | null) => {
       navigate(
-        `/u/${props.username}/${props.datasetname}/t/${traceIndex || ""}` +
+        `/u/${username}/${datasetname}/t/${traceIndex || ""}` +
           window.location.search +
           window.location.hash,
       );
       refresh();
     },
-    [props.username, props.datasetname],
+    [username, datasetname],
   );
 
   // error state of this view
@@ -890,8 +890,8 @@ export function Traces(args) {
           <Sidebar // only show the sidebar if there are traces to show
             traces={traces}
             hierarchyPaths={hierarchyPaths}
-            username={props.username}
-            datasetname={props.datasetname}
+            username={username}
+            datasetname={datasetname}
             activeTraceIndex={activeTrace != null ? activeTrace.index : null}
             onRefresh={refresh}
             searchQuery={searchQuery}
@@ -920,15 +920,15 @@ export function Traces(args) {
             header={
               <h1>
                 <Link to="/"> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                <Link to={`/u/${props.username}/${props.datasetname}/t`}>
-                  {props.datasetname}
+                <Link to={`/u/${username}`}>{username}</Link>/
+                <Link to={`/u/${username}/${datasetname}/t`}>
+                  {datasetname}
                 </Link>
                 {activeTrace && (
                   <>
                     /{" "}
                     <Link
-                      to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}
+                      to={`/u/${username}/${datasetname}/t/${activeTrace.index}`}
                     >
                       <span className="traceid">
                         {getFullDisplayName(activeTrace)}
@@ -963,7 +963,7 @@ export function Traces(args) {
             onAnnotationCreate={onAnnotationCreate}
             onAnnotationDelete={onAnnotationDelete}
             enableNux={enableNux}
-            datasetname={props.datasetname}
+            datasetname={datasetname}
             isUserOwned={isUserOwned}
           />
         }
