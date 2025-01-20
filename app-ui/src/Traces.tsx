@@ -367,7 +367,7 @@ function fetchTrace(trace: Trace): Promise<{ updated: boolean; trace: Trace }> {
   trace.messages = [{ role: "system", content: "Loading..." }];
 
   return new Promise((resolve, reject) => {
-    fetch(`/api/v1/trace/${trace.id}`)
+    fetch(`/api/v1/trace/${trace.id}?include_annotations=False`)
       .then((response) => {
         if (response.ok) {
           return response.json();

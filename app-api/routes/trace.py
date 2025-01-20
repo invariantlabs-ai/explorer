@@ -88,7 +88,7 @@ def get_trace(
     request: Request,
     id: str,
     max_length: int = None,
-    include_annotations: bool = False,
+    include_annotations: bool = True,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:

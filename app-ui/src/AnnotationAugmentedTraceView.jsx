@@ -280,7 +280,7 @@ export function AnnotationAugmentedTraceView(props) {
               </button>
             )}
             <a
-              href={"/api/v1/trace/" + activeTraceId + "?include_annotations=true"}
+              href={"/api/v1/trace/" + activeTraceId}
               download={activeTraceId + ".json"}
             >
               <button
