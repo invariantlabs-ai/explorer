@@ -221,7 +221,8 @@ export function AnnotationAugmentedTraceView(props) {
   // wait a bit after the last render of the components to enable the guide
   useEffect(() => {
     const timer = setTimeout(() => {
-      props.enableNux(); // Mark rendering as stabilized
+      if (props.enableNux)
+        props.enableNux(); // Mark rendering as stabilized
     }, 500); // Adjust the timeout based on the rendering frequency
 
     return () => {
@@ -279,7 +280,7 @@ export function AnnotationAugmentedTraceView(props) {
               </button>
             )}
             <a
-              href={"/api/v1/trace/" + activeTraceId + "?annotated=1"}
+              href={"/api/v1/trace/" + activeTraceId + "?include_annotations=true"}
               download={activeTraceId + ".json"}
             >
               <button
