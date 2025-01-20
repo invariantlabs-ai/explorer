@@ -70,7 +70,7 @@ def load_trace(
 
 
 # TODO: Fix typo in the function name
-def load_annoations(session, by):
+def load_annotations(session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
     return (
         session.query(Annotation, User)

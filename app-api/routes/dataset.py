@@ -8,8 +8,8 @@ import uuid
 from enum import Enum
 from typing import Annotated, Any, Optional
 from uuid import UUID
-from cachetools import TTLCache, cached
 
+from cachetools import TTLCache, cached
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from models.datasets_and_traces import (
@@ -26,7 +26,7 @@ from models.importers import import_jsonl
 from models.queries import (
     dataset_to_json,
     get_savedqueries,
-    load_annoations,
+    load_annotations,
     load_dataset,
     query_traces,
     search_term_mappings,
@@ -203,6 +203,7 @@ class DatasetKind(Enum):
     PUBLIC = "public"
     HOMEPAGE = "homepage"
     ANY = "any"
+
 
 @cached(TTLCache(maxsize=1, ttl=1800))
 def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]:
@@ -392,7 +393,7 @@ def search_dataset_by_name(
             pattern = re.compile(r"[a-zA-Z]+\((.*)\)")
             traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
             for trace in traces:
-                annotations = load_annoations(session, trace.id)
+                annotations = load_annotations(session, trace.id)
                 trace_with_match = False
                 for annotation, _ in annotations:
                     # TODO replace with actual parsing
@@ -646,7 +647,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
     )
     for trace in traces:
         # load annotations for this trace
-        annotations = load_annoations(session, trace.id)
+        annotations = load_annotations(session, trace.id)
         json_dict = trace_to_exported_json(trace, annotations)
         yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
 
@@ -763,7 +764,7 @@ def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
 
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
         for trace in traces:
-            annotations = load_annoations(session, trace.id)
+            annotations = load_annotations(session, trace.id)
             out["traces"].append(trace_to_json(trace, annotations))
         return out
 
@@ -908,14 +909,14 @@ async def delete_policy(
 async def get_metadata(
     dataset_name: str,
     userinfo: Annotated[dict, Depends(APIIdentity)],
-    owner_username: str = None, # The username of the owner of the dataset (u/<username>).
+    owner_username: str = None,  # The username of the owner of the dataset (u/<username>).
 ):
     """
     Get metadata for a dataset. The owner_username is an optional parameter that can be provided
     to get metadata for a dataset owned by a specific user. This corresponds to the username
     of the user which is unique.
     - If `owner_username` is provided, return the metadata for the dataset if
-      it is public or if the caller is the same owner_username. If the dataset is private and 
+      it is public or if the caller is the same owner_username. If the dataset is private and
       the caller is not the owner of the dataset, return a 403.
     - If no `owner_username` is provided, return the metadata for the dataset if
       the caller is the owner of the dataset.
@@ -925,7 +926,9 @@ async def get_metadata(
 
     with Session(db()) as session:
         if owner_username:
-            owner_user = session.query(User).filter(User.username == owner_username).first()
+            owner_user = (
+                session.query(User).filter(User.username == owner_username).first()
+            )
             dataset_response = load_dataset(
                 session,
                 by={"name": dataset_name, "user_id": owner_user.id},
