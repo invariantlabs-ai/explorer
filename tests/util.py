@@ -160,14 +160,6 @@ async def async_delete_trace_by_id(url, context, trace_id):
     response = await context.request.delete(url + '/api/v1/trace/' + trace_id)
     await expect(response).to_be_ok()
 
-async def expand_messages(page):
-    """Expand all messages in the trace view."""
-    div_ids = await page.evaluate("""
-            [...document.querySelectorAll('div.expanded')].map(div => div.id)
-        """)
-    for div_id in div_ids:
-        await page.click(f"#{div_id}")
-
 class TemporaryExplorerDataset:
     
     def __init__(self, url, context, data):
