@@ -7,10 +7,10 @@ import {
   BsBookmark,
   BsCaretDownFill,
   BsCaretRightFill,
+  BsCheck2,
+  BsXSquareFill,
   BsExclamationLg,
   BsExclamationTriangleFill,
-  BsFilterCircle,
-  BsFilterCircleFill,
   BsInfo,
   BsLayoutSidebarInset,
   BsSearch,
@@ -29,19 +29,20 @@ import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView";
 import { Modal } from "./Modal";
 import { sharedFetch } from "./SharedFetch";
 import { useUserInfo } from "./UserInfo";
-import logo from "./assets/invariant.svg";
 import { EmptyDatasetInstructions } from "./components/EmptyDataset";
 import { useTelemetry } from "./telemetry";
 import { Time } from "./components/Time";
 import { DeleteSnippetModal } from "./lib/snippets";
 import { UserInfo } from "./UserInfo";
 import TracePageNUX from "./TracePageNUX";
-import { HighlightsNavigator } from "./HighlightsNavigator";
 import { DatasetNotFound, TraceNotFound, isClientError } from "./NotFound";
 import { Tooltip } from "react-tooltip";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
+
+const IS_ANNOTATED_SEARCH_QUERY = "is:annotated";
+const IS_INVARIANT_GROUPING_SEARCH_QUERY = "is:invariant";
 
 /**
  * Get the full name including the hierarchy path of a trace.
@@ -1096,6 +1097,25 @@ function Sidebar(props: {
     {} as Record<string, boolean>,
   );
 
+  const filterRef = React.useRef<HTMLDetailsElement | null>(null);
+
+  const [selectedFilter, setSelectedFilter] = React.useState<string | null>(null);
+
+  const filters = [
+    { label: 'Show annotated', value: 'show-annotated-traces' },
+    { label: 'Group by Analysis Result', value: 'group-by-analysis-result' },
+  ];
+
+  useEffect(() => {
+    if(searchQuery === IS_ANNOTATED_SEARCH_QUERY) {
+      setSelectedFilter('show-annotated-traces');
+    } else if (searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY) {
+      setSelectedFilter('group-by-analysis-result');
+    } else {
+      setSelectedFilter(null);
+    }
+  }, [searchQuery]);
+
   useEffect(() => {
     if (!traces) {
       setActiveIndices({ all: { traces: [], description: "all traces" } });
@@ -1142,17 +1162,73 @@ function Sidebar(props: {
     });
   };
 
-  const isInvariantGrouping = searchQuery === "is:invariant";
+  const isInvariantGrouping = searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY;
   const onTriggerInvariantGrouping = (e) => {
     if (!isInvariantGrouping) {
-      setSearchQuery("is:invariant");
+      setSearchQuery(IS_INVARIANT_GROUPING_SEARCH_QUERY);
       telemetry.capture("traceview.search-invariant-grouping", {
-        query: "is:invariant",
+        query: IS_INVARIANT_GROUPING_SEARCH_QUERY,
       });
     } else {
       setSearchQuery("");
     }
   };
+
+  const isAnnotatedGrouping = searchQuery === IS_ANNOTATED_SEARCH_QUERY;
+  const onTriggerAnnotatedGrouping = (e) => {
+    if (!isAnnotatedGrouping) {
+      setSearchQuery(IS_ANNOTATED_SEARCH_QUERY);
+      telemetry.capture("traceview.search-annotated-grouping", {
+        query: IS_ANNOTATED_SEARCH_QUERY,
+      });
+    } else {
+      setSearchQuery("");
+    }
+  }
+
+  const handleFilterSelect = (e, filter) => {
+    // If the same filter is selected again, deselect it.
+    if (selectedFilter === filter.value) {
+      setSelectedFilter(null);
+      setSearchQuery("");
+      if (filterRef.current)
+        filterRef.current.open = false;
+      return;
+    }
+
+    // Set the selected filter and close the dropdown.
+    setSelectedFilter(filter.value);
+    if(filter.value === 'show-annotated-traces') {
+      onTriggerAnnotatedGrouping(e);
+    } else if (filter.value === 'group-by-analysis-result') {
+      onTriggerInvariantGrouping(e);
+    }
+    if (filterRef.current)
+      filterRef.current.open = false;
+  };
+
+  useEffect(() => {
+    const handleClick = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        if (filterRef.current) {
+          filterRef.current.open = false;
+        }
+      }
+    };
+
+    // Add event listener for clicks
+    document.addEventListener("click", handleClick);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
+
+  const clearFiltersAndSearchQuery = () => {
+    setSearchQuery("");
+    setSelectedFilter(null);
+  }
 
   const viewItems: React.ReactNode[] = [];
 
@@ -1335,6 +1411,27 @@ function Sidebar(props: {
   return (
     <div className={"sidebar " + (visible ? "visible" : "collapsed")}>
       <header>
+        <div className="filter-container">
+          <details className="filter-dropdown" ref={filterRef}>
+            <summary className="filter-button">
+              Filters
+              <span className="dropdown-icon">▼</span>
+            </summary>
+            <div className="filter-options">
+              {filters.map((filter, index) => (
+                <button
+                  key={index}
+                  className={"filter-option" + (selectedFilter === filter.value ? " selected-filter-option" : "")}
+                  onClick={(e) => handleFilterSelect(e, filter)}
+                >
+                  {filter.label}
+                  {" "}
+                  {selectedFilter === filter.value && <BsCheck2 />}
+                </button>
+              ))}
+            </div>
+          </details>
+        </div>
         <SearchBox
           setSearchQuery={props.setSearchQuery}
           searchQuery={props.searchQuery}
@@ -1343,30 +1440,6 @@ function Sidebar(props: {
           onSave={onSave}
           setHighlightMappings={props.setHighlightMappings}
         />
-        {/* <button className='header-short toggle icon' onClick={onRefresh}
-        data-tooltip-id="button-tooltip" data-tooltip-content="Refresh">
-        <BsArrowClockwise />
-      </button> */}
-        {!isInvariantGrouping && (
-          <button
-            className="header-short toggle icon"
-            onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="sidebar-button-tooltip"
-            data-tooltip-content="Group Traces by Analysis Result"
-          >
-            <BsFilterCircle />
-          </button>
-        )}
-        {isInvariantGrouping && (
-          <button
-            className="header-short toggle icon"
-            onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="sidebar-button-tooltip"
-            data-tooltip-content="Group Traces by Analysis Result"
-          >
-            <BsFilterCircleFill />
-          </button>
-        )}
         <button
           className="header-short toggle icon"
           onClick={() => setVisible(!visible)}
@@ -1379,6 +1452,8 @@ function Sidebar(props: {
           traces={traces}
           searching={props.searching}
           activeIndices={activeIndices}
+          searchOrFilterApplied={selectedFilter !== null || searchQuery !== ""}
+          clearFiltersAndSearchQuery={clearFiltersAndSearchQuery}
         />
       </header>
       <ul ref={viewportContainerRef}>
@@ -1402,16 +1477,29 @@ function SidebarStatus(props: {
   traces: LightweightTraces | null;
   searching: boolean;
   activeIndices: DisplayedTracesT;
+  searchOrFilterApplied: boolean;
+  clearFiltersAndSearchQuery: () => void;
 }) {
-  const { traces, searching, activeIndices } = props;
+  const { traces, searching, activeIndices, searchOrFilterApplied, clearFiltersAndSearchQuery } = props;
   if (traces && !searching) {
     return (
-      <h1 className="header-long">
-        {Object.values(activeIndices).reduce(
-          (acc, group) => acc + group.traces.length,
-          0,
-        ) + " Traces"}
-      </h1>
+      <>
+        {searchOrFilterApplied && (
+          <h1 className="header-long">
+            {" "}
+            <button className="clear-filters" onClick={() => clearFiltersAndSearchQuery()}>
+              <BsXSquareFill />
+            </button>{" "}
+            Clear filters and search
+          </h1>
+        )}
+        <h1 className="header-long">
+          {Object.values(activeIndices).reduce(
+            (acc, group) => acc + group.traces.length,
+            0
+          ) + " Traces"}
+        </h1>
+      </>
     );
   } else {
     return (
