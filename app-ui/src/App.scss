@@ -336,8 +336,13 @@ header.top {
           a,
           a:visited {
             display: block;
-            color: rgb(28, 28, 28);
+            width: 100%;
+            height: 100%;
             text-decoration: none;
+            color: rgb(28, 28, 28);
+            margin: -5pt;
+            padding: 5pt;
+            box-sizing: border-box;
           }
         }
       }
