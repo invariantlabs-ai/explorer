@@ -1413,7 +1413,7 @@ function Sidebar(props: {
       <header>
         <div className="filter-container">
           <details className="filter-dropdown" ref={filterRef}>
-            <summary className="filter-button">
+            <summary className="filter-button" aria-label="filter-dropdown">
               Filters
               <span className="dropdown-icon">▼</span>
             </summary>
@@ -1423,6 +1423,7 @@ function Sidebar(props: {
                   key={index}
                   className={"filter-option" + (selectedFilter === filter.value ? " selected-filter-option" : "")}
                   onClick={(e) => handleFilterSelect(e, filter)}
+                  aria-label={filter.value + "-filter"}
                 >
                   {filter.label}
                   {" "}
