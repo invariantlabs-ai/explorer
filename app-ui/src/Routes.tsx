@@ -125,16 +125,6 @@ export const routes = [
       </Layout>
     ),
   },
-  // /datasets
-  {
-    path: "/datasets",
-    label: "Datasets",
-    element: (
-      <Layout needsLogin>
-        <Datasets />
-      </Layout>
-    ),
-  },
   // /settings
   {
     path: "/settings",

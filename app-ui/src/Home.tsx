@@ -181,7 +181,7 @@ function Home() {
         <div className="mosaic">
           <div className="box dataset split-view">
             <h2>
-              <Link to="/datasets">Datasets</Link>
+              <Link to={`/u/${userInfo.username}`}>Datasets</Link>
               <button
                 className="inline primary"
                 onClick={() => setShowUploadModal(true)}

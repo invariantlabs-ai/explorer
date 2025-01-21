@@ -99,7 +99,7 @@ function SidebarContent(props: {
         {userInfo?.loggedIn && (
           <>
             <h2>
-              <Link to="/datasets">Recent Datasets</Link>
+              <Link to={`/u/${userInfo.username}`}>Recent Datasets</Link>
             </h2>
             <DatasetLinkList
               datasets={datasets}
@@ -252,7 +252,7 @@ function Layout(props: {
           {userInfo?.loggedIn && (
             <>
               <li>
-                <a href="/datasets">
+                <a href={`/u/${userInfo.username}`}>
                   <BsDatabase />
                   Datasets
                 </a>
