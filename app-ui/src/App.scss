@@ -1265,7 +1265,8 @@ button.primary .shortcut {
       background: none;
       color: $text-color;
       border-radius: 4pt;
-      margin: 4pt;
+      margin: 0pt;
+      padding: 0pt;
       text-align: center;
 
       &:hover {
@@ -1294,6 +1295,14 @@ button.primary .shortcut {
         font-size: 10pt;
         line-height: 20pt;
         font-weight: 500;
+
+        button.clear-filters {
+          line-height: 24.67px;
+          padding: 0px;
+          height: 30px;
+          color: black;
+          background: none;
+        }
       }
 
       .img-button {
@@ -2686,4 +2695,80 @@ p.footer-links {
 // we make space for it and position the header toolbar lower
 .with-tabs div.panel header.toolbar {
   top: 75pt;
+}
+
+.filter-container {
+  position: relative;
+  display: inline-block;
+
+  .filter-dropdown {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  .filter-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    color: #24292f;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+
+  .filter-button:hover {
+    background-color: #eaecef;
+  }
+
+  .dropdown-icon {
+    margin-left: 4px;
+  }
+
+  .filter-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    margin-top: 4px;
+    padding: 8px 0;
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    width: 230px;
+  }
+
+  .filter-dropdown[open] .filter-options {
+    display: block;
+  }
+
+  .filter-option {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #24292f;
+  }
+
+  .selected-filter-option {
+    background-color: #f6f8fa;
+  }
+
+  .filter-option:hover {
+    background-color: #f6f8fa;
+  }
+
+  >details >div >button {
+    border-radius: 0px;
+  }
 }
