@@ -698,6 +698,7 @@ function AnnotationEditor(props) {
             className="primary"
             disabled={submitting || (content == "" && userInfo?.loggedIn)}
             onClick={onSave}
+            aria-label="save-annotation"
           >
             {!userInfo?.loggedIn ? (
               "Sign Up To Annotate"

@@ -103,7 +103,6 @@ export function UploadDatasetModalContent(props) {
   };
 
   const handleContentChange = (event) => {
-    console.log("Content changed to: ", event.target.value);
     setContentType(event.target.value);
   };
 
