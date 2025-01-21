@@ -1487,7 +1487,11 @@ function SidebarStatus(props: {
         {searchOrFilterApplied && (
           <h1 className="header-long">
             {" "}
-            <button className="clear-filters" onClick={() => clearFiltersAndSearchQuery()}>
+            <button
+              aria-label="clear-filters"
+              className="clear-filters"
+              onClick={() => clearFiltersAndSearchQuery()}
+            >
               <BsXSquareFill />
             </button>{" "}
             Clear filters and search
