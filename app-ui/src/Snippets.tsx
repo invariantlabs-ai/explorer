@@ -45,21 +45,25 @@ export function Snippets() {
       >
         {!snippets ? (
           <div className="empty">Loading snippets...</div>
-        ) : (snippets.map((snippet, i) => (
-          <Link className="item" to={`/trace/${snippet.id}`} key={i}>
-            <li>
-              <h3>
-                Snippet{" "}
-                <span className="traceid">#{snippet.id.slice(0, 6)}</span>
-              </h3>
-              <span className="description">
-                <Time>{snippet.time_created}</Time>
-              </span>
-              <div className="spacer" />
-            </li>
-          </Link>
-        )))}
-        {snippets && snippets.length === 0 && <div className="empty">No snippets</div>}
+        ) : (
+          snippets.map((snippet, i) => (
+            <Link className="item" to={`/trace/${snippet.id}`} key={i}>
+              <li>
+                <h3>
+                  Snippet{" "}
+                  <span className="traceid">#{snippet.id.slice(0, 6)}</span>
+                </h3>
+                <span className="description">
+                  <Time>{snippet.time_created}</Time>
+                </span>
+                <div className="spacer" />
+              </li>
+            </Link>
+          ))
+        )}
+        {snippets && snippets.length === 0 && (
+          <div className="empty">No snippets</div>
+        )}
       </EntityList>
     </>
   );
@@ -92,7 +96,9 @@ export function CompactSnippetList(props) {
             </Link>
           ))
         )}
-        {snippets !== null && snippets.length === 0 && <div className="empty">No snippets</div>}
+        {snippets !== null && snippets.length === 0 && (
+          <div className="empty">No snippets</div>
+        )}
       </EntityList>
     </>
   );

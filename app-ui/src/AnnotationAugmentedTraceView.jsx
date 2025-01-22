@@ -221,8 +221,7 @@ export function AnnotationAugmentedTraceView(props) {
   // wait a bit after the last render of the components to enable the guide
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (props.enableNux)
-        props.enableNux(); // Mark rendering as stabilized
+      if (props.enableNux) props.enableNux(); // Mark rendering as stabilized
     }, 500); // Adjust the timeout based on the rendering frequency
     return () => {
       clearTimeout(timer); // Clear the timeout if re-render occurs
@@ -261,7 +260,7 @@ export function AnnotationAugmentedTraceView(props) {
           <>
             {is_all_expanded ? (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onCollapseAll}
                 data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Collapse All"
@@ -270,7 +269,7 @@ export function AnnotationAugmentedTraceView(props) {
               </button>
             ) : (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onExpandAll}
                 data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Expand All"
@@ -305,8 +304,7 @@ export function AnnotationAugmentedTraceView(props) {
             {props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={
-                  "inline guide-step-4" +
-                  (props.sharingEnabled ? "primary" : "")
+                  "inline nux-step-4" + (props.sharingEnabled ? "primary" : "")
                 }
                 onClick={onShare}
               >

@@ -92,6 +92,7 @@ def get_trace(
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
+
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
         )

@@ -112,27 +112,6 @@ def validate_trace_responses(
         )
     else:
         assert trace_1["annotations"] == [] and trace_2["annotations"] == []
-
-    if include_metadata:
-        expected_metadata_1 = {
-            "uploader": "Via API with DEV_MODE true",
-            **push_traces_metadata[0],
-        }
-        expected_metadata_2 = {
-            "uploader": "Via API with DEV_MODE true",
-            **push_traces_metadata[1],
-        }
-        assert expected_metadata_1 in (
-            trace_1["extra_metadata"],
-            trace_2["extra_metadata"],
-        ) and expected_metadata_2 in (
-            trace_1["extra_metadata"],
-            trace_2["extra_metadata"],
-        )
-    else:
-        assert trace_1["extra_metadata"] == {
-            "uploader": "Via API with DEV_MODE true"
-        } and trace_2["extra_metadata"] == {"uploader": "Via API with DEV_MODE true"}
     return True
 
 

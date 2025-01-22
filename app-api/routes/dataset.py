@@ -671,7 +671,6 @@ async def download_traces_by_id(
         dataset_info = {
             "metadata": {**internal_dataset_info["extra_metadata"]},
         }
-
         # streaming response, but triggers a download
         return StreamingResponse(
             stream_jsonl(session, id, dataset_info, userinfo["sub"]),

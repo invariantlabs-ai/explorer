@@ -1,6 +1,4 @@
-import {
-  BsSpeedometer2,
-} from "react-icons/bs";
+import { BsSpeedometer2 } from "react-icons/bs";
 import Home from "./Home.tsx";
 import Layout from "./Layout.tsx";
 import { SingleTrace } from "./Traces.tsx";
@@ -57,9 +55,13 @@ export const routes = [
     },
   },
   {
-    path: '/u/:username/:datasetname/t/:traceIndex',
-    label: 'Dataset',
-    element: <Layout fullscreen withTabs><DatasetView /></Layout>,
+    path: "/u/:username/:datasetname/t/:traceIndex",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen withTabs>
+        <DatasetView />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,
@@ -69,9 +71,13 @@ export const routes = [
     },
   },
   {
-    path: '/u/:username/:datasetname/t',
-    label: 'Dataset',
-    element: <Layout fullscreen><DatasetView /></Layout>,
+    path: "/u/:username/:datasetname/t",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen>
+        <DatasetView />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,

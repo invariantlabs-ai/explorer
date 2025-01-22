@@ -77,10 +77,10 @@ function SidebarContent(props: {
   const [datasets, refresh] = useDatasetList("private", 4);
 
   useEffect(() => {
-      if (userInfo?.loggedIn) {
-        refresh();
-      }
-    }, [userInfo?.loggedIn, refresh]);
+    if (userInfo?.loggedIn) {
+      refresh();
+    }
+  }, [userInfo?.loggedIn, refresh]);
 
   return (
     <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
@@ -101,9 +101,7 @@ function SidebarContent(props: {
             <h2>
               <Link to={`/u/${userInfo.username}`}>Recent Datasets</Link>
             </h2>
-            <DatasetLinkList
-              datasets={datasets}
-            />
+            <DatasetLinkList datasets={datasets} />
             <h2>
               <Link to="/snippets">Recent Snippets</Link>
             </h2>
@@ -112,7 +110,9 @@ function SidebarContent(props: {
           </>
         )}
         {/* unicode copyright */}
-        <p className="secondary">&copy; 2025 Invariant Labs <DeploymentCommit /></p>
+        <p className="secondary">
+          &copy; 2025 Invariant Labs <DeploymentCommit />
+        </p>
         <p className="footer-links">
           <a href="https://invariantlabs.ai" target="_blank">
             About
@@ -329,7 +329,13 @@ function Layout(props: {
           )}
         </div>
       </header>
-      <div className={"content " + (props.fullscreen ? "fullscreen" : "") + (props.withTabs ? " with-tabs" : "")}>
+      <div
+        className={
+          "content " +
+          (props.fullscreen ? "fullscreen" : "") +
+          (props.withTabs ? " with-tabs" : "")
+        }
+      >
         {pageShouldRedirectToLogin && (
           <div className="empty">
             <p>Please sign in to view this page.</p>

@@ -1,14 +1,11 @@
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import { useUserInfo } from "./UserInfo";
 import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "./Modal";
 import { Time } from "./components/Time";
 import { useDatasetList } from "./lib/datasets";
-import {
-  DatasetLinkList,
-  UploadDatasetModalContent,
-} from "./Datasets";
+import { DatasetLinkList, UploadDatasetModalContent } from "./Datasets";
 import HomepageDatasetsNames from "./assets/HomepageDatasetsNames.json";
 import UserIcon from "./lib/UserIcon";
 
@@ -95,9 +92,10 @@ function Home() {
     refreshFeaturedDatasets();
   }, [refreshFeaturedDatasets]);
 
-  const [featuredDatasetsTransformed, setFeaturedDatasetsTransformed] = React.useState<any[] | null>(null);
+  const [featuredDatasetsTransformed, setFeaturedDatasetsTransformed] =
+    React.useState<any[] | null>(null);
   useEffect(() => {
-    if(featuredDatasets !== null) {
+    if (featuredDatasets !== null) {
       const transformed = featuredDatasets.map((item) => ({
         ...item,
         ...(HomepageDatasetsNames["name"][item.id] && {
@@ -189,10 +187,7 @@ function Home() {
                 New Dataset
               </button>
             </h2>
-            <DatasetLinkList
-              datasets={privateDatasets}
-              icon={<BsDatabase />}
-            />
+            <DatasetLinkList datasets={privateDatasets} icon={<BsDatabase />} />
           </div>
           <div className="box split-view">
             <h2>
@@ -204,10 +199,7 @@ function Home() {
                 New Trace
               </button>
             </h2>
-            <CompactSnippetList
-              icon={<BsJustify />}
-              limit={8}
-            />
+            <CompactSnippetList icon={<BsJustify />} limit={8} />
           </div>
         </div>
       )}
@@ -219,7 +211,10 @@ function Home() {
               Featured Datasets
             </a>
           </h2>
-          <FeaturedDatasets datasets={featuredDatasetsTransformed} icon={<BsGlobe />} />
+          <FeaturedDatasets
+            datasets={featuredDatasetsTransformed}
+            icon={<BsGlobe />}
+          />
         </div>
       )}
       {/* user activity */}

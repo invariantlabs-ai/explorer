@@ -36,15 +36,19 @@ export interface HighlightContext {
 
 /**
  * Returns true if the selectedHighlightAnchor falls into the given address range.
- * 
- * This supports the case of matching "messages[1].content:L0" with "messages[1].content:L0", but also 
+ *
+ * This supports the case of matching "messages[1].content:L0" with "messages[1].content:L0", but also
  * cases of comparing line ranges with character ranges, e.g. matching "messages[1].content:L0" and "messages[1].content:0-1".
- * 
+ *
  * @param address The address of the line
  * @param selectedHighlightAnchor The selected highlight anchor
  * @param highlights The list of highlights applicable to this line
  */
-function isExpanded(address: string, selectedHighlightAnchor: string | null, highlights: GroupedHighlight[]) {
+function isExpanded(
+  address: string,
+  selectedHighlightAnchor: string | null,
+  highlights: GroupedHighlight[],
+) {
   if (address === selectedHighlightAnchor) {
     return true;
   }
@@ -64,8 +68,8 @@ function isExpanded(address: string, selectedHighlightAnchor: string | null, hig
   }
 
   // make sure the first part matches
-  let baseSelectedAddress = selectedHighlightAnchor.split(":")[0]
-  let baseAddress = address.split(":")[0]
+  let baseSelectedAddress = selectedHighlightAnchor.split(":")[0];
+  let baseAddress = address.split(":")[0];
 
   if (baseSelectedAddress !== baseAddress) {
     return false;

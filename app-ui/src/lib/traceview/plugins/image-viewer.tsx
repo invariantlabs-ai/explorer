@@ -84,7 +84,7 @@ class ImageViewer extends React.Component<
         },
         () => {
           this.fetchImage();
-        }
+        },
       );
     }
   }
@@ -157,14 +157,14 @@ class ImageViewer extends React.Component<
    */
   updateHighlights() {
     let highlights_in_text = this.props.highlights.in_text(
-      JSON.stringify(this.props.content, null, 2)
+      JSON.stringify(this.props.content, null, 2),
     );
     let bounding_boxes_data =
       HighlightedJSON.bounding_boxes(highlights_in_text);
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      '"' + this.props.content + '"'
+      '"' + this.props.content + '"',
     );
     let elements: React.ReactNode[] = [];
 
@@ -183,7 +183,7 @@ class ImageViewer extends React.Component<
               .join(" ");
           const tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
             )
             .join("\n");
 
@@ -215,11 +215,19 @@ class ImageViewer extends React.Component<
                   />
                   {bounding_boxes_data.map(
                     ({ x1, y1, x2, y2, content }, index) =>
-                      this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25
-                      )
+                      this.addBoundingBox(
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        content,
+                        index,
+                        1,
+                        0.25,
+                      ),
                   )}
                 </div>
-              </span>
+              </span>,
             );
             highligthed_found = true;
           }
@@ -241,9 +249,9 @@ class ImageViewer extends React.Component<
               />
             }
             {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
-              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25)
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25),
             )}
-          </span>
+          </span>,
         );
       }
 
@@ -257,7 +265,7 @@ class ImageViewer extends React.Component<
         >
           {image}
           {"\n"}
-        </Line>
+        </Line>,
       );
     }
 
@@ -279,10 +287,10 @@ class ImageViewer extends React.Component<
               className="image-full-screen-opened"
             />
             {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
-              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25)
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25),
             )}
           </div>
-        </div>
+        </div>,
       );
     }
 

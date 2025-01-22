@@ -1928,7 +1928,18 @@ table.api-keys {
   padding: 1pt 6pt;
   font-weight: 800;
   position: relative;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
   top: 1pt;
   font-weight: bold;
 
@@ -1958,7 +1969,7 @@ table.api-keys {
   }
 
   .tabs {
-    display: flex;  
+    display: flex;
     border-bottom: 1px solid #ddd;
     background: #f6f6f6;
     justify-content: flex-start;
@@ -1988,7 +1999,7 @@ table.api-keys {
   .tab.active {
     border-bottom: 2px solid blue;
     font-weight: bold;
-    
+
     .inner {
       background: white;
     }
@@ -2002,7 +2013,7 @@ table.api-keys {
   }
 
   .metadata-policies {
-    width: 90%; 
+    width: 90%;
     margin: auto;
     margin-top: 10px;
   }
@@ -2022,11 +2033,11 @@ table.api-keys {
     margin-top: -10pt;
     float: right;
   }
-  
+
   .policy-editor-form {
     height: 400pt;
     width: 550pt;
-  
+
     input {
       background-color: #ebebeb;
       display: block;
@@ -2037,14 +2048,14 @@ table.api-keys {
       margin-bottom: 5pt;
       width: 535pt;
     }
-  
+
     label {
       font-size: 16pt;
       opacity: 0.5;
       margin-top: 1lvh;
       margin-bottom: 5pt;
     }
-  
+
     .error {
       color: #ed707b;
       font-size: 18pt;
@@ -2054,12 +2065,12 @@ table.api-keys {
       margin-bottom: 15pt;
       margin-top: 0pt;
     }
-  
+
     button {
       width: 100%;
     }
   }
-  
+
   .policy-editor {
     margin-bottom: 20pt;
   }
@@ -2068,12 +2079,12 @@ table.api-keys {
     height: 1000px;
     overflow-y: auto;
   }
-  
+
   .no-policies {
     margin-top: 30pt;
     text-align: center;
   }
-  
+
   .policy-label {
     margin-bottom: 0pt !important;
   }
@@ -2133,7 +2144,6 @@ table.api-keys {
     position: relative;
     top: 1pt;
     margin-right: 1pt;
-
   }
 }
 

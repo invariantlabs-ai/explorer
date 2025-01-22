@@ -22,7 +22,7 @@ interface ParsedAnnotationOutput {
 export class AnnotationsParser {
   static parse_annotations(
     annotations,
-    search_highlights: { [key: string]: HighlightData }
+    search_highlights: { [key: string]: HighlightData },
   ): ParsedAnnotationOutput {
     // collect annotations of a character range format (e.g. "messages.0.content:5-9") into mappings
     const highlights: [string, HighlightData][] = search_highlights
@@ -74,7 +74,7 @@ export class AnnotationsParser {
           if (annotation.extra_metadata) {
             highlight.extra_metadata = Object.assign(
               {},
-              annotation.extra_metadata
+              annotation.extra_metadata,
             );
             // remove source if present
             delete highlight.extra_metadata!["source"];
@@ -94,7 +94,7 @@ export class AnnotationsParser {
           !(
             annotation.extra_metadata &&
             annotation.extra_metadata["source"] === "analyzer"
-          )
+          ),
       );
       if (new_annotations.length > 0) {
         filtered_annotations[key] = new_annotations;
@@ -119,7 +119,7 @@ export class AnnotationsParser {
         if (annotation.extra_metadata) {
           highlight.extra_metadata = Object.assign(
             {},
-            annotation.extra_metadata
+            annotation.extra_metadata,
           );
           // remove source if present
           delete highlight.extra_metadata!["source"];

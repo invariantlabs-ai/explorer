@@ -253,14 +253,14 @@ export function UploadDatasetModalContent(props) {
         </label>
         <span className="option-description option-description-link">
           {" "}
-            <a
-              target="_blank"
-              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
-            >
-              Explorer Push API
-            </a>
-            .
-          </span>
+          <a
+            target="_blank"
+            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
+          >
+            Explorer Push API
+          </a>
+          .
+        </span>
       </div>
       <div className="options-container">
         <label htmlFor="jsonl" className="radio-label">
@@ -450,10 +450,10 @@ export function Datasets() {
     React.useState(null);
 
   useEffect(() => {
-      if (userInfo?.loggedIn) {
-        refresh();
-      }
-    }, [userInfo?.loggedIn, refresh]);
+    if (userInfo?.loggedIn) {
+      refresh();
+    }
+  }, [userInfo?.loggedIn, refresh]);
 
   return (
     <>
@@ -489,7 +489,10 @@ export function Datasets() {
         actions={
           <>
             {userInfo?.loggedIn && (
-              <button className="primary" onClick={() => setShowUploadModal(true)}>
+              <button
+                className="primary"
+                onClick={() => setShowUploadModal(true)}
+              >
                 <BsUpload /> Upload New Dataset
               </button>
             )}

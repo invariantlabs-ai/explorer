@@ -685,24 +685,17 @@ function useSearch() {
  */
 export function Traces(props) {
   // extract user and dataset name from loader data (populated by site router)
-  const {
-    username,
-    datasetname,
-    traceIndex,
-  } = useLoaderData() as any;
+  const { username, datasetname, traceIndex } = useLoaderData() as any;
   // used to navigate to a different trace
   const navigate = useNavigate();
   // load the dataset metadata
-  const {dataset, datasetLoadingError} = props;
+  const { dataset, datasetLoadingError } = props;
   // feature set enabled for this dataset
   const featureSet = new FeatureSet(
     dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {},
   );
   // load information about the traces in the dataset
-  const [traces, hierarchyPaths, refresh] = useTraces(
-    username,
-    datasetname,
-  );
+  const [traces, hierarchyPaths, refresh] = useTraces(username, datasetname);
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false);
   // trigger whether trace deletion modal is shown
@@ -712,9 +705,7 @@ export function Traces(props) {
   const userInfo = useUserInfo();
   // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(
-    traces && traceIndex != null
-      ? traces.get(traceIndex)?.id
-      : null,
+    traces && traceIndex != null ? traces.get(traceIndex)?.id : null,
     userInfo,
   );
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
