@@ -8,3 +8,4 @@ python-multipart
 fastapi-keycloak-middleware
 prometheus-fastapi-instrumentator
 pillow
+aiofiles

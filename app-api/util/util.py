@@ -7,6 +7,7 @@ import io
 import os
 import re
 import uuid
+import aiofiles, asyncio
 from typing import Optional
 
 from fastapi import HTTPException
@@ -108,8 +109,7 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
                     }
     return messages
 
-
-def parse_and_push_images(dataset, trace_id, messages):
+async def parse_and_push_images(dataset, trace_id, messages):
     """
     Parse messages for base64 encoded images, save them to disk, and update message content with local file path.
 
@@ -121,10 +121,9 @@ def parse_and_push_images(dataset, trace_id, messages):
     Returns:
         Updated messages with image paths
     """
-    for msg in messages:
+    async def parse_and_push_single_image(msg):
         if msg.get("role") != "tool" or type(msg.get("content")) != str:
-            continue
-        print("now at msg: ", msg)
+            return msg
         if msg.get("content").startswith("base64_img: ") or msg.get(
             "content"
         ).startswith("local_base64_img: "):
@@ -134,19 +133,27 @@ def parse_and_push_images(dataset, trace_id, messages):
                 else "local_base64_img: "
             )
             img_base64 = msg.get("content")[len(prefix) :]
-
-            img_data = base64.b64decode(img_base64)
-            img = Image.open(io.BytesIO(img_data))
-
+            
+            try:
+                img_data = base64.b64decode(img_base64)
+            except Exception as e:
+                raise ValueError("Failed to decode base64 image") from e
+            
             # Generate a unique filename for the image
             img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
             # Save the image as a temporary file
-            with io.BytesIO() as output:
-                img.save(output, format="PNG")
-                img_data = output.getvalue()
-                img_path = f"/srv/images/{img_filename}"
-                os.makedirs(os.path.dirname(img_path), exist_ok=True)
-                with open(img_path, "wb") as f:
-                    f.write(img_data)
-                msg["content"] = "local_img_link: " + img_path
+           
+            img_path = f"/srv/images/{img_filename}"
+            os.makedirs(os.path.dirname(img_path), exist_ok=True)
+            try:
+                async with aiofiles.open(img_path, "wb") as f:
+                    await f.write(img_data)
+            except Exception as e:
+                print("exception: ", e)
+                raise IOError("Failed to save image to disk") from e
+            msg["content"] = "local_img_link: " + img_path
+
+    save_images = [parse_and_push_single_image(msg) for msg in messages]
+    await asyncio.gather(*save_images)
+
     return messages
