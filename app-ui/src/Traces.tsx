@@ -38,6 +38,7 @@ import { UserInfo } from "./UserInfo";
 import TracePageNUX from "./TracePageNUX";
 import { HighlightsNavigator } from "./HighlightsNavigator";
 import { DatasetNotFound, TraceNotFound, isClientError } from "./NotFound";
+import { Tooltip } from "react-tooltip";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
@@ -969,6 +970,8 @@ export function Traces(props) {
         }
         {renderNux && <TracePageNUX />}
       </div>
+      {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
+      <Tooltip id="sidebar-button-tooltip" place="bottom" />
     </div>
   );
 }
@@ -1038,7 +1041,7 @@ function SearchBox(props) {
       <button
         className="search-submit"
         onClick={hasSearch ? handleSearch : props.onSave}
-        data-tooltip-id="button-tooltip"
+        data-tooltip-id="sidebar-button-tooltip"
         data-tooltip-content={
           !hasChanged && inputValue !== "" ? "Save Search" : ""
         }
@@ -1357,7 +1360,7 @@ function Sidebar(props: {
           <button
             className="header-short toggle icon"
             onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="button-tooltip"
+            data-tooltip-id="sidebar-button-tooltip"
             data-tooltip-content="Group Traces by Analysis Result"
           >
             <BsFilterCircle />
@@ -1367,7 +1370,7 @@ function Sidebar(props: {
           <button
             className="header-short toggle icon"
             onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="button-tooltip"
+            data-tooltip-id="sidebar-button-tooltip"
             data-tooltip-content="Group Traces by Analysis Result"
           >
             <BsFilterCircleFill />
@@ -1376,7 +1379,7 @@ function Sidebar(props: {
         <button
           className="header-short toggle icon"
           onClick={() => setVisible(!visible)}
-          data-tooltip-id="button-tooltip"
+          data-tooltip-id="sidebar-button-tooltip"
           data-tooltip-content="Fold Sidebar"
         >
           <BsLayoutSidebarInset />
