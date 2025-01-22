@@ -2631,6 +2631,17 @@ p.footer-links {
   .options-container {
     display: flex;
     align-items: center;
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .option-description-link {
+      margin-top: 21px;
+      margin-left: 5px;
+    }
   }
 
   .option-name {

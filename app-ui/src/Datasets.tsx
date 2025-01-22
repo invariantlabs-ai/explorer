@@ -194,55 +194,65 @@ export function UploadDatasetModalContent(props) {
       {config("sharing") && (
         <>
           <div className="options-container">
-            <input
-              type="radio"
-              id="private"
-              name="access"
-              value="private"
-              checked={!isPublic}
-              onChange={handleAccessChange}
-            />
-            <BsLock className="icon" />
-            <div>
-              <span className="option-name">Private</span>
-              <span className="option-description">
-                Only you can access this dataset.
-              </span>
-            </div>
+            <label htmlFor="private" className="radio-label">
+              <input
+                type="radio"
+                id="private"
+                name="access"
+                value="private"
+                checked={!isPublic}
+                onChange={handleAccessChange}
+              />
+              <BsLock className="icon" />
+              <div>
+                <span className="option-name">Private</span>
+                <span className="option-description">
+                  Only you can access this dataset.
+                </span>
+              </div>
+            </label>
           </div>
           <div className="options-container">
-            <input
-              type="radio"
-              id="public"
-              name="access"
-              value="public"
-              checked={isPublic}
-              onChange={handleAccessChange}
-            />
-            <BsGlobe className="icon" />
-            <div>
-              <span className="option-name">Public</span>
-              <span className="option-description">
-                Anyone on the internet can view this dataset.
-              </span>
-            </div>
+            <label htmlFor="public" className="radio-label">
+              <input
+                type="radio"
+                id="public"
+                name="access"
+                value="public"
+                checked={isPublic}
+                onChange={handleAccessChange}
+              />
+              <BsGlobe className="icon" />
+              <div>
+                <span className="option-name">Public</span>
+                <span className="option-description">
+                  Anyone on the internet can view this dataset.
+                </span>
+              </div>
+            </label>
           </div>
         </>
       )}
       <label>Contents</label>
       <div className="options-container">
-        <input
-          type="radio"
-          id="empty"
-          name="content"
-          value="empty"
-          checked={contentType === "empty"}
-          onChange={handleContentChange}
-        />
-        <div className="option-dataset-type">
-          <span className="option-name">Empty Dataset</span>
-          <span className="option-description">
-            You can upload traces using the{" "}
+        <label htmlFor="empty" className="radio-label">
+          <input
+            type="radio"
+            id="empty"
+            name="content"
+            value="empty"
+            checked={contentType === "empty"}
+            onChange={handleContentChange}
+          />
+          <div className="option-dataset-type">
+            <span className="option-name">Empty Dataset</span>
+            <span className="option-description">
+              You can upload traces using the{" "}
+            </span>
+          </div>
+        </label>
+        <span className="option-description option-description-link">
+          {" "}
             <a
               target="_blank"
               href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
@@ -251,30 +261,34 @@ export function UploadDatasetModalContent(props) {
             </a>
             .
           </span>
-        </div>
       </div>
       <div className="options-container">
-        <input
-          type="radio"
-          id="jsonl"
-          name="content"
-          value="jsonl"
-          checked={contentType === "jsonl"}
-          onChange={handleContentChange}
-        />
-        <div className="option-dataset-type">
-          <span className="option-name">Upload JSON Lines file</span>
-          <span className="option-description">
-            Before uploading traces make sure they are in the{" "}
-            <a
-              target="_blank"
-              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
-            >
-              correct format
-            </a>
-            .
-          </span>
-        </div>
+        <label htmlFor="jsonl" className="radio-label">
+          <input
+            type="radio"
+            id="jsonl"
+            name="content"
+            value="jsonl"
+            checked={contentType === "jsonl"}
+            onChange={handleContentChange}
+          />
+          <div className="option-dataset-type">
+            <span className="option-name">Upload JSON Lines file</span>
+            <span className="option-description">
+              Before uploading traces make sure they are in the{" "}
+            </span>
+          </div>
+        </label>
+        <span className="option-description option-description-link">
+          {" "}
+          <a
+            target="_blank"
+            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
+          >
+            correct format
+          </a>
+          .
+        </span>
       </div>
       {contentType === "jsonl" && (
         <>
