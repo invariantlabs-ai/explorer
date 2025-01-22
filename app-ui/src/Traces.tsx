@@ -1059,7 +1059,6 @@ function SearchBox(props) {
           <ClockLoader size={"15px"} className="spinner" />
         )}
       </button>
-      {/* <Tooltip id="button-tooltip" place="bottom" /> */}
     </div>
   );
 }
