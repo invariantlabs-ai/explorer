@@ -630,12 +630,10 @@ class DBJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-"""
-Used to stream out the trace data as JSONL to download the dataset.
-"""
-
-
 async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
+    """
+    Used to stream out the trace data as JSONL to download the dataset.
+    """
     # write out metadata message
     yield json.dumps(dataset_info) + "\n"
 
@@ -648,7 +646,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
     for trace in traces:
         # load annotations for this trace
         annotations = load_annotations(session, trace.id)
-        json_dict = trace_to_exported_json(trace, annotations)
+        json_dict = await trace_to_exported_json(trace, annotations)
         yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
 
         # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
