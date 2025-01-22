@@ -3,6 +3,9 @@ import json
 import re
 import uuid
 
+import aiofiles
+import asyncio
+
 import sqlalchemy.sql.sqltypes as sqltypes
 from fastapi import HTTPException
 from models.datasets_and_traces import (
@@ -273,15 +276,45 @@ def annotation_to_json(annotation, user=None, **kwargs):
 # Custom JSON serialization for exporting data out of the database (exclude internal IDs and user information)
 ###
 
+async def convert_local_image_link_to_base64(image_link):
+    import base64
+    """Given an image link of the format: `local_img_link: /path/to/image.png`, 
+    find the image from the local path and convert it to base64.
+    """
+    image_path = image_link.split(":")[1].strip()
+    try:
+        async with aiofiles.open(image_path, "rb") as image_file:
+            file_content = await image_file.read()
+            base64_image = base64.b64encode(file_content).decode('utf-8')
+        return 'local_base64_img: ' + base64_image
+    except FileNotFoundError:
+        print(f"Image not found at path: {image_path}")
+        return None
 
-def trace_to_exported_json(trace, annotations=None, user=None):
+
+async def trace_to_exported_json(trace, annotations=None, user=None):
     if "uploader" in trace.extra_metadata:
         trace.extra_metadata.pop("uploader")
+    
+    image_tasks = [
+        (convert_local_image_link_to_base64(message.get('content')), i)
+        for i, message in enumerate(trace.content)
+        if (msg := message.get('content')) and msg.startswith('local_img_link')
+    ]
+
+    images = await asyncio.gather(*[task[0] for task in image_tasks])
+
+    for i, image in enumerate(images):
+        if image is not None:
+            trace.content[image_tasks[i][1]]['content'] = image
+
+
     out = {
         "index": trace.index,
         "messages": trace.content,
         "metadata": trace.extra_metadata,
     }
+
     if annotations is not None:
         out["annotations"] = [
             annotation_to_exported_json(annotation, user=user)

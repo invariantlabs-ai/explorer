@@ -3,10 +3,11 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
+import json
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
 from models.queries import (
     annotation_to_json,
@@ -14,6 +15,7 @@ from models.queries import (
     load_annotations,
     load_trace,
     trace_to_json,
+    trace_to_exported_json,
 )
 from routes.apikeys import (
     APIIdentity,
@@ -112,6 +114,31 @@ def get_trace(
             max_length=max_length,
         )
 
+
+@trace.get("/{id}/download")
+async def download_trace(
+    request: Request,
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
+):
+
+    with Session(db()) as session:
+        trace = load_trace(
+            session, id, user_id, allow_public=True, allow_shared=True
+        )
+
+        trace_data = await trace_to_exported_json(trace, load_annotations(session, id))
+        trace_data = json.dumps(trace_data, indent=2)
+
+        # Return a StreamingResponse with appropriate headers
+        return Response(
+            content=trace_data,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={trace.name}.json"
+            },
+        )
+            
 
 @trace.get("/{id}/shared")
 def get_trace_sharing(
