@@ -1,5 +1,7 @@
+import logging
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -13,11 +15,19 @@ from models.queries import (
     load_trace,
     trace_to_json,
 )
-from routes.apikeys import AuthenticatedUserOrAPIIdentity, UserOrAPIIdentity
+from routes.apikeys import (
+    APIIdentity,
+    AuthenticatedUserOrAPIIdentity,
+    UserOrAPIIdentity,
+)
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 trace = FastAPI()
+logger = logging.getLogger(__name__)
 
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
@@ -92,7 +102,6 @@ def get_trace(
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
-
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
         )
@@ -298,3 +307,86 @@ async def upload_new_single_trace(
         session.commit()
 
         return {"id": str(trace.id)}
+
+
+def merge_sorted_messages(existing_messages: list[dict], new_messages: list[dict]):
+    """
+    Perform a merge sort of existing and new messages based on the timestamp.
+    """
+    i, j = 0, 0
+    sorted_messages = []
+
+    while i < len(existing_messages) and j < len(new_messages):
+        if existing_messages[i]["timestamp"] < new_messages[j]["timestamp"]:
+            sorted_messages.append(existing_messages[i])
+            i += 1
+        else:
+            sorted_messages.append(new_messages[j])
+            j += 1
+
+    sorted_messages.extend(existing_messages[i:])
+    sorted_messages.extend(new_messages[j:])
+    return sorted_messages
+
+
+@trace.post("/{trace_id}/messages")
+async def add_messages(
+    request: Request, trace_id: str, userinfo: Annotated[dict, Depends(APIIdentity)]
+):
+    """Add messages to an existing trace."""
+    user_id = userinfo["sub"]
+    if user_id is None:
+        raise HTTPException(
+            status_code=401, detail="Must be authenticated to add messages"
+        )
+
+    payload = await request.json()
+    new_messages = payload.get("messages", [])
+    if (
+        not isinstance(new_messages, list)
+        or not new_messages
+        or not all(isinstance(item, dict) for item in new_messages)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid messages format - expected a non-empty list of dictionaries",
+        )
+
+    try:
+        with Session(db()) as session:
+            with session.begin():  # Start transaction
+                # Lock the trace row for update
+                trace_response = session.execute(
+                    select(Trace)
+                    .filter(
+                        and_(str(Trace.id) == trace_id, str(Trace.user_id) == user_id)
+                    )
+                    .with_for_update()
+                ).first()
+                if not trace_response:
+                    raise HTTPException(status_code=404, detail="Trace not found")
+
+                # set timestamp for new messages
+                timestamp_for_new_messages = datetime.now(timezone.utc)
+                for message in new_messages:
+                    message.setdefault("timestamp", timestamp_for_new_messages)
+
+                existing_messages = trace_response.content
+                trace_creation_timestamp = trace_response.time_created
+                for message in existing_messages:
+                    # set timestamp for existing messages if not already set
+                    message.setdefault("timestamp", trace_creation_timestamp)
+
+                combined_messages = merge_sorted_messages(
+                    existing_messages, new_messages
+                )
+                trace_response.content = combined_messages
+                flag_modified(trace_response, "content")
+            session.commit()
+        return {"success": True}
+    except SQLAlchemyError as e:
+        logger.error("Database error when adding messages to existing trace: %s", e)
+        session.rollback()
+        raise HTTPException(
+            status_code=500, detail="An unexpected database error occurred."
+        ) from e
