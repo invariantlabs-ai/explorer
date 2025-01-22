@@ -8,7 +8,7 @@ import { HighlightedJSON } from "../highlights";
 import { Line } from "../line";
 import { truncate } from "../utils";
 import KEY_TOKENS from "./code-highligther-keywords.json";
-import { copyPermalinkToClipboard, permalink } from "../../permalink-navigator";
+import { permalink } from "../../permalink-navigator";
 
 // component properties of the code-highlighter plugin
 interface CodeHighlightedViewProps {
@@ -16,6 +16,9 @@ interface CodeHighlightedViewProps {
   highlights: any;
   highlightContext: any;
   address: string;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }
 
 // a token as produced by the shiki highlighter
@@ -343,6 +346,9 @@ class CodeHighlightedView extends React.Component<
           highlights={line_highlights}
           highlightContext={this.props.highlightContext}
           address={this.props.address + ":L" + elements.length}
+          traceIndex={this.props.traceIndex}
+          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
         >
           {line}
           {"\n"}

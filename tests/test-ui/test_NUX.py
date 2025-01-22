@@ -2,7 +2,6 @@ import os
 import sys
 
 import pytest
-from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # for local testing
@@ -10,14 +9,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 import util
-from pytest_lazy_fixtures import lf
 from util import *  # needed for pytest fixtures
 
-
-pytest_plugins = ('pytest_asyncio',)
+pytest_plugins = ("pytest_asyncio",)
 
 HAS_SEEN_NUX_HOME = "invariant.explorer.disable.guide.home"
 HAS_SEEN_NUX_TRACE_VIEW = "invariant.explorer.disable.guide.trace_view"
+
 
 # This test is for local running only, to run it just remove the pytest.mark.skip
 @pytest.mark.skip(reason="Requires nux to be enabled")
@@ -32,6 +30,7 @@ async def test_home_page(context, url, screenshot):
     await screenshot(page)
     await page.click("text=Last")
     await screenshot(page)
+
 
 @pytest.mark.skip(reason="Requires nux to be enabled")
 async def test_trace_view(context, url, data_abc, screenshot):
@@ -56,7 +55,7 @@ async def test_trace_view(context, url, data_abc, screenshot):
 
         await page.click("text=next")
         await screenshot(page)
-        
+
         await page.click("text=next")
         await screenshot(page)
 

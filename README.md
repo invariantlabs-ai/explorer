@@ -50,9 +50,28 @@ And then run tests
 ./run.sh tests-local
 ./run.sh down
 ```
-The `./run.sh down` teardown the testing environment fully. Needed to run `./run.sh up`. You can skip it if you are planning un run tests again.
+The `./run.sh down` teardown the testing environment fully. Needed to run `./run.sh up`. You can skip it if you are planning on run tests again.
 
-You can run subset of tests by running
+You can run tests in a folder: 
 ```
-./run.sh tests-local /tests/path-to-my-test
+./run.sh tests-local test-ui
 ```
+
+You can run tests in a file: 
+```
+./run.sh tests-local test-ui/test_basic.py
+```
+
+You can run a particular test within a file: 
+```
+./run.sh tests-local test-ui/test_basic.py::test_policy
+```
+
+#### Showing the logs
+
+To show the logs of the services, run the following command:
+```bash
+./run.sh logs
+```
+
+This will continuously show the logs of the services. To stop showing the logs, press `Ctrl+C`.

@@ -404,6 +404,10 @@ body {
       margin-left: -5pt;
     }
 
+    table.json {
+      margin-bottom: 0pt;
+    }
+
     .default-renderer {
       // padding-top: 5pt;
       padding-bottom: 0pt;
@@ -734,11 +738,13 @@ table.json {
   }
 
   tr td:first-child {
-    min-width: 100pt;
+    min-width: 150pt;
+    max-width: 150pt;
     padding-left: 0pt;
     text-align: right;
     vertical-align: top;
     padding-left: 20pt;
+    overflow-wrap: break-word;
   }
 
   tr td:nth-child(2) {

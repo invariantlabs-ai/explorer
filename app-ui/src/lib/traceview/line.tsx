@@ -35,6 +35,75 @@ export interface HighlightContext {
 }
 
 /**
+ * Returns true if the selectedHighlightAnchor falls into the given address range.
+ *
+ * This supports the case of matching "messages[1].content:L0" with "messages[1].content:L0", but also
+ * cases of comparing line ranges with character ranges, e.g. matching "messages[1].content:L0" and "messages[1].content:0-1".
+ *
+ * @param address The address of the line
+ * @param selectedHighlightAnchor The selected highlight anchor
+ * @param highlights The list of highlights applicable to this line
+ */
+function isExpanded(
+  address: string,
+  selectedHighlightAnchor: string | null,
+  highlights: GroupedHighlight[],
+) {
+  if (address === selectedHighlightAnchor) {
+    return true;
+  }
+
+  if (selectedHighlightAnchor === "" || selectedHighlightAnchor === null) {
+    return false;
+  }
+
+  // check if address ends on :NUM-NUM
+  let parts = selectedHighlightAnchor.split(":");
+  if (parts.length !== 2) {
+    return false;
+  }
+  let addressParts = address.split(":");
+  if (addressParts.length !== 2) {
+    return false;
+  }
+
+  // make sure the first part matches
+  let baseSelectedAddress = selectedHighlightAnchor.split(":")[0];
+  let baseAddress = address.split(":")[0];
+
+  if (baseSelectedAddress !== baseAddress) {
+    return false;
+  }
+
+  // parse last segment as NUM-NUM
+  let lastSegment = parts[parts.length - 1];
+  if (!lastSegment.match(/^\d+-\d+$/)) {
+    return false;
+  }
+
+  let start = parseInt(lastSegment.split("-")[0]);
+  let end = parseInt(lastSegment.split("-")[1]);
+
+  for (let highlight of highlights) {
+    // check if highlight is empty
+    if ((highlight.content?.length || 0) == 0) {
+      continue;
+    }
+    // check if highlight overlaps with address
+    if (highlight.start <= start && highlight.end >= start) {
+      console.log([address, selectedHighlightAnchor, highlights, start, end]);
+      return true;
+    }
+    if (highlight.start <= end && highlight.end >= end) {
+      console.log([address, selectedHighlightAnchor, highlights, start, end]);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Renders a single line of content in a trace view (e.g. a line of code in a tool output, a line of user input, a line of the value of a tool call argument).
  *
  * Wrapping content in a <Line/> enables line-level annotations and also supports highlights as part of the content (e.g. to mark analyzer or search results).
@@ -47,9 +116,12 @@ export interface HighlightContext {
  */
 export function Line(props: {
   children: any;
-  highlightContext?: HighlightContext;
   address?: string;
+  highlightContext?: HighlightContext;
   highlights?: GroupedHighlight[];
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const decorator = props.highlightContext?.decorator;
   const telemetry = useTelemetry();
@@ -76,8 +148,15 @@ export function Line(props: {
     }
   };
 
-  const expanded =
-    props.address === props.highlightContext?.selectedHighlightAnchor;
+  // console.log("check if expanded on", [props.address, props.highlightContext?.selectedHighlightAnchor], props.highlights);
+
+  // const expanded =
+  //   props.address === props.highlightContext?.selectedHighlightAnchor;
+  const expanded = isExpanded(
+    props.address || "",
+    props.highlightContext?.selectedHighlightAnchor || "",
+    props.highlights || [],
+  );
   const className =
     "line " +
     (props.highlights?.length ? "has-highlights" : "") +
@@ -131,7 +210,14 @@ export function Line(props: {
     let existing =
       userInfo?.id &&
       existingThumbAnnotations.find((a) => a["user"]["id"] === userInfo?.id);
+    let isToggle = existing?.["content"] === THUMBS_DOWN;
     if (existing) {
+      if (
+        props.onUpvoteDownvoteDelete &&
+        props.traceIndex !== undefined &&
+        !isToggle
+      )
+        props.onUpvoteDownvoteDelete(props.traceIndex);
       annotator
         ?.delete(existing["id"])
         .then(() => {
@@ -143,7 +229,7 @@ export function Line(props: {
       e.stopPropagation();
 
       // if same as before, untoggle it
-      if (existing["content"] === THUMBS_UP) {
+      if (!isToggle) {
         return;
       }
       // otherwise add opposite
@@ -155,6 +241,12 @@ export function Line(props: {
       ?.create({ address: props.address, content: THUMBS_UP })
       .then(() => {
         annotator?.refresh();
+        if (
+          props.onUpvoteDownvoteCreate &&
+          props.traceIndex !== undefined &&
+          !isToggle
+        )
+          props.onUpvoteDownvoteCreate(props.traceIndex);
       })
       .catch((error) => {
         console.error("error saving thumbs up", error);
@@ -177,7 +269,14 @@ export function Line(props: {
     let existing =
       userInfo?.id &&
       existingThumbAnnotations.find((a) => a["user"]["id"] === userInfo?.id);
+    let isToggle = existing?.["content"] === THUMBS_UP;
     if (existing) {
+      if (
+        props.onUpvoteDownvoteDelete &&
+        props.traceIndex !== undefined &&
+        !isToggle
+      )
+        props.onUpvoteDownvoteDelete(props.traceIndex);
       annotator
         ?.delete(existing["id"])
         .then(() => {
@@ -189,7 +288,7 @@ export function Line(props: {
       e.stopPropagation();
 
       // if same as before, untoggle it
-      if (existing["content"] === THUMBS_DOWN) {
+      if (!isToggle) {
         return;
       }
       // otherwise add opposite
@@ -201,6 +300,12 @@ export function Line(props: {
       ?.create({ address: props.address, content: THUMBS_DOWN })
       .then(() => {
         annotator?.refresh();
+        if (
+          props.onUpvoteDownvoteCreate &&
+          props.traceIndex !== undefined &&
+          !isToggle
+        )
+          props.onUpvoteDownvoteCreate(props.traceIndex);
       })
       .catch((error) => {
         console.error("error saving thumbs down", error);

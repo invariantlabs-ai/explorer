@@ -5,7 +5,6 @@
  */
 import {
   BsCheckCircleFill,
-  BsExclamationCircle,
   BsExclamationTriangleFill,
   BsXCircleFill,
 } from "react-icons/bs";

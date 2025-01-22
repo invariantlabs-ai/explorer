@@ -4,11 +4,10 @@ import { Tooltip } from "react-tooltip";
 import logo from "./assets/invariant.svg";
 import { useUserInfo } from "./UserInfo";
 import UserIcon from "./lib/UserIcon";
-import { Link, useLoaderData, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BsCodeSlash,
   BsDatabase,
-  BsFillGearFill,
   BsGear,
   BsHouse,
   BsList,
@@ -16,13 +15,11 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { BiSolidHome } from "react-icons/bi";
 import { useDatasetList } from "./lib/datasets";
-import { useSnippetsList } from "./lib/snippets";
 import { CompactSnippetList } from "./Snippets";
 import { DatasetLinkList } from "./Datasets";
 import { SignUp } from "./SignUp";
-import { DeploymentInfo } from "./components/DeploymentInfo";
+import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
 import { SignUpModal } from "./SignUpModal";
@@ -79,6 +76,12 @@ function SidebarContent(props: {
 
   const [datasets, refresh] = useDatasetList("private", 4);
 
+  useEffect(() => {
+    if (userInfo?.loggedIn) {
+      refresh();
+    }
+  }, [userInfo?.loggedIn, refresh]);
+
   return (
     <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
       <div
@@ -96,13 +99,9 @@ function SidebarContent(props: {
         {userInfo?.loggedIn && (
           <>
             <h2>
-              <Link to="/datasets">Recent Datasets</Link>
+              <Link to={`/u/${userInfo.username}`}>Recent Datasets</Link>
             </h2>
-            <DatasetLinkList
-              datasets={(datasets || []).filter(
-                (dataset) => dataset.user?.id == userInfo?.id,
-              )}
-            />
+            <DatasetLinkList datasets={datasets} />
             <h2>
               <Link to="/snippets">Recent Snippets</Link>
             </h2>
@@ -111,7 +110,9 @@ function SidebarContent(props: {
           </>
         )}
         {/* unicode copyright */}
-        <p className="secondary">&copy; 2024 Invariant Labs</p>
+        <p className="secondary">
+          &copy; 2025 Invariant Labs <DeploymentCommit />
+        </p>
         <p className="footer-links">
           <a href="https://invariantlabs.ai" target="_blank">
             About
@@ -183,11 +184,13 @@ function Sidebar(props) {
  *                         This is not a security feature, as the API will still enforce
  *                         permissions, but it is a convenience feature to prevent users
  *                         from seeing empty UI for inaccessible content.
+ * @param props.withTabs Whether the content has a separate set of tabs.
  */
 function Layout(props: {
   children: React.ReactNode;
   fullscreen?: boolean;
   needsLogin?: boolean;
+  withTabs?: boolean;
 }) {
   const userInfo = useUserInfo();
   const [userPopoverVisible, setUserPopoverVisible] = React.useState(false);
@@ -249,7 +252,7 @@ function Layout(props: {
           {userInfo?.loggedIn && (
             <>
               <li>
-                <a href="/datasets">
+                <a href={`/u/${userInfo.username}`}>
                   <BsDatabase />
                   Datasets
                 </a>
@@ -315,16 +318,24 @@ function Layout(props: {
                       Documentation
                     </a>
                   </li>
-                  <li>
-                    <a href="/logout">Log Out</a>
-                  </li>
+                  {config("instance_name") != "local" && (
+                    <li>
+                      <a href="/logout">Log Out</a>
+                    </li>
+                  )}
                 </ul>
               </div>
             </>
           )}
         </div>
       </header>
-      <div className={"content " + (props.fullscreen ? "fullscreen" : "")}>
+      <div
+        className={
+          "content " +
+          (props.fullscreen ? "fullscreen" : "") +
+          (props.withTabs ? " with-tabs" : "")
+        }
+      >
         {pageShouldRedirectToLogin && (
           <div className="empty">
             <p>Please sign in to view this page.</p>

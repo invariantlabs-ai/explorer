@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BsFileBinaryFill, BsUpload } from "react-icons/bs";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { EntityList } from "./EntityList";
 import { Modal } from "./Modal";
 import { useUserInfo } from "./UserInfo";
@@ -194,87 +194,101 @@ export function UploadDatasetModalContent(props) {
       {config("sharing") && (
         <>
           <div className="options-container">
-            <input
-              type="radio"
-              id="private"
-              name="access"
-              value="private"
-              checked={!isPublic}
-              onChange={handleAccessChange}
-            />
-            <BsLock className="icon" />
-            <div>
-              <span className="option-name">Private</span>
-              <span className="option-description">
-                Only you can access this dataset.
-              </span>
-            </div>
+            <label htmlFor="private" className="radio-label">
+              <input
+                type="radio"
+                id="private"
+                name="access"
+                value="private"
+                checked={!isPublic}
+                onChange={handleAccessChange}
+              />
+              <BsLock className="icon" />
+              <div>
+                <span className="option-name">Private</span>
+                <span className="option-description">
+                  Only you can access this dataset.
+                </span>
+              </div>
+            </label>
           </div>
           <div className="options-container">
-            <input
-              type="radio"
-              id="public"
-              name="access"
-              value="public"
-              checked={isPublic}
-              onChange={handleAccessChange}
-            />
-            <BsGlobe className="icon" />
-            <div>
-              <span className="option-name">Public</span>
-              <span className="option-description">
-                Anyone on the internet can view this dataset.
-              </span>
-            </div>
+            <label htmlFor="public" className="radio-label">
+              <input
+                type="radio"
+                id="public"
+                name="access"
+                value="public"
+                checked={isPublic}
+                onChange={handleAccessChange}
+              />
+              <BsGlobe className="icon" />
+              <div>
+                <span className="option-name">Public</span>
+                <span className="option-description">
+                  Anyone on the internet can view this dataset.
+                </span>
+              </div>
+            </label>
           </div>
         </>
       )}
       <label>Contents</label>
       <div className="options-container">
-        <input
-          type="radio"
-          id="empty"
-          name="content"
-          value="empty"
-          checked={contentType === "empty"}
-          onChange={handleContentChange}
-        />
-        <div className="option-dataset-type">
-          <span className="option-name">Empty Dataset</span>
-          <span className="option-description">
-            You can upload traces using the{" "}
-            <a
-              target="_blank"
-              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
-            >
-              Explorer Push API
-            </a>
-            .
-          </span>
-        </div>
+        <label htmlFor="empty" className="radio-label">
+          <input
+            type="radio"
+            id="empty"
+            name="content"
+            value="empty"
+            checked={contentType === "empty"}
+            onChange={handleContentChange}
+          />
+          <div className="option-dataset-type">
+            <span className="option-name">Empty Dataset</span>
+            <span className="option-description">
+              You can upload traces using the{" "}
+            </span>
+          </div>
+        </label>
+        <span className="option-description option-description-link">
+          {" "}
+          <a
+            target="_blank"
+            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
+          >
+            Explorer Push API
+          </a>
+          .
+        </span>
       </div>
       <div className="options-container">
-        <input
-          type="radio"
-          id="jsonl"
-          name="content"
-          value="jsonl"
-          checked={contentType === "jsonl"}
-          onChange={handleContentChange}
-        />
-        <div className="option-dataset-type">
-          <span className="option-name">Upload JSON Lines file</span>
-          <span className="option-description">
-            Before uploading traces make sure they are in the{" "}
-            <a
-              target="_blank"
-              href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
-            >
-              correct format
-            </a>
-            .
-          </span>
-        </div>
+        <label htmlFor="jsonl" className="radio-label">
+          <input
+            type="radio"
+            id="jsonl"
+            name="content"
+            value="jsonl"
+            checked={contentType === "jsonl"}
+            onChange={handleContentChange}
+          />
+          <div className="option-dataset-type">
+            <span className="option-name">Upload JSON Lines file</span>
+            <span className="option-description">
+              Before uploading traces make sure they are in the{" "}
+            </span>
+          </div>
+        </label>
+        <span className="option-description option-description-link">
+          {" "}
+          <a
+            target="_blank"
+            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
+          >
+            correct format
+          </a>
+          .
+        </span>
       </div>
       {contentType === "jsonl" && (
         <>
@@ -392,24 +406,30 @@ export function DatasetLinkList(props) {
   return (
     <>
       <EntityList title={null} actions={null} className={props.className}>
-        {datasets.length === 0 && <div className="empty">No datasets</div>}
-        {datasets.map((dataset, i) => (
-          <Link
-            className="item"
-            to={`/u/${dataset.user.username}/${dataset.name}/t`}
-            key={i}
-          >
-            <li>
-              <h3>
-                {props.icon}
-                {dataset.nice_name}
-              </h3>
-              {dataset.description && (
-                <span className="description">{dataset.description}</span>
-              )}
-            </li>
-          </Link>
-        ))}
+        {props.datasets === null ? (
+          <div className="empty">Loading Datasets...</div>
+        ) : (
+          datasets.map((dataset, i) => (
+            <Link
+              className="item"
+              to={`/u/${dataset.user.username}/${dataset.name}/t`}
+              key={i}
+            >
+              <li>
+                <h3>
+                  {props.icon}
+                  {dataset.nice_name}
+                </h3>
+                {dataset.description && (
+                  <span className="description">{dataset.description}</span>
+                )}
+              </li>
+            </Link>
+          ))
+        )}
+        {props.datasets !== null && datasets.length === 0 && (
+          <div className="empty">No datasets</div>
+        )}
       </EntityList>
     </>
   );
@@ -428,6 +448,12 @@ export function Datasets() {
   // tracks whether we are currently showing a delete modal for a particular dataset (null if none)
   const [selectedDatasetForDelete, setSelectedDatasetForDelete] =
     React.useState(null);
+
+  useEffect(() => {
+    if (userInfo?.loggedIn) {
+      refresh();
+    }
+  }, [userInfo?.loggedIn, refresh]);
 
   return (
     <>
@@ -463,7 +489,10 @@ export function Datasets() {
         actions={
           <>
             {userInfo?.loggedIn && (
-              <button onClick={() => setShowUploadModal(true)}>
+              <button
+                className="primary"
+                onClick={() => setShowUploadModal(true)}
+              >
                 <BsUpload /> Upload New Dataset
               </button>
             )}

@@ -1,20 +1,7 @@
-import {
-  BsHouse,
-  BsFillPersonFill,
-  BsCircleFill,
-  BsCircle,
-  BsKeyFill,
-  BsHouseFill,
-  BsFillTerminalFill,
-  BsSpeedometer2,
-  BsThreeDots,
-  BsListColumns,
-  BsRobot,
-  BsSearch,
-} from "react-icons/bs";
+import { BsSpeedometer2 } from "react-icons/bs";
 import Home from "./Home.tsx";
 import Layout from "./Layout.tsx";
-import { Traces, SingleTrace } from "./Traces.tsx";
+import { SingleTrace } from "./Traces.tsx";
 import "./App.scss";
 import DatasetView from "./Dataset.tsx";
 import { New } from "./New.tsx";
@@ -23,7 +10,6 @@ import User from "./User.tsx";
 import { Snippets } from "./Snippets.tsx";
 import { Settings } from "./Settings.tsx";
 import { Datasets } from "./Datasets.tsx";
-import { config } from "./Config.ts";
 import MarkdownFile from "./MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";
@@ -69,9 +55,13 @@ export const routes = [
     },
   },
   {
-    path: '/u/:username/:datasetname/t/:traceIndex',
-    label: 'Dataset',
-    element: <Layout fullscreen><DatasetView /></Layout>,
+    path: "/u/:username/:datasetname/t/:traceIndex",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen withTabs>
+        <DatasetView />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,
@@ -81,9 +71,13 @@ export const routes = [
     },
   },
   {
-    path: '/u/:username/:datasetname/t',
-    label: 'Dataset',
-    element: <Layout fullscreen><DatasetView /></Layout>,
+    path: "/u/:username/:datasetname/t",
+    label: "Dataset",
+    element: (
+      <Layout fullscreen>
+        <DatasetView />
+      </Layout>
+    ),
     loader: async (task: any) => {
       return {
         datasetname: task.params.datasetname,
@@ -134,16 +128,6 @@ export const routes = [
     element: (
       <Layout needsLogin>
         <Snippets />
-      </Layout>
-    ),
-  },
-  // /datasets
-  {
-    path: "/datasets",
-    label: "Datasets",
-    element: (
-      <Layout needsLogin>
-        <Datasets />
       </Layout>
     ),
   },

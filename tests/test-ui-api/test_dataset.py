@@ -76,9 +76,10 @@ async def test_recreate_dataset_with_same_name_fails(context, url, data_abc):
         assert "Dataset with the same name already exists" in await response.text()
 
 
-async def test_get_metadata(context, url, data_abc):
+async def test_get_own_metadata(context, url, data_abc):
     """Tests that getting metadata of a dataset works (both public and private)."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        # The dataset is private.
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -86,6 +87,15 @@ async def test_get_metadata(context, url, data_abc):
         metadata = await get_metadata(context, url, dataset["name"])
         assert metadata == dataset.get("extra_metadata")
         assert "policies" not in metadata
+        assert metadata == dataset['extra_metadata']
+
+        # Query the metadata with the owner_username parameter set to the dataset owner.
+        get_metadata_response = await context.request.get(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
+        )
+        assert get_metadata_response.status == 200
+        metadata = await get_metadata_response.json()
+        assert metadata == dataset.get("extra_metadata")
 
         # Make the dataset public.
         await update_dataset(context, url, dataset["id"], is_dataset_public=True)
@@ -94,12 +104,28 @@ async def test_get_metadata(context, url, data_abc):
         metadata = await get_metadata(context, url, dataset["name"])
         assert metadata == dataset.get("extra_metadata")
         assert "policies" not in metadata
+        assert dataset['extra_metadata'] == metadata
+
+        # Query the metadata with the owner_username parameter set to the dataset owner user_id.
+        get_metadata_response = await context.request.get(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
+        )
+        assert get_metadata_response.status == 200
+        metadata = await get_metadata_response.json()
+        assert metadata == dataset.get("extra_metadata")
 
 
 async def test_get_metadata_for_non_existent_dataset_fails(context, url):
     """Tests that getting metadata of a non-existent dataset fails."""
+    # Get metadata for a non-existent dataset for the caller user_id.
     get_metadata_response = await context.request.get(
         f"{url}/api/v1/dataset/metadata/some_dataset"
+    )
+    assert get_metadata_response.status == 404
+    
+    # Get metadata for a non-existent dataset for a user.
+    get_metadata_response = await context.request.get(
+        f"{url}/api/v1/dataset/metadata/some_dataset?owner_username=developer"
     )
     assert get_metadata_response.status == 404
 
@@ -110,32 +136,48 @@ async def test_get_metadata_created_by_different_user(context, url, data_abc):
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
-        # A different user tries to get the metadata for the dataset.
+        # A different user tries to get the metadata for the dataset when it is private.
+        get_metadata_response = await context.request.get(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
+            headers={"referer": "noauth=user1"},
+        )
+        assert get_metadata_response.status == 403
+
+        # If no owner_username is provided, the request should fail with 404 since the lookup is done by the caller user_id.
         get_metadata_response = await context.request.get(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",
             headers={"referer": "noauth=user1"},
         )
-        assert get_metadata_response.status == 401
+        assert get_metadata_response.status == 404
 
         # Make the dataset public.
         await update_dataset(context, url, dataset["id"], is_dataset_public=True)
 
-        # A different user tries to get the metadata for the dataset.
-        metadata = await get_metadata(
-            context, url, dataset["name"], headers={"referer": "noauth=user1"}
+        # A different user tries to get the metadata for the dataset when it is public.
+        # The lookup is done by the owner_username for which a dataset with the same name exists and the dataset is public.
+        get_metadata_response = await context.request.get(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}?owner_username=developer",
+            headers={"referer": "noauth=user1"},
         )
         expected_metadata = {
             **dataset.get("extra_metadata", {}),
         }
         # Succeeds because the dataset is public.
+        metadata = await get_metadata_response.json()
         assert metadata == expected_metadata
         assert "policies" not in metadata
 
+        # If no owner_username is provided and the caller is not the owner, the request should fail with 404.
+        # The lookup is done by the caller user_id for which a dataset with the same name does not exist.
+        get_metadata_response = await context.request.get(
+            f"{url}/api/v1/dataset/metadata/{dataset['name']}",
+            headers={"referer": "noauth=user1"},
+        )
+        assert get_metadata_response.status == 404
 
-async def test_update_metadata_for_public_and_private_dataset_types(
-    context, url, data_abc
-):
-    """Tests that updating metadata of a dataset works (both public and private)."""
+
+async def test_update_metadata_own_dataset(context, url, data_abc):
+    """Tests that updating metadata of a dataset works (both public and private) when the caller is the owner."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
@@ -538,7 +580,7 @@ async def test_update_metadata_created_by_different_user_fails(url, context, dat
             data={"metadata": {"benchmark": "random", "accuracy": 123}},
             headers={"referer": "noauth=user1"},
         )
-        assert update_metadata_response.status == 401
+        assert update_metadata_response.status == 404
 
         # Make the dataset public.
         await update_dataset(context, url, dataset["id"], is_dataset_public=True)
@@ -549,7 +591,7 @@ async def test_update_metadata_created_by_different_user_fails(url, context, dat
             data={"metadata": {"benchmark": "random", "accuracy": 123}},
             headers={"referer": "noauth=user1"},
         )
-        assert update_metadata_response.status == 403
+        assert update_metadata_response.status == 404
 
 
 async def test_update_metadata_with_invalid_field_fails(context, url):
@@ -730,27 +772,27 @@ async def test_create_dataset_for_is_public_cases(context, url, is_public):
     # Cleanup the dataset.
     _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
 
+
 async def test_create_dataset_validate_field_types(context, url):
     """Tests that creating a dataset with invalid field types fails."""
     dataset_name = f"some_name-{uuid.uuid4()}"
     response = await context.request.post(
         f"{url}/api/v1/dataset/create",
-        data={"name": dataset_name, "is_public": "random"
-        })
+        data={"name": dataset_name, "is_public": "random"},
+    )
     assert response.status == 400
     assert "is_public must be a boolean" in await response.text()
 
     response = await context.request.post(
-        f"{url}/api/v1/dataset/create",
-        data={"name": 1234, "is_public": "random"
-        })
+        f"{url}/api/v1/dataset/create", data={"name": 1234, "is_public": "random"}
+    )
     assert response.status == 400
     assert "name must be a string" in await response.text()
 
     response = await context.request.post(
         f"{url}/api/v1/dataset/create",
-        data={"name": dataset_name, "is_public": True, "metadata": "random"
-        })
+        data={"name": dataset_name, "is_public": True, "metadata": "random"},
+    )
     assert response.status == 400
     assert "metadata must be a dict" in await response.text()
 
@@ -782,6 +824,7 @@ async def test_upload_dataset_for_is_public_cases(context, url, data_abc, is_pub
     # Cleanup the dataset.
     _ = await context.request.delete(f"{url}/api/v1/dataset/byid/{dataset_json['id']}")
 
+
 async def test_upload_dataset_validate_field_types(context, url, data_abc):
     """Tests that uploading a dataset with invalid field types fails."""
     dataset_name = f"some_name-{uuid.uuid4()}"
@@ -795,7 +838,7 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
                 "buffer": data_abc.encode("utf-8"),
             },
             # is_public is not a string representing a boolean
-            "is_public": "random"
+            "is_public": "random",
         },
     )
 
@@ -816,7 +859,7 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
         ("{url}/api/v1/dataset/byuser/{invalid_user}/{invalid_datset}/indices", False),
         ("{url}/api/v1/dataset/list/byuser/{valid_user}", True),
         ("{url}/api/v1/dataset/list/byuser/{invalid_user}", False),
-    ]
+    ],
 )
 async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
@@ -824,14 +867,15 @@ async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
             url=url,
             valid_user="developer",
             invalid_user="developer-does-not-exists",
-            valid_datset=dataset['name'],
-            invalid_datset="dataset-that-does-not-exist"
+            valid_datset=dataset["name"],
+            invalid_datset="dataset-that-does-not-exist",
         )
         response = await context.request.get(endpoint_formatted)
         if valid:
             assert response.status == 200
         else:
             assert 400 <= response.status < 500
+
 
 async def test_create_empty_dataset_and_upload_traces(context, url, data_abc):
     """Tests that creating an empty dataset and uploading traces works."""

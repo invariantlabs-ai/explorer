@@ -129,11 +129,14 @@ case "$1" in
   "down")
     down
     ;;
+  "logs")
+    docker compose -f docker-compose.local.yml logs -f
+    ;;
   "compile-requirements")
     compile_requirements
     ;;
   *)
-    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down|compile-requirements]"
+    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down|compile-requirements|logs]"
     exit 1
     ;;
 esac

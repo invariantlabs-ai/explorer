@@ -72,3 +72,15 @@ export function DeploymentInfo() {
     </>
   );
 }
+
+export function DeploymentCommit() {
+  if (import.meta.env.VITE_GIT_COMMIT) {
+    return (
+      <span className="deployment-commit">
+        {import.meta.env.VITE_GIT_COMMIT.slice(0, 7)}
+      </span>
+    );
+  }
+
+  return <span className="deployment-commit">dev</span>;
+}
