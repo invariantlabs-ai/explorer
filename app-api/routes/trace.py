@@ -25,6 +25,7 @@ from routes.apikeys import (
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
+from routes.dataset import DBJSONEncoder
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -128,14 +129,14 @@ async def download_trace(
         )
 
         trace_data = await trace_to_exported_json(trace, load_annotations(session, id))
-        trace_data = json.dumps(trace_data, indent=2)
+        trace_data = json.dumps(trace_data, cls=DBJSONEncoder) + "\n"
 
         # Return a StreamingResponse with appropriate headers
         return Response(
             content=trace_data,
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename={trace.name}.json"
+                "Content-Disposition": f"attachment; filename={trace.id}.jsonl"
             },
         )
             
