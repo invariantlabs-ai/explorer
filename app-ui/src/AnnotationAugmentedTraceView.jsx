@@ -343,7 +343,7 @@ export function AnnotationAugmentedTraceView(props) {
         />
       </div>
       <Tooltip
-        id="highlight-tooltip"
+        id="button-tooltip"
         place="bottom"
         style={{ whiteSpace: "pre" }}
       />
