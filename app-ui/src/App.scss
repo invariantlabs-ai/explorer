@@ -1826,10 +1826,12 @@ table.api-keys {
   /* whitespace remover */
   margin: 5pt;
   margin-top: 4pt;
+  margin-left: 0pt;
   overflow: hidden;
   border: 1pt solid #ccc;
-  border-radius: 10pt;
   border-radius: 5pt;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 
   & > * {
     display: inline-block;
@@ -2700,6 +2702,7 @@ p.footer-links {
 .filter-container {
   position: relative;
   display: inline-block;
+  margin-top: -1px;
 
   .filter-dropdown {
     position: relative;
@@ -2712,17 +2715,20 @@ p.footer-links {
   }
 
   .filter-button {
+    height: 39.5px;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    padding-left: 12px;
+    padding-right: 12px;
     font-size: 14px;
-    background-color: #f6f8fa;
     border: 1px solid #d0d7de;
     border-radius: 6px;
     color: #24292f;
     cursor: pointer;
     margin-left: 5px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
   }
 
   .filter-button:hover {
