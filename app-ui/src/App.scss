@@ -2707,6 +2707,10 @@ p.footer-links {
     cursor: pointer;
   }
 
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
   .filter-button {
     display: inline-flex;
     align-items: center;
