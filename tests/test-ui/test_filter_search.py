@@ -17,6 +17,7 @@ async def test_navigate_with_search_query(context, url, data_code, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query=foo")
+        await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
         # check that the search query is in the search box
@@ -44,6 +45,7 @@ async def test_navigate_with_search_query_which_is_a_filter(
     async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query={search_query}")
+        await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
         # check that the search query is in the search box
@@ -73,6 +75,7 @@ async def test_changing_filter_changes_search_query(context, url, data_abc, scre
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1")
+        await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
         # select a filter
@@ -102,6 +105,7 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1")
+        await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
         # both traces should be shown
