@@ -347,6 +347,8 @@ async def add_messages(
     The messages in the request payload are expected to be a list of dictionaries.
     These messages can optionally have a timestamp field, which should be in ISO 8601 format.
     If a timestamp is not provided, the current time is used for the new messages.
+    The timestamp field is used to sort the new messages with respect to the existing messages
+    in the trace.
     It is possible that the existing messages in the trace do not have timestamps - in this case,
     the trace creation timestamp is used as a reference for sorting.
     """
@@ -376,7 +378,6 @@ async def add_messages(
             try:
                 # Parse the timestamp into a datetime object
                 parsed_timestamp = datetime.fromisoformat(timestamp)
-                print("parsed_timestamp", parsed_timestamp)
                 # Assume naive timestamps are UTC
                 if parsed_timestamp.tzinfo is None:
                     parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
