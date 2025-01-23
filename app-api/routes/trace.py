@@ -21,7 +21,7 @@ from routes.apikeys import (
     UserOrAPIIdentity,
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from sqlalchemy import and_, select
+from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -309,15 +309,24 @@ async def upload_new_single_trace(
         return {"id": str(trace.id)}
 
 
-def merge_sorted_messages(existing_messages: list[dict], new_messages: list[dict]):
+def merge_sorted_messages(
+    existing_messages: list[dict],
+    new_messages: list[dict],
+    trace_creation_timestamp: str,
+):
     """
     Perform a merge sort of existing and new messages based on the timestamp.
+    Some existing messages may not have a timestamp, in which case the trace
+    creation timestamp is used.
     """
     i, j = 0, 0
     sorted_messages = []
 
     while i < len(existing_messages) and j < len(new_messages):
-        if existing_messages[i]["timestamp"] < new_messages[j]["timestamp"]:
+        if (
+            existing_messages[i].get("timestamp", trace_creation_timestamp)
+            < new_messages[j]["timestamp"]
+        ):
             sorted_messages.append(existing_messages[i])
             i += 1
         else:
@@ -352,41 +361,60 @@ async def add_messages(
             detail="Invalid messages format - expected a non-empty list of dictionaries",
         )
 
+    # Validate timestamp format in new_messages
+    # If timestamp exists, it should be in ISO 8601 format
+    for message in new_messages:
+        timestamp = message.get("timestamp")
+        if timestamp is not None:
+            try:
+                # Parse the timestamp into a datetime object
+                parsed_timestamp = datetime.fromisoformat(timestamp)
+                print("parsed_timestamp", parsed_timestamp)
+                # Assume naive timestamps are UTC
+                if parsed_timestamp.tzinfo is None:
+                    parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
+                # Normalize to UTC ISO 8601 format
+                message["timestamp"] = parsed_timestamp.astimezone(
+                    timezone.utc
+                ).isoformat()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Invalid timestamp format in message: {timestamp}. "
+                        "Expected format: ISO 8601, e.g., 2025-01-23T10:30:00+00:00"
+                    ),
+                ) from e
+
     try:
         with Session(db()) as session:
             with session.begin():  # Start transaction
                 # Lock the trace row for update
-                trace_response = session.execute(
-                    select(Trace)
-                    .filter(
-                        and_(str(Trace.id) == trace_id, str(Trace.user_id) == user_id)
-                    )
+                trace_response = (
+                    session.query(Trace)
+                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == user_id))
                     .with_for_update()
-                ).first()
+                    .first()
+                )
                 if not trace_response:
                     raise HTTPException(status_code=404, detail="Trace not found")
 
                 # set timestamp for new messages
-                timestamp_for_new_messages = datetime.now(timezone.utc)
+                timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
 
-                existing_messages = trace_response.content
-                trace_creation_timestamp = trace_response.time_created
-                for message in existing_messages:
-                    # set timestamp for existing messages if not already set
-                    message.setdefault("timestamp", trace_creation_timestamp)
-
                 combined_messages = merge_sorted_messages(
-                    existing_messages, new_messages
+                    existing_messages=trace_response.content,
+                    new_messages=new_messages,
+                    trace_creation_timestamp=trace_response.time_created.isoformat(),
                 )
+
                 trace_response.content = combined_messages
                 flag_modified(trace_response, "content")
-            session.commit()
         return {"success": True}
     except SQLAlchemyError as e:
         logger.error("Database error when adding messages to existing trace: %s", e)
-        session.rollback()
         raise HTTPException(
             status_code=500, detail="An unexpected database error occurred."
         ) from e
