@@ -1,5 +1,5 @@
 //@ts-nocheck
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import {
   BsCheckCircleFill,
   BsCodeSlash,
@@ -45,7 +45,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
     );
     //@ts-ignore
     this.username = username;
@@ -221,7 +221,8 @@ function DatasetView() {
           onClick={() => setSelectedTab("traces")}
         >
           <div className="inner">
-          <BsCollection />Traces
+            <BsCollection />
+            Traces
           </div>
         </button>
         <button
@@ -230,7 +231,8 @@ function DatasetView() {
           onClick={() => setSelectedTab("metadata")}
         >
           <div className="inner">
-          <BsCodeSlash />Metadata
+            <BsCodeSlash />
+            Metadata
           </div>
         </button>
         <button
@@ -239,24 +241,33 @@ function DatasetView() {
           onClick={() => setSelectedTab("settings")}
         >
           <div className="inner">
-          <BsGear />Settings
+            <BsGear />
+            Settings
           </div>
         </button>
       </div>
 
-      {selectedTab === "traces" && <Traces />}
+      {selectedTab === "traces" && (
+        <Traces dataset={dataset} datasetLoadingError={datasetError} />
+      )}
 
       {selectedTab === "metadata" && (
         <>
           <div className="panel">
-            <header className='toolbar'>
+            <header className="toolbar">
               <h1>
-                <Link to='/'> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
+                <Link to="/"> /</Link>
+                <Link to={`/u/${props.username}`}>{props.username}</Link>/
+                {props.datasetname}
               </h1>
             </header>
             <div className="metadata-summary">
-              <Metadata extra_metadata={filterMetadata({ ...dataset?.extra_metadata, id: dataset.id })} />
+              <Metadata
+                extra_metadata={filterMetadata({
+                  ...dataset?.extra_metadata,
+                  id: dataset.id,
+                })}
+              />
             </div>
           </div>
           <div className="metadata-policies">
@@ -282,10 +293,11 @@ function DatasetView() {
             </Modal>
           )}
           <div className="panel entity-list">
-            <header className='toolbar'>
+            <header className="toolbar">
               <h1>
-                <Link to='/'> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/{props.datasetname}
+                <Link to="/"> /</Link>
+                <Link to={`/u/${props.username}`}>{props.username}</Link>/
+                {props.datasetname}
               </h1>
             </header>
             <div className="settings-actions">

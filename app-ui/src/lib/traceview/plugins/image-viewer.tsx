@@ -70,9 +70,9 @@ class ImageViewer extends React.Component<
 > {
   constructor(props) {
     super(props);
-    
+
     const imageInfo = extractImageId(props.content);
-    
+
     this.state = {
       nodes: [],
       datasetName: imageInfo.datasetName,
@@ -81,6 +81,8 @@ class ImageViewer extends React.Component<
       imageUrl: null,
       isModalOpen: false,
       coordinateHighlights: [],
+      imageWidth: 0,
+      imageHeight: 0,
     };
   }
 
@@ -102,7 +104,7 @@ class ImageViewer extends React.Component<
         },
         () => {
           this.fetchImage();
-        }
+        },
       );
 
       // update coordinate highlights from following tool calls
@@ -129,7 +131,7 @@ class ImageViewer extends React.Component<
 
       const blob = await response.blob();
       const imageUrl = URL.createObjectURL(blob);
-      
+
       // obtain image dimensions
       const img = new Image();
       img.src = imageUrl;
@@ -139,7 +141,7 @@ class ImageViewer extends React.Component<
           imageHeight: img.height,
         });
       };
-      
+
       // update the state with the new image url
       this.setState({ imageUrl });
     } catch (error) {
@@ -190,59 +192,65 @@ class ImageViewer extends React.Component<
    */
   updateHighlights() {
     let highlights_in_text = this.props.highlights.in_text(
-      JSON.stringify(this.props.content, null, 2)
+      JSON.stringify(this.props.content, null, 2),
     );
     let bounding_boxes_data =
       HighlightedJSON.bounding_boxes(highlights_in_text);
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      '"' + this.props.content + '"'
+      '"' + this.props.content + '"',
     );
     let elements: React.ReactNode[] = [];
 
     // Loop over the highlighted structure
     let hasHighlight = false;
+    let hasCoordinateHighlight = false;
     // class name and tooltip for the image
-    let className = "annotated";
+    let className = "annotated ";
     let tooltip = "";
 
     // Add coordinate highlights to the image
     this.state.coordinateHighlights.forEach(({ coordinates, label }, index) => {
       const [x, y] = coordinates;
-      const x1 = x / this.state.imageWidth;
-      const y1 = y / this.state.imageHeight;
+      const x1 = x / this.state.imageWidth - 0.0025 * (this.state.imageHeight / this.state.imageWidth);
+      const y1 = y / this.state.imageHeight - 0.0025 * (this.state.imageWidth / this.state.imageHeight);
       const x2 = (x / this.state.imageWidth) + 0.005 * (this.state.imageHeight / this.state.imageWidth);
       const y2 = (y / this.state.imageHeight) + 0.005 * (this.state.imageWidth / this.state.imageHeight);
       tooltip = label;
 
       bounding_boxes_data.push({ x1, y1, x2, y2, content: { source: "coordinate" } });
-      hasHighlight = true;
+      // hasHighlight = true;
+      hasCoordinateHighlight = true;
     });
-    
+
     for (const highlights of highlights_per_line) {
       let image: React.ReactNode[] = [];
       for (const interval of highlights) {
         if (interval.content !== null) {
           className += interval.content
-              .filter((c) => c["source"])
-              .map((c) => "source-" + c["source"])
-              .join(" ");
+            .filter((c) => c["source"])
+            .map((c) => "source-" + c["source"])
+            .join(" ");
           tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
             )
             .join("\n");
+          hasHighlight = true;
         }
       }
 
       // We assume that we will have exactly one highlight and that this is for the image,
       // so only push a new line if find a highlight AND it is the first highlight.
-      if (this.state.imageUrl && hasHighlight) {
+      if (this.state.imageUrl && (hasHighlight || hasCoordinateHighlight)) {
+        // depending on the type of highlight
+        let annotationType = hasHighlight ? "" : " coordinate-highlight";
+
         image.push(
           <span
             key="highlighted-image"
-            className={`image-wrapper ${className}`}
+            className={`image-wrapper ${className} ${annotationType}`}
             data-tooltip-id={"highlight-tooltip"}
             data-tooltip-content={tooltip}
           >
@@ -280,9 +288,9 @@ class ImageViewer extends React.Component<
               />
             }
             {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
-              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25)
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25),
             )}
-          </span>
+          </span>,
         );
       }
 
@@ -296,7 +304,7 @@ class ImageViewer extends React.Component<
         >
           {image}
           {"\n"}
-        </Line>
+        </Line>,
       );
     }
 
@@ -318,10 +326,10 @@ class ImageViewer extends React.Component<
               className="image-full-screen-opened"
             />
             {bounding_boxes_data.map(({ x1, y1, x2, y2, content }, index) =>
-              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25)
+              this.addBoundingBox(x1, y1, x2, y2, content, index, 1.75, 0.25),
             )}
           </div>
-        </div>
+        </div>,
       );
     }
 
@@ -362,7 +370,7 @@ class ImageViewer extends React.Component<
     }
 
     // iterate over the following messages
-    for (let i=index+1; i<this.props.messages.length; i++) {
+    for (let i = index + 1; i < this.props.messages.length; i++) {
       for (let tc of (this.props.messages[i].tool_calls || [])) {
         for (let value of Object.values(tc.function?.arguments || {})) {
           let coordinates = extractCoordinates(value);

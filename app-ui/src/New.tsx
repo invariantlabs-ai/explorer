@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { TraceView } from "./lib/traceview/traceview";
-import { Modal } from "./Modal";
 
 const CONTENT = `[
   {
@@ -31,9 +30,8 @@ function postTrace(trace: string) {
  * Screen component for uploading a new snippet (single trace outside of dataset).
  */
 export function New() {
-  const [traceString, setTraceString] = React.useState(CONTENT);
-  const [sideBySide, setSideBySide] = React.useState(true);
-  // const [showWarning, setShowWarning] = React.useState(false)
+  const [traceString, setTraceString] = useState(CONTENT);
+  const [sideBySide, setSideBySide] = useState(true);
 
   // observe window and switch to side by side if window is wide enough
   useEffect(() => {

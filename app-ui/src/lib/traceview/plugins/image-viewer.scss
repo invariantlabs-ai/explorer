@@ -54,30 +54,30 @@ span.image-wrapper {
 }
 
 .bounding-box {
-    box-sizing: border-box;
-    pointer-events: none;
-    border-radius: 2px;
-    border-style: solid;
-    border-color: rgb(88 85 255);
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: 2px;
+  border-style: solid;
+  border-color: rgb(88 85 255);
 
-    &.test-assertion-passed {
-        background-color: #0f9d0f2d;
-        border-color: #0f9d0f;
-    }
+  &.test-assertion-passed {
+    background-color: #0f9d0f2d;
+    border-color: #0f9d0f;
+  }
 
-    // Failed assertion
-    &.test-assertion {
-        background-color: #ba29292d;
-        border: 1pt solid #BA2929;
-    }
+  // Failed assertion
+  &.test-assertion {
+    background-color: #ba29292d;
+    border: 1pt solid #BA2929;
+  }
 
-    &.coordinate {
-      background-color: rgba(255, 0, 0, 0.442);
-      border-radius: 50%;
-      border: 1pt solid white !important;
-      transform: scale(2.5);
-      transition: transform 0.1s;
-    }
+  &.coordinate {
+    background-color: rgba(4, 0, 255, 0.442);
+    border-radius: 50%;
+    border: 1pt solid white !important;
+    transform: scale(2.5);
+    transition: transform 0.1s;
+  }
 }
 
 .image-wrapper .bounding-box.coordinate {
@@ -87,4 +87,14 @@ span.image-wrapper {
 .image-wrapper:hover .bounding-box.coordinate {
   opacity: 1.0;
   transform: scale(10);
+}
+
+.image-container:hover .bounding-box.coordinate {
+  opacity: 1.0;
+  transform: scale(4);
+}
+
+span.image-wrapper.coordinate-highlight {
+  border: 0pt solid blue;
+  background-color: rgba(0, 0, 255, 0.442);
 }

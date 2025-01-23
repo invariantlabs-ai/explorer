@@ -9,7 +9,7 @@ from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
 from models.queries import (
     annotation_to_json,
     has_link_sharing,
-    load_annoations,
+    load_annotations,
     load_trace,
     trace_to_json,
 )
@@ -87,17 +87,18 @@ def delete_trace(
 def get_trace(
     request: Request,
     id: str,
-    annotated: bool = False,
     max_length: int = None,
+    include_annotations: bool = True,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
+
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
         )
         return trace_to_json(
             trace,
-            load_annoations(session, id),
+            annotations=load_annotations(session, id) if include_annotations else None,
             user=user.username,
             max_length=max_length,
         )
@@ -204,7 +205,7 @@ def get_annotations(
         trace = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
-        return [annotation_to_json(a, u) for a, u in load_annoations(session, id)]
+        return [annotation_to_json(a, u) for a, u in load_annotations(session, id)]
 
 
 # delete annotation

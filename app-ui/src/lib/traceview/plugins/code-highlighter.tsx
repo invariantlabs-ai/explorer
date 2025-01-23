@@ -8,7 +8,7 @@ import { HighlightedJSON } from "../highlights";
 import { Line } from "../line";
 import { truncate } from "../utils";
 import KEY_TOKENS from "./code-highligther-keywords.json";
-import { copyPermalinkToClipboard, permalink } from "../../permalink-navigator";
+import { permalink } from "../../permalink-navigator";
 
 // component properties of the code-highlighter plugin
 interface CodeHighlightedViewProps {

@@ -123,7 +123,15 @@ function Pair(props) {
                 <a onClick={() => setTruncated(false)}>Show more</a>
               </>
             ) : (
-              value
+              <>
+                {value}
+                {value.length > MAX_LENGTH && (
+                  <>
+                    {" "}
+                    <a onClick={() => setTruncated(true)}>Collapse</a>
+                  </>
+                )}
+              </>
             )}
           </InferredMetadataValueRender>
         }

@@ -6,9 +6,10 @@ import os
 import re
 import uuid
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any, Optional
 from uuid import UUID
 
+from cachetools import TTLCache, cached
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from models.datasets_and_traces import (
@@ -25,7 +26,7 @@ from models.importers import import_jsonl
 from models.queries import (
     dataset_to_json,
     get_savedqueries,
-    load_annoations,
+    load_annotations,
     load_dataset,
     query_traces,
     search_term_mappings,
@@ -204,22 +205,42 @@ class DatasetKind(Enum):
     ANY = "any"
 
 
+@cached(TTLCache(maxsize=1, ttl=1800))
+def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]:
+    """
+    Fetches and caches the homepage datasets with a time-to-live (TTL) cache.
+    """
+    if not homepage_dataset_ids:
+        return []
+
+    with Session(db()) as session:
+        datasets = (
+            session.query(Dataset, User)
+            .join(User, User.id == Dataset.user_id)
+            .filter(and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids)))
+            .order_by(Dataset.time_created.desc())
+            .limit(limit)
+            .all()
+        )
+    return [dataset_to_json(dataset, user) for dataset, user in datasets]
+
+
 @dataset.get("/list")
 def list_datasets(
     kind: DatasetKind,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
-    limit: int | None = None,
+    limit: Optional[int] = None,
 ):
     with Session(db()) as session:
+        if kind == DatasetKind.HOMEPAGE:
+            # Use cached results for HOMEPAGE datasets
+            return fetch_homepage_datasets(limit)
+
         query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
         if kind == DatasetKind.PRIVATE:
             query = query.filter(Dataset.user_id == user_id)
         elif kind == DatasetKind.PUBLIC:
             query = query.filter(Dataset.is_public)
-        elif kind == DatasetKind.HOMEPAGE:
-            query = query.filter(
-                and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids))
-            )
         elif kind == DatasetKind.ANY:
             query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
 
@@ -372,7 +393,7 @@ def search_dataset_by_name(
             pattern = re.compile(r"[a-zA-Z]+\((.*)\)")
             traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
             for trace in traces:
-                annotations = load_annoations(session, trace.id)
+                annotations = load_annotations(session, trace.id)
                 trace_with_match = False
                 for annotation, _ in annotations:
                     # TODO replace with actual parsing
@@ -626,7 +647,7 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
     )
     for trace in traces:
         # load annotations for this trace
-        annotations = load_annoations(session, trace.id)
+        annotations = load_annotations(session, trace.id)
         json_dict = trace_to_exported_json(trace, annotations)
         yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
 
@@ -650,7 +671,6 @@ async def download_traces_by_id(
         dataset_info = {
             "metadata": {**internal_dataset_info["extra_metadata"]},
         }
-
         # streaming response, but triggers a download
         return StreamingResponse(
             stream_jsonl(session, id, dataset_info, userinfo["sub"]),
@@ -743,7 +763,7 @@ def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
 
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
         for trace in traces:
-            annotations = load_annoations(session, trace.id)
+            annotations = load_annotations(session, trace.id)
             out["traces"].append(trace_to_json(trace, annotations))
         return out
 
@@ -888,14 +908,14 @@ async def delete_policy(
 async def get_metadata(
     dataset_name: str,
     userinfo: Annotated[dict, Depends(APIIdentity)],
-    owner_username: str = None, # The username of the owner of the dataset (u/<username>).
+    owner_username: str = None,  # The username of the owner of the dataset (u/<username>).
 ):
     """
     Get metadata for a dataset. The owner_username is an optional parameter that can be provided
     to get metadata for a dataset owned by a specific user. This corresponds to the username
     of the user which is unique.
     - If `owner_username` is provided, return the metadata for the dataset if
-      it is public or if the caller is the same owner_username. If the dataset is private and 
+      it is public or if the caller is the same owner_username. If the dataset is private and
       the caller is not the owner of the dataset, return a 403.
     - If no `owner_username` is provided, return the metadata for the dataset if
       the caller is the owner of the dataset.
@@ -905,7 +925,9 @@ async def get_metadata(
 
     with Session(db()) as session:
         if owner_username:
-            owner_user = session.query(User).filter(User.username == owner_username).first()
+            owner_user = (
+                session.query(User).filter(User.username == owner_username).first()
+            )
             dataset_response = load_dataset(
                 session,
                 by={"name": dataset_name, "user_id": owner_user.id},

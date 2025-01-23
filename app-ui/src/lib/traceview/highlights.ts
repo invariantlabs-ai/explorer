@@ -119,7 +119,7 @@ export class HighlightedJSON {
 
       if (current.$highlights) {
         highlights.push(
-          ...current.$highlights.map((a: any) => [current_address, a])
+          ...current.$highlights.map((a: any) => [current_address, a]),
         );
       }
       for (let key in current) {
@@ -223,22 +223,22 @@ export class HighlightedJSON {
   static disjunct(highlights: Highlight[]): GroupedHighlight[] {
     // Only include highlights that are not bbox highlights
     return disjunct_overlaps(
-      highlights.filter((a) => !("type" in a && a.type === "bbox"))
+      highlights.filter((a) => !("type" in a && a.type === "bbox")),
     );
   }
 
   // Returns the list of bounding boxes from the list of highlights
   static bounding_boxes(
-    highlights: Array<BoundingBoxHighlight | Highlight>
+    highlights: Array<BoundingBoxHighlight | Highlight>,
   ): BoundingBoxHighlight[] {
     return highlights.filter(
-      (a): a is BoundingBoxHighlight => a.type === "bbox"
+      (a): a is BoundingBoxHighlight => a.type === "bbox",
     );
   }
 
   static by_lines(
     disjunct_highlights: Highlight[],
-    text: string
+    text: string,
   ): GroupedHighlight[][] {
     let result: GroupedHighlight[][] = [[]];
     let queue: GroupedHighlight[] = disjunct_highlights.map((a) => ({
@@ -320,7 +320,7 @@ export const EMPTY_ANNOTATIONS = new EmptyHighlights();
  *
  */
 function disjunct_overlaps(
-  items: { start: number; end: number; content: any }[]
+  items: { start: number; end: number; content: any }[],
 ): GroupedHighlight[] {
   // create interval tree for efficient interval queries
   const tree = new IntervalTree();
@@ -329,7 +329,7 @@ function disjunct_overlaps(
   function len_overlap(range1: [number, number], range2: [number, number]) {
     return Math.max(
       0,
-      Math.min(range1[1], range2[1]) - Math.max(range1[0], range2[0])
+      Math.min(range1[1], range2[1]) - Math.max(range1[0], range2[0]),
     );
   }
 
@@ -374,7 +374,7 @@ function disjunct_overlaps(
  * of format { 0: { tool_calls: { 0: { function: { arguments: [ { start, end, content } ] } } } } }
  */
 function sourceRangesToMap(
-  ranges: { start: number; end: number; content: string }[]
+  ranges: { start: number; end: number; content: string }[],
 ): Record<string, any> {
   const map: Record<string, any> = {};
 
@@ -434,7 +434,7 @@ function sourceRangesToMap(
 function to_text_offsets(
   highlightMap: any,
   sourceRangeMap: any,
-  located_highlights: any[] = []
+  located_highlights: any[] = [],
 ): Highlight[] {
   for (let key of Object.keys(highlightMap)) {
     if (key === "$highlights") {
@@ -478,7 +478,7 @@ function to_text_offsets(
       to_text_offsets(
         highlightMap[key],
         sourceRangeMap[key],
-        located_highlights
+        located_highlights,
       );
     } else {
       // console.log("key", key, "not found in", sourceRangeMap)
@@ -492,7 +492,7 @@ function to_text_offsets(
 // this makes highlights easier to work with in the UI, as they are grouped by key, index, and prop
 function highlightsToMap(
   highlights: Record<string, any> | [string, any][],
-  prefix = ""
+  prefix = "",
 ): HighlightMap {
   // convert highlights to a list of entries if necessary
   if (!Array.isArray(highlights)) {
@@ -544,7 +544,7 @@ function highlightsToMap(
       let parsedEnd = parseFloat(end);
       if (isNaN(parsedStart) || isNaN(parsedEnd)) {
         throw new Error(
-          `Failed to parse range ${range} in key ${prefix + key}`
+          `Failed to parse range ${range} in key ${prefix + key}`,
         );
       }
       directHighlights.push({
@@ -573,7 +573,7 @@ function highlightsToMap(
       map[key] = highlightsToMap(highlightsPerKey[key], prefix + key + ".");
     } catch (e: any) {
       throw new Error(
-        `Failed to parse highlights for key ${prefix + key}: ${e.message}`
+        `Failed to parse highlights for key ${prefix + key}: ${e.message}`,
       );
     }
   }

@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { sharedFetch } from "./SharedFetch";
-import { usePostHog } from "posthog-js/react";
 import {
   HAS_CONSENT,
   SUPPORTS_TELEMETRY,

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { BsPersonFillLock } from "react-icons/bs";
 import { useUserInfo } from "./UserInfo";
-import { SUPPORTS_TELEMETRY, HAS_CONSENT } from "./telemetry";
+import { HAS_CONSENT } from "./telemetry";
 
 /**
  * Cookie consent banner for analytics.
