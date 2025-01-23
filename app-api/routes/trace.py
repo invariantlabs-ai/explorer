@@ -342,7 +342,14 @@ def merge_sorted_messages(
 async def add_messages(
     request: Request, trace_id: str, userinfo: Annotated[dict, Depends(APIIdentity)]
 ):
-    """Add messages to an existing trace."""
+    """
+    Add messages to an existing trace.
+    The messages in the request payload are expected to be a list of dictionaries.
+    These messages can optionally have a timestamp field, which should be in ISO 8601 format.
+    If a timestamp is not provided, the current time is used for the new messages.
+    It is possible that the existing messages in the trace do not have timestamps - in this case,
+    the trace creation timestamp is used as a reference for sorting.
+    """
     user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(
