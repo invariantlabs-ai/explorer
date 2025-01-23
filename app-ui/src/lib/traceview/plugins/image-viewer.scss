@@ -68,6 +68,33 @@ span.image-wrapper {
   // Failed assertion
   &.test-assertion {
     background-color: #ba29292d;
-    border: 1pt solid #ba2929;
+    border: 1pt solid #BA2929;
   }
+
+  &.coordinate {
+    background-color: rgba(4, 0, 255, 0.442);
+    border-radius: 50%;
+    border: 1pt solid white !important;
+    transform: scale(2.5);
+    transition: transform 0.1s;
+  }
+}
+
+.image-wrapper .bounding-box.coordinate {
+  opacity: 0.8;
+}
+
+.image-wrapper:hover .bounding-box.coordinate {
+  opacity: 1.0;
+  transform: scale(10);
+}
+
+.image-container:hover .bounding-box.coordinate {
+  opacity: 1.0;
+  transform: scale(4);
+}
+
+span.image-wrapper.coordinate-highlight {
+  border: 0pt solid blue;
+  background-color: rgba(0, 0, 255, 0.442);
 }
