@@ -336,8 +336,13 @@ header.top {
           a,
           a:visited {
             display: block;
-            color: rgb(28, 28, 28);
+            width: 100%;
+            height: 100%;
             text-decoration: none;
+            color: rgb(28, 28, 28);
+            margin: -5pt;
+            padding: 5pt;
+            box-sizing: border-box;
           }
         }
       }
@@ -941,7 +946,9 @@ div.panel {
 
   header.toolbar {
     position: absolute;
-    top: 81pt;
+    // positions the panel toolbar right below the site header
+    // (different when .with-tabs is also set)
+    top: 40pt;
     right: 0pt;
     left: 0pt;
     z-index: 1;
@@ -1013,7 +1020,8 @@ button.primary .shortcut {
     overflow-y: auto;
     position: relative;
     transition: margin-left 0.2s;
-    height: calc(100vh - 88pt);
+    // 122pt leaves space for the topbar and tabs
+    height: calc(100vh - 122pt);
 
     ul {
       overflow-y: auto;
@@ -1257,7 +1265,8 @@ button.primary .shortcut {
       background: none;
       color: $text-color;
       border-radius: 4pt;
-      margin: 4pt;
+      margin: 0pt;
+      padding: 0pt;
       text-align: center;
 
       &:hover {
@@ -1286,6 +1295,14 @@ button.primary .shortcut {
         font-size: 10pt;
         line-height: 20pt;
         font-weight: 500;
+
+        button.clear-filters {
+          line-height: 24.67px;
+          padding: 0px;
+          height: 30px;
+          color: black;
+          background: none;
+        }
       }
 
       .img-button {
@@ -1316,8 +1333,10 @@ button.primary .shortcut {
   }
 
   .explorer {
+    // .explorer is the content without topbar and tabs
     margin-top: 40pt;
-    height: calc(100vh - 85pt);
+    // 120pt leaves space for the topbar and tabs
+    height: calc(100vh - 120pt);
   }
 }
 
@@ -1807,10 +1826,12 @@ table.api-keys {
   /* whitespace remover */
   margin: 5pt;
   margin-top: 4pt;
+  margin-left: 0pt;
   overflow: hidden;
   border: 1pt solid #ccc;
-  border-radius: 10pt;
   border-radius: 5pt;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 
   & > * {
     display: inline-block;
@@ -1918,7 +1939,18 @@ table.api-keys {
   padding: 1pt 6pt;
   font-weight: 800;
   position: relative;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
   top: 1pt;
   font-weight: bold;
 
@@ -1939,13 +1971,21 @@ table.api-keys {
 }
 
 .dataset-view {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0pt;
+
+  .panel {
+    flex: 1;
+  }
 
   .tabs {
     display: flex;
     border-bottom: 1px solid #ddd;
     background: #f6f6f6;
     justify-content: flex-start;
-    margin-bottom: 10pt;
+    // fixed height tab bar
+    height: 34pt;
   }
 
   .tab {
@@ -1970,7 +2010,7 @@ table.api-keys {
   .tab.active {
     border-bottom: 2px solid blue;
     font-weight: bold;
-    
+
     .inner {
       background: white;
     }
@@ -1984,7 +2024,7 @@ table.api-keys {
   }
 
   .metadata-policies {
-    width: 90%; 
+    width: 90%;
     margin: auto;
     margin-top: 10px;
   }
@@ -2004,11 +2044,11 @@ table.api-keys {
     margin-top: -10pt;
     float: right;
   }
-  
+
   .policy-editor-form {
     height: 400pt;
     width: 550pt;
-  
+
     input {
       background-color: #ebebeb;
       display: block;
@@ -2019,14 +2059,14 @@ table.api-keys {
       margin-bottom: 5pt;
       width: 535pt;
     }
-  
+
     label {
       font-size: 16pt;
       opacity: 0.5;
       margin-top: 1lvh;
       margin-bottom: 5pt;
     }
-  
+
     .error {
       color: #ed707b;
       font-size: 18pt;
@@ -2036,12 +2076,12 @@ table.api-keys {
       margin-bottom: 15pt;
       margin-top: 0pt;
     }
-  
+
     button {
       width: 100%;
     }
   }
-  
+
   .policy-editor {
     margin-bottom: 20pt;
   }
@@ -2050,12 +2090,12 @@ table.api-keys {
     height: 1000px;
     overflow-y: auto;
   }
-  
+
   .no-policies {
     margin-top: 30pt;
     text-align: center;
   }
-  
+
   .policy-label {
     margin-bottom: 0pt !important;
   }
@@ -2115,7 +2155,6 @@ table.api-keys {
     position: relative;
     top: 1pt;
     margin-right: 1pt;
-
   }
 }
 
@@ -2613,6 +2652,17 @@ p.footer-links {
   .options-container {
     display: flex;
     align-items: center;
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .option-description-link {
+      margin-top: 21px;
+      margin-left: 5px;
+    }
   }
 
   .option-name {
@@ -2641,4 +2691,94 @@ p.footer-links {
   margin-left: 2pt;
   color: #666;
   opacity: 0.5;
+}
+
+// when we have tabs like in the trace view (e.g. traces|metadata|settings)
+// we make space for it and position the header toolbar lower
+.with-tabs div.panel header.toolbar {
+  top: 75pt;
+}
+
+.filter-container {
+  position: relative;
+  display: inline-block;
+  margin-top: -1px;
+
+  .filter-dropdown {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .filter-button {
+    height: 39.5px;
+    display: inline-flex;
+    align-items: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 14px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    color: #24292f;
+    cursor: pointer;
+    margin-left: 5px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+  }
+
+  .filter-button:hover {
+    background-color: #eaecef;
+  }
+
+  .dropdown-icon {
+    margin-left: 4px;
+  }
+
+  .filter-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    margin-top: 4px;
+    padding: 8px 0;
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    width: 230px;
+  }
+
+  .filter-dropdown[open] .filter-options {
+    display: block;
+  }
+
+  .filter-option {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #24292f;
+  }
+
+  .selected-filter-option {
+    background-color: #f6f8fa;
+  }
+
+  .filter-option:hover {
+    background-color: #f6f8fa;
+  }
+
+  > details > div > button {
+    border-radius: 0px;
+  }
 }

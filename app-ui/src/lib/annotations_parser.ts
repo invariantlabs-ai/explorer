@@ -55,7 +55,11 @@ export class AnnotationsParser {
 
       // mappings
       let substr = key.substring(key.indexOf(":"));
-      if (substr.match(/:\d+-\d+/)) {
+      // Match either a character range or a bounding box
+      if (
+        substr.match(/:\d+-\d+/) ||
+        substr.match(/:bbox-\d.\d+,\s*\d.\d+,\s*\d.\d+,\s*\d.\d+/)
+      ) {
         for (let i = 0; i < annotations[key].length; i++) {
           let annotation = annotations[key][i]; // TODO: what do multiple indices here mean{
           let highlight: HighlightData = {

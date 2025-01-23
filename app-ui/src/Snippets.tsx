@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { EntityList } from "./EntityList";
 import { useUserInfo } from "./UserInfo";
-import { BsTrash, BsUpload, BsX } from "react-icons/bs";
+import { BsUpload } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Time } from "./components/Time";
 import { DeleteSnippetModal, useSnippetsList } from "./lib/snippets";
@@ -43,21 +43,27 @@ export function Snippets() {
           </>
         }
       >
-        {snippets.map((snippet, i) => (
-          <Link className="item" to={`/trace/${snippet.id}`} key={i}>
-            <li>
-              <h3>
-                Snippet{" "}
-                <span className="traceid">#{snippet.id.slice(0, 6)}</span>
-              </h3>
-              <span className="description">
-                <Time>{snippet.time_created}</Time>
-              </span>
-              <div className="spacer" />
-            </li>
-          </Link>
-        ))}
-        {snippets.length === 0 && <div className="empty">No snippets</div>}
+        {!snippets ? (
+          <div className="empty">Loading snippets...</div>
+        ) : (
+          snippets.map((snippet, i) => (
+            <Link className="item" to={`/trace/${snippet.id}`} key={i}>
+              <li>
+                <h3>
+                  Snippet{" "}
+                  <span className="traceid">#{snippet.id.slice(0, 6)}</span>
+                </h3>
+                <span className="description">
+                  <Time>{snippet.time_created}</Time>
+                </span>
+                <div className="spacer" />
+              </li>
+            </Link>
+          ))
+        )}
+        {snippets && snippets.length === 0 && (
+          <div className="empty">No snippets</div>
+        )}
       </EntityList>
     </>
   );
@@ -73,20 +79,26 @@ export function CompactSnippetList(props) {
   return (
     <>
       <EntityList>
-        {snippets.map((snippet, i) => (
-          <Link className="item" to={`/trace/${snippet.id}`} key={i}>
-            <li>
-              <h3>
-                {props.icon} Snippet{" "}
-                <span className="traceid">#{snippet.id.slice(0, 6)}</span>
-              </h3>
-              <span className="description">
-                <Time>{snippet.time_created}</Time>
-              </span>
-            </li>
-          </Link>
-        ))}
-        {snippets.length === 0 && <div className="empty">No snippets</div>}
+        {snippets === null ? (
+          <div className="empty">Loading snippets...</div>
+        ) : (
+          snippets.map((snippet, i) => (
+            <Link className="item" to={`/trace/${snippet.id}`} key={i}>
+              <li>
+                <h3>
+                  {props.icon} Snippet{" "}
+                  <span className="traceid">#{snippet.id.slice(0, 6)}</span>
+                </h3>
+                <span className="description">
+                  <Time>{snippet.time_created}</Time>
+                </span>
+              </li>
+            </Link>
+          ))
+        )}
+        {snippets !== null && snippets.length === 0 && (
+          <div className="empty">No snippets</div>
+        )}
       </EntityList>
     </>
   );

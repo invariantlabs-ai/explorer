@@ -73,7 +73,6 @@ export function DeploymentInfo() {
   );
 }
 
-
 export function DeploymentCommit() {
   if (import.meta.env.VITE_GIT_COMMIT) {
     return (

@@ -221,9 +221,8 @@ export function AnnotationAugmentedTraceView(props) {
   // wait a bit after the last render of the components to enable the guide
   useEffect(() => {
     const timer = setTimeout(() => {
-      props.enableNux(); // Mark rendering as stabilized
+      if (props.enableNux) props.enableNux(); // Mark rendering as stabilized
     }, 500); // Adjust the timeout based on the rendering frequency
-
     return () => {
       clearTimeout(timer); // Clear the timeout if re-render occurs
     };
@@ -261,25 +260,25 @@ export function AnnotationAugmentedTraceView(props) {
           <>
             {is_all_expanded ? (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onCollapseAll}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Collapse All"
               >
                 <BsArrowsCollapse />
               </button>
             ) : (
               <button
-                className="inline icon guide-step-3"
+                className="inline icon nux-step-3"
                 onClick={onExpandAll}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Expand All"
               >
                 <BsArrowsExpand />
               </button>
             )}
             <a
-              href={"/api/v1/trace/" + activeTraceId + "?annotated=1"}
+              href={"/api/v1/trace/" + activeTraceId}
               download={activeTraceId + ".json"}
             >
               <button
@@ -288,7 +287,7 @@ export function AnnotationAugmentedTraceView(props) {
                   e.stopPropagation();
                   telemetry.capture("traceview.download");
                 }}
-                data-tooltip-id="button-tooltip"
+                data-tooltip-id="highlight-tooltip"
                 data-tooltip-content="Download"
               >
                 <BsDownload />
@@ -305,8 +304,7 @@ export function AnnotationAugmentedTraceView(props) {
             {props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={
-                  "inline guide-step-4" +
-                  (props.sharingEnabled ? "primary" : "")
+                  "inline nux-step-4" + (props.sharingEnabled ? "primary" : "")
                 }
                 onClick={onShare}
               >
@@ -346,6 +344,7 @@ export function AnnotationAugmentedTraceView(props) {
         place="bottom"
         style={{ whiteSpace: "pre" }}
       />
+      <Tooltip id="highlights-navigator-tooltip" place="bottom" />
     </>
   );
 }
@@ -364,7 +363,7 @@ function TraceViewContent(props) {
     setEvents,
     traceIndex,
     onUpvoteDownvoteCreate,
-    onUpvoteDownvoteDelete
+    onUpvoteDownvoteDelete,
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
@@ -699,6 +698,7 @@ function AnnotationEditor(props) {
             className="primary"
             disabled={submitting || (content == "" && userInfo?.loggedIn)}
             onClick={onSave}
+            aria-label="save-annotation"
           >
             {!userInfo?.loggedIn ? (
               "Sign Up To Annotate"

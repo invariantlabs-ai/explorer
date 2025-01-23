@@ -10,16 +10,16 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
-    create_engine,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 from sqlalchemy.sql import func
-
+from database.database_manager import DatabaseManager
 
 class Base(DeclarativeBase):
     pass
@@ -28,7 +28,10 @@ class Base(DeclarativeBase):
 class Dataset(Base):
     __objectname__ = "Dataset"
     __tablename__ = "datasets"
-    __table_args__ = (UniqueConstraint("user_id", "name", name="_user_id_name_uc"),)
+    __table_args__ = (
+        Index('idx_datasets_user_id', 'user_id'),
+        UniqueConstraint("user_id", "name", name="_user_id_name_uc"),
+    )
 
     # key is uuid that auto creates
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -61,6 +64,9 @@ class SavedQueries(Base):
 class Trace(Base):
     __objectname__ = "Trace"
     __tablename__ = "traces"
+    __table_args__ = (
+        Index('idx_traces_dataset_id', 'dataset_id'),
+    )
 
     # key is uuid that auto creates
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -92,6 +98,9 @@ class Trace(Base):
 class User(Base):
     __objectname__ = "User"
     __tablename__ = "users"
+    __table_args__ = (
+        Index('idx_users_username', 'username'),
+    )
     # database of users
     # this is NOT used for auth (see routes/auth.py), but just to map user_id -> display, image_path
 
@@ -104,6 +113,9 @@ class User(Base):
 class Annotation(Base):
     __objectname__ = "Annotation"
     __tablename__ = "annotations"
+    __table_args__ = (
+        Index('idx_annotations_trace_id', 'trace_id'),
+    )
 
     # key is uuid that auto creates
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -144,6 +156,9 @@ class SharedLinks(Base):
 class APIKey(Base):
     __objectname__ = "APIKeys"
     __tablename__ = "api_keys"
+    __table_args__ = (
+        Index('idx_api_keys_user_id', 'user_id'),
+    )
 
     # key id
     id = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -185,19 +200,8 @@ class DatasetPolicy(BaseModel):
         """Represents the object as a dictionary."""
         return self.model_dump()
 
-
-def get_db_url():
-    return "postgresql://{}:{}@{}:5432/{}".format(
-        os.environ["POSTGRES_USER"],
-        os.environ["POSTGRES_PASSWORD"],
-        os.environ["POSTGRES_HOST"],
-        os.environ["POSTGRES_DB"],
-    )
-
-
 def db():
     """
     Returns a SQLAlchemy engine object that is connected to the database.
     """
-    client = create_engine(get_db_url())
-    return client
+    return DatabaseManager.get_engine()

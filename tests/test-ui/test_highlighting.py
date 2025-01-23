@@ -59,8 +59,6 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
 
         # wait for load ('Tool' message)
         await page.wait_for_selector("text=Tool")
-        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
-        await util.expand_messages(page)
 
         # # first construct a frame for the first .event on screen (0th .event is the metadata)
         user_msg = page.locator("css=.event").nth(1)
@@ -99,8 +97,6 @@ async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
 
         # wait for load
         await page.wait_for_selector("text=Tool")
-        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
-        await util.expand_messages(page)
         await screenshot(page)
 
         snippet_1 = page.locator("css=.event").nth(1)

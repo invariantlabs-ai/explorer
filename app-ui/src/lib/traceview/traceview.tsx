@@ -8,8 +8,6 @@ import {
   BsChatFill,
   BsCheck2,
   BsExclamationCircleFill,
-  BsMagic,
-  BsLink,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -535,18 +533,12 @@ export class RenderedTrace extends React.Component<
       typeof segments[1] === "number"
     ) {
       this.viewportRef.current.scrollToIndex({ index: segments[1] });
-      // if last segment is L<NUM>
-      if (
-        segments.length > 2 &&
-        segments[segments.length - 1].startsWith &&
-        segments[segments.length - 1].startsWith("L")
-      ) {
-        if (operation == "annotations") {
-          this.setState({
-            selectedHighlightAddress: anchorToAddress(segments),
-          });
-        }
-      }
+      // on reveal, open the annotation editor for the relevant line, i.e.
+      // set the revealed address as selected highlight address (can be line or
+      // char range)
+      this.setState({
+        selectedHighlightAddress: anchorToAddress(segments),
+      });
     }
   }
 
@@ -820,18 +812,18 @@ class MessageView extends React.Component<
   constructor(props: MessageViewProps) {
     super(props);
 
-        let collapsed = false; // default to expanded message display
-        if (typeof props.allExpanded !== "undefined") {
-            // if all messages are expanded/collapsed, use that state
-            // to initialize the expanded state of this message
-            // even if we have all collapsed, we still want to show the user messages
-            collapsed = !props.allExpanded && this.props.message.role !== "user";
-        }
+    let collapsed = false; // default to expanded message display
+    if (typeof props.allExpanded !== "undefined") {
+      // if all messages are expanded/collapsed, use that state
+      // to initialize the expanded state of this message
+      // even if we have all collapsed, we still want to show the user messages
+      collapsed = !props.allExpanded && this.props.message.role !== "user";
+    }
 
-        this.state = {
-            error: null,
-            collapsed: collapsed
-        }
+    this.state = {
+      error: null,
+      collapsed: collapsed,
+    };
 
     this.collapse = () => this.setState({ collapsed: true });
     this.expand = () => this.setState({ collapsed: false });
@@ -964,8 +956,12 @@ class MessageView extends React.Component<
                         address={this.props.address + ".content"}
                         message={message}
                         traceIndex={this.props.traceIndex}
-                        onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-                        onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
+                        onUpvoteDownvoteCreate={
+                          this.props.onUpvoteDownvoteCreate
+                        }
+                        onUpvoteDownvoteDelete={
+                          this.props.onUpvoteDownvoteDelete
+                        }
                       />
                     ) : (
                       <Annotated
@@ -974,8 +970,12 @@ class MessageView extends React.Component<
                         address={this.props.address + ".content"}
                         message={message}
                         traceIndex={this.props.traceIndex}
-                        onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-                        onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
+                        onUpvoteDownvoteCreate={
+                          this.props.onUpvoteDownvoteCreate
+                        }
+                        onUpvoteDownvoteDelete={
+                          this.props.onUpvoteDownvoteDelete
+                        }
                       >
                         {truncate_content(
                           message.content,
@@ -1005,8 +1005,12 @@ class MessageView extends React.Component<
                           }
                           message={message}
                           traceIndex={this.props.traceIndex}
-                          onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-                          onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
+                          onUpvoteDownvoteCreate={
+                            this.props.onUpvoteDownvoteCreate
+                          }
+                          onUpvoteDownvoteDelete={
+                            this.props.onUpvoteDownvoteDelete
+                          }
                         />
                       );
                     })}

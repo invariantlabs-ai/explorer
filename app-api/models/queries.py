@@ -69,7 +69,7 @@ def load_trace(
 
 
 # TODO: Fix typo in the function name
-def load_annoations(session, by):
+def load_annotations(session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
     return (
         session.query(Annotation, User)
@@ -234,7 +234,9 @@ def save_user(session, userinfo):
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:
-        max_length = config("server_truncation_limit")
+        max_length = config('server_truncation_limit')
+    if "uploader" in trace.extra_metadata:
+        trace.extra_metadata.pop("uploader")
     out = {
         "id": trace.id,
         "index": trace.index,
@@ -276,6 +278,8 @@ def annotation_to_json(annotation, user=None, **kwargs):
 
 
 def trace_to_exported_json(trace, annotations=None, user=None):
+    if "uploader" in trace.extra_metadata:
+        trace.extra_metadata.pop("uploader")
     out = {
         "index": trace.index,
         "messages": trace.content,

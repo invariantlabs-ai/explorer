@@ -7,7 +7,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "./Routes";
 
 import { PostHogProvider } from "posthog-js/react";
-import { posthog } from "posthog-js";
 import {
   telemetryOptions,
   HAS_CONSENT,

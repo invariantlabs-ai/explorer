@@ -2,15 +2,15 @@
  * Page components for displaying single and all dataset traces.
  */
 
-import React, { act, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   BsBookmark,
   BsCaretDownFill,
   BsCaretRightFill,
+  BsCheck2,
+  BsXSquareFill,
   BsExclamationLg,
   BsExclamationTriangleFill,
-  BsFilterCircle,
-  BsFilterCircleFill,
   BsInfo,
   BsLayoutSidebarInset,
   BsSearch,
@@ -29,18 +29,20 @@ import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView";
 import { Modal } from "./Modal";
 import { sharedFetch } from "./SharedFetch";
 import { useUserInfo } from "./UserInfo";
-import logo from "./assets/invariant.svg";
 import { EmptyDatasetInstructions } from "./components/EmptyDataset";
 import { useTelemetry } from "./telemetry";
 import { Time } from "./components/Time";
 import { DeleteSnippetModal } from "./lib/snippets";
 import { UserInfo } from "./UserInfo";
 import TracePageNUX from "./TracePageNUX";
-import { HighlightsNavigator } from "./HighlightsNavigator";
 import { DatasetNotFound, TraceNotFound, isClientError } from "./NotFound";
+import { Tooltip } from "react-tooltip";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
+
+const IS_ANNOTATED_SEARCH_QUERY = "is:annotated";
+const IS_INVARIANT_GROUPING_SEARCH_QUERY = "is:invariant";
 
 /**
  * Get the full name including the hierarchy path of a trace.
@@ -367,7 +369,7 @@ function fetchTrace(trace: Trace): Promise<{ updated: boolean; trace: Trace }> {
   trace.messages = [{ role: "system", content: "Loading..." }];
 
   return new Promise((resolve, reject) => {
-    fetch(`/api/v1/trace/${trace.id}`)
+    fetch(`/api/v1/trace/${trace.id}?include_annotations=False`)
       .then((response) => {
         if (response.ok) {
           return response.json();
@@ -682,29 +684,19 @@ function useSearch() {
  *
  * Consists of a Sidebar with a list of traces and an Explorer component for viewing the currently selected trace.
  */
-export function Traces() {
+export function Traces(props) {
   // extract user and dataset name from loader data (populated by site router)
-  const props: {
-    username: string;
-    datasetname: string;
-    traceIndex: number | null;
-  } = useLoaderData() as any;
+  const { username, datasetname, traceIndex } = useLoaderData() as any;
   // used to navigate to a different trace
   const navigate = useNavigate();
   // load the dataset metadata
-  const [dataset, datasetLoadingError] = useDataset(
-    props.username,
-    props.datasetname,
-  );
+  const { dataset, datasetLoadingError } = props;
   // feature set enabled for this dataset
   const featureSet = new FeatureSet(
     dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {},
   );
   // load information about the traces in the dataset
-  const [traces, hierarchyPaths, refresh] = useTraces(
-    props.username,
-    props.datasetname,
-  );
+  const [traces, hierarchyPaths, refresh] = useTraces(username, datasetname);
   // trigger whether share modal is shown
   const [showShareModal, setShowShareModal] = React.useState(false);
   // trigger whether trace deletion modal is shown
@@ -714,9 +706,7 @@ export function Traces() {
   const userInfo = useUserInfo();
   // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(
-    traces && props.traceIndex != null
-      ? traces.get(props.traceIndex)?.id
-      : null,
+    traces && traceIndex != null ? traces.get(traceIndex)?.id : null,
     userInfo,
   );
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
@@ -744,13 +734,13 @@ export function Traces() {
 
     if (
       traces &&
-      props.traceIndex !== null &&
-      props.traceIndex !== undefined &&
-      traces.has(props.traceIndex) &&
+      traceIndex !== null &&
+      traceIndex !== undefined &&
+      traces.has(traceIndex) &&
       (flattenedDisplayedIndices.length == 0 ||
-        flattenedDisplayedIndices.includes(props.traceIndex))
+        flattenedDisplayedIndices.includes(traceIndex))
     ) {
-      setActiveTrace(traces.get(props.traceIndex));
+      setActiveTrace(traces.get(traceIndex));
     } else if (!traces) {
       setActiveTrace(null);
     } else {
@@ -761,13 +751,13 @@ export function Traces() {
       if (flattenedDisplayedIndices.length > 0)
         new_index = flattenedDisplayedIndices[0];
       navigate(
-        `/u/${props.username}/${props.datasetname}/t/${new_index}` +
+        `/u/${username}/${datasetname}/t/${new_index}` +
           window.location.search +
           window.location.hash,
         { replace: true },
       );
     }
-  }, [props.traceIndex, traces, displayedIndices]);
+  }, [traceIndex, traces, displayedIndices]);
 
   // if we switch to a different active trace, update the active trace and actually fetch the selected trace data
   useEffect(() => {
@@ -788,13 +778,13 @@ export function Traces() {
   const navigateToTrace = useCallback(
     (traceIndex: number | null) => {
       navigate(
-        `/u/${props.username}/${props.datasetname}/t/${traceIndex || ""}` +
+        `/u/${username}/${datasetname}/t/${traceIndex || ""}` +
           window.location.search +
           window.location.hash,
       );
       refresh();
     },
-    [props.username, props.datasetname],
+    [username, datasetname],
   );
 
   // error state of this view
@@ -893,8 +883,8 @@ export function Traces() {
           <Sidebar // only show the sidebar if there are traces to show
             traces={traces}
             hierarchyPaths={hierarchyPaths}
-            username={props.username}
-            datasetname={props.datasetname}
+            username={username}
+            datasetname={datasetname}
             activeTraceIndex={activeTrace != null ? activeTrace.index : null}
             onRefresh={refresh}
             searchQuery={searchQuery}
@@ -923,15 +913,15 @@ export function Traces() {
             header={
               <h1>
                 <Link to="/"> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                <Link to={`/u/${props.username}/${props.datasetname}/t`}>
-                  {props.datasetname}
+                <Link to={`/u/${username}`}>{username}</Link>/
+                <Link to={`/u/${username}/${datasetname}/t`}>
+                  {datasetname}
                 </Link>
                 {activeTrace && (
                   <>
                     /{" "}
                     <Link
-                      to={`/u/${props.username}/${props.datasetname}/t/${activeTrace.index}`}
+                      to={`/u/${username}/${datasetname}/t/${activeTrace.index}`}
                     >
                       <span className="traceid">
                         {getFullDisplayName(activeTrace)}
@@ -966,12 +956,14 @@ export function Traces() {
             onAnnotationCreate={onAnnotationCreate}
             onAnnotationDelete={onAnnotationDelete}
             enableNux={enableNux}
-            datasetname={props.datasetname}
+            datasetname={datasetname}
             isUserOwned={isUserOwned}
           />
         }
         {renderNux && <TracePageNUX />}
       </div>
+      {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
+      <Tooltip id="sidebar-button-tooltip" place="bottom" />
     </div>
   );
 }
@@ -1041,7 +1033,7 @@ function SearchBox(props) {
       <button
         className="search-submit"
         onClick={hasSearch ? handleSearch : props.onSave}
-        data-tooltip-id="button-tooltip"
+        data-tooltip-id="sidebar-button-tooltip"
         data-tooltip-content={
           !hasChanged && inputValue !== "" ? "Save Search" : ""
         }
@@ -1105,6 +1097,27 @@ function Sidebar(props: {
     {} as Record<string, boolean>,
   );
 
+  const filterRef = React.useRef<HTMLDetailsElement | null>(null);
+
+  const [selectedFilter, setSelectedFilter] = React.useState<string | null>(
+    null,
+  );
+
+  const filters = [
+    { label: "Show annotated", value: "show-annotated-traces" },
+    { label: "Group by Analysis Result", value: "group-by-analysis-result" },
+  ];
+
+  useEffect(() => {
+    if (searchQuery === IS_ANNOTATED_SEARCH_QUERY) {
+      setSelectedFilter("show-annotated-traces");
+    } else if (searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY) {
+      setSelectedFilter("group-by-analysis-result");
+    } else {
+      setSelectedFilter(null);
+    }
+  }, [searchQuery]);
+
   useEffect(() => {
     if (!traces) {
       setActiveIndices({ all: { traces: [], description: "all traces" } });
@@ -1151,16 +1164,74 @@ function Sidebar(props: {
     });
   };
 
-  const isInvariantGrouping = searchQuery === "is:invariant";
+  const isInvariantGrouping =
+    searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY;
   const onTriggerInvariantGrouping = (e) => {
     if (!isInvariantGrouping) {
-      setSearchQuery("is:invariant");
+      setSearchQuery(IS_INVARIANT_GROUPING_SEARCH_QUERY);
       telemetry.capture("traceview.search-invariant-grouping", {
-        query: "is:invariant",
+        query: IS_INVARIANT_GROUPING_SEARCH_QUERY,
       });
     } else {
       setSearchQuery("");
     }
+  };
+
+  const isAnnotatedGrouping = searchQuery === IS_ANNOTATED_SEARCH_QUERY;
+  const onTriggerAnnotatedGrouping = (e) => {
+    if (!isAnnotatedGrouping) {
+      setSearchQuery(IS_ANNOTATED_SEARCH_QUERY);
+      telemetry.capture("traceview.search-annotated-grouping", {
+        query: IS_ANNOTATED_SEARCH_QUERY,
+      });
+    } else {
+      setSearchQuery("");
+    }
+  };
+
+  const handleFilterSelect = (e, filter) => {
+    // If the same filter is selected again, deselect it.
+    if (selectedFilter === filter.value) {
+      setSelectedFilter(null);
+      setSearchQuery("");
+      if (filterRef.current) filterRef.current.open = false;
+      return;
+    }
+
+    // Set the selected filter and close the dropdown.
+    setSelectedFilter(filter.value);
+    if (filter.value === "show-annotated-traces") {
+      onTriggerAnnotatedGrouping(e);
+    } else if (filter.value === "group-by-analysis-result") {
+      onTriggerInvariantGrouping(e);
+    }
+    if (filterRef.current) filterRef.current.open = false;
+  };
+
+  useEffect(() => {
+    const handleClick = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        if (filterRef.current) {
+          filterRef.current.open = false;
+        }
+      }
+    };
+
+    // Add event listener for clicks
+    document.addEventListener("click", handleClick);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
+
+  const clearFiltersAndSearchQuery = () => {
+    setSearchQuery("");
+    setSelectedFilter(null);
+    // Whenever the search is reset, clear the highlight mappings so
+    // that the search highlights are removed from the trace view.
+    setHighlightMappings({});
   };
 
   const viewItems: React.ReactNode[] = [];
@@ -1344,6 +1415,32 @@ function Sidebar(props: {
   return (
     <div className={"sidebar " + (visible ? "visible" : "collapsed")}>
       <header>
+        <div className="filter-container">
+          <details className="filter-dropdown" ref={filterRef}>
+            <summary className="filter-button" aria-label="filter-dropdown">
+              Filters
+              <span className="dropdown-icon">▼</span>
+            </summary>
+            <div className="filter-options">
+              {filters.map((filter, index) => (
+                <button
+                  key={index}
+                  className={
+                    "filter-option" +
+                    (selectedFilter === filter.value
+                      ? " selected-filter-option"
+                      : "")
+                  }
+                  onClick={(e) => handleFilterSelect(e, filter)}
+                  aria-label={filter.value + "-filter"}
+                >
+                  {filter.label}{" "}
+                  {selectedFilter === filter.value && <BsCheck2 />}
+                </button>
+              ))}
+            </div>
+          </details>
+        </div>
         <SearchBox
           setSearchQuery={props.setSearchQuery}
           searchQuery={props.searchQuery}
@@ -1352,34 +1449,10 @@ function Sidebar(props: {
           onSave={onSave}
           setHighlightMappings={props.setHighlightMappings}
         />
-        {/* <button className='header-short toggle icon' onClick={onRefresh}
-        data-tooltip-id="button-tooltip" data-tooltip-content="Refresh">
-        <BsArrowClockwise />
-      </button> */}
-        {!isInvariantGrouping && (
-          <button
-            className="header-short toggle icon"
-            onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="button-tooltip"
-            data-tooltip-content="Group Traces by Analysis Result"
-          >
-            <BsFilterCircle />
-          </button>
-        )}
-        {isInvariantGrouping && (
-          <button
-            className="header-short toggle icon"
-            onClick={onTriggerInvariantGrouping}
-            data-tooltip-id="button-tooltip"
-            data-tooltip-content="Group Traces by Analysis Result"
-          >
-            <BsFilterCircleFill />
-          </button>
-        )}
         <button
           className="header-short toggle icon"
           onClick={() => setVisible(!visible)}
-          data-tooltip-id="button-tooltip"
+          data-tooltip-id="sidebar-button-tooltip"
           data-tooltip-content="Fold Sidebar"
         >
           <BsLayoutSidebarInset />
@@ -1388,6 +1461,8 @@ function Sidebar(props: {
           traces={traces}
           searching={props.searching}
           activeIndices={activeIndices}
+          searchOrFilterApplied={selectedFilter !== null || searchQuery !== ""}
+          clearFiltersAndSearchQuery={clearFiltersAndSearchQuery}
         />
       </header>
       <ul ref={viewportContainerRef}>
@@ -1411,16 +1486,39 @@ function SidebarStatus(props: {
   traces: LightweightTraces | null;
   searching: boolean;
   activeIndices: DisplayedTracesT;
+  searchOrFilterApplied: boolean;
+  clearFiltersAndSearchQuery: () => void;
 }) {
-  const { traces, searching, activeIndices } = props;
+  const {
+    traces,
+    searching,
+    activeIndices,
+    searchOrFilterApplied,
+    clearFiltersAndSearchQuery,
+  } = props;
   if (traces && !searching) {
     return (
-      <h1 className="header-long">
-        {Object.values(activeIndices).reduce(
-          (acc, group) => acc + group.traces.length,
-          0,
-        ) + " Traces"}
-      </h1>
+      <>
+        {searchOrFilterApplied && (
+          <h1 className="header-long">
+            {" "}
+            <button
+              aria-label="clear-filters"
+              className="clear-filters"
+              onClick={() => clearFiltersAndSearchQuery()}
+            >
+              <BsXSquareFill />
+            </button>{" "}
+            Clear filters and search
+          </h1>
+        )}
+        <h1 className="header-long">
+          {Object.values(activeIndices).reduce(
+            (acc, group) => acc + group.traces.length,
+            0,
+          ) + " Traces"}
+        </h1>
+      </>
     );
   } else {
     return (

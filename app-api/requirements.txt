@@ -17,6 +17,8 @@ anyio==4.7.0
     #   starlette
 async-property==0.2.2
     # via python-keycloak
+cachetools==5.5.0
+    # via -r app-api/requirements.in
 certifi==2024.12.14
     # via
     #   httpcore

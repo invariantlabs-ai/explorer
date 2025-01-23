@@ -1,3 +1,4 @@
+cachetools
 fastapi
 uvicorn
 sqlalchemy[postgresql]

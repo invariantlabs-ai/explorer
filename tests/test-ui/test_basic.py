@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 # add tests folder (parent) to sys.path
 import sys
@@ -191,10 +192,10 @@ async def test_create_empty_dataset_and_then_upload_file(
         await file_chooser.set_files(fn)
         await screenshot(page)
         await page.get_by_label("Upload").click()
-
+    
     # verify that the traces are shown
-    await trace_shown_in_sidebar(page, "Run 1")
-    await trace_shown_in_sidebar(page, "Run 2")
+    await page.wait_for_selector("text=Run 1")
+    await page.wait_for_selector("text=Run 2")
     await screenshot(page)
 
     # delete dataset
@@ -400,8 +401,6 @@ async def test_thumbs_up_down(context, url, data_abc, screenshot):
         await page.locator(f"text={dataset['name']}").click()
         # wait for load
         await page.wait_for_selector("text=User")
-        # TODO(https://trello.com/c/OHzUP0t4): Investigate and fix this
-        await util.expand_messages(page)
         await screenshot(page)
 
         # hover over a line to show thumbs up/down

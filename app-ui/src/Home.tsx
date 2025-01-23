@@ -1,16 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useUserInfo } from "./UserInfo";
 import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "./Modal";
 import { Time } from "./components/Time";
-import { useSnippetsList } from "./lib/snippets";
 import { useDatasetList } from "./lib/datasets";
-import {
-  DatasetLinkList,
-  DeleteDatasetModalContent,
-  UploadDatasetModalContent,
-} from "./Datasets";
+import { DatasetLinkList, UploadDatasetModalContent } from "./Datasets";
 import HomepageDatasetsNames from "./assets/HomepageDatasetsNames.json";
 import UserIcon from "./lib/UserIcon";
 
@@ -46,8 +41,8 @@ function FeaturedDatasets(props) {
 
   return (
     <div>
-      {datasets.length === 0 ? (
-        <div className="featured-dataset-empty">No datasets available</div>
+      {props.datasets === null ? (
+        <div className="featured-dataset-empty">Loading Datasets...</div>
       ) : (
         <div className="featured-dataset-list">
           {datasets.map((dataset, i) => (
@@ -58,7 +53,10 @@ function FeaturedDatasets(props) {
               }`}
             >
               <div className="featured-dataset-info">
-                <Link className="item" to={`/u/${dataset.user.username}/${dataset.name}/t`}>
+                <Link
+                  className="item"
+                  to={`/u/${dataset.user.username}/${dataset.name}/t`}
+                >
                   <h3>
                     <BsGlobe /> {dataset.nice_name}
                   </h3>
@@ -71,6 +69,9 @@ function FeaturedDatasets(props) {
           ))}
         </div>
       )}
+      {props.datasets !== null && datasets.length === 0 && (
+        <div className="featured-dataset-empty">No Datasets available</div>
+      )}
     </div>
   );
 }
@@ -82,30 +83,50 @@ function Home() {
   const userInfo = useUserInfo();
 
   // fetch datasets and snippets
-  let [datasets_homepage, refreshHomepageDataset] = useDatasetList(
+  let [featuredDatasets, refreshFeaturedDatasets] = useDatasetList(
     "homepage",
     8,
   );
-  datasets_homepage = datasets_homepage.map((item) => ({
-    ...item,
-    ...(HomepageDatasetsNames["name"][item.id] && {
-      nice_name: HomepageDatasetsNames["name"][item.id],
-    }),
-    ...(HomepageDatasetsNames["description"][item.id] && {
-      description: HomepageDatasetsNames["description"][item.id],
-    }),
-  }));
-  // Sort datasets_homepage by nice_name
-  datasets_homepage.sort((a, b) => {
-    const nameA = a.nice_name || "";
-    const nameB = b.nice_name || "";
-    return nameA.localeCompare(nameB);
-  });
-  const [datasets_private, refreshPrivateDataset] = useDatasetList(
+
+  useEffect(() => {
+    refreshFeaturedDatasets();
+  }, [refreshFeaturedDatasets]);
+
+  const [featuredDatasetsTransformed, setFeaturedDatasetsTransformed] =
+    React.useState<any[] | null>(null);
+  useEffect(() => {
+    if (featuredDatasets !== null) {
+      const transformed = featuredDatasets.map((item) => ({
+        ...item,
+        ...(HomepageDatasetsNames["name"][item.id] && {
+          nice_name: HomepageDatasetsNames["name"][item.id],
+        }),
+        ...(HomepageDatasetsNames["description"][item.id] && {
+          description: HomepageDatasetsNames["description"][item.id],
+        }),
+      }));
+
+      transformed.sort((a, b) => {
+        const nameA = a.nice_name || "";
+        const nameB = b.nice_name || "";
+        return nameA.localeCompare(nameB);
+      });
+
+      setFeaturedDatasetsTransformed(transformed);
+    }
+  }, [featuredDatasets]);
+
+  const [privateDatasets, refreshPrivateDatasets] = useDatasetList(
     "private",
     8,
   );
-  const [snippets, refreshSnippets] = useSnippetsList();
+
+  useEffect(() => {
+    if (userInfo?.loggedIn) {
+      refreshPrivateDatasets();
+    }
+  }, [userInfo?.loggedIn, refreshPrivateDatasets]);
+
   // tracks whether the Upload Dataset modal is open
   const [showUploadModal, setShowUploadModal] = React.useState(false);
   // fetch user activity
@@ -124,7 +145,7 @@ function Home() {
         >
           <UploadDatasetModalContent
             onClose={() => setShowUploadModal(false)}
-            onSuccess={refreshPrivateDataset}
+            onSuccess={refreshPrivateDatasets}
           />
         </Modal>
       )}
@@ -158,7 +179,7 @@ function Home() {
         <div className="mosaic">
           <div className="box dataset split-view">
             <h2>
-              <Link to="/datasets">Datasets</Link>
+              <Link to={`/u/${userInfo.username}`}>Datasets</Link>
               <button
                 className="inline primary"
                 onClick={() => setShowUploadModal(true)}
@@ -166,10 +187,7 @@ function Home() {
                 New Dataset
               </button>
             </h2>
-            <DatasetLinkList
-              datasets={datasets_private}
-              icon={<BsDatabase />}
-            />
+            <DatasetLinkList datasets={privateDatasets} icon={<BsDatabase />} />
           </div>
           <div className="box split-view">
             <h2>
@@ -181,11 +199,7 @@ function Home() {
                 New Trace
               </button>
             </h2>
-            <CompactSnippetList
-              icon={<BsJustify />}
-              snippets={snippets}
-              limit={8}
-            />
+            <CompactSnippetList icon={<BsJustify />} limit={8} />
           </div>
         </div>
       )}
@@ -197,7 +211,10 @@ function Home() {
               Featured Datasets
             </a>
           </h2>
-          <FeaturedDatasets datasets={datasets_homepage} icon={<BsGlobe />} />
+          <FeaturedDatasets
+            datasets={featuredDatasetsTransformed}
+            icon={<BsGlobe />}
+          />
         </div>
       )}
       {/* user activity */}
