@@ -70,4 +70,21 @@ span.image-wrapper {
         background-color: #ba29292d;
         border: 1pt solid #BA2929;
     }
+
+    &.coordinate {
+      background-color: rgba(255, 0, 0, 0.442);
+      border-radius: 50%;
+      border: 1pt solid white !important;
+      transform: scale(2.5);
+      transition: transform 0.1s;
+    }
+}
+
+.image-wrapper .bounding-box.coordinate {
+  opacity: 0.8;
+}
+
+.image-wrapper:hover .bounding-box.coordinate {
+  opacity: 1.0;
+  transform: scale(10);
 }

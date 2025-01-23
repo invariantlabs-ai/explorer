@@ -613,6 +613,7 @@ export class RenderedTrace extends React.Component<
                   key={index}
                   index={index}
                   message={item}
+                  messages={events}
                   highlights={this.props.highlights.for_path(
                     "messages." + index,
                   )}
@@ -669,6 +670,8 @@ interface MessageViewProps {
   message: any;
   // index of the message in the trace
   index: number;
+  // all other message
+  messages: any[];
   // trace highlights that map to this message
   highlights: HighlightedJSON;
   // context for the highlights
@@ -967,6 +970,7 @@ class MessageView extends React.Component<
                         highlightContext={this.props.highlightContext}
                         address={this.props.address + ".content"}
                         message={message}
+                        messages={this.props.messages}
                         traceIndex={this.props.traceIndex}
                         onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
                         onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
@@ -1254,6 +1258,7 @@ function Annotated(props: {
   highlightContext?: HighlightContext;
   address?: string;
   message?: any;
+  messages?: any[];
   traceIndex?: number;
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;

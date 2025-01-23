@@ -91,7 +91,6 @@ function isExpanded(address: string, selectedHighlightAnchor: string | null, hig
       return true;
     }
     if (highlight.start <= end && highlight.end >= end) {
-      console.log([address, selectedHighlightAnchor, highlights, start, end]);
       return true;
     }
   }

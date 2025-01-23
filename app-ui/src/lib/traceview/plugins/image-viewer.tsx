@@ -15,6 +15,8 @@ interface ImageViewerProps {
   highlightContext: any;
   address: string;
   traceIndex?: number;
+  // list of all messages in the trace
+  messages: any[];
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }
@@ -44,6 +46,11 @@ function extractImageId(content: string): {
   };
 }
 
+interface CoordinateHighlight {
+  coordinates: [number, number];
+  label: string;
+}
+
 class ImageViewer extends React.Component<
   ImageViewerProps,
   {
@@ -53,11 +60,19 @@ class ImageViewer extends React.Component<
     imageId: string | null;
     imageUrl: string | null;
     isModalOpen: boolean;
+    // special highlights at certain coordinates (e.g. to visualize mouse clicks on screenshots)
+    coordinateHighlights: CoordinateHighlight[]
+
+    // image dimensions
+    imageWidth: number;
+    imageHeight: number;
   }
 > {
   constructor(props) {
     super(props);
+    
     const imageInfo = extractImageId(props.content);
+    
     this.state = {
       nodes: [],
       datasetName: imageInfo.datasetName,
@@ -65,11 +80,14 @@ class ImageViewer extends React.Component<
       imageId: imageInfo.imageId,
       imageUrl: null,
       isModalOpen: false,
+      coordinateHighlights: [],
     };
   }
 
   async componentDidMount() {
     await this.fetchImage();
+    // update coordinate highlights from following tool calls
+    this.findNextCoordinateToolCalls();
   }
 
   async componentDidUpdate(prevProps) {
@@ -86,6 +104,9 @@ class ImageViewer extends React.Component<
           this.fetchImage();
         }
       );
+
+      // update coordinate highlights from following tool calls
+      this.findNextCoordinateToolCalls();
     }
   }
 
@@ -108,6 +129,18 @@ class ImageViewer extends React.Component<
 
       const blob = await response.blob();
       const imageUrl = URL.createObjectURL(blob);
+      
+      // obtain image dimensions
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => {
+        this.setState({
+          imageWidth: img.width,
+          imageHeight: img.height,
+        });
+      };
+      
+      // update the state with the new image url
       this.setState({ imageUrl });
     } catch (error) {
       console.error("Error fetching image:", error);
@@ -169,66 +202,72 @@ class ImageViewer extends React.Component<
     let elements: React.ReactNode[] = [];
 
     // Loop over the highlighted structure
-    let highligthed_found = false;
+    let hasHighlight = false;
+    // class name and tooltip for the image
+    let className = "annotated";
+    let tooltip = "";
+
+    // Add coordinate highlights to the image
+    this.state.coordinateHighlights.forEach(({ coordinates, label }, index) => {
+      const [x, y] = coordinates;
+      const x1 = x / this.state.imageWidth;
+      const y1 = y / this.state.imageHeight;
+      const x2 = (x / this.state.imageWidth) + 0.005 * (this.state.imageHeight / this.state.imageWidth);
+      const y2 = (y / this.state.imageHeight) + 0.005 * (this.state.imageWidth / this.state.imageHeight);
+      tooltip = label;
+
+      bounding_boxes_data.push({ x1, y1, x2, y2, content: { source: "coordinate" } });
+      hasHighlight = true;
+    });
+    
     for (const highlights of highlights_per_line) {
       let image: React.ReactNode[] = [];
       for (const interval of highlights) {
         if (interval.content !== null) {
-          let className =
-            "annotated" +
-            " " +
-            interval.content
+          className += interval.content
               .filter((c) => c["source"])
               .map((c) => "source-" + c["source"])
               .join(" ");
-          const tooltip = interval.content
+          tooltip = interval.content
             .map((c) =>
               truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
             .join("\n");
-
-          // We assume that we will have exactly one highlight and that this is for the image,
-          // so only push a new line if find a highlight AND it is the first highlight.
-          if (this.state.imageUrl && !highligthed_found) {
-            image.push(
-              <span
-                key={
-                  elements.length +
-                  "-" +
-                  image.length +
-                  "-" +
-                  interval.start +
-                  "-" +
-                  interval.end
-                }
-                className={`image-wrapper ${className}`}
-                data-tooltip-id={"highlight-tooltip"}
-                data-tooltip-content={tooltip}
-              >
-                <div
-                  className="image-container"
-                  style={{ position: "relative", display: "flex" }}
-                >
-                  <img
-                    src={this.state.imageUrl}
-                    className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
-                  />
-                  {bounding_boxes_data.map(
-                    ({ x1, y1, x2, y2, content }, index) =>
-                      this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25
-                      )
-                  )}
-                </div>
-              </span>
-            );
-            highligthed_found = true;
-          }
         }
+      }
+
+      // We assume that we will have exactly one highlight and that this is for the image,
+      // so only push a new line if find a highlight AND it is the first highlight.
+      if (this.state.imageUrl && hasHighlight) {
+        image.push(
+          <span
+            key="highlighted-image"
+            className={`image-wrapper ${className}`}
+            data-tooltip-id={"highlight-tooltip"}
+            data-tooltip-content={tooltip}
+          >
+            <div
+              className="image-container"
+              style={{ position: "relative", display: "flex" }}
+            >
+              <img
+                src={this.state.imageUrl}
+                className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
+              />
+              {bounding_boxes_data.map(
+                ({ x1, y1, x2, y2, content }, index) =>
+                  this.addBoundingBox(x1, y1, x2, y2, content, index, 1, 0.25
+                  )
+              )}
+            </div>
+          </span>
+        );
+        hasHighlight = true;
       }
 
       // We still need to render the image if we do not have annotattions
       // We also add any potential bounding boxes
-      if (!highligthed_found) {
+      if (!hasHighlight) {
         image.push(
           <span
             key={"line-" + elements.length}
@@ -288,6 +327,60 @@ class ImageViewer extends React.Component<
 
     // Update the nodes for render method
     return elements;
+  }
+
+  findNextCoordinateToolCalls() {
+    /**
+     * Scans following tool calls for coordinates to highlight 
+     * in this image (e.g. to visualize mouse clicks).
+     */
+    let coordinate_highlights = [] as CoordinateHighlight[]
+
+    // Extract coordinates from tool call arguments
+    function extractCoordinates(tool_call_arguments: any) {
+      if (Array.isArray(tool_call_arguments) && tool_call_arguments.length === 2) {
+        return tool_call_arguments;
+      }
+      return null;
+    }
+
+    // Stop at the next tool message
+    function stopAtMessage(message: any) {
+      if (message.role === "tool") {
+        // only continue until next tool message
+        return true;
+      }
+      return false;
+    }
+
+    // extract the index from the address
+    let index = 0;
+    try {
+      index = parseInt(this.props.address.split("[")[1].split("]")[0]);
+    } catch (e) {
+      return null;
+    }
+
+    // iterate over the following messages
+    for (let i=index+1; i<this.props.messages.length; i++) {
+      for (let tc of (this.props.messages[i].tool_calls || [])) {
+        for (let value of Object.values(tc.function?.arguments || {})) {
+          let coordinates = extractCoordinates(value);
+          if (coordinates) {
+            coordinate_highlights.push({
+              coordinates: coordinates as [number, number],
+              label: tc.function.arguments.action || tc.function.name
+            });
+          }
+        }
+      }
+      if (stopAtMessage(this.props.messages[i])) {
+        break;
+      }
+    }
+
+    // update the state with the new coordinate highlights
+    this.setState({ coordinateHighlights: coordinate_highlights });
   }
 
   render() {
