@@ -1,0 +1,288 @@
+"""Tests for the trace APIs."""
+
+import os
+
+# add tests folder (parent) to sys.path
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import uuid
+
+import util
+from util import *  # needed for pytest fixtures
+
+pytest_plugins = ("pytest_asyncio",)
+
+MESSAGES_WITHOUT_TOOL_CALLS = [
+    {"role": "user", "content": "test XYZ test"},
+    {"role": "assistant", "content": "i like XYZ!"},
+]
+
+MESSAGES_WITH_OLD_TIMESTAMP = [
+    {
+        "role": "user",
+        "content": "Older message 1",
+        "timestamp": "2021-01-01T00:00:00+00:00",
+    },
+    {
+        "role": "assistant",
+        "content": "Older message 2",
+        "timestamp": "2021-01-01T00:00:00+00:00",
+    },
+]
+
+MESSAGES_WITH_TOOL_CALLS = [
+    {"role": "user", "content": "Solve a quadratic equation where a=2, b=6, and c=5"},
+    {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+            {
+                "id": "call_CsSvRivBjvhkgmAegBJS",
+                "type": "function",
+                "function": {
+                    "name": "solve_quadratic_equation",
+                    "arguments": {"a": 2, "b": 6, "c": 5},
+                },
+            }
+        ],
+    },
+]
+
+
+async def post_messages(context, url, trace_id, messages, headers=None):
+    """Helper function to post messages to a trace."""
+    return await context.request.post(
+        f"{url}/api/v1/trace/{trace_id}/messages",
+        data={"messages": messages},
+        headers=headers or {},
+    )
+
+
+async def get_traces_for_dataset(context, url, dataset_id):
+    """Helper function to retrieve traces for a dataset."""
+    response = await context.request.get(
+        f"{url}/api/v1/dataset/byid/{dataset_id}/traces"
+    )
+    return await response.json()
+
+
+async def get_trace_messages(context, url, trace_id):
+    """Helper function to retrieve trace messages."""
+    response = await context.request.get(f"{url}/api/v1/trace/{trace_id}")
+    trace = await response.json()
+    return trace.get("messages", [])
+
+
+def validate_messages_after_addition(
+    all_messages, existing_messages, new_messages, start_index
+):
+    """Helper function to validate that messages match expectations."""
+    # Validate existing messages remain unchanged
+    assert all_messages[: len(existing_messages)] == existing_messages
+
+    # Validate new messages are added correctly
+    for i, message in enumerate(new_messages, start=start_index):
+        assert "timestamp" in all_messages[i]
+        del all_messages[i]["timestamp"]
+        assert all_messages[i] == message
+
+
+async def test_add_messages_incorrect_type(url, context):
+    """Test that adding messages with incorrect types fails."""
+    invalid_inputs = [
+        {"messages": "not a list"},
+        {"messages": []},
+        {"messages": ["1"]},
+    ]
+
+    for data in invalid_inputs:
+        response = await context.request.post(
+            f"{url}/api/v1/trace/{str(uuid.uuid4())}/messages",
+            data=data,
+        )
+        assert response.status == 400
+
+
+async def test_add_messages_fails_on_non_existing_trace(url, context):
+    """Test that adding messages to a non-existing trace fails."""
+    response = await post_messages(
+        context, url, str(uuid.uuid4()), MESSAGES_WITHOUT_TOOL_CALLS
+    )
+    assert response.status == 404
+
+
+async def test_add_messages_fails_when_caller_is_not_owner(url, context, data_abc):
+    """Test that adding messages to a trace fails when the caller is not the owner."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # Test for unauthorized user
+        response = await post_messages(
+            context,
+            url,
+            trace_id,
+            MESSAGES_WITHOUT_TOOL_CALLS,
+            headers={"referer": "noauth=user1"},
+        )
+        assert response.status == 404
+
+        # Make dataset public and retry
+        await context.request.put(
+            f"{url}/api/v1/dataset/byid/{dataset['id']}", data={"content": True}
+        )
+        response = await post_messages(
+            context,
+            url,
+            trace_id,
+            MESSAGES_WITHOUT_TOOL_CALLS,
+            headers={"referer": "noauth=user1"},
+        )
+        assert response.status == 404
+
+
+async def test_add_messages_succeeds_consecutive_calls(url, context, data_abc):
+    """Test that consecutive calls to add_messages succeeds."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # Validate initial messages
+        initial_messages = await get_trace_messages(context, url, trace_id)
+        assert len(initial_messages) == 2
+
+        # Add first set of messages
+        response = await post_messages(
+            context, url, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
+        )
+        assert response.status == 200
+
+        # verify that the messages were added
+        updated_trace = await get_trace_messages(context, url, trace_id)
+        assert len(updated_trace) == 4
+        # the first two messages are the original ones
+        assert updated_trace[0:2] == initial_messages
+        # the last two messages are the new ones we added
+        assert (
+            "timestamp" in updated_trace[2]
+            and "timestamp" in updated_trace[3]
+            and updated_trace[2]["timestamp"] == updated_trace[3]["timestamp"]
+        )
+        del updated_trace[2]["timestamp"]
+        del updated_trace[3]["timestamp"]
+        assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
+
+        # Add second set of messages
+        response = await post_messages(context, url, trace_id, MESSAGES_WITH_TOOL_CALLS)
+        assert response.status == 200
+
+        # verify that the messages were added
+        updated_trace = await get_trace_messages(context, url, trace_id)
+        assert len(updated_trace) == 6
+        # the first two messages are the original ones
+        assert updated_trace[0:2] == initial_messages
+        # the next two messages are the new ones we added in the previous step
+        assert (
+            "timestamp" in updated_trace[2]
+            and "timestamp" in updated_trace[3]
+            and updated_trace[2]["timestamp"] == updated_trace[3]["timestamp"]
+        )
+        del updated_trace[2]["timestamp"]
+        del updated_trace[3]["timestamp"]
+        assert updated_trace[2:4] == MESSAGES_WITHOUT_TOOL_CALLS
+        # the last two messages are the new ones we added
+        assert (
+            "timestamp" in updated_trace[4]
+            and "timestamp" in updated_trace[5]
+            and updated_trace[4]["timestamp"] == updated_trace[5]["timestamp"]
+        )
+        del updated_trace[4]["timestamp"]
+        del updated_trace[5]["timestamp"]
+        assert updated_trace[4:] == MESSAGES_WITH_TOOL_CALLS
+
+
+async def test_add_messages_timestamp_with_invalid_format_fails(url, context, data_abc):
+    """Test that adding messages with invalid timestamp format fails."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # Add messages with invalid timestamp format
+        for invalid_timestamp in [
+            1737668759,
+            "01-01-2021 00:00:00",
+        ]:
+            invalid_messages = [
+                {
+                    "role": "user",
+                    "content": "test XYZ test",
+                    "timestamp": invalid_timestamp,
+                },
+                {"role": "assistant", "content": "i like XYZ!"},
+            ]
+            response = await post_messages(context, url, trace_id, invalid_messages)
+            assert response.status == 400
+
+
+async def test_add_messages_order_by_timestamp_correctly(context, url, data_abc):
+    """
+    Test that consecutive calls to add_messages result in correct ordering by
+    taking the timestamp field into account.
+    It is possible that an add_messages call is made with messages that have
+    older timestamps than the existing messages in the trace.
+    In that case the new messages should be inserted before the existing messages.
+    """
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # Validate initial messages
+        initial_messages = await get_trace_messages(context, url, trace_id)
+        assert len(initial_messages) == 2
+
+        # Add first set of messages
+        response = await post_messages(
+            context, url, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
+        )
+        assert response.status == 200
+
+        # verify that the messages were added
+        updated_trace = await get_trace_messages(context, url, trace_id)
+        assert len(updated_trace) == 4
+        # the first two messages are the original ones
+        assert updated_trace[0:2] == initial_messages
+        # the last two messages are the new ones we added
+        assert (
+            "timestamp" in updated_trace[2]
+            and "timestamp" in updated_trace[3]
+            and updated_trace[2]["timestamp"] == updated_trace[3]["timestamp"]
+        )
+        del updated_trace[2]["timestamp"]
+        del updated_trace[3]["timestamp"]
+        assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
+
+        # Add second set of messages
+        response = await post_messages(
+            context, url, trace_id, MESSAGES_WITH_OLD_TIMESTAMP
+        )
+        assert response.status == 200
+
+        # verify that the messages were added
+        updated_trace = await get_trace_messages(context, url, trace_id)
+        assert len(updated_trace) == 6
+        # the first two messages are the ones in MESSAGES_WITH_OLD_TIMESTAMP
+        # since they have an older timestamp than all the other messages
+        assert updated_trace[0:2] == MESSAGES_WITH_OLD_TIMESTAMP
+        # the next two messages are initial_messages and the two messages
+        # after that are MESSAGES_WITHOUT_TOOL_CALLS
+        assert updated_trace[2:4] == initial_messages
+        assert (
+            "timestamp" in updated_trace[4]
+            and "timestamp" in updated_trace[5]
+            and updated_trace[4]["timestamp"] == updated_trace[5]["timestamp"]
+        )
+        del updated_trace[4]["timestamp"]
+        del updated_trace[5]["timestamp"]
+        assert updated_trace[4:] == MESSAGES_WITHOUT_TOOL_CALLS
