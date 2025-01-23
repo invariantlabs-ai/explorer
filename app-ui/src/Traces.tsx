@@ -1228,6 +1228,9 @@ function Sidebar(props: {
   const clearFiltersAndSearchQuery = () => {
     setSearchQuery("");
     setSelectedFilter(null);
+    // Whenever the search is reset, clear the highlight mappings so
+    // that the search highlights are removed from the trace view.
+    setHighlightMappings({});
   }
 
   const viewItems: React.ReactNode[] = [];
