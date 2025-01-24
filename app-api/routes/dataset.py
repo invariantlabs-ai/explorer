@@ -181,7 +181,7 @@ async def upload_file(
 
     with Session(db()) as session:
         lines = file.file.readlines()
-        dataset = import_jsonl(
+        dataset = await import_jsonl(
             session,
             name,
             user_id,

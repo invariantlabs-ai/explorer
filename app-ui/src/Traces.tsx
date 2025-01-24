@@ -1099,18 +1099,20 @@ function Sidebar(props: {
 
   const filterRef = React.useRef<HTMLDetailsElement | null>(null);
 
-  const [selectedFilter, setSelectedFilter] = React.useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = React.useState<string | null>(
+    null,
+  );
 
   const filters = [
-    { label: 'Show annotated', value: 'show-annotated-traces' },
-    { label: 'Group by Analysis Result', value: 'group-by-analysis-result' },
+    { label: "Show annotated", value: "show-annotated-traces" },
+    { label: "Group by Analysis Result", value: "group-by-analysis-result" },
   ];
 
   useEffect(() => {
-    if(searchQuery === IS_ANNOTATED_SEARCH_QUERY) {
-      setSelectedFilter('show-annotated-traces');
+    if (searchQuery === IS_ANNOTATED_SEARCH_QUERY) {
+      setSelectedFilter("show-annotated-traces");
     } else if (searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY) {
-      setSelectedFilter('group-by-analysis-result');
+      setSelectedFilter("group-by-analysis-result");
     } else {
       setSelectedFilter(null);
     }
@@ -1162,7 +1164,8 @@ function Sidebar(props: {
     });
   };
 
-  const isInvariantGrouping = searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY;
+  const isInvariantGrouping =
+    searchQuery === IS_INVARIANT_GROUPING_SEARCH_QUERY;
   const onTriggerInvariantGrouping = (e) => {
     if (!isInvariantGrouping) {
       setSearchQuery(IS_INVARIANT_GROUPING_SEARCH_QUERY);
@@ -1184,27 +1187,25 @@ function Sidebar(props: {
     } else {
       setSearchQuery("");
     }
-  }
+  };
 
   const handleFilterSelect = (e, filter) => {
     // If the same filter is selected again, deselect it.
     if (selectedFilter === filter.value) {
       setSelectedFilter(null);
       setSearchQuery("");
-      if (filterRef.current)
-        filterRef.current.open = false;
+      if (filterRef.current) filterRef.current.open = false;
       return;
     }
 
     // Set the selected filter and close the dropdown.
     setSelectedFilter(filter.value);
-    if(filter.value === 'show-annotated-traces') {
+    if (filter.value === "show-annotated-traces") {
       onTriggerAnnotatedGrouping(e);
-    } else if (filter.value === 'group-by-analysis-result') {
+    } else if (filter.value === "group-by-analysis-result") {
       onTriggerInvariantGrouping(e);
     }
-    if (filterRef.current)
-      filterRef.current.open = false;
+    if (filterRef.current) filterRef.current.open = false;
   };
 
   useEffect(() => {
@@ -1231,7 +1232,7 @@ function Sidebar(props: {
     // Whenever the search is reset, clear the highlight mappings so
     // that the search highlights are removed from the trace view.
     setHighlightMappings({});
-  }
+  };
 
   const viewItems: React.ReactNode[] = [];
 
@@ -1424,12 +1425,16 @@ function Sidebar(props: {
               {filters.map((filter, index) => (
                 <button
                   key={index}
-                  className={"filter-option" + (selectedFilter === filter.value ? " selected-filter-option" : "")}
+                  className={
+                    "filter-option" +
+                    (selectedFilter === filter.value
+                      ? " selected-filter-option"
+                      : "")
+                  }
                   onClick={(e) => handleFilterSelect(e, filter)}
                   aria-label={filter.value + "-filter"}
                 >
-                  {filter.label}
-                  {" "}
+                  {filter.label}{" "}
                   {selectedFilter === filter.value && <BsCheck2 />}
                 </button>
               ))}
@@ -1484,7 +1489,13 @@ function SidebarStatus(props: {
   searchOrFilterApplied: boolean;
   clearFiltersAndSearchQuery: () => void;
 }) {
-  const { traces, searching, activeIndices, searchOrFilterApplied, clearFiltersAndSearchQuery } = props;
+  const {
+    traces,
+    searching,
+    activeIndices,
+    searchOrFilterApplied,
+    clearFiltersAndSearchQuery,
+  } = props;
   if (traces && !searching) {
     return (
       <>
@@ -1504,7 +1515,7 @@ function SidebarStatus(props: {
         <h1 className="header-long">
           {Object.values(activeIndices).reduce(
             (acc, group) => acc + group.traces.length,
-            0
+            0,
           ) + " Traces"}
         </h1>
       </>
