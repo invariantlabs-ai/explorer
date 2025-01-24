@@ -220,10 +220,7 @@ def save_user(session, userinfo):
         )
         session.add(dataset)
 
-        # Import the sample traces
-        loop = asyncio.get_event_loop()
-
-        loop.run_until_complete(import_jsonl(
+        asyncio.run(import_jsonl(
             session,
             "Welcome-to-Explorer",
             user["id"],
