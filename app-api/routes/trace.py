@@ -290,8 +290,8 @@ async def upload_new_single_trace(
 
     with Session(db()) as session:
         payload = await request.json()
-        content = payload.get("content")
-        extra_metadata = payload.get("extra_metadata")
+        content = payload.get("content", [])
+        extra_metadata = payload.get("extra_metadata", {})
 
         trace = Trace(
             dataset_id=None,
