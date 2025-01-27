@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { act, useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
@@ -228,6 +228,13 @@ export function AnnotationAugmentedTraceView(props) {
     };
   }, [events]);
 
+  // callback for when a user downloads a dataset
+  const onDownloadTrace = (event, trace_id) => {
+    // trigger the download (endpoint is /api/v1/dataset/byid/:id/download)
+    window.open(`/api/v1/trace/${trace_id}/download`, "_blank");
+    event.preventDefault();
+  };
+
   // note: make sure to only pass highlights here that actually belong to the active trace
   // otherwise we can end up in an intermediate state where we have a new trace but old highlights (this must never happen)
   const traceHighlights =
@@ -277,22 +284,18 @@ export function AnnotationAugmentedTraceView(props) {
                 <BsArrowsExpand />
               </button>
             )}
-            <a
-              href={"/api/v1/trace/" + activeTraceId}
-              download={activeTraceId + ".json"}
+            <button
+              className="inline icon"
+              onClick={(e) => {
+                onDownloadTrace(e, activeTraceId);
+                e.stopPropagation();
+                telemetry.capture("traceview.download");
+              }}
+              data-tooltip-id="highlight-tooltip"
+              data-tooltip-content="Download"
             >
-              <button
-                className="inline icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  telemetry.capture("traceview.download");
-                }}
-                data-tooltip-id="highlight-tooltip"
-                data-tooltip-content="Download"
-              >
-                <BsDownload />
-              </button>
-            </a>
+              <BsDownload />
+            </button>
             {props.actions}
             <div className="vr" />
             {config("sharing") && (
