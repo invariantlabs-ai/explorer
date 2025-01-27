@@ -1,5 +1,4 @@
 import React, { act, useEffect, useRef, useState } from "react";
-import React, { act, useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
