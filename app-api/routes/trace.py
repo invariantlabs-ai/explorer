@@ -139,7 +139,7 @@ async def download_trace(
                 "Content-Disposition": f"attachment; filename={trace.id}.jsonl"
             },
         )
-            
+
 
 @trace.get("/{id}/shared")
 def get_trace_sharing(
