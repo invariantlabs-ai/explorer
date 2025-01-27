@@ -76,5 +76,6 @@ async def test_upload_traces_multithread(url, context, dataset_name, trace_with_
     for i,n in enumerate(thread_list):
         n.join()
     finish_time = time()
-    print(f"Time taken: {finish_time - start_time}")
+    
+    #send 10 requests with 5 traces with 15 images each cost about 10 seconds 
     assert finish_time - start_time < 30
