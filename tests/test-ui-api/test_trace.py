@@ -89,7 +89,7 @@ def validate_messages_after_addition(
         assert all_messages[i] == message
 
 
-async def test_add_messages_incorrect_type(url, context):
+async def test_append_messages_incorrect_type(url, context):
     """Test that adding messages with incorrect types fails."""
     invalid_inputs = [
         {"messages": "not a list"},
@@ -105,7 +105,7 @@ async def test_add_messages_incorrect_type(url, context):
         assert response.status == 400
 
 
-async def test_add_messages_fails_on_non_existing_trace(url, context):
+async def test_append_messages_fails_on_non_existing_trace(url, context):
     """Test that adding messages to a non-existing trace fails."""
     response = await post_messages(
         context, url, str(uuid.uuid4()), MESSAGES_WITHOUT_TOOL_CALLS
@@ -113,7 +113,7 @@ async def test_add_messages_fails_on_non_existing_trace(url, context):
     assert response.status == 404
 
 
-async def test_add_messages_fails_when_caller_is_not_owner(url, context, data_abc):
+async def test_append_messages_fails_when_caller_is_not_owner(url, context, data_abc):
     """Test that adding messages to a trace fails when the caller is not the owner."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
@@ -143,8 +143,8 @@ async def test_add_messages_fails_when_caller_is_not_owner(url, context, data_ab
         assert response.status == 404
 
 
-async def test_add_messages_succeeds_consecutive_calls(url, context, data_abc):
-    """Test that consecutive calls to add_messages succeeds."""
+async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc):
+    """Test that consecutive calls to append_messages succeeds."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
@@ -203,7 +203,7 @@ async def test_add_messages_succeeds_consecutive_calls(url, context, data_abc):
         assert updated_trace[4:] == MESSAGES_WITH_TOOL_CALLS
 
 
-async def test_add_messages_timestamp_with_invalid_format_fails(url, context, data_abc):
+async def test_append_messages_timestamp_with_invalid_format_fails(url, context, data_abc):
     """Test that adding messages with invalid timestamp format fails."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
@@ -226,11 +226,11 @@ async def test_add_messages_timestamp_with_invalid_format_fails(url, context, da
             assert response.status == 400
 
 
-async def test_add_messages_order_by_timestamp_correctly(context, url, data_abc):
+async def test_append_messages_order_by_timestamp_correctly(context, url, data_abc):
     """
-    Test that consecutive calls to add_messages result in correct ordering by
+    Test that consecutive calls to append_messages result in correct ordering by
     taking the timestamp field into account.
-    It is possible that an add_messages call is made with messages that have
+    It is possible that an append_messages call is made with messages that have
     older timestamps than the existing messages in the trace.
     In that case the new messages should be inserted before the existing messages.
     """
