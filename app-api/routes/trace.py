@@ -339,11 +339,11 @@ def merge_sorted_messages(
 
 
 @trace.post("/{trace_id}/messages")
-async def add_messages(
+async def append_messages(
     request: Request, trace_id: str, userinfo: Annotated[dict, Depends(APIIdentity)]
 ):
     """
-    Add messages to an existing trace.
+    Append messages to an existing trace.
     The messages in the request payload are expected to be a list of dictionaries.
     These messages can optionally have a timestamp field, which should be in ISO 8601 format.
     If a timestamp is not provided, the current time is used for the new messages.
