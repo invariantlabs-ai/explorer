@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 
 from util import *  # needed for pytest fixtures
+from time import time
 
 import threading
 import requests
@@ -15,7 +16,7 @@ import requests
 pytest_plugins = ("pytest_asyncio",)
 
 NUM_PICTURE = 15
-NUM_MESSAGE = 10
+NUM_MESSAGE = 5
 
 @pytest.fixture
 def trace_with_image():
@@ -66,12 +67,14 @@ def upload_traces(url, context, dataset_name, trace_with_image):
 
 async def test_upload_traces_multithread(url, context, dataset_name, trace_with_image):
     thread_list = []
-    for i in range(1):
-        print("Starting thread: ", i)
+    start_time = time()
+    for i in range(10):
         t = threading.Thread(target=upload_traces,args= (url, context, dataset_name+"-"+str(i), trace_with_image))
         t.start()
         thread_list.append(t)
 
     for i,n in enumerate(thread_list):
         n.join()
-        print(f"Thread {i}:{n} joined")
+    finish_time = time()
+    print(f"Time taken: {finish_time - start_time}")
+    assert finish_time - start_time < 30

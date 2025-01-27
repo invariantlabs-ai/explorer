@@ -140,7 +140,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
         parse_messages_to_traces = [parse_single_message_to_trace(message,i) for i,message in enumerate(messages)]
         traces = await asyncio.gather(*parse_messages_to_traces)
-
+        
         for trace in traces:
             session.add(trace)
             result_ids.append(str(trace.id))
