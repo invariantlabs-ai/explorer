@@ -61,7 +61,7 @@ def split(text, pattern):
 
 
 def truncate_string(s, max_length: int):
-    if type(s) is not str:
+    if not isinstance(s, str):
         return s
     k = len(s) - max_length
     if k <= 0:
@@ -87,13 +87,13 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
             for tool_call in msg["tool_calls"]:
                 # only truncate tool calls that we know the structure of
                 tool_call_function = tool_call.get("function", None)
-                if type(tool_call_function) is not dict:
+                if not isinstance(tool_call_function, dict):
                     continue
                 tool_call_arguments = tool_call_function.get("arguments", None)
-                if type(tool_call_arguments) is not dict:
+                if not isinstance(tool_call_arguments, dict):
                     continue
 
-                if type(tool_call["function"]["arguments"]) is str:
+                if isinstance(tool_call["function"]["arguments"], str):
                     # truncate the function name
                     tool_call["function"]["arguments"] = truncate_string(
                         tool_call["function"]["arguments"], max_length
@@ -122,7 +122,7 @@ def parse_and_push_images(dataset, trace_id, messages):
         Updated messages with image paths
     """
     for msg in messages:
-        if msg.get("role") != "tool" or type(msg.get("content")) != str:
+        if msg.get("role") != "tool" or not isinstance(msg.get("content"), str):
             continue
         if msg.get("content").startswith("base64_img: ") or msg.get(
             "content"

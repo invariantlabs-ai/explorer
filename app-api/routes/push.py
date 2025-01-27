@@ -38,21 +38,21 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
 
     try:
         # check messages
-        assert type(messages) == list, "messages must be a list of messages"
+        assert isinstance(messages, list), "messages must be a list of traces"
         assert len(messages) > 0, "messages must not be empty"
         assert all(
-            type(msg) == list for msg in messages
+            isinstance(msg, list) for msg in messages
         ), "messages must be a list of traces"
 
         # check other properties
         assert (
-            annotations is None or type(annotations) == list
+            annotations is None or isinstance(annotations, list)
         ), "annotations must be a list of annotations"
         assert (
-            dataset_name is None or type(dataset_name) == str
+            dataset_name is None or isinstance(dataset_name, str)
         ), "dataset name must be a string"
         assert (
-            metadata is None or type(metadata) == list
+            metadata is None or isinstance(metadata, list)
         ), "metadata must be a list of metadata"
 
         # make sure if present that messages, annotations, and metadata are all the same length

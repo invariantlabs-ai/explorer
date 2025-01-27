@@ -9,7 +9,7 @@ def push_trace(messages, annotations=None, dataset=None, metadata=None):
         raise ValueError("INVARIANT_API_KEY not set")
 
     is_batched = (
-        type(messages) is list and len(messages) > 0 and type(messages[0]) is list
+        isinstance(messages, list) and len(messages) > 0 and isinstance(messages[0], list)
     )
 
     payload = {
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     )
 
     assert "id" in result, "Expected id on successful push"
-    assert type(result["id"]) == list, "Expected list of ids on successful push"
+    assert isinstance(result["id"], list), "Expected list of ids on successful push"
     assert len(result["id"]) == 2, "Expected list of ids on successful push"
 
     # push without metadata
