@@ -320,11 +320,13 @@ async def trace_to_exported_json(trace, annotations=None, user=None):
         "metadata": trace.extra_metadata,
     }
 
+
     if annotations is not None:
         out["annotations"] = [
             annotation_to_exported_json(annotation, user=user)
             for annotation, user in annotations
         ]
+    
     
     return out
 
