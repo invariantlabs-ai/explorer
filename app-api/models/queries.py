@@ -21,6 +21,7 @@ from sqlalchemy.sql.expression import cast
 from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
 
+import asyncio
 
 def load_trace(
     session, by, user_id, allow_shared=False, allow_public=False, return_user=False
@@ -29,7 +30,6 @@ def load_trace(
         by = uuid.UUID(str(by))
     except ValueError:
         raise HTTPException(status_code=404, detail="Trace not a valid UUID")
-
     query_filter = get_query_filter(by, Trace, User)
     if return_user:
         # join on user_id to get real user name
@@ -45,7 +45,6 @@ def load_trace(
             trace, user = result
     else:
         trace = session.query(Trace).filter(query_filter).first()
-
     if trace is None:
         raise HTTPException(status_code=404, detail="Trace not found")
 
@@ -221,14 +220,13 @@ def save_user(session, userinfo):
         )
         session.add(dataset)
 
-        # Import the sample traces
-        import_jsonl(
+        asyncio.run(import_jsonl(
             session,
             "Welcome-to-Explorer",
             user["id"],
             sample_jsonl,
             existing_dataset=dataset,
-        )
+        ))
 
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):

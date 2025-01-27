@@ -106,7 +106,7 @@ def validate_file_upload(lines: list[str]) -> Dict:
     }
 
 
-def import_jsonl(
+async def import_jsonl(
     session: Session,
     name: str,
     user_id: str,
@@ -143,7 +143,6 @@ def import_jsonl(
 
     # Validate the file.
     validation_result = validate_file_upload(lines)
-
     # Save the metadata to the database.
     if existing_dataset is None:
         dataset = create_dataset(user_id, name, metadata, is_public)
@@ -173,7 +172,7 @@ def import_jsonl(
                 trace_metadata = {}
             # Otherwise, the list in this row, is the list of messages/events.
             trace_id = uuid.uuid4()
-            parsed_messages = parse_and_push_images(name, trace_id, parsed_line)
+            parsed_messages = await parse_and_push_images(name, trace_id, parsed_line)
             trace = Trace(
                 id=trace_id,
                 index=i,
@@ -193,7 +192,7 @@ def import_jsonl(
                 else i
             )
             trace_id = uuid.uuid4()
-            parsed_messages = parse_and_push_images(
+            parsed_messages = await parse_and_push_images(
                 name, trace_id, parsed_line["messages"]
             )
             trace = Trace(
