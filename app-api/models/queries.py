@@ -24,6 +24,8 @@ from sqlalchemy.sql.expression import cast
 from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
 
+import base64
+
 
 def load_trace(
     session, by, user_id, allow_shared=False, allow_public=False, return_user=False
@@ -277,7 +279,6 @@ def annotation_to_json(annotation, user=None, **kwargs):
 ###
 
 async def convert_local_image_link_to_base64(image_link):
-    import base64
     """Given an image link of the format: `local_img_link: /path/to/image.png`, 
     find the image from the local path and convert it to base64.
     """
@@ -290,8 +291,10 @@ async def convert_local_image_link_to_base64(image_link):
     except FileNotFoundError:
         print(f"Image not found at path: {image_path}")
         return None
+    
 
-async def trace_to_exported_json(trace, annotations=None, user=None):
+async def images_to_base64(trace):
+    """Converts local image links in the trace content to base64 encoded strings in place."""
     image_tasks = [
         (convert_local_image_link_to_base64(message.get('content')), i)
         for i, message in enumerate(trace.content)
@@ -304,6 +307,11 @@ async def trace_to_exported_json(trace, annotations=None, user=None):
         if image is not None:
             trace.content[image_tasks[i][1]]['content'] = image
 
+
+async def trace_to_exported_json(trace, annotations=None, user=None):
+    # Convert local image links to base64 encoded strings
+    await images_to_base64(trace)
+
     out = {
         "index": trace.index,
         "messages": trace.content,
@@ -315,6 +323,7 @@ async def trace_to_exported_json(trace, annotations=None, user=None):
             annotation_to_exported_json(annotation, user=user)
             for annotation, user in annotations
         ]
+    
     return out
 
 
