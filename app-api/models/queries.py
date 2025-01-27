@@ -25,7 +25,7 @@ from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
 
 import base64
-import asyncio
+
 
 def load_trace(
     session, by, user_id, allow_shared=False, allow_public=False, return_user=False
