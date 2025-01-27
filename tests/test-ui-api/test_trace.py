@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import uuid
 
 import util
+from deepdiff import DeepDiff
 from util import *  # needed for pytest fixtures
 
 pytest_plugins = ("pytest_asyncio",)
@@ -51,7 +52,7 @@ MESSAGES_WITH_TOOL_CALLS = [
 ]
 
 
-async def post_messages(context, url, trace_id, messages, headers=None):
+async def append_messages(context, url, trace_id, messages, headers=None):
     """Helper function to post messages to a trace."""
     return await context.request.post(
         f"{url}/api/v1/trace/{trace_id}/messages",
@@ -75,22 +76,8 @@ async def get_trace_messages(context, url, trace_id):
     return trace.get("messages", [])
 
 
-def validate_messages_after_addition(
-    all_messages, existing_messages, new_messages, start_index
-):
-    """Helper function to validate that messages match expectations."""
-    # Validate existing messages remain unchanged
-    assert all_messages[: len(existing_messages)] == existing_messages
-
-    # Validate new messages are added correctly
-    for i, message in enumerate(new_messages, start=start_index):
-        assert "timestamp" in all_messages[i]
-        del all_messages[i]["timestamp"]
-        assert all_messages[i] == message
-
-
 async def test_append_messages_incorrect_type(url, context):
-    """Test that adding messages with incorrect types fails."""
+    """Test that appending messages with incorrect types fails."""
     invalid_inputs = [
         {"messages": "not a list"},
         {"messages": []},
@@ -106,21 +93,21 @@ async def test_append_messages_incorrect_type(url, context):
 
 
 async def test_append_messages_fails_on_non_existing_trace(url, context):
-    """Test that adding messages to a non-existing trace fails."""
-    response = await post_messages(
+    """Test that appending messages to a non-existing trace fails."""
+    response = await append_messages(
         context, url, str(uuid.uuid4()), MESSAGES_WITHOUT_TOOL_CALLS
     )
     assert response.status == 404
 
 
 async def test_append_messages_fails_when_caller_is_not_owner(url, context, data_abc):
-    """Test that adding messages to a trace fails when the caller is not the owner."""
+    """Test that appending messages to a trace fails when the caller is not the owner."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
         # Test for unauthorized user
-        response = await post_messages(
+        response = await append_messages(
             context,
             url,
             trace_id,
@@ -133,7 +120,7 @@ async def test_append_messages_fails_when_caller_is_not_owner(url, context, data
         await context.request.put(
             f"{url}/api/v1/dataset/byid/{dataset['id']}", data={"content": True}
         )
-        response = await post_messages(
+        response = await append_messages(
             context,
             url,
             trace_id,
@@ -143,7 +130,9 @@ async def test_append_messages_fails_when_caller_is_not_owner(url, context, data
         assert response.status == 404
 
 
-async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc):
+async def test_append_messages_succeeds_on_dataset_trace_with_consecutive_calls(
+    url, context, data_abc
+):
     """Test that consecutive calls to append_messages succeeds."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
@@ -153,18 +142,18 @@ async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc
         initial_messages = await get_trace_messages(context, url, trace_id)
         assert len(initial_messages) == 2
 
-        # Add first set of messages
-        response = await post_messages(
+        # Append first set of messages
+        response = await append_messages(
             context, url, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
         )
         assert response.status == 200
 
-        # verify that the messages were added
+        # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)
         assert len(updated_trace) == 4
         # the first two messages are the original ones
         assert updated_trace[0:2] == initial_messages
-        # the last two messages are the new ones we added
+        # the last two messages are the new ones we appended
         assert (
             "timestamp" in updated_trace[2]
             and "timestamp" in updated_trace[3]
@@ -174,16 +163,18 @@ async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc
         del updated_trace[3]["timestamp"]
         assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
 
-        # Add second set of messages
-        response = await post_messages(context, url, trace_id, MESSAGES_WITH_TOOL_CALLS)
+        # Append second set of messages
+        response = await append_messages(
+            context, url, trace_id, MESSAGES_WITH_TOOL_CALLS
+        )
         assert response.status == 200
 
-        # verify that the messages were added
+        # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)
         assert len(updated_trace) == 6
         # the first two messages are the original ones
         assert updated_trace[0:2] == initial_messages
-        # the next two messages are the new ones we added in the previous step
+        # the next two messages are the new ones we appended in the previous step
         assert (
             "timestamp" in updated_trace[2]
             and "timestamp" in updated_trace[3]
@@ -192,7 +183,7 @@ async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc
         del updated_trace[2]["timestamp"]
         del updated_trace[3]["timestamp"]
         assert updated_trace[2:4] == MESSAGES_WITHOUT_TOOL_CALLS
-        # the last two messages are the new ones we added
+        # the last two messages are the new ones we appended
         assert (
             "timestamp" in updated_trace[4]
             and "timestamp" in updated_trace[5]
@@ -203,13 +194,15 @@ async def test_append_messages_succeeds_consecutive_calls(url, context, data_abc
         assert updated_trace[4:] == MESSAGES_WITH_TOOL_CALLS
 
 
-async def test_append_messages_timestamp_with_invalid_format_fails(url, context, data_abc):
-    """Test that adding messages with invalid timestamp format fails."""
+async def test_append_messages_timestamp_with_invalid_format_fails(
+    url, context, data_abc
+):
+    """Test that appending messages with invalid timestamp format fails."""
     async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
-        # Add messages with invalid timestamp format
+        # Append messages with invalid timestamp format
         for invalid_timestamp in [
             1737668759,
             "01-01-2021 00:00:00",
@@ -222,11 +215,13 @@ async def test_append_messages_timestamp_with_invalid_format_fails(url, context,
                 },
                 {"role": "assistant", "content": "i like XYZ!"},
             ]
-            response = await post_messages(context, url, trace_id, invalid_messages)
+            response = await append_messages(context, url, trace_id, invalid_messages)
             assert response.status == 400
 
 
-async def test_append_messages_order_by_timestamp_correctly(context, url, data_abc):
+async def test_append_messages_succeeds_on_dataset_trace_with_order_by_timestamp(
+    context, url, data_abc
+):
     """
     Test that consecutive calls to append_messages result in correct ordering by
     taking the timestamp field into account.
@@ -242,18 +237,18 @@ async def test_append_messages_order_by_timestamp_correctly(context, url, data_a
         initial_messages = await get_trace_messages(context, url, trace_id)
         assert len(initial_messages) == 2
 
-        # Add first set of messages
-        response = await post_messages(
+        # Append first set of messages
+        response = await append_messages(
             context, url, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
         )
         assert response.status == 200
 
-        # verify that the messages were added
+        # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)
         assert len(updated_trace) == 4
         # the first two messages are the original ones
         assert updated_trace[0:2] == initial_messages
-        # the last two messages are the new ones we added
+        # the last two messages are the new ones we appended
         assert (
             "timestamp" in updated_trace[2]
             and "timestamp" in updated_trace[3]
@@ -263,13 +258,13 @@ async def test_append_messages_order_by_timestamp_correctly(context, url, data_a
         del updated_trace[3]["timestamp"]
         assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
 
-        # Add second set of messages
-        response = await post_messages(
+        # Append second set of messages
+        response = await append_messages(
             context, url, trace_id, MESSAGES_WITH_OLD_TIMESTAMP
         )
         assert response.status == 200
 
-        # verify that the messages were added
+        # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)
         assert len(updated_trace) == 6
         # the first two messages are the ones in MESSAGES_WITH_OLD_TIMESTAMP
@@ -286,3 +281,72 @@ async def test_append_messages_order_by_timestamp_correctly(context, url, data_a
         del updated_trace[4]["timestamp"]
         del updated_trace[5]["timestamp"]
         assert updated_trace[4:] == MESSAGES_WITHOUT_TOOL_CALLS
+
+
+async def test_append_messages_succeeds_on_snippet_trace(context, url):
+    """Test that append_messages call succeeds for a trace snippet."""
+    snippet_response = await context.request.post(
+        f"{url}/api/v1/trace/snippets/new",
+        data={"content": MESSAGES_WITHOUT_TOOL_CALLS},
+    )
+    assert snippet_response.status == 200
+    snippet = await snippet_response.json()
+    snippet_id = snippet["id"]
+
+    # Append messages to the snippet
+    response = await append_messages(context, url, snippet_id, MESSAGES_WITH_TOOL_CALLS)
+    assert response.status == 200
+
+    # Retrieve the snippet and validate the messages
+    snippet_response = await context.request.get(f"{url}/api/v1/trace/{snippet_id}")
+    snippet = await snippet_response.json()
+    assert len(snippet["messages"]) == 4
+    assert snippet["messages"][:2] == MESSAGES_WITHOUT_TOOL_CALLS
+    del snippet["messages"][2]["timestamp"]
+    del snippet["messages"][3]["timestamp"]
+    assert snippet["messages"][2:] == MESSAGES_WITH_TOOL_CALLS
+
+    # Delete the snippet
+    deletion_response = await context.request.delete(f"{url}/api/v1/trace/{snippet_id}")
+    assert deletion_response.status == 200
+
+
+async def test_append_messages_succeeds_starting_with_empty_snippet_trace(context, url):
+    """Test that append_messages call succeeds for a trace snippet which starts out empty."""
+    # Create an empty snippet
+    snippet_response = await context.request.post(
+        f"{url}/api/v1/trace/snippets/new",
+        data={"content": []},
+    )
+    assert snippet_response.status == 200
+    snippet = await snippet_response.json()
+    snippet_id = snippet["id"]
+
+    # Append messages to the snippet
+    # The resultant messages might not have the same order
+    response = await append_messages(
+        context, url, snippet_id, MESSAGES_WITHOUT_TOOL_CALLS
+    )
+    assert response.status == 200
+    response = await append_messages(context, url, snippet_id, MESSAGES_WITH_TOOL_CALLS)
+    assert response.status == 200
+
+    # Retrieve the snippet and validate the messages
+    snippet_response = await context.request.get(f"{url}/api/v1/trace/{snippet_id}")
+    snippet = await snippet_response.json()
+    assert len(snippet["messages"]) == 4
+    for message in snippet["messages"]:
+        assert "timestamp" in message
+        del message["timestamp"]
+    assert (
+        DeepDiff(
+            snippet["messages"],
+            MESSAGES_WITHOUT_TOOL_CALLS + MESSAGES_WITH_TOOL_CALLS,
+            ignore_order=True,
+        )
+        == {}
+    )
+
+    # Delete the snippet
+    deletion_response = await context.request.delete(f"{url}/api/v1/trace/{snippet_id}")
+    assert deletion_response.status == 200
