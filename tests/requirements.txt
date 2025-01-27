@@ -10,6 +10,8 @@ certifi==2024.12.14
     # via requests
 charset-normalizer==3.4.0
     # via requests
+deepdiff==8.1.1
+    # via -r tests/requirements.in
 greenlet==3.1.1
     # via playwright
 idna==3.10
@@ -18,6 +20,8 @@ iniconfig==2.0.0
     # via pytest
 invariant-sdk==0.0.4
     # via -r tests/requirements.in
+orderly-set==5.2.3
+    # via deepdiff
 packaging==24.2
     # via pytest
 pillow==11.0.0
