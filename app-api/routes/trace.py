@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
-from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
+from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
 from models.queries import (
     annotation_to_json,
     has_link_sharing,
@@ -33,6 +33,10 @@ from sqlalchemy.orm.attributes import flag_modified
 trace = FastAPI()
 logger = logging.getLogger(__name__)
 
+# static dataset name for snippets
+# snippets don't have a parent dataset so we use this name
+# so that all images in traces are stored in a fixed hierarchy
+DATASET_NAME_FOR_SNIPPETS = "!ROOT_DATASET_FOR_SNIPPETS"
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
 async def get_image(
@@ -438,7 +442,7 @@ async def append_messages(
                 # Lock the trace row for update
                 trace_response = (
                     session.query(Trace)
-                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == user_id))
+                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id)))
                     .with_for_update()
                     .first()
                 )
@@ -449,6 +453,26 @@ async def append_messages(
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
+
+                dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
+                if trace_response.dataset_id:
+                    dataset_response = (
+                        session.query(Dataset)
+                        .filter(
+                            and_(
+                                Dataset.id == trace_response.dataset_id,
+                                Dataset.user_id == UUID(user_id),
+                            )
+                        )
+                        .first()
+                    )
+                    dataset_name = dataset_response.name
+                # parse images from new_messages and store them separately
+                new_messages = await parse_and_push_images(
+                    dataset=dataset_name,
+                    trace_id=trace_response.id,
+                    messages=new_messages,
+                )
 
                 combined_messages = merge_sorted_messages(
                     existing_messages=trace_response.content,
