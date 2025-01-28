@@ -122,7 +122,7 @@ async def parse_and_push_images(dataset, trace_id, messages):
         Updated messages with image paths
     """
     async def parse_and_push_single_image(msg):
-        if msg.get("role") != "tool" or type(msg.get("content")) != str:
+        if msg.get("role") != "tool" or not isinstance(msg.get("content"), str):
             return
         if msg.get("content").startswith("base64_img: ") or msg.get(
             "content"
