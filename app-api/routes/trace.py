@@ -22,6 +22,7 @@ from routes.apikeys import (
     AuthenticatedUserOrAPIIdentity,
     UserOrAPIIdentity,
 )
+from util.util import parse_and_push_images
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
@@ -320,12 +321,21 @@ async def upload_new_single_trace(
         payload = await request.json()
         content = payload.get("content", [])
         extra_metadata = payload.get("extra_metadata", {})
-
+        trace_id = uuid.uuid4()
+        # Parse messages for base64 encoded images, save them to disk, and update
+        # message content with local file path.
+        # The dataset_name is set to "!ROOT_DATASET_FOR_SNIPPETS" to indicate that the
+        # trace does not belong to a dataset.
+        # Because of the ! this is not a valid name for a dataset and will not conflict.
+        message_content = await parse_and_push_images(
+            dataset="!ROOT_DATASET_FOR_SNIPPETS", trace_id=trace_id, messages=content
+        )
         trace = Trace(
+            id=trace_id,
             dataset_id=None,
             index=0,
             user_id=user_id,
-            content=content,
+            content=message_content,
             extra_metadata=extra_metadata,
             name=payload.get("name", "Single Trace"),
             hierarchy_path=payload.get("hierarchy_path", []),
