@@ -270,13 +270,25 @@ async def test_reupload_api(url, context, dataset_name, data_webarena_with_metad
 
 
 async def test_snippet(url, context):
+    messages = [
+        {"role": "user", "content": "Hello!"},
+        {"role": "assistant", "content": "hello back to you"},
+    ]
     response = await context.request.post(
         url + "/api/v1/trace/snippets/new",
-        data={"content": "test", "extra_metadata": dict()},
+        data={
+            "content": messages,
+            "extra_metadata": {},
+        },
     )
     await expect(response).to_be_ok()
     response = await response.json()
-    meta = response.get("extra_metadata", dict())
-    assert isinstance(meta, dict)
-    assert len(meta) == 0
+
+    trace_get_response = await context.request.get(
+        url + f"/api/v1/trace/{response['id']}"
+    )
+    await expect(trace_get_response).to_be_ok()
+    trace_response = await trace_get_response.json()
+    assert trace_response["messages"] == messages
+
     await util.async_delete_trace_by_id(url, context, response["id"])
