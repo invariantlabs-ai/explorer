@@ -214,6 +214,7 @@ button.inline {
 
 .app button.icon {
   padding: 10pt;
+  text-overflow: clip;
 
   svg {
     position: relative;
