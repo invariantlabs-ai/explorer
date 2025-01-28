@@ -981,10 +981,12 @@ class MessageView extends React.Component<
                           this.props.onUpvoteDownvoteDelete
                         }
                       >
-                        {truncate_content(
-                          message.content,
-                          config("truncation_limit"),
-                        )}
+                        {message.content.startsWith("local_base64_img:")
+                          ? message.content
+                          : truncate_content(
+                              message.content,
+                              config("truncation_limit")
+                            )}
                       </Annotated>
                     )}
                   </div>
