@@ -13,6 +13,7 @@ from models.queries import (
     annotation_to_json,
     has_link_sharing,
     load_annotations,
+    load_dataset,
     load_trace,
     trace_to_json,
     trace_to_exported_json,
@@ -22,7 +23,7 @@ from routes.apikeys import (
     AuthenticatedUserOrAPIIdentity,
     UserOrAPIIdentity,
 )
-from util.util import parse_and_push_images
+from util.util import delete_images, parse_and_push_images
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
@@ -80,7 +81,7 @@ def get_trace_snippets(
 
 
 @trace.delete("/{id}")
-def delete_trace(
+async def delete_trace(
     id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
 ):
     user_id = userinfo["sub"]
@@ -93,6 +94,13 @@ def delete_trace(
         session.query(SharedLinks).filter(SharedLinks.trace_id == id).delete()
         # delete annotations
         session.query(Annotation).filter(Annotation.trace_id == id).delete()
+        # delete images
+        dataset_name = DATASET_NAME_FOR_SNIPPETS
+        if trace.dataset_id:
+            dataset = load_dataset(session, trace.dataset_id, user_id)
+            dataset_name = dataset.name
+        # delete images
+        await delete_images(dataset_name=dataset_name, trace_id=str(trace.id))
         # delete trace
         session.delete(trace)
 

@@ -1,19 +1,22 @@
 """Utility functions for APIs."""
 
+import asyncio
 import base64
 import copy
 import hashlib
-import io
+import logging
 import os
 import re
+import shutil
 import uuid
-import aiofiles, asyncio
 from typing import Optional
 
+import aiofiles
 from fastapi import HTTPException
-from PIL import Image
 
 DATASET_NAME_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
+
+logger = logging.getLogger(__name__)
 
 
 def validate_dataset_name(name: str):
@@ -109,6 +112,7 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
                     }
     return messages
 
+
 async def parse_and_push_images(dataset, trace_id, messages):
     """
     Parse messages for base64 encoded images, save them to disk, and update message content with local file path.
@@ -121,6 +125,7 @@ async def parse_and_push_images(dataset, trace_id, messages):
     Returns:
         Updated messages with image paths
     """
+
     async def parse_and_push_single_image(msg):
         if msg.get("role") != "tool" or not isinstance(msg.get("content"), str):
             return
@@ -133,16 +138,16 @@ async def parse_and_push_images(dataset, trace_id, messages):
                 else "local_base64_img: "
             )
             img_base64 = msg.get("content")[len(prefix) :]
-            
+
             try:
                 img_data = base64.b64decode(img_base64)
             except Exception as e:
                 raise ValueError("Failed to decode base64 image") from e
-            
+
             # Generate a unique filename for the image
             img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
+
             # Save the image as a temporary file
-           
             img_path = f"/srv/images/{img_filename}"
             os.makedirs(os.path.dirname(img_path), exist_ok=True)
             try:
@@ -157,3 +162,15 @@ async def parse_and_push_images(dataset, trace_id, messages):
     await asyncio.gather(*save_images)
 
     return messages
+
+
+async def delete_images(dataset_name: str, trace_id: str) -> None:
+    """Deletes the locally stored images given a dataset name and a trace_id."""
+    images_path = f"/srv/images/{dataset_name}/{trace_id}"
+    try:
+        if os.path.exists(images_path):
+            shutil.rmtree(images_path)
+        else:
+            logger.info(f"Images path does not exist: {images_path}")
+    except Exception as e:
+        logger.error(f"Error deleting {images_path}: {e}")

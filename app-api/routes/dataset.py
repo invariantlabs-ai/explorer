@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Annotated, Any, Optional
 from uuid import UUID
 
+import asyncio
 from cachetools import TTLCache, cached
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -41,7 +42,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import exists, func
-from util.util import validate_dataset_name
+from util.util import delete_images, validate_dataset_name
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
 homepage_dataset_ids = (
@@ -270,7 +271,7 @@ def list_datasets_by_user(
 ########################################
 
 
-def delete_dataset(
+async def delete_dataset(
     by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
 ):
     user_id = userinfo["sub"]
@@ -280,15 +281,23 @@ def delete_dataset(
 
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
+        trace_ids = [trace.id for trace in traces]
 
         # delete all annotations
         session.query(Annotation).filter(
-            Annotation.trace_id.in_([trace.id for trace in traces])
+            Annotation.trace_id.in_(trace_ids)
         ).delete()
         # delete all shared links
         session.query(SharedLinks).filter(
-            SharedLinks.trace_id.in_([trace.id for trace in traces])
+            SharedLinks.trace_id.in_(trace_ids)
         ).delete()
+        # delete all images
+        image_deletion_tasks = [
+            delete_images(dataset_name=dataset.name, trace_id=str(trace_id))
+            for trace_id in trace_ids
+        ]
+        await asyncio.gather(*image_deletion_tasks)
+
         # delete all traces
         session.query(Trace).filter(Trace.dataset_id == dataset.id).delete()
 
@@ -301,22 +310,22 @@ def delete_dataset(
 
 
 @dataset.delete("/byid/{id}")
-def delete_dataset_by_id(
+async def delete_dataset_by_id(
     request: Request,
     id: str,
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
-    return delete_dataset({"id": id}, userinfo)
+    return await delete_dataset({"id": id}, userinfo)
 
 
 @dataset.delete("/byuser/{username}/{dataset_name}")
-def delete_dataset_by_name(
+async def delete_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
-    return delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
+    return await delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
 
 
 ########################################
