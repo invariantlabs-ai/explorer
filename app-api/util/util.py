@@ -169,7 +169,7 @@ async def delete_images(dataset_name: str, trace_id: str) -> None:
     images_path = f"/srv/images/{dataset_name}/{trace_id}"
     try:
         if os.path.exists(images_path):
-            shutil.rmtree(images_path)
+            await asyncio.to_thread(shutil.rmtree, images_path)
         else:
             logger.info(f"Images path does not exist: {images_path}")
     except Exception as e:
