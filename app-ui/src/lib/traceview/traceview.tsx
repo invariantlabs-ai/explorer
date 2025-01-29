@@ -1034,6 +1034,57 @@ class MessageView extends React.Component<
   }
 }
 
+const extractBase64 = (url) => {
+  const match = url.match(/^data:image\/\w+;base64,(.+)$/);
+  return match ? match[1] : url;
+};
+
+function formatJSONArray(props: {
+  content: object;
+  highlights: any;
+  highlightContext?: HighlightContext;
+  address: string;
+  message?: any;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
+}) {
+  return props.message.content.map((item: any, index: number) => {
+    const address = `${props.address}.content[${index}]`;
+    
+    switch (item?.type) {
+      case 'text':
+        return (
+          <Annotated {...props} address={address}>
+            {truncate_content(item.text, config('truncation_limit'))}
+          </Annotated>
+        );
+
+      case 'image_url':
+        return (
+          <Annotated {...props} address={address}>
+            {`local_base64_img: ${extractBase64(item.image_url.url)}`}
+          </Annotated>
+        );
+
+      default:
+        return (
+          <MessageJSONContent 
+            content={item} 
+            highlights={props.highlights.for_path("content")}
+            address={props.address + ".content"}
+            highlightContext={props.highlightContext}
+            message={props.message}
+            traceIndex={props.traceIndex}
+            onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
+            onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
+          />
+        );
+    }
+  });
+}
+
+
 function MessageJSONContent(props: {
   content: object;
   highlights: any;
@@ -1047,6 +1098,11 @@ function MessageJSONContent(props: {
   const content = props.content;
   const highlights = props.highlights;
   const keys = Object.keys(content);
+
+  // If it is an array, we may need to render each item separately
+  if (Array.isArray(content)) {
+    return formatJSONArray(props);
+  }
 
   return (
     <table className="json content">
