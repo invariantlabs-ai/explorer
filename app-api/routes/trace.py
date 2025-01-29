@@ -1,13 +1,13 @@
-import logging
+import json
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
-import json
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
+from logging_config import get_logger
 from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
 from models.queries import (
     annotation_to_json,
@@ -15,29 +15,30 @@ from models.queries import (
     load_annotations,
     load_dataset,
     load_trace,
-    trace_to_json,
     trace_to_exported_json,
+    trace_to_json,
 )
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
     UserOrAPIIdentity,
 )
-from util.util import delete_images, parse_and_push_images
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.dataset import DBJSONEncoder
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-from routes.dataset import DBJSONEncoder
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
+from util.util import delete_images, parse_and_push_images
 
 trace = FastAPI()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # static dataset name for snippets
 # snippets don't have a parent dataset so we use this name
 # so that all images in traces are stored in a fixed hierarchy
 DATASET_NAME_FOR_SNIPPETS = "!ROOT_DATASET_FOR_SNIPPETS"
+
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
 async def get_image(
@@ -135,11 +136,8 @@ async def download_trace(
     id: str,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
-
     with Session(db()) as session:
-        trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
-        )
+        trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
 
         trace_data = await trace_to_exported_json(trace, load_annotations(session, id))
         trace_data = json.dumps(trace_data, cls=DBJSONEncoder) + "\n"
@@ -148,9 +146,7 @@ async def download_trace(
         return Response(
             content=trace_data,
             media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename={trace.id}.jsonl"
-            },
+            headers={"Content-Disposition": f"attachment; filename={trace.id}.jsonl"},
         )
 
 
@@ -450,7 +446,9 @@ async def append_messages(
                 # Lock the trace row for update
                 trace_response = (
                     session.query(Trace)
-                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id)))
+                    .filter(
+                        and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id))
+                    )
                     .with_for_update()
                     .first()
                 )

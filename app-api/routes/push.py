@@ -2,13 +2,13 @@
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
 
-import logging
 import uuid
 import asyncio
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
+from logging_config import get_logger
 from models.datasets_and_traces import Annotation, Dataset, Trace, db
 from models.queries import load_dataset
 from routes.apikeys import APIIdentity
@@ -17,7 +17,7 @@ from util.util import parse_and_push_images, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
 push = FastAPI()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 """
 Write-only API endpoint to push traces to the server.

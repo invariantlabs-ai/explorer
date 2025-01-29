@@ -4,7 +4,6 @@ import asyncio
 import base64
 import copy
 import hashlib
-import logging
 import os
 import re
 import shutil
@@ -13,10 +12,11 @@ from typing import Optional
 
 import aiofiles
 from fastapi import HTTPException
+from logging_config import get_logger
 
 DATASET_NAME_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def validate_dataset_name(name: str):
