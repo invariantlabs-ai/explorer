@@ -113,6 +113,12 @@ class ImageViewer extends React.Component<
   }
 
   async fetchImage() {
+    // We can return the base64 image directly if it is provided in the content
+    if (this.props.content.startsWith("local_base64_img")) {
+      this.setState({ imageUrl: this.props.content.split("local_base64_img: ")[1] });
+      return
+    }
+
     const url = `/api/v1/trace/image/${this.state.datasetName}/${this.state.traceId}/${this.state.imageId}`;
 
     try {
@@ -370,7 +376,7 @@ class ImageViewer extends React.Component<
     }
 
     // iterate over the following messages
-    for (let i = index + 1; i < this.props.messages.length; i++) {
+    for (let i = index + 1; i < this.props.messages?.length; i++) {
       for (let tc of (this.props.messages[i].tool_calls || [])) {
         for (let value of Object.values(tc.function?.arguments || {})) {
           let coordinates = extractCoordinates(value);
@@ -426,9 +432,12 @@ register_plugin({
   name: "image-viewer",
   component: (props) => <ImageViewer {...props} />,
   isCompatible: (address: string, msg: any, content: string) => {
-    if (content.includes("s3_img_link") || content.includes("local_img_link")) {
+    if (content.includes("s3_img_link") || content.includes("local_img_link") || content.includes("local_base64_img")) {
       return true;
     }
     return false;
   },
 });
+
+
+export default ImageViewer;
