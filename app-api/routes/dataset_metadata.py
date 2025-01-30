@@ -188,12 +188,12 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
         session.commit()
         
         metadata_response = dataset_response.extra_metadata
-        updated_metadata = {**metadata_response}
+        updated_metadata = {}
         
         # remove fields that should not be visible in the response
         for field in allowed_field:
             if field.include_in_response:
-                updated_metadata.pop(field.key, None)
+                updated_metadata[field.key] = metadata_response[field.key]
         
         # return the updated metadata
         return updated_metadata
