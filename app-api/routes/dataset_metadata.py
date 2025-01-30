@@ -43,15 +43,33 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import exists, func
 from util.util import validate_dataset_name
 
+"""
+A metadata field is a field in a datasets 'extra_metadata' dictionary that can be updated via the API. 
 
+A field is characterised by the following properties/methods:
+
+- .validate() for data validation 
+    - its type (e.g. int, float, str, dict, list, etc.)
+    - its custom validation properties (new values must be validated against these properties) 
+- .include_in_response: 
+    - whether it should be included in the response at the end of an update operation
+- .clear_on_replace:
+    whether it should be cleared when it is not present in the new metadata that is supposed to 'replace_all' the current metadata
+
+For pre-defined metadata behavior, see also the subclasses of MetadataField below.
+"""
 class MetadataField:
-    def __init__(self, key: str, include_in_response: bool = True):
+    def __init__(self, key: str, include_in_response: bool = True, clear_on_replace: bool = True):
         """
         :param key: The key of the field on the top level of the metadata dictionary.
         :param include_in_response: Whether to include the field in the response.
+        :param clear_on_replace: Whether to delete this field, when it is not present in the new metadata that is supposed to 
+                                 'replace_all' the current metadata. If False, the field will be retained, even on a 'replace_all'
+                                 operation, if it is not present in the new metadata.
         """
         self.key = key
         self.include_in_response = include_in_response
+        self.clear_on_replace = clear_on_replace
 
     def validate(self, value: Any):
         raise NotImplementedError
@@ -114,8 +132,8 @@ class TestReportField(MetadataField):
                         metadata_dict[self.key][key] = new_value[key]
 
 class PrimitiveMetadataField(MetadataField):
-    def __init__(self, key: str, ttype: type, include_in_response: bool = True):
-        super().__init__(key, include_in_response=include_in_response)
+    def __init__(self, key: str, ttype: type, include_in_response: bool = True, clear_on_replace: bool = True):
+        super().__init__(key, include_in_response=include_in_response, clear_on_replace=clear_on_replace)
         self.ttype = ttype
 
     def validate(self, value: Any):
@@ -136,9 +154,6 @@ class PrimitiveMetadataField(MetadataField):
                 metadata_dict[self.key] = new_value
 
 class ReadOnlyMetadataField(MetadataField):
-    def __init__(self, key: str, include_in_response: bool = True):
-        super().__init__(key, include_in_response=include_in_response)
-
     def validate(self, value: Any):
         raise HTTPException(
             status_code=400,
@@ -164,7 +179,7 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
             PrimitiveMetadataField('benchmark', str),
             PrimitiveMetadataField('name', str),
             PrimitiveMetadataField('accuracy', (int, float)),
-            ReadOnlyMetadataField('policies', include_in_response=False)
+            ReadOnlyMetadataField('policies', include_in_response=False, clear_on_replace=False),
         ]
 
         # validate all allowed fields
