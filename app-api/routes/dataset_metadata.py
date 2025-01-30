@@ -149,8 +149,7 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
         PrimitiveMetadataField('benchmark', str),
         PrimitiveMetadataField('name', str),
         PrimitiveMetadataField('accuracy', (int, float)),
-        PrimitiveMetadataField('policies', list, include_in_response=False),
-        PrimitiveMetadataField('analysis_report', str),
+        PrimitiveMetadataField('policies', list, include_in_response=False)
     ]
 
     # validate all allowed fields
