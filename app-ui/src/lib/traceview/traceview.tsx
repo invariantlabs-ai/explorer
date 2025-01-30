@@ -1049,7 +1049,7 @@ function formatJSONArray(props: {
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
-  return props.message.content.map((item: any, index: number) => {
+  return (props.message?.content || []).map((item: any, index: number) => {
     const address = `${props.address}.content[${index}]`;
     
     switch (item?.type) {
@@ -1355,7 +1355,7 @@ function Annotated(props: {
   }, [props.children]);
 
   useEffect(() => {
-    const content = props.children.toString();
+    let content = props.children.toString();
     const elements: React.ReactNode[] = [];
 
     if (plugin && pluginEnabled) {
@@ -1364,6 +1364,9 @@ function Annotated(props: {
       ]);
       return;
     }
+
+    // make sure to truncate content if rendered as raw text (otherwise long content could crash the renderer)
+    content = truncate_content(content, config("truncation_limit"));
 
     let highlights_in_text = props.highlights.in_text(
       JSON.stringify(content, null, 2),
