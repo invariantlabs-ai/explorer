@@ -432,3 +432,6 @@ register_plugin({
     return false;
   },
 });
+
+
+export default ImageViewer;

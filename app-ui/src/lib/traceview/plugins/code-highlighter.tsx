@@ -549,3 +549,6 @@ class LanguageClassifier {
 }
 
 const LANGUAGE_CLASSIFIER = new LanguageClassifier();
+
+
+export default CodeHighlightedView;
