@@ -44,7 +44,7 @@ def signup(
     return {"success": True}
 
 # to get the user identity for an API key, run
-# curl http://localhost/api/v1/user/identity -H "Authorization: Bearer <API_KEY>"
+# curl <INSTANCE_URL>/api/v1/user/identity -H "Authorization: Bearer <API_KEY>"
 @user.get("/identity")
 def identity(userinfo: Annotated[dict, Depends(APIIdentity)]):
     return {
