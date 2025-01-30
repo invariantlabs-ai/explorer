@@ -157,7 +157,7 @@ class ReadOnlyMetadataField(MetadataField):
     def validate(self, value: Any):
         raise HTTPException(
             status_code=400,
-            detail=f"{self.key} cannot be updated via API"
+            detail=f"{self.key} cannot be updated via the /metadata API"
         )
 
     def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
@@ -173,62 +173,56 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
     :param replace_all: Whether to replace the entire metadata dictionary with the new metadata. If False, only the
                         provided fields will be updated. Default is False.
     """
-    try:
-        allowed_field = [
-            TestReportField(),
-            PrimitiveMetadataField('benchmark', str),
-            PrimitiveMetadataField('name', str),
-            PrimitiveMetadataField('accuracy', (int, float)),
-            ReadOnlyMetadataField('policies', include_in_response=False, clear_on_replace=False),
-        ]
+    allowed_field = [
+        TestReportField(),
+        PrimitiveMetadataField('benchmark', str),
+        PrimitiveMetadataField('name', str),
+        PrimitiveMetadataField('accuracy', (int, float)),
+        ReadOnlyMetadataField('policies', include_in_response=False, clear_on_replace=False),
+    ]
 
-        # validate all allowed fields
-        validated_keys = []
-        for field in allowed_field:
-            if field.key in metadata:
-                field.validate(metadata[field.key])
-            validated_keys.append(field.key)
-        
-        # make sure metadata only contains the allowed keys
-        if any(key not in validated_keys for key in metadata):
-            raise HTTPException(
-                status_code=400,
-                detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}"
-            )
-        
-        # update the metadata (based on the update mode)
-        with Session(db()) as session:
-            dataset_response = load_dataset(
-                session,
-                {"name": dataset_name, "user_id": uuid.UUID(user_id)},
-                user_id,
-                allow_public=True,
-                return_user=False,
-            )
-            # update all allowed fields
-            if replace_all:
-                for field in allowed_field:
-                    field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='replace_all')
-            else:
-                for field in allowed_field:
-                    field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='incremental')
-            
-            # mark the extra_metadata field as modified
-            flag_modified(dataset_response, "extra_metadata")
-            session.commit()
-            
-            metadata_response = dataset_response.extra_metadata
-            updated_metadata = {}
-            
-            # remove fields that should not be visible in the response
-            for field in allowed_field:
-                if field.include_in_response and field.key in metadata_response:
-                    updated_metadata[field.key] = metadata_response[field.key]
-            
-            # return the updated metadata
-            return updated_metadata
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=400, detail=str(e))
+    # validate all allowed fields
+    validated_keys = []
+    for field in allowed_field:
+        if field.key in metadata:
+            field.validate(metadata[field.key])
+        validated_keys.append(field.key)
     
+    # make sure metadata only contains the allowed keys
+    if any(key not in validated_keys for key in metadata):
+        raise HTTPException(
+            status_code=400,
+            detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}"
+        )
+    
+    # update the metadata (based on the update mode)
+    with Session(db()) as session:
+        dataset_response = load_dataset(
+            session,
+            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
+            user_id,
+            allow_public=True,
+            return_user=False,
+        )
+        # update all allowed fields
+        if replace_all:
+            for field in allowed_field:
+                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='replace_all')
+        else:
+            for field in allowed_field:
+                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='incremental')
+        
+        # mark the extra_metadata field as modified
+        flag_modified(dataset_response, "extra_metadata")
+        session.commit()
+        
+        metadata_response = dataset_response.extra_metadata
+        updated_metadata = {}
+        
+        # remove fields that should not be visible in the response
+        for field in allowed_field:
+            if field.include_in_response and field.key in metadata_response:
+                updated_metadata[field.key] = metadata_response[field.key]
+        
+        # return the updated metadata
+        return updated_metadata
