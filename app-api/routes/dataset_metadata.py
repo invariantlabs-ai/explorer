@@ -81,6 +81,7 @@ class TestReportField(MetadataField):
         
         allowed_keys = [("num_tests", int), ("num_passed", int)]
         
+        # type check all allowed keys
         for key, ttype in allowed_keys:
             if key not in value:
                 raise HTTPException(
@@ -93,10 +94,11 @@ class TestReportField(MetadataField):
                     detail=f"invariant.test_results.{key} must be of type {ttype.__name__}"
                 )
 
-        if any(key not in allowed_keys for key in value):
+        # make sure there are no extra keys
+        if any(key not in [k for k, _ in allowed_keys] for key in value):
             raise HTTPException(
                 status_code=400,
-                detail=f"invariant.test_results must only contain the keys {', '.join([k for k, _ in allowed_keys])}"
+                detail=f"invariant.test_results must only contain the keys {', '.join([k for k, _ in allowed_keys])} (got extra keys {', '.join([k for k in value if k not in allowed_keys])})"
             )    
 
     def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
@@ -133,6 +135,18 @@ class PrimitiveMetadataField(MetadataField):
             if new_value is not None:
                 metadata_dict[self.key] = new_value
 
+class ReadOnlyMetadataField(MetadataField):
+    def __init__(self, key: str, include_in_response: bool = True):
+        super().__init__(key, include_in_response=include_in_response)
+
+    def validate(self, value: Any):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{self.key} cannot be updated via API"
+        )
+
+    def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
+        pass
     
 async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dict, replace_all: bool = False):
     """
@@ -144,56 +158,62 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
     :param replace_all: Whether to replace the entire metadata dictionary with the new metadata. If False, only the
                         provided fields will be updated. Default is False.
     """
-    allowed_field = [
-        TestReportField(),
-        PrimitiveMetadataField('benchmark', str),
-        PrimitiveMetadataField('name', str),
-        PrimitiveMetadataField('accuracy', (int, float)),
-        PrimitiveMetadataField('policies', list, include_in_response=False)
-    ]
+    try:
+        allowed_field = [
+            TestReportField(),
+            PrimitiveMetadataField('benchmark', str),
+            PrimitiveMetadataField('name', str),
+            PrimitiveMetadataField('accuracy', (int, float)),
+            ReadOnlyMetadataField('policies', include_in_response=False)
+        ]
 
-    # validate all allowed fields
-    validated_keys = []
-    for field in allowed_field:
-        if field.key in metadata:
-            field.validate(metadata[field.key])
-        validated_keys.append(field.key)
-    
-    # make sure metadata only contains the allowed keys
-    if any(key not in validated_keys for key in metadata):
-        raise HTTPException(
-            status_code=400,
-            detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}"
-        )
-    
-    # update the metadata (based on the update mode)
-    with Session(db()) as session:
-        dataset_response = load_dataset(
-            session,
-            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
-            user_id,
-            allow_public=True,
-            return_user=False,
-        )
-        # update all allowed fields
-        if replace_all:
-            for field in allowed_field:
-                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='replace_all')
-        else:
-            for field in allowed_field:
-                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='incremental')
-        
-        # mark the extra_metadata field as modified
-        flag_modified(dataset_response, "extra_metadata")
-        session.commit()
-        
-        metadata_response = dataset_response.extra_metadata
-        updated_metadata = {}
-        
-        # remove fields that should not be visible in the response
+        # validate all allowed fields
+        validated_keys = []
         for field in allowed_field:
-            if field.include_in_response:
-                updated_metadata[field.key] = metadata_response[field.key]
+            if field.key in metadata:
+                field.validate(metadata[field.key])
+            validated_keys.append(field.key)
         
-        # return the updated metadata
-        return updated_metadata
+        # make sure metadata only contains the allowed keys
+        if any(key not in validated_keys for key in metadata):
+            raise HTTPException(
+                status_code=400,
+                detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}"
+            )
+        
+        # update the metadata (based on the update mode)
+        with Session(db()) as session:
+            dataset_response = load_dataset(
+                session,
+                {"name": dataset_name, "user_id": uuid.UUID(user_id)},
+                user_id,
+                allow_public=True,
+                return_user=False,
+            )
+            # update all allowed fields
+            if replace_all:
+                for field in allowed_field:
+                    field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='replace_all')
+            else:
+                for field in allowed_field:
+                    field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='incremental')
+            
+            # mark the extra_metadata field as modified
+            flag_modified(dataset_response, "extra_metadata")
+            session.commit()
+            
+            metadata_response = dataset_response.extra_metadata
+            updated_metadata = {}
+            
+            # remove fields that should not be visible in the response
+            for field in allowed_field:
+                if field.include_in_response and field.key in metadata_response:
+                    updated_metadata[field.key] = metadata_response[field.key]
+            
+            # return the updated metadata
+            return updated_metadata
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
+    
