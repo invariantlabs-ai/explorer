@@ -43,6 +43,8 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import exists, func
 from util.util import validate_dataset_name
 
+from routes.dataset_metadata import update_dataset_metadata
+
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
 homepage_dataset_ids = (
     homepage_dataset_ids["DEV"]
@@ -955,7 +957,7 @@ async def get_metadata(
             **metadata_response,
         }
 
-
+# register update metadata route
 @dataset.put("/metadata/{dataset_name}")
 async def update_metadata(
     dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
@@ -966,125 +968,24 @@ async def update_metadata(
 
     payload = await request.json()
     metadata = payload.get("metadata", {})
+    
+    # make sure metadata is a dictionary
     if not isinstance(metadata, dict):
         raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    # When replace_all is False:
-    # * If a field doesn't exist or is None in the payload, ignore it.
+    
+    # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
+    # When replace_all is False (incremental update):
+    # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
     # * Otherwise, update the field in extra_metadata with the new value.
     # When replace_all is True:
     # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
     # * Otherwise, update the field in extra_metadata with the new value.
+    
     # This holds true for nested objects like invariant.test_results too.
     # Thus the caller cannot update only a part of the nested object - they need to provide the
     # full object.
     replace_all = payload.get("replace_all", False)
     if not isinstance(replace_all, bool):
         raise HTTPException(status_code=400, detail="replace_all must be a boolean")
-
-    invariant_test_results = metadata.get("invariant.test_results")
-    if invariant_test_results is not None and not isinstance(
-        invariant_test_results, dict
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="invariant.test_results must be a dictionary if provided",
-        )
-    # Filter out invalid keys.
-    invariant_test_results = (
-        {
-            k: v
-            for k, v in invariant_test_results.items()
-            if k in ["num_tests", "num_passed"]
-        }
-        if invariant_test_results is not None
-        else None
-    )
-
-    # Validate payload.
-    # If the benchmark field is provided, it must be a non-empty string.
-    # If the accuracy field is provided, it must be a non-negative float or int.
-    # If the name field is provided, it must be a non-empty string.
-    # If invariant.test_results is provided, it must be a dictionary with keys num_tests
-    # and num_passed. num_tests and num_passed must be of type int if provided.
-    if metadata.get("benchmark") is not None and (
-        not isinstance(metadata.get("benchmark"), str)
-        or not metadata.get("benchmark").strip()
-    ):
-        raise HTTPException(
-            status_code=400, detail="Benchmark must be a non-empty string if provided"
-        )
-    if metadata.get("name") is not None and (
-        not isinstance(metadata.get("name"), str) or not metadata.get("name").strip()
-    ):
-        raise HTTPException(
-            status_code=400, detail="Name must be a non-empty string if provided"
-        )
-    if metadata.get("accuracy") is not None and (
-        not isinstance(metadata.get("accuracy"), (int, float))
-        or metadata.get("accuracy") < 0
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Accuracy score must be a non-negative float or int if provided",
-        )
-    if invariant_test_results is not None:
-        if not invariant_test_results:
-            raise HTTPException(
-                status_code=400,
-                detail="invariant.test_results must not be empty if provided",
-            )
-        for key_and_type in [
-            {"key": "num_tests", "type": int},
-            {"key": "num_passed", "type": int},
-        ]:
-            if invariant_test_results.get(key_and_type["key"]) is not None:
-                if not isinstance(
-                    invariant_test_results.get(key_and_type["key"]),
-                    key_and_type["type"],
-                ):
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"invariant.test_results.{key_and_type['key']} must be of type {key_and_type['type'].__name__} if provided",
-                    )
-
-    with Session(db()) as session:
-        dataset_response = load_dataset(
-            session,
-            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
-            user_id,
-            allow_public=True,
-            return_user=False,
-        )
-        if replace_all:
-            # Delete the fields in extra_metadata if they are not provided in
-            # the payload when replace_all is True.
-            if metadata.get("benchmark") is None:
-                dataset_response.extra_metadata.pop("benchmark", None)
-            if metadata.get("accuracy") is None:
-                dataset_response.extra_metadata.pop("accuracy", None)
-            if metadata.get("name") is None:
-                dataset_response.extra_metadata.pop("name", None)
-            if metadata.get("invariant.test_results") is None:
-                dataset_response.extra_metadata.pop("invariant.test_results", None)
-        # Update the fields in extra_metadata whose value is not None in the payload.
-        if metadata.get("benchmark") is not None:
-            dataset_response.extra_metadata["benchmark"] = metadata.get("benchmark")
-        if metadata.get("accuracy") is not None:
-            dataset_response.extra_metadata["accuracy"] = metadata.get("accuracy")
-        if metadata.get("name") is not None:
-            dataset_response.extra_metadata["name"] = metadata.get("name")
-        if metadata.get("invariant.test_results") is not None:
-            dataset_response.extra_metadata["invariant.test_results"] = {}
-            for key in ["num_tests", "num_passed"]:
-                if metadata.get("invariant.test_results").get(key) is not None:
-                    dataset_response.extra_metadata["invariant.test_results"][key] = (
-                        metadata.get("invariant.test_results").get(key)
-                    )
-
-        flag_modified(dataset_response, "extra_metadata")
-        session.commit()
-        metadata_response = dataset_response.extra_metadata
-        metadata_response.pop("policies", None)
-        return {
-            **metadata_response,
-        }
+    
+    return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
