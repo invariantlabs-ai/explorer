@@ -26,7 +26,7 @@ def get_user(userinfo: Annotated[dict, Depends(UserIdentity)]):
 
     return {
         "id": userinfo["sub"],
-        "username": userinfo["preferred_username"],
+        "username": userinfo["username"],
         "email": userinfo["email"],
         "name": userinfo["name"],
         "image_url_hash": get_gravatar_hash(userinfo["email"]),

@@ -104,24 +104,24 @@ The resulting user identity looks like a UserIdentity object, but limited to the
 
 async def APIIdentity(request: Request):
     try:
-        # # check for DEV_MODE
-        # if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
-        #     "referer", []
-        # ):
-        #     return {
-        #         "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-        #         "username": "developer",
-        #         "apikey": "with DEV_MODE true",
-        #     }
-        # if (
-        #     "noauth=user1" in request.headers.get("referer", [])
-        #     and os.getenv("DEV_MODE") == "true"
-        # ):
-        #     return {
-        #         "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-        #         "username": "Developer2",
-        #         "apikey": "with DEV_MODE true",
-        #     }
+        # check for DEV_MODE
+        if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
+            "referer", []
+        ):
+            return {
+                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+                "username": "developer",
+                "apikey": "with DEV_MODE true",
+            }
+        if (
+            "noauth=user1" in request.headers.get("referer", [])
+            and os.getenv("DEV_MODE") == "true"
+        ):
+            return {
+                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+                "username": "Developer2",
+                "apikey": "with DEV_MODE true",
+            }
 
         apikey = request.headers.get("Authorization")
         bearer_token = re.match(r"Bearer (.+)", apikey)
@@ -176,8 +176,6 @@ async def UserOrAPIIdentityWithUsername(request: Request) -> dict | None:
         identity = await APIIdentity(request)
     else:
         identity = await UserIdentity(request)
-
-    print("identity", identity)
 
     if identity["sub"] is None:
         return None

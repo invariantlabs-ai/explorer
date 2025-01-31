@@ -14,7 +14,7 @@ services:
     networks:
       - invariant-explorer-web
     ports:
-      - '${PORT_HTTP:-80}:80'
+      - "${PORT_HTTP:-80}:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
@@ -76,36 +76,6 @@ services:
       - "traefik.http.routers.explorer-test-ui.rule=Host(`localhost`)||Host(`127.0.0.1`)"
       - "traefik.http.routers.explorer-test-ui.entrypoints=invariant-explorer-web"
       - "traefik.http.services.explorer-test-ui.loadbalancer.server.port=5173"
-      - "traefik.docker.network=invariant-explorer-web"
-
-  app-analyzer:
-    build:
-      context: ./app-analyzer
-      dockerfile: ../app-analyzer/Dockerfile.api
-    working_dir: /srv/app
-    env_file:
-      - .env
-    environment:
-      - PROJECTS_DIR=/srv/projects
-      - KEYCLOAK_CLIENT_ID_SECRET=local-does-not-use-keycloak
-      - TZ=Europe/Berlin
-      - DEV_MODE=true
-      - APP_NAME=analyzer
-      - AUTHENTICATION_INSTANCE=http://app-api:8000
-      - CONFIG_FILE=/config/explorer.config.yml
-    networks:
-      - internal
-      - invariant-explorer-web
-    volumes:
-      - type: bind
-        source: ./app-analyzer
-        target: /srv/app
-      - ./configs/explorer.test.yml:/config/explorer.config.yml
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.analyzer-api.rule=(Host(`localhost`) && PathPrefix(`/api/v1/analysis`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/v1/analysis`))"
-      - "traefik.http.routers.analyzer-api.entrypoints=invariant-explorer-web"
-      - "traefik.http.services.analyzer-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=invariant-explorer-web"
 
   database:

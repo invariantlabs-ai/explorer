@@ -55,7 +55,7 @@ export default function TracePageNUX() {
     if (!localStorage.getItem(HAS_SEEN_NUX_TRACE_VIEW)) {
       // return the first event that's not test, metadata, but expanded
       // Note the expanded status is contracted, when the event is collapsed it has the class expanded
-      const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"])`;
+      const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"]):not([class*="analyzer-output"])`;
       const eventFind = document.querySelector(selector);
       const new_className_event =
         "." + eventFind?.className.replace(/\s+/g, ".") || "";
