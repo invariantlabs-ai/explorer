@@ -4,6 +4,7 @@ import asyncio
 import base64
 import copy
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -113,52 +114,98 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
     return messages
 
 
-async def parse_and_push_images(dataset, trace_id, messages):
+async def _handle_base64_image(dataset: str, trace_id: str, msg: dict):
     """
-    Parse messages for base64 encoded images, save them to disk, and update message content with local file path.
+    Handles base64 image processing:
+    - Decodes the image
+    - Saves it to disk
+    - Updates the message content with the local file path
 
     Args:
-        dataset: Dataset name
-        trace_id: UUID of the trace
-        messages: List of messages to process
+        dataset (str): Dataset name.
+        trace_id (str): UUID of the trace.
+        msg (dict): The message containing base64 image content.
 
     Returns:
-        Updated messages with image paths
+        dict: Updated message.
     """
+    # If the message is a base64 image, save it to disk and update the message
+    if msg.get("content").startswith("base64_img: ") or msg.get("content").startswith(
+        "local_base64_img: "
+    ):
+        prefix = (
+            "base64_img: "
+            if msg.get("content").startswith("base64_img: ")
+            else "local_base64_img: "
+        )
+        img_base64 = msg.get("content")[len(prefix) :]
 
-    async def parse_and_push_single_image(msg):
-        if msg.get("role") != "tool" or not isinstance(msg.get("content"), str):
-            return
-        if msg.get("content").startswith("base64_img: ") or msg.get(
-            "content"
-        ).startswith("local_base64_img: "):
-            prefix = (
-                "base64_img: "
-                if msg.get("content").startswith("base64_img: ")
-                else "local_base64_img: "
-            )
-            img_base64 = msg.get("content")[len(prefix) :]
+        try:
+            img_data = base64.b64decode(img_base64)
+        except Exception as e:
+            raise ValueError("Failed to decode base64 image") from e
 
+        # Generate a unique filename for the image
+        img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
+
+        # Save the image as a temporary file
+        img_path = f"/srv/images/{img_filename}"
+        os.makedirs(os.path.dirname(img_path), exist_ok=True)
+        try:
+            async with aiofiles.open(img_path, "wb") as f:
+                await f.write(img_data)
+        except Exception as e:
+            print("exception: ", e)
+            raise IOError("Failed to save image to disk") from e
+        msg["content"] = "local_img_link: " + img_path
+    return msg
+
+
+async def _handle_tool_call_arguments(msg: dict):
+    """
+    Parses tool call arguments if they are a string and updates the message.
+
+    Args:
+        msg (dict): The message containing tool call data.
+
+    Returns:
+        dict: Updated message.
+    """
+    for tool_call in msg["tool_calls"]:
+        if not isinstance(tool_call.get("function", {}).get("arguments"), dict):
             try:
-                img_data = base64.b64decode(img_base64)
+                tool_call["function"]["arguments"] = json.loads(
+                    tool_call["function"]["arguments"]
+                )
             except Exception as e:
-                raise ValueError("Failed to decode base64 image") from e
+                logger.warning(
+                    f"Failed to parse tool call args: {tool_call['function']['arguments']}: {e}"
+                )
+    return msg
 
-            # Generate a unique filename for the image
-            img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
 
-            # Save the image as a temporary file
-            img_path = f"/srv/images/{img_filename}"
-            os.makedirs(os.path.dirname(img_path), exist_ok=True)
-            try:
-                async with aiofiles.open(img_path, "wb") as f:
-                    await f.write(img_data)
-            except Exception as e:
-                print("exception: ", e)
-                raise IOError("Failed to save image to disk") from e
-            msg["content"] = "local_img_link: " + img_path
+async def parse_and_update_messages(dataset: str, trace_id: str, messages: list[dict]):
+    """
+    Process messages:
+    - Handle base64 images and update message content
+    - Handle tool call argument parsing
 
-    save_images = [parse_and_push_single_image(msg) for msg in messages]
+    Args:
+        dataset (str): Dataset name.
+        trace_id (str): UUID of the trace.
+        messages (list): List of messages.
+
+    Returns:
+        list: Updated messages.
+    """
+    # TODO: Consider adding semaphore to limit the number of concurrent file writes.
+    async def parse_and_update_message(msg):
+        if msg.get("role") == "tool" and isinstance(msg.get("content"), str):
+            msg = await _handle_base64_image(dataset, trace_id, msg)
+        if msg.get("role") == "assistant" and msg.get("tool_calls", []):
+            msg = await _handle_tool_call_arguments(msg)
+
+    save_images = [parse_and_update_message(msg) for msg in messages]
     await asyncio.gather(*save_images)
 
     return messages

@@ -2,8 +2,8 @@
 The push API is used to upload traces to the server programmatically (API key authentication required).
 """
 
-import uuid
 import asyncio
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
@@ -13,7 +13,7 @@ from models.datasets_and_traces import Annotation, Dataset, Trace, db
 from models.queries import load_dataset
 from routes.apikeys import APIIdentity
 from sqlalchemy.orm import Session
-from util.util import parse_and_push_images, validate_dataset_name
+from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
 push = FastAPI()
@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 """
 Write-only API endpoint to push traces to the server.
 """
+
 
 @push.post("/trace")
 async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
@@ -45,14 +46,14 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         ), "messages must be a list of traces"
 
         # check other properties
-        assert (
-            annotations is None or isinstance(annotations, list)
+        assert annotations is None or isinstance(
+            annotations, list
         ), "annotations must be a list of annotations"
-        assert (
-            dataset_name is None or isinstance(dataset_name, str)
+        assert dataset_name is None or isinstance(
+            dataset_name, str
         ), "dataset name must be a string"
-        assert (
-            metadata is None or isinstance(metadata, list)
+        assert metadata is None or isinstance(
+            metadata, list
         ), "metadata must be a list of metadata"
 
         # make sure if present that messages, annotations, and metadata are all the same length
@@ -116,10 +117,12 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 else:
                     raise e
             dataset_id = dataset.id
-        
-        async def parse_single_message_to_trace(message,i):
+
+        async def parse_single_message_to_trace(message, i):
             trace_id = uuid.uuid4()
-            message_content = await parse_and_push_images(dataset_name,trace_id,message)
+            message_content = await parse_and_update_messages(
+                dataset_name, trace_id, message
+            )
             message_metadata = metadata[i]
             trace = Trace(
                 id=trace_id,
@@ -138,13 +141,16 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 logger.warning(f"Error validating trace {i}: {str(e)}")
             return trace
 
-        parse_messages_to_traces = [parse_single_message_to_trace(message,i) for i,message in enumerate(messages)]
+        parse_messages_to_traces = [
+            parse_single_message_to_trace(message, i)
+            for i, message in enumerate(messages)
+        ]
         traces = await asyncio.gather(*parse_messages_to_traces)
-        
+
         for trace in traces:
             session.add(trace)
             result_ids.append(str(trace.id))
-     
+
         session.commit()
 
         if annotations is not None:
