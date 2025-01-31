@@ -963,29 +963,34 @@ async def update_metadata(
     dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
 ):
     """Update metadata for a dataset. Only the owner of a dataset can update its metadata."""
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    user_id = userinfo.get("sub")
+    try:
+        assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
+        user_id = userinfo.get("sub")
 
-    payload = await request.json()
-    metadata = payload.get("metadata", {})
-    
-    # make sure metadata is a dictionary
-    if not isinstance(metadata, dict):
-        raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    
-    # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
-    # When replace_all is False (incremental update):
-    # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
-    # * Otherwise, update the field in extra_metadata with the new value.
-    # When replace_all is True:
-    # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
-    # * Otherwise, update the field in extra_metadata with the new value.
-    
-    # This holds true for nested objects like invariant.test_results too.
-    # Thus the caller cannot update only a part of the nested object - they need to provide the
-    # full object.
-    replace_all = payload.get("replace_all", False)
-    if not isinstance(replace_all, bool):
-        raise HTTPException(status_code=400, detail="replace_all must be a boolean")
-    
-    return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
+        payload = await request.json()
+        metadata = payload.get("metadata", {})
+        
+        # make sure metadata is a dictionary
+        if not isinstance(metadata, dict):
+            raise HTTPException(status_code=400, detail="metadata must be a dictionary")
+        
+        # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
+        # When replace_all is False (incremental update):
+        # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
+        # * Otherwise, update the field in extra_metadata with the new value.
+        # When replace_all is True:
+        # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
+        # * Otherwise, update the field in extra_metadata with the new value.
+        
+        # This holds true for nested objects like invariant.test_results too.
+        # Thus the caller cannot update only a part of the nested object - they need to provide the
+        # full object.
+        replace_all = payload.get("replace_all", False)
+        if not isinstance(replace_all, bool):
+            raise HTTPException(status_code=400, detail="replace_all must be a boolean")
+        
+        return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
