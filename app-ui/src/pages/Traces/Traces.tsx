@@ -25,17 +25,21 @@ import {
 } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from "react-viewport-list";
-import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView";
-import { Modal } from "./Modal";
-import { sharedFetch } from "./SharedFetch";
-import { useUserInfo } from "./UserInfo";
-import { EmptyDatasetInstructions } from "./components/EmptyDataset";
-import { useTelemetry } from "./telemetry";
-import { Time } from "./components/Time";
-import { DeleteSnippetModal } from "./lib/snippets";
-import { UserInfo } from "./UserInfo";
+import { AnnotationAugmentedTraceView } from "../../AnnotationAugmentedTraceView";
+import { Modal } from "../../Modal";
+import { sharedFetch } from "../../SharedFetch";
+import { useUserInfo } from "../../UserInfo";
+import { EmptyDatasetInstructions } from "../../components/EmptyDataset";
+import { useTelemetry } from "../../telemetry";
+import { Time } from "../../components/Time";
+import { DeleteSnippetModal } from "../../lib/snippets";
+import { UserInfo } from "../../UserInfo";
 import TracePageNUX from "./TracePageNUX";
-import { DatasetNotFound, TraceNotFound, isClientError } from "./NotFound";
+import {
+  DatasetNotFound,
+  TraceNotFound,
+  isClientError,
+} from "../Notfound/NotFound";
 import { Tooltip } from "react-tooltip";
 
 // constant used to combine hierarchy paths

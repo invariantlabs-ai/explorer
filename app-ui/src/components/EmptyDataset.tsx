@@ -1,5 +1,6 @@
 import React from "react";
-import { FileUploadMask, uploadDataset } from "../Datasets";
+import { FileUploadMask } from "../pages/Home/NewDataset";
+import { uploadDataset } from "../lib/DatasetOperations";
 import { useTelemetry } from "../telemetry";
 
 /**

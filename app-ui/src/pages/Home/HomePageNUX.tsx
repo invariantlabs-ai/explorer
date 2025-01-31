@@ -1,7 +1,7 @@
 import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
 import { useEffect, useState } from "react";
-import { useUserInfo } from "./UserInfo";
-import { config } from "./Config";
+import { useUserInfo } from "../../UserInfo";
+import { config } from "../../Config";
 
 const defaultOptions = {
   options: {

@@ -1,18 +1,19 @@
 import React, { useEffect } from "react";
-import { useUserInfo } from "./UserInfo";
+import { useUserInfo } from "../../UserInfo";
 import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
-import { Modal } from "./Modal";
-import { Time } from "./components/Time";
-import { useDatasetList } from "./lib/datasets";
-import { DatasetLinkList, UploadDatasetModalContent } from "./Datasets";
-import HomepageDatasetsNames from "./assets/HomepageDatasetsNames.json";
-import UserIcon from "./lib/UserIcon";
+import { Modal } from "../../Modal";
+import { Time } from "../../components/Time";
+import { useDatasetList } from "../../lib/datasets";
+import { UploadDatasetModalContent } from "./NewDataset";
+import { DatasetLinkList } from "../User/DatasetList";
+import HomepageDatasetsNames from "../../assets/HomepageDatasetsNames.json";
+import UserIcon from "../../lib/UserIcon";
 
 import "./Home.scss";
-import { CompactSnippetList } from "./Snippets";
+import { CompactSnippetList } from "../../Snippets";
 import HomePageNUX from "./HomePageNUX";
-import { config } from "./Config";
+import { config } from "../../Config";
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {

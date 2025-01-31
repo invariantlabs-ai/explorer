@@ -1,9 +1,13 @@
 import React, { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
-import { DatasetLinkList } from "./Datasets";
-import { UserNotFound, isClientError } from "./NotFound";
-import { useUserInfo } from "./UserInfo";
-import { useDatasetList } from "./lib/datasets";
+
+import { useUserInfo } from "../../UserInfo";
+import { useDatasetList } from "../../lib/datasets";
+import { useTelemetry } from "../../telemetry";
+import { config } from "../../Config";
+import { BsLock, BsGlobe } from "react-icons/bs";
+import { isClientError, UserNotFound } from "../Notfound/NotFound";
+import { DatasetLinkList } from "./DatasetList";
 
 /**
  * Component for displaying a user's public datasets, i.e. the user's profile page.

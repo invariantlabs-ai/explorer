@@ -17,7 +17,7 @@ import {
 } from "react-icons/bs";
 import { useDatasetList } from "./lib/datasets";
 import { CompactSnippetList } from "./Snippets";
-import { DatasetLinkList } from "./Datasets";
+import { DatasetLinkList } from "./pages/User/DatasetList";
 import { SignUp } from "./SignUp";
 import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./Config";

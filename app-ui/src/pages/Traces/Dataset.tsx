@@ -12,15 +12,15 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
-import { DeleteDatasetModalContent } from "./Datasets";
-import { Modal } from "./Modal";
-import { PoliciesView } from "./Policies";
-import { RemoteResource, useRemoteResource } from "./RemoteResource";
-import { useUserInfo } from "./UserInfo";
-import { Metadata } from "./lib/metadata";
-import { config } from "./Config";
-import { useTelemetry } from "./telemetry";
-import { DatasetNotFound, isClientError } from "./NotFound";
+import { DeleteDatasetModalContent } from "../Home/NewDataset";
+import { Modal } from "../../Modal";
+import { PoliciesView } from "../../Policies";
+import { RemoteResource, useRemoteResource } from "../../RemoteResource";
+import { useUserInfo } from "../../UserInfo";
+import { Metadata } from "../../lib/metadata";
+import { config } from "../../Config";
+import { useTelemetry } from "../../telemetry";
+import { DatasetNotFound, isClientError } from "../Notfound/NotFound";
 import { Traces } from "./Traces";
 
 interface Query {
