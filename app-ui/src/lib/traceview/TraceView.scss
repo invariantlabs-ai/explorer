@@ -524,11 +524,16 @@ body {
     line-height: 1.4em;
   }
 
+  .annotated-parent:last-child {
+    padding-bottom: 0pt;
+  }
+
   .annotated-parent {
     font-size: 12pt;
     position: relative;
     padding: 0pt;
     margin: -5pt;
+    padding-bottom: 5pt;
 
     &:not(:hover) button.plugin-toggle {
       opacity: 0;
