@@ -47,7 +47,7 @@ function compareRanges(arange: [number, number], brange: [number, number]) {
 // compare two addresses and their ranges (ascending)
 function compareAddresses(
   apair: [string, Highlight],
-  bpair: [string, Highlight],
+  bpair: [string, Highlight]
 ) {
   // compare by the messages index and then by the tool_calls index
   const [a, a_highlight] = apair;
@@ -73,7 +73,7 @@ function compareAddresses(
 
   return compareRanges(
     [a_highlight.start, a_highlight.end],
-    [b_highlight.start, b_highlight.end],
+    [b_highlight.start, b_highlight.end]
   );
 }
 
@@ -127,7 +127,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
         label: highlight.content.content,
         anchor: permalink(
           getNavigationAnchor(address, highlight.start, highlight.end),
-          true,
+          true
         ),
       };
     }),
@@ -176,7 +176,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
         onNavigateTo(anchors[updated_index - 1].anchor, "annotations");
       }
     },
-    [selectedHighlight, anchors],
+    [selectedHighlight, anchors]
   );
 
   // called when the user clicks on the navigator
@@ -205,7 +205,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
             <BsArrowUp />
           </button>
           <button
-            disabled={selectedHighlight === highlights.length}
+            disabled={selectedHighlight === anchors.length}
             onClick={() => setSelectedHighlight((s) => s + 1)}
             data-tooltip-id="highlights-navigator-tooltip"
             data-tooltip-content="Next"

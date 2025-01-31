@@ -952,7 +952,9 @@ async def get_metadata(
             )
 
         metadata_response = dataset_response.extra_metadata
+        
         metadata_response.pop("policies", None)
+        
         return {
             **metadata_response,
         }

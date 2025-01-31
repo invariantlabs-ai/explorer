@@ -27,7 +27,7 @@ body {
   --color-highlight: hsla(247, 60%, 97%, 0.685);
   --color-highlight-dark: hsl(240, 52%, 43%);
   --color-highlight-text: #474747;
-  --color-secondary-background: #e9e9e9;
+  --color-secondary-background: $color-secondary-background;
   --color-primary-background: white;
   --color-error-background: #f9e7e9;
   --color-thumbs-up-highlight: #0f9d0f2d;
@@ -217,7 +217,7 @@ header.top {
       }
 
       ul {
-        left: -250pt;
+        left: -260pt;
       }
     }
   }
@@ -1287,6 +1287,15 @@ button.primary .shortcut {
 
       .header-short {
         flex: 0 1 10%;
+
+        &.toggle {
+          text-align: center;
+          margin-right: 5pt;
+
+          svg {
+            margin: auto;
+          }
+        }
       }
 
       .header-long {
@@ -1296,12 +1305,33 @@ button.primary .shortcut {
         line-height: 20pt;
         font-weight: 500;
 
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding-right: 10pt;
+
+        .dataset-metadata {
+          opacity: 0.4;
+        }
+
         button.clear-filters {
           line-height: 24.67px;
           padding: 0px;
           height: 30px;
           color: black;
           background: none;
+          font-size: 10pt;
+          
+          svg {
+            margin-right: 4pt;
+            position: relative;
+            top: 1pt;
+          }
+
+          &:hover {
+            text-decoration: underline;
+          }
         }
       }
 
@@ -1325,6 +1355,10 @@ button.primary .shortcut {
     &.collapsed {
       // left: -213pt;
       margin-left: -265pt;
+
+      .dataset-metadata {
+        opacity: 0.0 !important;
+      }
 
       ul {
         opacity: 0;
@@ -1999,6 +2033,8 @@ table.api-keys {
     color: black;
     transition: all 0.1s;
     border-radius: 0pt;
+    // no line brea
+    white-space: nowrap;
   }
 
   .tab:hover {
@@ -2781,4 +2817,138 @@ p.footer-links {
   > details > div > button {
     border-radius: 0px;
   }
+}
+
+
+span.highlight-dot {
+  display: inline-block;
+  width: 5pt;
+  height: 5pt;
+  transform: scale(0.7);
+  border-radius: 50%;
+  background-color: #3d3aff;
+  position: relative;
+  top: -0.5em;
+}
+
+.insights {
+  margin-top: 40px !important;
+  margin: auto;
+  border-radius: 5pt;
+  padding: 10pt;
+  margin-bottom: 20pt;
+
+  h3 {
+    margin: 0pt;
+  }
+
+  .tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10pt;
+    margin-top: 10pt;
+
+    .tile {
+      background-color: white;
+      width: auto;
+      flex: 1;
+      border-radius: 5pt;
+      border: 1pt solid #e1e4e8;
+      min-width: 300pt;
+      padding: 5pt;
+      max-width: 500pt;
+
+      pre {
+        overflow: auto;
+        white-space: pre-wrap;
+        font-size: 10pt;
+        max-height: 200pt;
+      }
+
+      h1 {
+        font-size: 12pt;
+        font-weight: bold;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Oxygen,
+          Ubuntu,
+          Cantarell,
+          "Open Sans",
+          "Helvetica Neue",
+          sans-serif;
+
+        display: flex;
+        flex-direction: row;
+        line-height: 20pt;
+        margin-right: -7pt;
+        margin-bottom: 10pt;
+        margin-top: 5pt;
+        margin-left: 5pt;
+      }
+
+      ul {
+        margin: 0pt;
+      }
+
+      ul li {
+        padding: 5pt;
+        margin: 2pt;
+        list-style-type: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 2pt;
+        margin-bottom: 4pt;
+        height: auto;
+
+        font-size: 12pt;
+
+        .description {
+          margin: 0pt;
+          padding: 0pt;
+          margin-left: 5pt;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .status {
+          opacity: 0.5;
+          font-size: 10pt;
+        }
+
+        .actions {
+          display: flex;
+          gap: 5pt;
+        }
+      }
+    }
+  }
+
+  .empty {
+    opacity: 0.8;
+  }
+}
+
+.traceid.status {
+  font-size: 10pt;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
+  margin-left: 0pt;
+  display: inline-block;
 }

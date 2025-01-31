@@ -1,7 +1,0 @@
-cachetools
-fastapi
-uvicorn
-openai
-pyyaml
-python-multipart
-aiohttp
