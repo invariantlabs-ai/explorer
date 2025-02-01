@@ -2437,7 +2437,6 @@ p.footer-links {
 
   user-select: none;
   -webkit-user-select: none;
-
   button {
     border: none;
     padding: 0pt;
@@ -2465,11 +2464,12 @@ p.footer-links {
   }
 
   .content {
-    display: flex;
     white-space: nowrap;
     padding: 0pt 10pt;
     line-height: 30pt;
     font-size: 10pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .content:hover {

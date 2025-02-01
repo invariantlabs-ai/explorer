@@ -113,6 +113,20 @@ class ImageViewer extends React.Component<
   }
 
   async fetchImage() {
+    // If the image is a base64 image, we can directly create an object URL
+    if (this.props.content.startsWith("local_base64_img:")) {
+      const imageUrl = `data:image/png;base64,${this.props.content.split("local_base64_img: ")[1]}`
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => {
+        this.setState({
+          imageWidth: img.width,
+          imageHeight: img.height,
+        });
+      };
+      this.setState({ imageUrl });
+      return;
+    }
     const url = `/api/v1/trace/image/${this.state.datasetName}/${this.state.traceId}/${this.state.imageId}`;
 
     try {
@@ -261,6 +275,7 @@ class ImageViewer extends React.Component<
               <img
                 src={this.state.imageUrl}
                 className={`trace-image ${className} ${this.state.isModalOpen ? "full-size" : ""}`}
+                alt="Rendered from Base64"
               />
               {bounding_boxes_data.map(
                 ({ x1, y1, x2, y2, content }, index) =>
@@ -426,7 +441,11 @@ register_plugin({
   name: "image-viewer",
   component: (props) => <ImageViewer {...props} />,
   isCompatible: (address: string, msg: any, content: string) => {
-    if (content.includes("s3_img_link") || content.includes("local_img_link")) {
+    if (
+      content.includes("s3_img_link") ||
+      content.includes("local_img_link") ||
+      content.includes("local_base64_img")
+    ) {
       return true;
     }
     return false;

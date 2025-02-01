@@ -1,21 +1,22 @@
-import logging
+import json
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
-import json
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import Response, StreamingResponse
-from models.datasets_and_traces import Annotation, SharedLinks, Trace, User, db
+from fastapi.responses import Response
+from logging_config import get_logger
+from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
 from models.queries import (
     annotation_to_json,
     has_link_sharing,
     load_annotations,
+    load_dataset,
     load_trace,
-    trace_to_json,
     trace_to_exported_json,
+    trace_to_json,
 )
 from routes.apikeys import (
     APIIdentity,
@@ -23,14 +24,20 @@ from routes.apikeys import (
     UserOrAPIIdentity,
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.dataset import DBJSONEncoder
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-from routes.dataset import DBJSONEncoder
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
+from util.util import delete_images, parse_and_push_images
 
 trace = FastAPI()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# static dataset name for snippets
+# snippets don't have a parent dataset so we use this name
+# so that all images in traces are stored in a fixed hierarchy
+DATASET_NAME_FOR_SNIPPETS = "!ROOT_DATASET_FOR_SNIPPETS"
 
 
 @trace.get("/image/{dataset_name}/{trace_id}/{image_id}")
@@ -75,7 +82,7 @@ def get_trace_snippets(
 
 
 @trace.delete("/{id}")
-def delete_trace(
+async def delete_trace(
     id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
 ):
     user_id = userinfo["sub"]
@@ -88,6 +95,13 @@ def delete_trace(
         session.query(SharedLinks).filter(SharedLinks.trace_id == id).delete()
         # delete annotations
         session.query(Annotation).filter(Annotation.trace_id == id).delete()
+        # delete images
+        dataset_name = DATASET_NAME_FOR_SNIPPETS
+        if trace.dataset_id:
+            dataset = load_dataset(session, trace.dataset_id, user_id)
+            dataset_name = dataset.name
+        # delete images
+        await delete_images(dataset_name=dataset_name, trace_id=str(trace.id))
         # delete trace
         session.delete(trace)
 
@@ -122,11 +136,8 @@ async def download_trace(
     id: str,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
-
     with Session(db()) as session:
-        trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
-        )
+        trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
 
         trace_data = await trace_to_exported_json(trace, load_annotations(session, id))
         trace_data = json.dumps(trace_data, cls=DBJSONEncoder) + "\n"
@@ -135,9 +146,7 @@ async def download_trace(
         return Response(
             content=trace_data,
             media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename={trace.id}.jsonl"
-            },
+            headers={"Content-Disposition": f"attachment; filename={trace.id}.jsonl"},
         )
 
 
@@ -378,12 +387,21 @@ async def upload_new_single_trace(
         payload = await request.json()
         content = payload.get("content", [])
         extra_metadata = payload.get("extra_metadata", {})
-
+        trace_id = uuid.uuid4()
+        # Parse messages for base64 encoded images, save them to disk, and update
+        # message content with local file path.
+        # The dataset_name is set to "!ROOT_DATASET_FOR_SNIPPETS" to indicate that the
+        # trace does not belong to a dataset.
+        # Because of the ! this is not a valid name for a dataset and will not conflict.
+        message_content = await parse_and_push_images(
+            dataset="!ROOT_DATASET_FOR_SNIPPETS", trace_id=trace_id, messages=content
+        )
         trace = Trace(
+            id=trace_id,
             dataset_id=None,
             index=0,
             user_id=user_id,
-            content=content,
+            content=message_content,
             extra_metadata=extra_metadata,
             name=payload.get("name", "Single Trace"),
             hierarchy_path=payload.get("hierarchy_path", []),
@@ -486,7 +504,9 @@ async def append_messages(
                 # Lock the trace row for update
                 trace_response = (
                     session.query(Trace)
-                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == user_id))
+                    .filter(
+                        and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id))
+                    )
                     .with_for_update()
                     .first()
                 )
@@ -497,6 +517,26 @@ async def append_messages(
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
+
+                dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
+                if trace_response.dataset_id:
+                    dataset_response = (
+                        session.query(Dataset)
+                        .filter(
+                            and_(
+                                Dataset.id == trace_response.dataset_id,
+                                Dataset.user_id == UUID(user_id),
+                            )
+                        )
+                        .first()
+                    )
+                    dataset_name = dataset_response.name
+                # parse images from new_messages and store them separately
+                new_messages = await parse_and_push_images(
+                    dataset=dataset_name,
+                    trace_id=trace_response.id,
+                    messages=new_messages,
+                )
 
                 combined_messages = merge_sorted_messages(
                     existing_messages=trace_response.content,

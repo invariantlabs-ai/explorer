@@ -375,7 +375,11 @@ register_plugin({
   name: "code-highlighter",
   component: (props) => <CodeHighlightedView {...props} />,
   isCompatible: (address: string, msg: any, content: string) => {
-    if (content.includes("s3_img_link") || content.includes("local_img_link")) {
+    if (
+      content.includes("s3_img_link") ||
+      content.includes("local_img_link") ||
+      content.includes("local_base64_img")
+    ) {
       return false;
     }
     const lang = LANGUAGE_CLASSIFIER.derive_highlighting_language(content);

@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Annotated, Any, Optional
 from uuid import UUID
 
+import asyncio
 from cachetools import TTLCache, cached
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -41,7 +42,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import exists, func
-from util.util import validate_dataset_name
+from util.util import delete_images, validate_dataset_name
 
 from routes.dataset_metadata import update_dataset_metadata
 
@@ -272,7 +273,7 @@ def list_datasets_by_user(
 ########################################
 
 
-def delete_dataset(
+async def delete_dataset(
     by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
 ):
     user_id = userinfo["sub"]
@@ -282,15 +283,23 @@ def delete_dataset(
 
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
+        trace_ids = [trace.id for trace in traces]
 
         # delete all annotations
         session.query(Annotation).filter(
-            Annotation.trace_id.in_([trace.id for trace in traces])
+            Annotation.trace_id.in_(trace_ids)
         ).delete()
         # delete all shared links
         session.query(SharedLinks).filter(
-            SharedLinks.trace_id.in_([trace.id for trace in traces])
+            SharedLinks.trace_id.in_(trace_ids)
         ).delete()
+        # delete all images
+        image_deletion_tasks = [
+            delete_images(dataset_name=dataset.name, trace_id=str(trace_id))
+            for trace_id in trace_ids
+        ]
+        await asyncio.gather(*image_deletion_tasks)
+
         # delete all traces
         session.query(Trace).filter(Trace.dataset_id == dataset.id).delete()
 
@@ -303,22 +312,22 @@ def delete_dataset(
 
 
 @dataset.delete("/byid/{id}")
-def delete_dataset_by_id(
+async def delete_dataset_by_id(
     request: Request,
     id: str,
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
-    return delete_dataset({"id": id}, userinfo)
+    return await delete_dataset({"id": id}, userinfo)
 
 
 @dataset.delete("/byuser/{username}/{dataset_name}")
-def delete_dataset_by_name(
+async def delete_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
-    return delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
+    return await delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
 
 
 ########################################
@@ -965,29 +974,34 @@ async def update_metadata(
     dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
 ):
     """Update metadata for a dataset. Only the owner of a dataset can update its metadata."""
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    user_id = userinfo.get("sub")
+    try:
+        assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
+        user_id = userinfo.get("sub")
 
-    payload = await request.json()
-    metadata = payload.get("metadata", {})
-    
-    # make sure metadata is a dictionary
-    if not isinstance(metadata, dict):
-        raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    
-    # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
-    # When replace_all is False (incremental update):
-    # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
-    # * Otherwise, update the field in extra_metadata with the new value.
-    # When replace_all is True:
-    # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
-    # * Otherwise, update the field in extra_metadata with the new value.
-    
-    # This holds true for nested objects like invariant.test_results too.
-    # Thus the caller cannot update only a part of the nested object - they need to provide the
-    # full object.
-    replace_all = payload.get("replace_all", False)
-    if not isinstance(replace_all, bool):
-        raise HTTPException(status_code=400, detail="replace_all must be a boolean")
-    
-    return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
+        payload = await request.json()
+        metadata = payload.get("metadata", {})
+        
+        # make sure metadata is a dictionary
+        if not isinstance(metadata, dict):
+            raise HTTPException(status_code=400, detail="metadata must be a dictionary")
+        
+        # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
+        # When replace_all is False (incremental update):
+        # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
+        # * Otherwise, update the field in extra_metadata with the new value.
+        # When replace_all is True:
+        # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
+        # * Otherwise, update the field in extra_metadata with the new value.
+        
+        # This holds true for nested objects like invariant.test_results too.
+        # Thus the caller cannot update only a part of the nested object - they need to provide the
+        # full object.
+        replace_all = payload.get("replace_all", False)
+        if not isinstance(replace_all, bool):
+            raise HTTPException(status_code=400, detail="replace_all must be a boolean")
+        
+        return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
