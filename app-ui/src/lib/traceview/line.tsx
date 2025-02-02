@@ -91,6 +91,7 @@ function isExpanded(
     }
     // check if highlight overlaps with address
     if (highlight.start <= start && highlight.end >= start) {
+      console.log([address, selectedHighlightAnchor, highlights, start, end]);
       return true;
     }
     if (highlight.start <= end && highlight.end >= end) {

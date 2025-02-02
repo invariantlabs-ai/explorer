@@ -238,64 +238,6 @@ async def annotate_trace(
         session.commit()
         return annotation_to_json(annotation)
 
-# replace all annotations of a certain source
-@trace.post("/{id}/annotations/update")
-async def replace_annotations(
-    request: Request,
-    id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
-):
-    from sqlalchemy import String
-
-    user_id = userinfo["sub"]
-
-    # payload will be {'source': 'annotation-source', 'annotations': [list of annotations]}
-    payload = await request.json()
-    source = payload.get("source")
-    annotations = payload.get("annotations")
-
-    if not isinstance(annotations, list):
-        raise HTTPException(status_code=400, detail="Annotations must be a list")
-    
-    # check source
-    if not isinstance(source, str):
-        raise HTTPException(status_code=400, detail="Source must be a string")
-    
-    try:
-        with Session(db()) as session:
-            trace = load_trace(
-                session, id, user_id, allow_public=True, allow_shared=True
-            )
-
-            # delete all annotations of the source
-            # for json lookup, do it on the text level
-            session.query(Annotation).filter(Annotation.trace_id == id, Annotation.extra_metadata.op("->>")("source") == source).delete()
-
-            # add new annotations
-            for annotation in annotations:
-                content = annotation.get("content")
-                address = annotation.get("address")
-                extra_metadata = annotation.get("extra_metadata")
-
-                new_annotation = Annotation(
-                    trace_id=trace.id,
-                    user_id=user_id,
-                    address=address,
-                    content=str(content),
-                    extra_metadata=extra_metadata,
-                )
-
-                print("created annotation", new_annotation.content)
-
-                session.add(new_annotation)
-
-            session.commit()
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="An error occurred while updating annotations")
-
-    return {"message": "replaced"}
 
 # get all annotations of a trace
 @trace.get("/{id}/annotations")

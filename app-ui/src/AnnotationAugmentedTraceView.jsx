@@ -21,8 +21,6 @@ import { HighlightDetails } from "./HighlightDetails";
 
 import { HighlightsNavigator } from "./HighlightsNavigator";
 
-import { Analyzer, AnalyzerOutput } from "./Analyzer";
-
 import { copyPermalinkToClipboard } from "./lib/permalink-navigator";
 import {
   BsArrowDown,
@@ -90,9 +88,6 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  * @param {boolean} props.isUserOwned - whether the trace is owned by the user
- * @param {boolean} props.enableNux - callback to enable the NUX
- * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
- * @param {Analyzer} props.analyzer - the analyzer to use for the trace (optional)
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -131,8 +126,6 @@ export function AnnotationAugmentedTraceView(props) {
   // get telemetry object
   const telemetry = useTelemetry();
 
-  const [lastPushedAnalyzerResult, setLastPushedAnalyzerResult] = useState(null);
-
   // expand all messages
   const onExpandAll = () => {
     setAllExpand(true);
@@ -169,45 +162,6 @@ export function AnnotationAugmentedTraceView(props) {
       events.expandAll?.fire();
     }
   }, [activeTrace]);
-
-
-  // whenever the analyzer finishes
-  useEffect(() => {
-    if (!props.analyzer) return;
-    if (props.analyzer.running) return;
-    if (props.analyzer.output) {
-      // store the analyzer output in the backend (as an annotation)
-      let analyzer_output = JSON.stringify(props.analyzer.output);
-
-      // make sure we don't push the same result twice
-      if (analyzer_output == lastPushedAnalyzerResult) return;
-      setLastPushedAnalyzerResult(analyzer_output);
-
-      fetch('/api/v1/trace/' + activeTraceId + '/annotations/update', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            source: 'analyzer-model',
-            annotations: [
-                {
-                    content: analyzer_output,
-                    address: '<root>',
-                    extra_metadata: {
-                        'source': 'analyzer-model'
-                    }
-                }
-            ]
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-      annotator.refresh();
-    })
-    .catch(error => console.error(error))
-    }
-  }, [props.analyzer, props.analyzer?.running, annotator]);
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -287,7 +241,6 @@ export function AnnotationAugmentedTraceView(props) {
     highlights.traceId == activeTraceId
       ? highlights.highlights
       : HighlightedJSON.empty();
-    
   return (
     <>
       <header className="toolbar">
@@ -387,14 +340,6 @@ export function AnnotationAugmentedTraceView(props) {
           traceIndex={activeTraceIndex}
           onUpvoteDownvoteCreate={onAnnotationCreate}
           onUpvoteDownvoteDelete={onAnnotationDelete}
-          prelude={
-            <AnalyzerOutput
-              analyzerOutput={props.analyzer?.output}
-              storedOutput={top_level_annotations.filter(a => a.source == "analyzer-model")}
-              trace={activeTrace}
-              running={props.analyzer.running}
-            />
-          }
         />
       </div>
       <Tooltip
@@ -460,7 +405,6 @@ function TraceViewContent(props) {
             excluded={["invariant.num-warnings", "invariant.num-failures"]}
           />
           {errors.length > 0 && <AnalysisResult errors={errors} />}
-          {props.prelude}
         </>
       }
       allExpanded={props.allExpanded}
@@ -489,6 +433,7 @@ function TopLevelHighlights(props) {
   // render the highlights
   return (
     <div className="event top-level-highlights">
+      <div className="role">Issues</div>
       <HighlightDetails highlights={[highlights]} />
     </div>
   );
@@ -599,8 +544,6 @@ function Annotation(props) {
     );
   }
 
-  const source = props.extra_metadata?.source;
-
   return (
     <div className="annotation">
       <div className="user">
@@ -610,9 +553,7 @@ function Annotation(props) {
         <header className="username">
           <BsCaretLeftFill className="caret" />
           <div>
-            <b>{props.user.username}</b> 
-            {source && <span className="source"> via <b>{source}</b> </span>}
-            annotated{" "}
+            <b>{props.user.username}</b> annotated{" "}
             <span className="time">
               {" "}
               <Time>{props.time_created}</Time>{" "}
