@@ -297,11 +297,18 @@ async def images_to_base64(trace):
     if "uploader" in trace.extra_metadata:
         trace.extra_metadata.pop("uploader")
 
-    image_tasks = [
-        (convert_local_image_link_to_base64(message.get('content')), i)
-        for i, message in enumerate(trace.content)
-        if (msg := message.get('content')) and msg.startswith('local_img_link')
-    ]
+    image_tasks = []
+
+    for i, message in enumerate(trace.content):
+        if (
+            isinstance(message, dict) and
+            'content' in message and 
+            isinstance(message.get('content'), str) 
+            and message.get('content').startswith('local_img_link')
+        ):
+            image_tasks.append(
+                (convert_local_image_link_to_base64(message.get('content')), i)
+            )
 
     images = await asyncio.gather(*[task[0] for task in image_tasks])
 
