@@ -72,7 +72,7 @@ class StyledContent {
           this.offset +
           ", " +
           start +
-          ")",
+          ")"
       );
     }
     this.offset = end;
@@ -102,7 +102,7 @@ class StyledContent {
               style={this.style(token.variants[0])}
             >
               {token_content}
-            </span>,
+            </span>
           );
           // if a line is at least partially consumed, we can't skip it in the future since it may contain additional content that
           // only falls into the next range query
@@ -173,7 +173,7 @@ class CodeHighlightedView extends React.Component<
       content: cleanContent(props),
       tokens: [],
       language: LANGUAGE_CLASSIFIER.derive_highlighting_language(
-        props.content,
+        props.content
       ) as string,
     };
   }
@@ -192,7 +192,7 @@ class CodeHighlightedView extends React.Component<
       this.setState({
         content: cleanContent(this.props),
         language: LANGUAGE_CLASSIFIER.derive_highlighting_language(
-          this.props.content,
+          this.props.content
         ) as string,
         nodes: [<span key="loading">Loading...</span>],
       });
@@ -212,14 +212,14 @@ class CodeHighlightedView extends React.Component<
       // detect changes to selectedHighlightAnchor that are relevant to this component (based on this.props.address)
       const highlightSelectionChangeRelevant =
         this.props.highlightContext?.selectedHighlightAnchor?.startsWith(
-          this.props.address,
+          this.props.address
         ) ||
         prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(
-          this.props.address,
+          this.props.address
         ) ||
         (this.props.highlightContext.selectedHighlightAnchor === null &&
           prevProps.highlightContext?.selectedHighlightAnchor?.startsWith(
-            this.props.address,
+            this.props.address
           ));
       // detect changes of the highlights themselves
       const highlightsChanged = prevProps.highlights !== this.props.highlights;
@@ -257,12 +257,12 @@ class CodeHighlightedView extends React.Component<
 
     let tokenized_content = new StyledContent(tokens);
     let highlights_in_text = this.props.highlights.in_text(
-      JSON.stringify(content, null, 2),
+      JSON.stringify(content, null, 2)
     );
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      '"' + content + '"',
+      '"' + content + '"'
     );
     let elements: React.ReactNode[] = [];
 
@@ -294,7 +294,7 @@ class CodeHighlightedView extends React.Component<
               className="unannotated"
             >
               {c}
-            </span>,
+            </span>
           );
         } else {
           let className =
@@ -306,7 +306,7 @@ class CodeHighlightedView extends React.Component<
               .join(" ");
           const tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
             .join("\n");
           line.push(
@@ -326,7 +326,7 @@ class CodeHighlightedView extends React.Component<
               id={permalink_id}
             >
               {c}
-            </span>,
+            </span>
           );
         }
       }
@@ -352,7 +352,7 @@ class CodeHighlightedView extends React.Component<
         >
           {line}
           {"\n"}
-        </Line>,
+        </Line>
       );
     }
 
@@ -467,7 +467,7 @@ class LanguageClassifier {
    */
   derive_highlighting_language(
     content: string,
-    return_distribution = false,
+    return_distribution = false
   ): string | Record<string, number> {
     // if it is a markdown block with tag, we can use the tag to classify
     if (content.trim().startsWith("```")) {
@@ -483,7 +483,7 @@ class LanguageClassifier {
 
     // count the number of occurrences of each key token
     let counts: Record<string, number> = Object.fromEntries(
-      this.supported_languages.map((language) => [language, 0]),
+      this.supported_languages.map((language) => [language, 0])
     );
     for (let token in this.token_map) {
       const n = content.split(token).length - 1;
@@ -526,7 +526,7 @@ class LanguageClassifier {
           Object.entries(counts).map(([key, value]) => [
             key,
             Math.round(value * 100) / 100,
-          ]),
+          ])
         );
       }
       return "plaintext";
@@ -539,7 +539,7 @@ class LanguageClassifier {
         Object.entries(counts).map(([key, value]) => [
           key,
           Math.round(value * 100) / 100,
-        ]),
+        ])
       );
     }
 
@@ -553,6 +553,5 @@ class LanguageClassifier {
 }
 
 const LANGUAGE_CLASSIFIER = new LanguageClassifier();
-
 
 export default CodeHighlightedView;

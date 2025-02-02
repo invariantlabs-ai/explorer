@@ -101,6 +101,8 @@ export function AnalyzerOutput(props: {
     return null;
   }
 
+  const num_results = issues.filter((issue) => !issue.loading).length;
+
   return (
     <div className="event analyzer-output">
       <b>
@@ -120,6 +122,9 @@ export function AnalyzerOutput(props: {
         ) : (
           <pre key={"issue-" + i}>{JSON.stringify(output, null, 2)}</pre>
         )
+      )}
+      {num_results === 0 && !running && (
+        <div className="issue-empty">No issues found</div>
       )}
     </div>
   );
@@ -330,6 +335,8 @@ function createAnalysis(
               ]);
             }
           } else if (chunk.startsWith("error: ")) {
+            alert("Analysis Error: " + chunk);
+            setOutput(null);
             setRunning(false);
             setError(chunk.slice(7)); // Remove "error: "
             receivedError = true;

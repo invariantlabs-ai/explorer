@@ -94,6 +94,14 @@
         white-space: pre-wrap;
     }
 
+    .issue-empty {
+        padding: 10pt;
+        text-align: center;
+        font-size: 12pt;
+        padding-bottom: 20pt;
+        color: #999;
+    }
+
     .loading {
         text-align: center;
         padding: 20pt 0pt;
@@ -112,10 +120,6 @@
     margin-top: 20pt;
     margin-bottom: 20pt;
     border-radius: 5pt;
-
-    // <div className='output-running-bar'>
-    // <div className='output-running-bar-inner' />
-    // </div>
 
     .output-running-bar {
         width: 100%;

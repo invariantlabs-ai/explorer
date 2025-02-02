@@ -385,7 +385,7 @@ class ImageViewer extends React.Component<
     }
 
     // iterate over the following messages
-    for (let i = index + 1; i < this.props.messages.length; i++) {
+    for (let i = index + 1; i < this.props.messages?.length; i++) {
       for (let tc of (this.props.messages[i].tool_calls || [])) {
         for (let value of Object.values(tc.function?.arguments || {})) {
           let coordinates = extractCoordinates(value);
