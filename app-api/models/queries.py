@@ -188,7 +188,7 @@ def has_link_sharing(session, trace_id):
 def save_user(session, userinfo):
     user = {
         "id": userinfo["sub"],
-        "username": userinfo["username"],
+        "username": userinfo["preferred_username"],
         "image_url_hash": get_gravatar_hash(userinfo["email"]),
     }
     stmt = sqlite_upsert(User).values([user])

@@ -14,7 +14,7 @@ services:
     networks:
       - invariant-explorer-web
     ports:
-      - "${PORT_HTTP:-80}:80"
+      - '${PORT_HTTP:-80}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:

@@ -87,14 +87,14 @@ async def UserIdentity(request: Request):
         return {
             "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
             "email": "dev@mail.com",
-            "username": "developer",
+            "preferred_username": "developer",
             "name": "Developer"
         }
     if "noauth=user1" in request.headers.get("referer", []) and os.getenv("DEV_MODE") == "true":
         return {
             "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
             "email": "dev2@mail.com",
-            "username": "developer2",
+            "preferred_username": "developer2",
             "name": "Developer2"
         }
 
@@ -118,7 +118,7 @@ async def UserIdentity(request: Request):
         return {
             "sub": userinfo["sub"],
             "email": userinfo["email"],
-            "username": userinfo["username"],
+            "preferred_username": userinfo["preferred_username"],
             "name": userinfo["name"]
         }
     except Exception as e:
@@ -133,7 +133,7 @@ async def UserIdentity(request: Request):
         return {
             "sub": None,
             "email": '',
-            "username": '',
+            "preferred_username": '',
             "name": ''
         }
 
