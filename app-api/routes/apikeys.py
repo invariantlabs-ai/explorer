@@ -169,3 +169,25 @@ async def AuthenticatedUserOrAPIIdentity(
     if identity is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity
+
+async def UserOrAPIIdentityWithUsername(request: Request) -> dict | None:
+    apikey = request.headers.get("Authorization")
+    if apikey is not None:
+        identity = await APIIdentity(request)
+    else:
+        identity = await UserIdentity(request)
+
+    if identity["sub"] is None:
+        return None
+
+    return {
+        "sub": identity["sub"],
+        "username": identity["username"],
+    }
+
+async def AuthenticatedUserOrAPIIdentityWithUsername(
+    identity: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
+) -> dict:
+    if identity is None:
+        raise HTTPException(status_code=401, detail="Unauthorized request")
+    return identity

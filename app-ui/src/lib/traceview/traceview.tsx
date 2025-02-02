@@ -276,7 +276,7 @@ export function TraceEditor(props: {
   const [editorDecorations, setEditorDecorations] = useState([] as any);
   // error underlines in the editor
   const [errorMarkerDecorations, setErrorMarkerDecorations] = useState(
-    [] as any,
+    [] as any
   );
   // JSON validation results
   const validationResults = props.validation;
@@ -297,7 +297,7 @@ export function TraceEditor(props: {
         // get range from absolute start and end offsets
         let range = monaco.Range.fromPositions(
           editor.getModel().getPositionAt(a.start),
-          editor.getModel().getPositionAt(a.end),
+          editor.getModel().getPositionAt(a.end)
         );
         let r = {
           range: range,
@@ -308,7 +308,7 @@ export function TraceEditor(props: {
           },
         };
         return r;
-      }),
+      })
     );
   }, [editor, props.highlights, monaco, props.inputData, editorDecorations]);
 
@@ -332,7 +332,7 @@ export function TraceEditor(props: {
             severity: monaco.MarkerSeverity.Error,
           };
         }),
-      true,
+      true
     );
   }, [editor, monaco, validationResults, errorMarkerDecorations]);
 
@@ -613,7 +613,7 @@ export class RenderedTrace extends React.Component<
                   message={item}
                   messages={events}
                   highlights={this.props.highlights.for_path(
-                    "messages." + index,
+                    "messages." + index
                   )}
                   highlightContext={highlightContext}
                   address={"messages[" + index + "]"}
@@ -1003,7 +1003,7 @@ class MessageView extends React.Component<
                           key={index}
                           tool_call={tool_call}
                           highlights={this.props.highlights.for_path(
-                            "tool_calls." + index,
+                            "tool_calls." + index
                           )}
                           highlightContext={this.props.highlightContext}
                           address={
@@ -1051,26 +1051,26 @@ function formatJSONArray(props: {
 }) {
   return (props.message?.content || []).map((item: any, index: number) => {
     const address = `${props.address}.content[${index}]`;
-    
+
     switch (item?.type) {
-      case 'text':
+      case "text":
         return (
-          <Annotated {...props} address={address}>
-            {truncate_content(item.text, config('truncation_limit'))}
+          <Annotated {...props} address={address} key={address}>
+            {truncate_content(item.text, config("truncation_limit"))}
           </Annotated>
         );
 
-      case 'image_url':
+      case "image_url":
         return (
-          <Annotated {...props} address={address}>
+          <Annotated {...props} address={address} key={address}>
             {`local_base64_img: ${extractBase64(item.image_url.url)}`}
           </Annotated>
         );
 
       default:
         return (
-          <MessageJSONContent 
-            content={item} 
+          <MessageJSONContent
+            content={item}
             highlights={props.highlights.for_path("content")}
             address={props.address + ".content"}
             highlightContext={props.highlightContext}
@@ -1078,12 +1078,12 @@ function formatJSONArray(props: {
             traceIndex={props.traceIndex}
             onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
             onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
+            key={address}
           />
         );
     }
   });
 }
-
 
 function MessageJSONContent(props: {
   content: object;
@@ -1109,7 +1109,7 @@ function MessageJSONContent(props: {
       <tbody>
         {keys.map((key: string, index: number) => {
           return (
-            <tr key={index}>
+            <tr key={key + "-" + index}>
               <td className="key">
                 <div>{key}</div>
               </td>
@@ -1241,7 +1241,7 @@ function HighlightedJSONTable(props: {
       Object.entries(args).map(([key, value]) => [
         truncate_content(key, config("truncation_limit")),
         truncate_content(value, config("truncation_limit")),
-      ]),
+      ])
     );
     keys = Object.keys(args);
   } else {
@@ -1310,7 +1310,7 @@ function replaceNLs(content: string, key: string) {
       elements.push(
         <span className="nl" key={"newline-" + key + "-ws-" + i}>
           ↵
-        </span>,
+        </span>
       );
       elements.push("\n");
     }
@@ -1344,7 +1344,7 @@ function Annotated(props: {
     // first check if there is a render plugin that can render this content
     const plugins = Plugins.getPlugins();
     const match = plugins.find((plugin: any) =>
-      plugin.isCompatible(props.address, props.message, content),
+      plugin.isCompatible(props.address, props.message, content)
     );
     if (match) {
       setPlugin(match);
@@ -1369,12 +1369,12 @@ function Annotated(props: {
     content = truncate_content(content, config("truncation_limit"));
 
     let highlights_in_text = props.highlights.in_text(
-      JSON.stringify(content, null, 2),
+      JSON.stringify(content, null, 2)
     );
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      '"' + content + '"',
+      '"' + content + '"'
     );
 
     for (const highlights of highlights_per_line) {
@@ -1390,7 +1390,7 @@ function Annotated(props: {
               className="unannotated"
             >
               {c}
-            </span>,
+            </span>
           );
         } else {
           const addr =
@@ -1403,7 +1403,7 @@ function Annotated(props: {
 
           const message_content = content.substring(
             interval.start - 1,
-            interval.end - 1,
+            interval.end - 1
           );
           let className =
             "annotated" +
@@ -1414,7 +1414,7 @@ function Annotated(props: {
               .join(" ");
           const tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
             .join("\n");
           line.push(
@@ -1426,7 +1426,7 @@ function Annotated(props: {
               id={permalink_id}
             >
               {message_content}
-            </span>,
+            </span>
           );
         }
       }
@@ -1449,7 +1449,7 @@ function Annotated(props: {
           onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {line}
-        </Line>,
+        </Line>
       );
     }
     setContentElements(<div className="default-renderer">{elements}</div>);
@@ -1499,7 +1499,7 @@ function AnnotatedStringifiedJSON(props: {
     // first check if there is a render plugin that can render this content
     const plugins = Plugins.getPlugins();
     const match = plugins.find((plugin: any) =>
-      plugin.isCompatible(props.address, props.message, content),
+      plugin.isCompatible(props.address, props.message, content)
     );
     if (match) {
       setPlugin(match);
@@ -1524,7 +1524,7 @@ function AnnotatedStringifiedJSON(props: {
     highlights_in_text = HighlightedJSON.disjunct(highlights_in_text);
     let highlights_per_line = HighlightedJSON.by_lines(
       highlights_in_text,
-      content,
+      content
     );
 
     for (const line_highlights of highlights_per_line) {
@@ -1538,7 +1538,7 @@ function AnnotatedStringifiedJSON(props: {
               className="unannotated"
             >
               {content.substring(interval.start, interval.end)}
-            </span>,
+            </span>
           );
         } else {
           const addr =
@@ -1561,7 +1561,7 @@ function AnnotatedStringifiedJSON(props: {
               .join(" ");
           const tooltip = interval.content
             .map((c) =>
-              truncate("[" + c["source"] + "]" + " " + c["content"], 100),
+              truncate("[" + c["source"] + "]" + " " + c["content"], 100)
             )
             .join("\n");
           line.push(
@@ -1573,7 +1573,7 @@ function AnnotatedStringifiedJSON(props: {
               id={permalink_id}
             >
               {message_content}
-            </span>,
+            </span>
           );
         }
       }
@@ -1596,7 +1596,7 @@ function AnnotatedStringifiedJSON(props: {
           onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
         >
           {line}
-        </Line>,
+        </Line>
       );
     }
     setContentElements(elements);

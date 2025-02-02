@@ -7,7 +7,7 @@ from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from util.util import get_gravatar_hash
-from routes.apikeys import APIIdentity
+from routes.apikeys import AuthenticatedUserOrAPIIdentityWithUsername
 
 user = FastAPI()
 
@@ -26,7 +26,7 @@ def get_user(userinfo: Annotated[dict, Depends(UserIdentity)]):
 
     return {
         "id": userinfo["sub"],
-        "username": userinfo["preferred_username"],
+        "username": userinfo["username"],
         "email": userinfo["email"],
         "name": userinfo["name"],
         "image_url_hash": get_gravatar_hash(userinfo["email"]),
@@ -46,7 +46,7 @@ def signup(
 # to get the user identity for an API key, run
 # curl <INSTANCE_URL>/api/v1/user/identity -H "Authorization: Bearer <API_KEY>"
 @user.get("/identity")
-def identity(userinfo: Annotated[dict, Depends(APIIdentity)]):
+def identity(userinfo: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentityWithUsername)]):
     return {
         "username": userinfo["username"],
     }
