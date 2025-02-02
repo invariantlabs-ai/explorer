@@ -21,7 +21,7 @@ import { HighlightDetails } from "./HighlightDetails";
 
 import { HighlightsNavigator } from "./HighlightsNavigator";
 
-import { Analyzer, AnalyzerOutput } from "./AnalyzerOutput";
+import { Analyzer, AnalyzerOutput } from "./Analyzer";
 
 import { copyPermalinkToClipboard } from "./lib/permalink-navigator";
 import {
@@ -389,7 +389,7 @@ export function AnnotationAugmentedTraceView(props) {
           onUpvoteDownvoteDelete={onAnnotationDelete}
           prelude={
             <AnalyzerOutput
-              analyzerOutput={props.analyzer.output}
+              analyzerOutput={props.analyzer?.output}
               storedOutput={top_level_annotations.filter(a => a.source == "analyzer-model")}
               trace={activeTrace}
               running={props.analyzer.running}

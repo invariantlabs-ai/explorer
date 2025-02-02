@@ -12,7 +12,6 @@ import { GroupedHighlight, HighlightData } from "./lib/traceview/highlights";
 import { AnalysisResult } from "./lib/analysis_result";
 import { useState, useEffect } from "react";
 import { AnchorDiv } from "./lib/permalink-navigator";
-import { AnalyzerOutput } from "./AnalyzerOutput";
 
 /**
  * Renders details on specific highlights in the unfolding UI that is shown

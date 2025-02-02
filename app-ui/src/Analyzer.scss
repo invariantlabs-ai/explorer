@@ -5,7 +5,7 @@
     padding-top: 40pt;
     min-width: 320pt;
     position: absolute;
-    top: 70pt;
+    top: 40pt;
     right: 10pt;
     height: 320pt;
     max-height: calc(100vh - 115pt);
@@ -185,3 +185,8 @@ span.secondary-flashing {
     }
 }
 
+
+
+.with-tabs div.panel .analyzer {
+    top: 70pt;
+  }

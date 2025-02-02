@@ -138,9 +138,9 @@ function Loading(props) {
 
 export function Analyzer(props: {
   open: boolean;
+  traceId?: string;
   setAnalyzerOpen: (value: boolean) => void;
   analyzer: Analyzer;
-  trace: any | undefined;
 }) {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig") ||
@@ -151,12 +151,23 @@ export function Analyzer(props: {
 }` as string | undefined)
   );
 
+  const [abortController, setAbortController] = React.useState(
+    new AbortController()
+  );
+
   const status = props.analyzer.status;
 
   const setAnalyzerConfig = (value: string | undefined) => {
     localStorage.setItem("analyzerConfig", value || "{}");
     _setAnalyzerConfig(value);
   };
+
+  // on unmount, abort the analysis
+  useEffect(() => {
+    return () => {
+      abortController.abort();
+    };
+  }, [abortController]);
 
   const onRun = () => {
     // props.setAnalyzerOpen(false);
@@ -185,15 +196,34 @@ export function Analyzer(props: {
       delete config.apikey;
     }
 
-    createAnalysis(
-      config,
-      props.trace,
-      props.analyzer.setRunning,
-      props.analyzer.setError,
-      props.analyzer.setOutput,
-      endpoint,
-      apikey
-    );
+    if (!props.traceId) {
+      console.error("analyzer: no trace ID provided");
+      return;
+    }
+
+    // window.open(`/api/v1/trace/${trace_id}/download`, "_blank");
+    fetch(`/api/v1/trace/${props.traceId}/download`)
+      .then((response) => {
+        response.text().then((traceData) => {
+          const messages = JSON.parse(traceData).messages;
+          const analysisInput = JSON.stringify(messages, null, 2);
+          let ctrl = createAnalysis(
+            config,
+            analysisInput,
+            props.analyzer.setRunning,
+            props.analyzer.setError,
+            props.analyzer.setOutput,
+            endpoint,
+            apikey
+          );
+          setAbortController(ctrl);
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to download trace data:", error);
+        props.analyzer.setRunning(false);
+        props.analyzer.setError("Failed to download trace data");
+      });
   };
 
   return (
@@ -240,7 +270,7 @@ export function Analyzer(props: {
  */
 function createAnalysis(
   config: string | undefined,
-  trace: any,
+  traceData: string,
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
@@ -251,7 +281,7 @@ function createAnalysis(
   const endpoint = baseurl + "/api/v1/analysis/create";
 
   const body = JSON.stringify({
-    input: JSON.stringify(trace.messages, null, 2),
+    input: traceData,
     options: config,
   });
 

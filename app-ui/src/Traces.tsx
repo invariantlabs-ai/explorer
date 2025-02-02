@@ -46,7 +46,7 @@ import { Tooltip } from "react-tooltip";
 import "./Analyzer.scss";
 import { BiSolidVideoRecording } from "react-icons/bi";
 import { Editor } from "@monaco-editor/react";
-import { Analyzer, AnalyzerOutput, useAnalyzer } from "./AnalyzerOutput";
+import { Analyzer, AnalyzerOutput, useAnalyzer } from "./Analyzer";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
@@ -990,7 +990,7 @@ export function Traces(props) {
           open={analyzerOpen}
           setAnalyzerOpen={setAnalyzerOpen}
           analyzer={analyzer}
-          trace={activeTrace}
+          traceId={activeTrace?.id}
         />
       </div>
       {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
@@ -1779,6 +1779,11 @@ export function SingleTrace() {
   // tracks whether the current user owns this dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == trace?.user_id;
 
+  // analyzer instance to use
+  const analyzer = useAnalyzer();
+
+  const [analyzerOpen, setAnalyzerOpen] = React.useState(false);
+
   // fetch trace data
   React.useEffect(() => {
     if (!props.traceId) {
@@ -1903,6 +1908,7 @@ export function SingleTrace() {
               ? () => setShowShareModal(true)
               : null
           }
+          analyzer={analyzer}
           sharingEnabled={sharingEnabled}
           actions={
             <>
@@ -1914,10 +1920,22 @@ export function SingleTrace() {
                   <BsTrash />
                 </button>
               )}
+              <button
+                className="inline analyze"
+                onClick={() => setAnalyzerOpen(!analyzerOpen)}
+              >
+                <BsRecord2Fill /> Analyze
+              </button>
             </>
           }
         />
       </div>
+      <Analyzer
+        open={analyzerOpen}
+        setAnalyzerOpen={setAnalyzerOpen}
+        analyzer={analyzer}
+        traceId={trace?.id}
+      />
     </div>
   );
 }
