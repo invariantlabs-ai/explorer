@@ -145,9 +145,10 @@ export function Analyzer(props: {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig") ||
       (`{
-    "model": "i01",
-    "endpoint": "/api/v1/analysis/create"
-  }` as string | undefined)
+  "model": "i01",
+  "endpoint": "https://preview-explorer.invariantlabs.ai",
+  "apikey": "<api key on the Explorer above>"
+}` as string | undefined)
   );
 
   const status = props.analyzer.status;
@@ -176,7 +177,9 @@ export function Analyzer(props: {
       return;
     }
 
-    let endpoint = config.endpoint || "/api/v1/analysis/create";
+    let endpoint =
+      config.endpoint ||
+      "https://preview-explorer.invariantlabs.ai/api/v1/analysis/create";
     let apikey = config.apikey || "";
     if (!apikey) {
       delete config.apikey;
@@ -188,7 +191,7 @@ export function Analyzer(props: {
       props.analyzer.setRunning,
       props.analyzer.setError,
       props.analyzer.setOutput,
-      "https://explorer.invariantlabs.ai",
+      endpoint,
       apikey
     );
   };
@@ -317,6 +320,13 @@ function createAnalysis(
       setRunning(false);
       setError(error.message);
       setOutput(null);
+      if (error.message.includes("Unauthorized")) {
+        alert(
+          "Unauthorized: Please provide a valid API key to use an analysis model."
+        );
+        return;
+      }
+
       alert("Analysis Error: " + error.message);
     }
   }
