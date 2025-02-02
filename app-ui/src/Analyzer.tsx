@@ -226,6 +226,37 @@ export function Analyzer(props: {
       });
   };
 
+  const onMount = (editor, monaco) => {
+    // register completion item provider
+    console.log("onMount", editor, monaco);
+    monaco.languages.registerCompletionItemProvider("json", {
+      provideCompletionItems: function (model, position) {
+        return {
+          suggestions: [
+            {
+              label: "local",
+              kind: monaco.languages.CompletionItemKind.Text,
+              insertText: `{
+  "model": "i01",
+  "endpoint": "http://localhost:8000",
+  "apikey": "<not needed>"
+}`,
+            },
+            {
+              label: "preview",
+              kind: monaco.languages.CompletionItemKind.Text,
+              insertText: `{
+  "model": "i01",
+  "endpoint": "https://preview-explorer.invariantlabs.ai",
+  "apikey": "<api key on the Explorer above>"
+}`,
+            },
+          ],
+        };
+      },
+    });
+  };
+
   return (
     <div className={"analyzer" + (props.open ? " open" : "")}>
       <div className="box">
@@ -242,6 +273,7 @@ export function Analyzer(props: {
         <Editor
           language="json"
           value={analyzerConfig}
+          onMount={onMount}
           onChange={(value, model) => setAnalyzerConfig(value)}
           options={{
             minimap: {
