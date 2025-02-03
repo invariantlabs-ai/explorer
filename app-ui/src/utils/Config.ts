@@ -1,5 +1,5 @@
 // @ts-ignore (only works in container with mounted config file)
-import EXPLORER_CONFIG from "../config/explorer.config.yml";
+import EXPLORER_CONFIG from "/config/explorer.config.yml";
 
 /**
  * Returns the value of the given key from the explorer.config.yml file.
