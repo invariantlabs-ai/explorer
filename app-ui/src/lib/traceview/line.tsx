@@ -9,7 +9,7 @@ import {
   THUMBS_DOWN,
 } from "../../AnnotationAugmentedTraceView";
 import { useUserInfo } from "../../UserInfo";
-import { alertSignup } from "../../pages/Signup/SignUpModal";
+import { alertSignup } from "../../pages/SignUp/SignUpModal";
 import { permalink } from "../permalink-navigator";
 
 /** A way to provide inline decorations to a rendered trace view. */

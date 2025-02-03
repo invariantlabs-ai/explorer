@@ -39,7 +39,7 @@ import {
   DatasetNotFound,
   TraceNotFound,
   isClientError,
-} from "../Notfound/NotFound";
+} from "../NotFound/NotFound";
 import { Tooltip } from "react-tooltip";
 
 // constant used to combine hierarchy paths

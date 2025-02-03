@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TraceView } from "./lib/traceview/traceview";
+import { TraceView } from "../../lib/traceview/traceview";
 
 const CONTENT = `[
   {

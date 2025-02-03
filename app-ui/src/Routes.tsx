@@ -4,11 +4,11 @@ import Layout from "./Layout.tsx";
 import { SingleTrace } from "./pages/Traces/Traces.tsx";
 import "./App.scss";
 import DatasetView from "./pages/Traces/Dataset.tsx";
-import { New } from "./New.tsx";
-import { SignUp } from "./pages/Signup/SignUp.tsx";
+import { New } from "./pages/NewTrace/New.tsx";
+import { SignUp } from "./pages/SignUp/SignUp.tsx";
 import User from "./pages/User/User.tsx";
-import { Snippets } from "./Snippets.tsx";
-import { Settings } from "./Settings.tsx";
+import { Snippets } from "./pages/Snippet/Snippets.tsx";
+import { Settings } from "./pages/Setting/Settings.tsx";
 import MarkdownFile from "./MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";

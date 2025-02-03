@@ -15,14 +15,14 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { useDatasetList } from "./lib/datasets";
-import { CompactSnippetList } from "./Snippets";
+import { useDatasetList } from "./lib/DatasetOperations";
+import { CompactSnippetList } from "./pages/Snippet/Snippets";
 import { DatasetLinkList } from "./pages/User/DatasetList";
-import { SignUp } from "./pages/Signup/SignUp";
+import { SignUp } from "./pages/SignUp/SignUp";
 import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
-import { SignUpModal } from "./pages/Signup/SignUpModal";
+import { SignUpModal } from "./pages/SignUp/SignUpModal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).

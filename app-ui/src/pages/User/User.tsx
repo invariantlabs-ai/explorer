@@ -2,11 +2,8 @@ import React, { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 
 import { useUserInfo } from "../../UserInfo";
-import { useDatasetList } from "../../lib/datasets";
-import { useTelemetry } from "../../telemetry";
-import { config } from "../../Config";
-import { BsLock, BsGlobe } from "react-icons/bs";
-import { isClientError, UserNotFound } from "../Notfound/NotFound";
+import { useDatasetList } from "../../lib/DatasetOperations";
+import { isClientError, UserNotFound } from "../NotFound/NotFound";
 import { DatasetLinkList } from "./DatasetList";
 
 /**

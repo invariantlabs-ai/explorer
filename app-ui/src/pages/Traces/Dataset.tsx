@@ -14,13 +14,13 @@ import {
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { DeleteDatasetModalContent } from "../Home/NewDataset";
 import { Modal } from "../../Modal";
-import { PoliciesView } from "../../Policies";
+import { PoliciesView } from "./Policies";
 import { RemoteResource, useRemoteResource } from "../../RemoteResource";
 import { useUserInfo } from "../../UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../Config";
 import { useTelemetry } from "../../telemetry";
-import { DatasetNotFound, isClientError } from "../Notfound/NotFound";
+import { DatasetNotFound, isClientError } from "../NotFound/NotFound";
 import { Traces } from "./Traces";
 
 interface Query {

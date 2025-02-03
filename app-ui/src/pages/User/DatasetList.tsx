@@ -4,7 +4,7 @@ import { useUserInfo } from "../../UserInfo";
 import { Link } from "react-router-dom";
 import { EntityList } from "../../EntityList";
 import { Modal } from "../../Modal";
-import { useDatasetList } from "../../lib/datasets";
+import { useDatasetList } from "../../lib/DatasetOperations";
 import {
   DeleteDatasetModalContent,
   UploadDatasetModalContent,
