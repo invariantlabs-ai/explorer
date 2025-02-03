@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { Tooltip } from "react-tooltip";
 
-import logo from "./assets/invariant.svg";
-import { useUserInfo } from "./UserInfo";
-import UserIcon from "./lib/UserIcon";
+import logo from "../assets/invariant.svg";
+import { useUserInfo } from "../utils/UserInfo";
+import UserIcon from "../lib/UserIcon";
 import { Link, useNavigate } from "react-router-dom";
 import {
   BsCodeSlash,
@@ -15,14 +15,14 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { useDatasetList } from "./lib/datasets";
-import { CompactSnippetList } from "./Snippets";
-import { DatasetLinkList } from "./Datasets";
-import { SignUp } from "./SignUp";
-import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
-import { config } from "./Config";
+import { useDatasetList } from "../service/DatasetOperations";
+import { CompactSnippetList } from "../pages/snippets/Snippets";
+import { DatasetLinkList } from "../pages/user/DatasetList";
+import { SignUp } from "../pages/signup/SignUp";
+import { DeploymentCommit, DeploymentInfo } from "../components/DeploymentInfo";
+import { config } from "../utils/Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
-import { SignUpModal } from "./SignUpModal";
+import { SignUpModal } from "../pages/signup/Modal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).

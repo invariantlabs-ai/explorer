@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal } from "../Modal";
-import { config } from "../Config";
+import { config } from "../utils/Config";
 import { BsLockFill } from "react-icons/bs";
 
 const DEPLOYMENT_COLORS = {

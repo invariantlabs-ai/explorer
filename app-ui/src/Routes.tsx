@@ -1,15 +1,14 @@
 import { BsSpeedometer2 } from "react-icons/bs";
-import Home from "./Home.tsx";
-import Layout from "./Layout.tsx";
-import { SingleTrace } from "./Traces.tsx";
+import Home from "./pages/home/Home.tsx";
+import Layout from "./layouts/Layout.tsx";
+import { SingleTrace } from "./pages/traces/Traces.tsx";
 import "./App.scss";
-import DatasetView from "./Dataset.tsx";
-import { New } from "./New.tsx";
-import { SignUp } from "./SignUp.tsx";
-import User from "./User.tsx";
-import { Snippets } from "./Snippets.tsx";
-import { Settings } from "./Settings.tsx";
-import { Datasets } from "./Datasets.tsx";
+import DatasetView from "./pages/traces/Dataset.tsx";
+import { NewTrace } from "./pages/new-trace/NewTrace.tsx";
+import { SignUp } from "./pages/signup/SignUp.tsx";
+import User from "./pages/user/User.tsx";
+import { Snippets } from "./pages/snippets/Snippets.tsx";
+import { Settings } from "./pages/setting/Settings.tsx";
 import MarkdownFile from "./MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";
@@ -105,7 +104,7 @@ export const routes = [
     label: "Upload New Trace",
     element: (
       <Layout needsLogin fullscreen>
-        <New />
+        <NewTrace />
       </Layout>
     ),
     loader: async (task: any) => {

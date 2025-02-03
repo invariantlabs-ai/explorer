@@ -18,7 +18,7 @@ import React, { useState, useEffect, useRef, Ref } from "react";
 import { ViewportList } from "react-viewport-list";
 import { Plugins } from "./plugins";
 import { HighlightContext, Line, TraceDecorator } from "./line";
-import { config } from "../../Config";
+import { config } from "../../utils/Config";
 import { truncate } from "./utils";
 import {
   AnchorDiv,
@@ -985,7 +985,7 @@ class MessageView extends React.Component<
                           ? message.content
                           : truncate_content(
                               message.content,
-                              config("truncation_limit")
+                              config("truncation_limit"),
                             )}
                       </Annotated>
                     )}
