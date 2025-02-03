@@ -20,8 +20,8 @@ from models.queries import (
 )
 from routes.apikeys import (
     APIIdentity,
-    AuthenticatedUserOrAPIIdentity,
-    UserOrAPIIdentity,
+    AuthenticatedUserOrAPIIdentityWithUsername,
+    UserOrAPIIdentityWithUsername
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from routes.dataset import DBJSONEncoder
@@ -46,8 +46,12 @@ async def get_image(
     dataset_name: str,
     trace_id: str,
     image_id: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)] = None,
 ):
+    # get user_id if authenticated
+    user_id = user["sub"] if user else None
+
+    # ensure the trace is accessible to the user
     with Session(db()) as session:
         trace = load_trace(
             session, trace_id, user_id, allow_public=True, allow_shared=True
@@ -64,8 +68,9 @@ async def get_image(
 
 @trace.get("/snippets")
 def get_trace_snippets(
-    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserOrAPIIdentity)]
+    request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentityWithUsername)]
 ):
+    user_id = user["sub"]
     limit = request.query_params.get("limit")
     limit = limit if limit != "" else None
 
@@ -116,8 +121,10 @@ def get_trace(
     id: str,
     max_length: int = None,
     include_annotations: bool = True,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)] = None,
 ):
+    user_id = user["sub"] if user else None
+
     with Session(db()) as session:
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
@@ -134,8 +141,10 @@ def get_trace(
 async def download_trace(
     request: Request,
     id: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentityWithUsername)] = None,
 ):
+    user_id = user_id["sub"] if user_id else None
+
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
 
@@ -153,12 +162,8 @@ async def download_trace(
 @trace.get("/{id}/shared")
 def get_trace_sharing(
     request: Request,
-    id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    id: str
 ):
-    # never None (always authenticated)
-    user_id = userinfo["sub"]
-
     with Session(db()) as session:
         return {"shared": has_link_sharing(session, id)}
 
@@ -173,7 +178,12 @@ def share_trace(
     user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id)  # load trace to check for auth
+        # load trace to check for auth
+        trace = load_trace(session, id, user_id)
+        # assert that the trace is owned by the user
+        if trace.user_id != user_id:
+            raise HTTPException(status_code=401, detail="Cannot share a trace the current user does not own")
+
         shared_link = (
             session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
         )

@@ -35,7 +35,7 @@ from models.queries import (
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
+from routes.apikeys import APIIdentity, UserOrAPIIdentityWithUsername
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -231,9 +231,16 @@ def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]
 @dataset.get("/list")
 def list_datasets(
     kind: DatasetKind,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
     limit: Optional[int] = None,
 ):
+    if user is None:
+        raise HTTPException(
+            status_code=401, detail="Must be authenticated to list datasets"
+        )
+    # get user ID
+    user_id = user['sub']
+    
     with Session(db()) as session:
         if kind == DatasetKind.HOMEPAGE:
             # Use cached results for HOMEPAGE datasets
@@ -355,8 +362,9 @@ def get_dataset(by: dict, user_id: UUID | None) -> dict:
 def get_dataset_by_id(
     request: Request,
     id: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
 ):
+    user_id = user['sub'] if user is not None else None
     return get_dataset({"id": id}, user_id=user_id)
 
 
@@ -365,8 +373,9 @@ def get_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
 ):
+    user_id = user['sub'] if user is not None else None
     return get_dataset(
         {"User.username": username, "name": dataset_name}, user_id=user_id
     )
@@ -623,8 +632,9 @@ def get_traces(
 def get_traces_by_id(
     request: Request,
     id: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
 ):
+    user_id = user['sub'] if user is not None else None
     return get_traces(request, {"id": id}, user_id=user_id)
 
 
@@ -754,8 +764,9 @@ def get_traces_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
 ):
+    user_id = user['sub'] if user is not None else None
     indices = request.query_params.get("indices")
     indices = [int(i) for i in indices.split(",")] if indices is not None else None
     return get_traces(

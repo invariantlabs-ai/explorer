@@ -34,7 +34,7 @@ from models.queries import (
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
+from routes.apikeys import APIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
