@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router-dom";
 
 import { useUserInfo } from "../../utils/UserInfo";
 import { useDatasetList } from "../../service/DatasetOperations";
-import { isClientError, UserNotFound } from "../NotFound/NotFound";
+import { isClientError, UserNotFound } from "../notfound/NotFound";
 import { DatasetLinkList } from "./DatasetList";
 
 /**

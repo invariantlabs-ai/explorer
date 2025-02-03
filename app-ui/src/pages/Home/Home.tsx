@@ -6,12 +6,12 @@ import { Modal } from "../../Modal";
 import { Time } from "../../components/Time";
 import { useDatasetList } from "../../service/DatasetOperations";
 import { UploadDatasetModalContent } from "./NewDataset";
-import { DatasetLinkList } from "../User/DatasetList";
+import { DatasetLinkList } from "../user/DatasetList";
 import HomepageDatasetsNames from "../../assets/HomepageDatasetsNames.json";
 import UserIcon from "../../lib/UserIcon";
 
 import "./Home.scss";
-import { CompactSnippetList } from "../Snippet/Snippets";
+import { CompactSnippetList } from "../snippets/Snippets";
 import HomePageNUX from "./NUX";
 import { config } from "../../utils/Config";
 

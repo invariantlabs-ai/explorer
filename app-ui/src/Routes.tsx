@@ -1,14 +1,14 @@
 import { BsSpeedometer2 } from "react-icons/bs";
-import Home from "./pages/Home/Home.tsx";
+import Home from "./pages/home/Home.tsx";
 import Layout from "./layouts/Layout.tsx";
-import { SingleTrace } from "./pages/Traces/Traces.tsx";
+import { SingleTrace } from "./pages/traces/Traces.tsx";
 import "./App.scss";
-import DatasetView from "./pages/Traces/Dataset.tsx";
-import { NewTrace } from "./pages/NewTrace/NewTrace.tsx";
-import { SignUp } from "./pages/SignUp/SignUp.tsx";
-import User from "./pages/User/User.tsx";
-import { Snippets } from "./pages/Snippet/Snippets.tsx";
-import { Settings } from "./pages/Setting/Settings.tsx";
+import DatasetView from "./pages/traces/Dataset.tsx";
+import { NewTrace } from "./pages/new-trace/NewTrace.tsx";
+import { SignUp } from "./pages/signup/SignUp.tsx";
+import User from "./pages/user/User.tsx";
+import { Snippets } from "./pages/snippets/Snippets.tsx";
+import { Settings } from "./pages/setting/Settings.tsx";
 import MarkdownFile from "./MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";

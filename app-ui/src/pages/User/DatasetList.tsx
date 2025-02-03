@@ -8,7 +8,7 @@ import { useDatasetList } from "../../service/DatasetOperations";
 import {
   DeleteDatasetModalContent,
   UploadDatasetModalContent,
-} from "../Home/NewDataset";
+} from "../home/NewDataset";
 import { BsUpload } from "react-icons/bs";
 
 /**

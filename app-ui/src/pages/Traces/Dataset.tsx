@@ -12,7 +12,7 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
-import { DeleteDatasetModalContent } from "../Home/NewDataset";
+import { DeleteDatasetModalContent } from "../home/NewDataset";
 import { Modal } from "../../Modal";
 import { PoliciesView } from "./Policies";
 import { RemoteResource, useRemoteResource } from "../../RemoteResource";
@@ -20,7 +20,7 @@ import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../utils/Config";
 import { useTelemetry } from "../../telemetry";
-import { DatasetNotFound, isClientError } from "../NotFound/NotFound";
+import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
 
 interface Query {
