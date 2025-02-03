@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import { useUserInfo } from "../../UserInfo";
+import { useUserInfo } from "../../utils/UserInfo";
 import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "../../Modal";
 import { Time } from "../../components/Time";
-import { useDatasetList } from "../../lib/DatasetOperations";
+import { useDatasetList } from "../../service/DatasetOperations";
 import { UploadDatasetModalContent } from "./NewDataset";
 import { DatasetLinkList } from "../User/DatasetList";
 import HomepageDatasetsNames from "../../assets/HomepageDatasetsNames.json";

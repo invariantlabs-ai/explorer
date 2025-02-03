@@ -8,7 +8,7 @@ import {
   THUMBS_UP,
   THUMBS_DOWN,
 } from "../../AnnotationAugmentedTraceView";
-import { useUserInfo } from "../../UserInfo";
+import { useUserInfo } from "../../utils/UserInfo";
 import { alertSignup } from "../../pages/SignUp/SignUpModal";
 import { permalink } from "../permalink-navigator";
 

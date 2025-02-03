@@ -16,7 +16,7 @@ import { DeleteDatasetModalContent } from "../Home/NewDataset";
 import { Modal } from "../../Modal";
 import { PoliciesView } from "./Policies";
 import { RemoteResource, useRemoteResource } from "../../RemoteResource";
-import { useUserInfo } from "../../UserInfo";
+import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../Config";
 import { useTelemetry } from "../../telemetry";

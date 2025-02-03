@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 
-import { useUserInfo } from "../../UserInfo";
-import { useDatasetList } from "../../lib/DatasetOperations";
+import { useUserInfo } from "../../utils/UserInfo";
+import { useDatasetList } from "../../service/DatasetOperations";
 import { isClientError, UserNotFound } from "../NotFound/NotFound";
 import { DatasetLinkList } from "./DatasetList";
 

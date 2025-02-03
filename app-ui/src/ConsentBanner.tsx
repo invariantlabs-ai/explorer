@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUserInfo } from "./UserInfo";
+import { useUserInfo } from "./utils/UserInfo";
 import { HAS_CONSENT } from "./telemetry";
 
 /**

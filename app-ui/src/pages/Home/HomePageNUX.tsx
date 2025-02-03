@@ -1,6 +1,6 @@
 import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
 import { useEffect, useState } from "react";
-import { useUserInfo } from "../../UserInfo";
+import { useUserInfo } from "../../utils/UserInfo";
 import { config } from "../../Config";
 
 const defaultOptions = {

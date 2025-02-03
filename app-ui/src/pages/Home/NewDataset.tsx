@@ -3,7 +3,7 @@ import { BsFileBinaryFill, BsUpload } from "react-icons/bs";
 import { useTelemetry } from "../../telemetry";
 import { config } from "../../Config";
 import { BsLock, BsGlobe } from "react-icons/bs";
-import { createDataset, uploadDataset } from "../../lib/DatasetOperations";
+import { createDataset, uploadDataset } from "../../service/DatasetOperations";
 /**
  * Modal content for uploading a new dataset.
  */

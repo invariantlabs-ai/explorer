@@ -5,7 +5,7 @@ import "./Annotations.scss";
 import "./Explorer.scss";
 
 import { RemoteResource, useRemoteResource } from "./RemoteResource";
-import { useUserInfo } from "./UserInfo";
+import { useUserInfo } from "./utils/UserInfo";
 import UserIcon from "./lib/UserIcon";
 
 import { Time } from "./components/Time";

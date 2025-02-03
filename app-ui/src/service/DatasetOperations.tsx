@@ -1,5 +1,5 @@
 import React from "react";
-import { sharedFetch } from "../SharedFetch";
+import { sharedFetch } from "./SharedFetch";
 
 /** Hook to fetch the list of datasets from the server. */
 export function useDatasetList(

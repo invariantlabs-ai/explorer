@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { Tooltip } from "react-tooltip";
 
 import logo from "./assets/invariant.svg";
-import { useUserInfo } from "./UserInfo";
+import { useUserInfo } from "./utils/UserInfo";
 import UserIcon from "./lib/UserIcon";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -15,7 +15,7 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { useDatasetList } from "./lib/DatasetOperations";
+import { useDatasetList } from "./service/DatasetOperations";
 import { CompactSnippetList } from "./pages/Snippet/Snippets";
 import { DatasetLinkList } from "./pages/User/DatasetList";
 import { SignUp } from "./pages/SignUp/SignUp";
