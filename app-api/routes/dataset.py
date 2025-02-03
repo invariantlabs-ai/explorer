@@ -691,6 +691,63 @@ async def download_traces_by_id(
             },
         )
 
+async def stream_annotated_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
+    """
+    Used to stream out the trace data as JSONL to download the dataset traces with annotations.
+    """
+    # write out metadata message
+    yield json.dumps(dataset_info) + "\n"
+
+    traces = (
+        session.query(Trace)
+        .filter(Trace.dataset_id == dataset_id)
+        .join(Annotation, Trace.id == Annotation.trace_id)
+        .group_by(Trace.id)
+        .having(func.count(Annotation.id) > 0)
+        .order_by(Trace.index)
+        .all()
+    )
+    for trace in traces:
+        # load annotations for this trace
+        annotations = load_annotations(session, trace.id)
+        json_dict = await trace_to_exported_json(trace, annotations),
+        yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
+
+        # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
+
+
+"""
+Download all annotated traces of a dataset in JSONL format.
+"""
+@dataset.get("/byid/{id}/download/annotated")
+def download_annotated_traces_by_id(
+    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+):
+    with Session(db()) as session:
+        try:
+            dataset, user = load_dataset(
+                session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
+            )
+            internal_dataset_info = dataset_to_json(dataset)
+            dataset_info = {
+                "metadata": {**internal_dataset_info["extra_metadata"]},
+            }
+            # streaming response, but triggers a download
+            return StreamingResponse(
+                stream_annotated_jsonl(session, id, dataset_info, userinfo["sub"]),
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": 'attachment; filename="'
+                    + internal_dataset_info["name"]
+                    + '.jsonl"'
+                },
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(e)
+            raise e
+
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
 def get_traces_by_name(
@@ -747,7 +804,7 @@ def get_trace_indices_by_name(
 
 
 @dataset.get("/byuser/{username}/{dataset_name}/full")
-def get_traces_by_name(
+def get_traces_by_name_full(
     request: Request,
     username: str,
     dataset_name: str,

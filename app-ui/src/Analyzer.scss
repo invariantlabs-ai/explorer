@@ -69,6 +69,8 @@
     background-color: #3d3aff0e;
     transition: opacity 0.3s;
     margin-bottom: 15pt;
+    
+    position: relative;
 
     b {
         img {
@@ -83,6 +85,21 @@
         display: block;
         margin-top: 10pt;
         margin-bottom: -2pt;
+
+        .discard {
+            font-weight: normal;
+            font-size: 8pt;
+            position: absolute;
+            top: 5pt;
+            right: 10pt;
+            opacity: 0.5;
+
+            &:hover {
+                text-decoration: underline;
+                opacity: 1;
+                cursor: pointer;
+            }
+        }
     }
 
     pre {
@@ -136,6 +153,13 @@
     .output-running-bar-inner {
         animation: running-bar 30s infinite;
     }
+}
+
+.output-empty {
+    text-align: center;
+    padding: 20pt;
+    font-size: 10pt;
+    color: #999;
 }
 
 // let's be real: it never really finishes

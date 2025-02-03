@@ -288,6 +288,26 @@ export function AnnotationAugmentedTraceView(props) {
       ? highlights.highlights
       : HighlightedJSON.empty();
     
+  const onDiscardAnalysisResult = async (analysis_annotations) => {
+    await analysis_annotations.forEach(async a => {
+      // delete the corresponding stored annotation by ID (if it exists)
+      if (a.id) await annotator.delete(a.id);
+    })
+    // set local analyzer output to null
+    props.analyzer.setOutput(null);
+    // wait for delete to finish, then refresh the annotations
+    window.setTimeout(() => annotator.refresh(), 20);
+    // update the analyzer count
+    props.onAnnotationDelete(activeTraceIndex);
+  }
+
+  // on change of analyzer running, update annotation count
+  useEffect(() => {
+    if (props.analyzer?.running) {
+      onAnnotationCreate(activeTraceIndex);
+    }
+  }, [props.analyzer?.running]);
+
   return (
     <>
       <header className="toolbar">
@@ -393,6 +413,7 @@ export function AnnotationAugmentedTraceView(props) {
               storedOutput={top_level_annotations.filter(a => a.source == "analyzer-model")}
               trace={activeTrace}
               running={props.analyzer.running}
+              onDiscard={() => onDiscardAnalysisResult(top_level_annotations.filter(a => a.source == "analyzer-model"))}
             />
           }
         />

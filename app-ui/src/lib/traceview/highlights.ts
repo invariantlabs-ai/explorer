@@ -9,6 +9,8 @@ export interface HighlightData {
   extra_metadata?: Record<string, any>;
   annotationId?: string;
   type?: string;
+  // DB id of the underlying annotation (if present)
+  id?: string
 }
 
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */

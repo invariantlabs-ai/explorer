@@ -41,6 +41,7 @@ export function AnalyzerOutput(props: {
   running: boolean;
   trace: any;
   storedOutput?: any;
+  onDiscard?: () => void;
 }) {
   const { analyzerOutput, running } = props;
   const [issues, setIssues] = useState([] as any[]);
@@ -111,6 +112,11 @@ export function AnalyzerOutput(props: {
         ) : (
           ""
         )}
+        {!running && props.storedOutput && props.onDiscard && (
+          <a className="discard" onClick={props.onDiscard}>
+            Discard
+          </a>
+        )}
       </b>
       {issues.map((output, i) =>
         output.loading ? (
@@ -120,6 +126,9 @@ export function AnalyzerOutput(props: {
         ) : (
           <pre key={"issue-" + i}>{JSON.stringify(output, null, 2)}</pre>
         )
+      )}
+      {issues.filter((issue) => !issue.loading).length === 0 && !running && (
+        <div className="output-empty">No issues found</div>
       )}
     </div>
   );
@@ -141,6 +150,7 @@ export function Analyzer(props: {
   traceId?: string;
   setAnalyzerOpen: (value: boolean) => void;
   analyzer: Analyzer;
+  datasetId?: any;
 }) {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig") ||
@@ -169,7 +179,7 @@ export function Analyzer(props: {
     };
   }, [abortController]);
 
-  const onRun = () => {
+  const onRun = async () => {
     // props.setAnalyzerOpen(false);
     props.analyzer.setRunning(true);
     props.analyzer.setError(null);
@@ -201,34 +211,26 @@ export function Analyzer(props: {
       return;
     }
 
-    // window.open(`/api/v1/trace/${trace_id}/download`, "_blank");
-    fetch(`/api/v1/trace/${props.traceId}/download`)
-      .then((response) => {
-        response.text().then((traceData) => {
-          const messages = JSON.parse(traceData).messages;
-          const analysisInput = JSON.stringify(messages, null, 2);
-          let ctrl = createAnalysis(
-            config,
-            analysisInput,
-            props.analyzer.setRunning,
-            props.analyzer.setError,
-            props.analyzer.setOutput,
-            endpoint,
-            apikey
-          );
-          setAbortController(ctrl);
-        });
-      })
-      .catch((error) => {
-        console.error("Failed to download trace data:", error);
-        props.analyzer.setRunning(false);
-        props.analyzer.setError("Failed to download trace data");
-      });
+    const { trace, context } = await prepareAnalysisInputs(
+      props.datasetId,
+      props.traceId
+    );
+
+    let ctrl = createAnalysis(
+      config,
+      JSON.stringify(trace, null, 2),
+      props.analyzer.setRunning,
+      props.analyzer.setError,
+      props.analyzer.setOutput,
+      endpoint,
+      apikey,
+      context
+    );
+    setAbortController(ctrl);
   };
 
   const onMount = (editor, monaco) => {
     // register completion item provider
-    console.log("onMount", editor, monaco);
     monaco.languages.registerCompletionItemProvider("json", {
       provideCompletionItems: function (model, position) {
         return {
@@ -289,6 +291,35 @@ export function Analyzer(props: {
   );
 }
 
+async function prepareAnalysisInputs(dataset_id: string, traceId: string) {
+  try {
+    const [traceRes, contextRes] = await Promise.all([
+      fetch(`/api/v1/trace/${traceId}/download`),
+      fetch(`/api/v1/dataset/byid/${dataset_id}/download/annotated`),
+    ]);
+
+    if (!traceRes.ok) {
+      throw new Error(`Failed to fetch trace data: HTTP ${traceRes.status}`);
+    }
+    if (!contextRes.ok) {
+      throw new Error(`Failed to fetch context: HTTP ${contextRes.status}`);
+    }
+
+    const traceData = await traceRes.json();
+    const context = await contextRes.text();
+
+    const trace = traceData.messages;
+
+    return {
+      trace,
+      context: { index: traceData.index, explorerDataset: context },
+    };
+  } catch (error) {
+    console.error("prepareAnalysis error:", error);
+    throw error;
+  }
+}
+
 /**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.
  *
@@ -307,7 +338,8 @@ function createAnalysis(
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
   baseurl: string,
-  apikey: string
+  apikey: string,
+  context: any
 ): AbortController {
   const abortController = new AbortController();
   const endpoint = baseurl + "/api/v1/analysis/create";
@@ -315,6 +347,7 @@ function createAnalysis(
   const body = JSON.stringify({
     input: traceData,
     options: config,
+    context: context,
   });
 
   async function startAnalysis() {

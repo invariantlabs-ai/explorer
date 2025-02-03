@@ -135,6 +135,15 @@ class Annotation(Base):
     )
     extra_metadata = mapped_column(JSON, nullable=True)
 
+    def to_dict(self) -> dict:
+        return {
+            "user_id": self.user_id,
+            "content": self.content,
+            "address": self.address,
+            "time_created": self.time_created,
+            "extra_metadata": self.extra_metadata,
+        }
+
 
 # simple table to capture all shared trace IDs
 class SharedLinks(Base):

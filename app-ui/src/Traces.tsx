@@ -991,6 +991,7 @@ export function Traces(props) {
           setAnalyzerOpen={setAnalyzerOpen}
           analyzer={analyzer}
           traceId={activeTrace?.id}
+          datasetId={dataset.id}
         />
       </div>
       {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
