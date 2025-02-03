@@ -1,6 +1,6 @@
 import { BsSpeedometer2 } from "react-icons/bs";
-import Home from "./pages/Home/Home";
-import Layout from "./Layout.tsx";
+import Home from "./pages/Home/Home.tsx";
+import Layout from "./layouts/Layout.tsx";
 import { SingleTrace } from "./pages/Traces/Traces.tsx";
 import "./App.scss";
 import DatasetView from "./pages/Traces/Dataset.tsx";

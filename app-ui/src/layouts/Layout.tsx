@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { Tooltip } from "react-tooltip";
 
 import logo from "./assets/invariant.svg";
-import { useUserInfo } from "./utils/UserInfo";
-import UserIcon from "./lib/UserIcon";
+import { useUserInfo } from "../utils/UserInfo";
+import UserIcon from "../lib/UserIcon";
 import { Link, useNavigate } from "react-router-dom";
 import {
   BsCodeSlash,
@@ -15,14 +15,14 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import { useDatasetList } from "./service/DatasetOperations";
-import { CompactSnippetList } from "./pages/Snippet/Snippets";
-import { DatasetLinkList } from "./pages/User/DatasetList";
-import { SignUp } from "./pages/SignUp/SignUp";
-import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
-import { config } from "./utils/Config";
+import { useDatasetList } from "../service/DatasetOperations";
+import { CompactSnippetList } from "../pages/Snippet/Snippets";
+import { DatasetLinkList } from "../pages/User/DatasetList";
+import { SignUp } from "../pages/SignUp/SignUp";
+import { DeploymentCommit, DeploymentInfo } from "../components/DeploymentInfo";
+import { config } from "../utils/Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
-import { SignUpModal } from "./pages/SignUp/Modal";
+import { SignUpModal } from "../pages/SignUp/Modal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
