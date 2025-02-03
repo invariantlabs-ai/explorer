@@ -222,3 +222,68 @@ async def test_push_trace_with_image(context, url):
         assert len(trace["messages"]) == 7
         assert "local_img_link" in trace["messages"][3]["content"]
         assert "local_img_link" in trace["messages"][6]["content"]
+
+
+async def test_push_trace_with_tool_call_arguments_parsed_successfully(
+    context, url, data_with_json_parseable_tool_call_arguments
+):
+    """Tests that pushing a trace with tool call arguments that are parseable to JSON works."""
+    async with TemporaryExplorerDataset(url, context, "") as dataset:
+        data = {
+            "messages": [json.loads(data_with_json_parseable_tool_call_arguments)],
+            "annotations": None,
+            "metadata": None,
+            "dataset": dataset["name"],
+        }
+
+        response = await context.request.post(url + "/api/v1/push/trace", data=data)
+        await expect(response).to_be_ok()
+        trace_id = (await response.json())["id"][0]
+
+        # get the trace and check that the tool_call arguments are parsed
+        response = await context.request.get(url + f"/api/v1/trace/{trace_id}")
+        await expect(response).to_be_ok()
+        trace = await response.json()
+        messages_with_tool_calls = [
+            msg
+            for msg in trace["messages"]
+            if msg["role"] == "assistant" and msg.get("tool_calls")
+        ]
+        assert len(messages_with_tool_calls) == 1
+        assert len(messages_with_tool_calls[0]["tool_calls"]) == 1
+        assert messages_with_tool_calls[0]["tool_calls"][0]["function"][
+            "arguments"
+        ] == {"country_name": "France"}
+
+
+async def test_push_trace_with_tool_call_arguments_not_parsed_successfully(
+    context, url, data_with_non_json_parseable_tool_call_arguments
+):
+    """Tests that pushing a trace with tool call arguments that are not parseable to JSON works."""
+    async with TemporaryExplorerDataset(url, context, "") as dataset:
+        data = {
+            "messages": [json.loads(data_with_non_json_parseable_tool_call_arguments)],
+            "annotations": None,
+            "metadata": None,
+            "dataset": dataset["name"],
+        }
+
+        response = await context.request.post(url + "/api/v1/push/trace", data=data)
+        await expect(response).to_be_ok()
+        trace_id = (await response.json())["id"][0]
+
+        # get the trace and check that the tool_call arguments are parsed
+        response = await context.request.get(url + f"/api/v1/trace/{trace_id}")
+        await expect(response).to_be_ok()
+        trace = await response.json()
+        messages_with_tool_calls = [
+            msg
+            for msg in trace["messages"]
+            if msg["role"] == "assistant" and msg.get("tool_calls")
+        ]
+        assert len(messages_with_tool_calls) == 1
+        assert len(messages_with_tool_calls[0]["tool_calls"]) == 1
+        assert (
+            messages_with_tool_calls[0]["tool_calls"][0]["function"]["arguments"]
+            == '["fiction", "mystery"], ["Agatha Christie", "Dan Brown"]'
+        )

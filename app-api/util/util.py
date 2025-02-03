@@ -163,7 +163,7 @@ async def _handle_base64_image(dataset: str, trace_id: str, msg: dict):
 
 async def _handle_tool_call_arguments(msg: dict):
     """
-    Parses tool call arguments if they are a string and updates the message.
+    Parses tool call arguments if they are parseable to a json and updates the message.
 
     Args:
         msg (dict): The message containing tool call data.
