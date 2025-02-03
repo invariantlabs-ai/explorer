@@ -22,7 +22,7 @@ import { SignUp } from "./pages/SignUp/SignUp";
 import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./utils/Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
-import { SignUpModal } from "./pages/SignUp/SignUpModal";
+import { SignUpModal } from "./pages/SignUp/Modal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).

@@ -34,7 +34,7 @@ import { useTelemetry } from "../../telemetry";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
-import TracePageNUX from "./TracePageNUX";
+import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
   TraceNotFound,

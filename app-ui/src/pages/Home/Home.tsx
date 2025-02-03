@@ -12,7 +12,7 @@ import UserIcon from "../../lib/UserIcon";
 
 import "./Home.scss";
 import { CompactSnippetList } from "../Snippet/Snippets";
-import HomePageNUX from "./HomePageNUX";
+import HomePageNUX from "./NUX";
 import { config } from "../../utils/Config";
 
 // fetches user activity from backend
