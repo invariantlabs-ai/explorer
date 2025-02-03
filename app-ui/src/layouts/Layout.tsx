@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { Tooltip } from "react-tooltip";
 
-import logo from "./assets/invariant.svg";
+import logo from "../assets/invariant.svg";
 import { useUserInfo } from "../utils/UserInfo";
 import UserIcon from "../lib/UserIcon";
 import { Link, useNavigate } from "react-router-dom";
