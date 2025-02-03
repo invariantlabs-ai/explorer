@@ -4,7 +4,7 @@ import {
   HAS_CONSENT,
   SUPPORTS_TELEMETRY,
   useTelemetryWithIdentification,
-} from "../telemetry";
+} from "./telemetry";
 
 export interface UserInfo {
   id: string;

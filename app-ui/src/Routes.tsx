@@ -9,7 +9,7 @@ import { SignUp } from "./pages/signup/SignUp.tsx";
 import User from "./pages/user/User.tsx";
 import { Snippets } from "./pages/snippets/Snippets.tsx";
 import { Settings } from "./pages/setting/Settings.tsx";
-import MarkdownFile from "./MarkdownFile.tsx";
+import MarkdownFile from "./lib/MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";
 import terms from "./assets/terms.md?raw";

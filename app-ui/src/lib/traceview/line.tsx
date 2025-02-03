@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { GroupedHighlight } from "./highlights";
-import { useTelemetry } from "../../telemetry";
+import { useTelemetry } from "../../utils/telemetry";
 import { BsArrowUp, BsArrowDown } from "react-icons/bs";
-import { useRemoteResource } from "../../RemoteResource";
+import { useRemoteResource } from "../../service/RemoteResource";
 import {
   Annotations,
   THUMBS_UP,

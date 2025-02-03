@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { useUserInfo } from "../../utils/UserInfo";
 import { Link } from "react-router-dom";
 import { EntityList } from "../../lib/EntityList";
-import { Modal } from "../../Modal";
+import { Modal } from "../../lib/Modal";
 import { useDatasetList } from "../../service/DatasetOperations";
 import {
   DeleteDatasetModalContent,
