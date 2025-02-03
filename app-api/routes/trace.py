@@ -271,6 +271,10 @@ async def replace_annotations(
     if not isinstance(source, str):
         raise HTTPException(status_code=400, detail="Source must be a string")
     
+    # track how many we deleted
+    num_deleted = 0
+    num_inserted = len(annotations)
+
     try:
         with Session(db()) as session:
             trace = load_trace(
@@ -279,7 +283,7 @@ async def replace_annotations(
 
             # delete all annotations of the source
             # for json lookup, do it on the text level
-            session.query(Annotation).filter(Annotation.trace_id == id, Annotation.extra_metadata.op("->>")("source") == source).delete()
+            num_deleted = session.query(Annotation).filter(Annotation.trace_id == id, Annotation.extra_metadata.op("->>")("source") == source).delete()
 
             # add new annotations
             for annotation in annotations:
@@ -305,7 +309,7 @@ async def replace_annotations(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="An error occurred while updating annotations")
 
-    return {"message": "replaced"}
+    return {"deleted": num_deleted, "inserted": num_inserted}
 
 # get all annotations of a trace
 @trace.get("/{id}/annotations")
