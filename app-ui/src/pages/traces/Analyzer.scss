@@ -73,6 +73,7 @@
     position: relative;
 
     b {
+
         img {
             width: 15pt;
             height: 15pt;
@@ -86,18 +87,52 @@
         margin-top: 10pt;
         margin-bottom: -2pt;
 
-        .discard {
+        .debug-info {
+            font-size: 8pt;
+            font-weight: normal;
+            margin-top: 5pt;
+            margin-bottom: 10pt;
+            
+            a {
+                margin-left: 8pt;
+                color: #999;
+                text-decoration: none;
+                font-weight: normal;
+            }
+
+            span {
+                font-style: italic;
+                margin-left: 4pt;
+                opacity: 0.5;
+            }
+
+            a:hover {
+                text-decoration: underline;
+                color: #666;
+            }
+        }
+
+        .actions {
             font-weight: normal;
             font-size: 8pt;
             position: absolute;
             top: 5pt;
             right: 10pt;
             opacity: 0.5;
+            
+            a {
+                text-decoration: none;
+                color: var(--text-color);
+            }
 
-            &:hover {
+            a:hover {
                 text-decoration: underline;
                 opacity: 1;
                 cursor: pointer;
+            }
+
+            a {
+                margin-left: 5pt;
             }
         }
     }

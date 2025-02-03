@@ -12,6 +12,10 @@ interface Analyzer {
   output: any;
   setOutput: (output: any) => void;
 
+  // debugging info (if provided by the analysis model)
+  debugInfo?: any;
+  setDebug?: (debug: any) => void;
+
   reset: () => void;
 }
 
@@ -19,10 +23,12 @@ export function useAnalyzer(): Analyzer {
   const [running, setRunning] = useState(false);
   const [output, setOutput] = useState(null);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebug] = useState(null);
 
   const reset = () => {
     setOutput(null);
     setError(null);
+    setDebug(null);
   };
 
   return {
@@ -33,15 +39,28 @@ export function useAnalyzer(): Analyzer {
     output,
     setOutput,
     reset,
+    debugInfo,
+    setDebug,
   };
 }
 
+/**
+ * Panel that shows the output of an analysis run (streamed in or loaded from storage).
+ *
+ * @param props
+ * @param props.analyzerOutput Output of the analysis run
+ * @param props.running Whether the analysis is currently running
+ * @param props.trace Trace data
+ * @param props.storedOutput Previously stored output (if any)
+ * @param props.onDiscard Callback to discard the stored output
+ */
 export function AnalyzerOutput(props: {
   analyzerOutput: any;
   running: boolean;
   trace: any;
   storedOutput?: any;
   onDiscard?: () => void;
+  debugInfo?: any;
 }) {
   const { analyzerOutput, running } = props;
   const [issues, setIssues] = useState([] as any[]);
@@ -112,11 +131,34 @@ export function AnalyzerOutput(props: {
         ) : (
           ""
         )}
-        {!running && props.storedOutput && props.onDiscard && (
-          <a className="discard" onClick={props.onDiscard}>
-            Discard
-          </a>
+        {!running && (
+          <span className="debug-info">
+            {props.debugInfo?.stats &&
+              props.debugInfo?.stats.length > 0 &&
+              props.debugInfo.stats.map((stat: any, i: number) => (
+                <span key={"stat-" + i} className="stat">
+                  {stat}
+                </span>
+              ))}
+            {props.debugInfo?.traces?.map((trace: string, i: number) => (
+              <a
+                key={"trace-url-" + i}
+                href={trace}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View Trace
+              </a>
+            ))}
+          </span>
         )}
+        <div className="actions">
+          {!running && props.storedOutput && props.onDiscard && (
+            <a className="discard" onClick={props.onDiscard}>
+              Discard
+            </a>
+          )}
+        </div>
       </b>
       {issues.map((output, i) =>
         output.loading ? (
@@ -145,12 +187,29 @@ function Loading(props) {
   );
 }
 
+/**
+ * Panel that allows the user to configure and run an analysis.
+ *
+ * @param props
+ * @param props.open Whether the analyzer panel is open
+ * @param props.traceId Trace ID to analyze
+ * @param props.setAnalyzerOpen Callback to set the analyzer panel open
+ * @param props.analyzer Analyzer state
+ *
+ * Apart form this, the following properties are passed to the analysis model, when a run is initiated:
+ *
+ * @param props.datasetId Dataset ID
+ * @param props.username Username
+ * @param props.dataset Dataset name
+ */
 export function Analyzer(props: {
   open: boolean;
   traceId?: string;
   setAnalyzerOpen: (value: boolean) => void;
   analyzer: Analyzer;
-  datasetId?: any;
+  datasetId: string;
+  username: string;
+  dataset: string;
 }) {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig") ||
@@ -212,8 +271,10 @@ export function Analyzer(props: {
     }
 
     const { trace, context } = await prepareAnalysisInputs(
+      props.traceId,
       props.datasetId,
-      props.traceId
+      props.username,
+      props.dataset
     );
 
     let ctrl = createAnalysis(
@@ -224,7 +285,8 @@ export function Analyzer(props: {
       props.analyzer.setOutput,
       endpoint,
       apikey,
-      context
+      context,
+      props.analyzer.setDebug
     );
     setAbortController(ctrl);
   };
@@ -291,7 +353,21 @@ export function Analyzer(props: {
   );
 }
 
-async function prepareAnalysisInputs(dataset_id: string, traceId: string) {
+/**
+ * Prepares the inputs for an analysis run. This is done client-side using the current user session, so the
+ * analysis models do not need to pull in the data themselves (they are stateless).
+ *
+ * @param traceId ID of the analyzed trace
+ * @param dataset_id ID of the dataset containing the trace
+ * @param username Username of the current dataset.
+ * @param dataset The current dataset name.
+ */
+async function prepareAnalysisInputs(
+  traceId: string,
+  dataset_id: string,
+  username: string,
+  dataset: string
+) {
   try {
     const [traceRes, contextRes] = await Promise.all([
       fetch(`/api/v1/trace/${traceId}/download`),
@@ -312,7 +388,12 @@ async function prepareAnalysisInputs(dataset_id: string, traceId: string) {
 
     return {
       trace,
-      context: { index: traceData.index, explorerDataset: context },
+      context: {
+        index: traceData.index,
+        explorer_tracedata: context,
+        user: username,
+        dataset: dataset,
+      },
     };
   } catch (error) {
     console.error("prepareAnalysis error:", error);
@@ -339,7 +420,8 @@ function createAnalysis(
   setOutput: (output: any) => void,
   baseurl: string,
   apikey: string,
-  context: any
+  context: any,
+  setDebug?: (debug: any) => void
 ): AbortController {
   const abortController = new AbortController();
   const endpoint = baseurl + "/api/v1/analysis/create";
@@ -387,7 +469,15 @@ function createAnalysis(
           if (chunk.startsWith("data: ")) {
             chunk = chunk.slice(6); // Remove "data: "
             try {
-              setOutput((prev) => [...(prev || []), JSON.parse(chunk)]);
+              const chunk_data = JSON.parse(chunk);
+              // handle debug messages separately
+              if (chunk_data.debug) {
+                if (setDebug) {
+                  setDebug(chunk_data.debug);
+                }
+              } else {
+                setOutput((prev) => [...(prev || []), chunk_data]);
+              }
             } catch {
               setOutput((prev) => [
                 ...(prev || []),

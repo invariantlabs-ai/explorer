@@ -297,16 +297,7 @@ export function AnnotationAugmentedTraceView(props) {
     props.analyzer.setOutput(null);
     // wait for delete to finish, then refresh the annotations
     window.setTimeout(() => annotator.refresh(), 20);
-    // update the analyzer count
-    props.onAnnotationDelete(activeTraceIndex);
   }
-
-  // on change of analyzer running, update annotation count
-  useEffect(() => {
-    if (props.analyzer?.running) {
-      onAnnotationCreate(activeTraceIndex);
-    }
-  }, [props.analyzer?.running]);
 
   return (
     <>
@@ -410,6 +401,7 @@ export function AnnotationAugmentedTraceView(props) {
           prelude={
             <AnalyzerOutput
               analyzerOutput={props.analyzer?.output}
+              debugInfo={props.analyzer?.debugInfo}
               storedOutput={top_level_annotations.filter(a => a.source == "analyzer-model")}
               trace={activeTrace}
               running={props.analyzer.running}

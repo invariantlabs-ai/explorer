@@ -996,6 +996,8 @@ export function Traces(props) {
           analyzer={analyzer}
           traceId={activeTrace?.id}
           datasetId={dataset.id}
+          dataset={datasetname}
+          username={username}
         />
       </div>
       {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
@@ -1940,6 +1942,9 @@ export function SingleTrace() {
         setAnalyzerOpen={setAnalyzerOpen}
         analyzer={analyzer}
         traceId={trace?.id}
+        datasetId={"snippets"}
+        dataset="snippets"
+        username={trace?.user || "anonymous"}
       />
     </div>
   );
