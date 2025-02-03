@@ -4,7 +4,7 @@ import Layout from "./Layout.tsx";
 import { SingleTrace } from "./pages/Traces/Traces.tsx";
 import "./App.scss";
 import DatasetView from "./pages/Traces/Dataset.tsx";
-import { New } from "./pages/NewTrace/New.tsx";
+import { NewTrace } from "./pages/NewTrace/NewTrace.tsx";
 import { SignUp } from "./pages/SignUp/SignUp.tsx";
 import User from "./pages/User/User.tsx";
 import { Snippets } from "./pages/Snippet/Snippets.tsx";
@@ -104,7 +104,7 @@ export const routes = [
     label: "Upload New Trace",
     element: (
       <Layout needsLogin fullscreen>
-        <New />
+        <NewTrace />
       </Layout>
     ),
     loader: async (task: any) => {
