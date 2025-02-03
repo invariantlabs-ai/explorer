@@ -594,7 +594,7 @@ def get_traces(
         traces = (
             traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
             # only count line annotations here (i.e. user annotations)
-            .filter(Annotation.address.like("%:L%"))
+            .filter((Annotation.address.like("%:L%") | (Annotation.address.is_(None))))
             .group_by(Trace.id)
             .add_columns(
                 Trace.name,
