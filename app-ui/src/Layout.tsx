@@ -20,7 +20,7 @@ import { CompactSnippetList } from "./pages/Snippet/Snippets";
 import { DatasetLinkList } from "./pages/User/DatasetList";
 import { SignUp } from "./pages/SignUp/SignUp";
 import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
-import { config } from "./Config";
+import { config } from "./utils/Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
 import { SignUpModal } from "./pages/SignUp/SignUpModal";
 

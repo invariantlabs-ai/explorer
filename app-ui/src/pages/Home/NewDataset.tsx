@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { BsFileBinaryFill, BsUpload } from "react-icons/bs";
 import { useTelemetry } from "../../telemetry";
-import { config } from "../../Config";
+import { config } from "../../utils/Config";
 import { BsLock, BsGlobe } from "react-icons/bs";
 import { createDataset, uploadDataset } from "../../service/DatasetOperations";
 /**

@@ -18,7 +18,7 @@ import { PoliciesView } from "./Policies";
 import { RemoteResource, useRemoteResource } from "../../RemoteResource";
 import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
-import { config } from "../../Config";
+import { config } from "../../utils/Config";
 import { useTelemetry } from "../../telemetry";
 import { DatasetNotFound, isClientError } from "../NotFound/NotFound";
 import { Traces } from "./Traces";

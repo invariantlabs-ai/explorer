@@ -2,26 +2,26 @@ import React, { act, useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
-import "./Explorer.scss";
+import "../../Explorer.scss";
 
-import { RemoteResource, useRemoteResource } from "./RemoteResource";
-import { useUserInfo } from "./utils/UserInfo";
-import UserIcon from "./lib/UserIcon";
+import { RemoteResource, useRemoteResource } from "../../RemoteResource";
+import { useUserInfo } from "../../utils/UserInfo";
+import UserIcon from "../../lib/UserIcon";
 
-import { Time } from "./components/Time";
-import { Metadata } from "./lib/metadata";
-import { AnalysisResult } from "./lib/analysis_result";
-import { openInPlayground } from "./lib/playground";
-import { HighlightedJSON } from "./lib/traceview/highlights";
-import { RenderedTrace } from "./lib/traceview/traceview";
-import { config } from "./Config";
-import { useTelemetry } from "./telemetry";
-import { AnnotationsParser } from "./lib/annotations_parser";
-import { HighlightDetails } from "./HighlightDetails";
+import { Time } from "../../components/Time";
+import { Metadata } from "../../lib/metadata";
+import { AnalysisResult } from "../../lib/analysis_result";
+import { openInPlayground } from "../../lib/playground";
+import { HighlightedJSON } from "../../lib/traceview/highlights";
+import { RenderedTrace } from "../../lib/traceview/traceview";
+import { config } from "../../utils/Config";
+import { useTelemetry } from "../../telemetry";
+import { AnnotationsParser } from "../../lib/annotations_parser";
+import { HighlightDetails } from "../../HighlightDetails";
 
-import { HighlightsNavigator } from "./HighlightsNavigator";
+import { HighlightsNavigator } from "../../HighlightsNavigator";
 
-import { copyPermalinkToClipboard } from "./lib/permalink-navigator";
+import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
 import {
   BsArrowDown,
   BsArrowsCollapse,
