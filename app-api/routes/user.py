@@ -1,8 +1,8 @@
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
-from models.datasets_and_traces import Dataset, User, db
-from models.queries import *
+from models.datasets_and_traces import Dataset, User, db, Annotation, Trace, SharedLinks
+from models.queries import save_user, user_to_json, dataset_to_json, annotation_to_json, trace_to_json
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
