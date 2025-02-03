@@ -153,7 +153,7 @@ async def APIIdentity(request: Request):
     except Exception:
         raise HTTPException(status_code=401, detail="You must provide a valid API key.")
 
-async def UserOrAPIIdentityWithUsername(request: Request) -> dict | None:
+async def UserOrAPIIdentity(request: Request) -> dict | None:
     apikey = request.headers.get("Authorization")
     if apikey is not None:
         identity = await APIIdentity(request)
@@ -168,8 +168,8 @@ async def UserOrAPIIdentityWithUsername(request: Request) -> dict | None:
         "username": identity["username"],
     }
 
-async def AuthenticatedUserOrAPIIdentityWithUsername(
-    identity: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)],
+async def AuthenticatedUserOrAPIIdentity(
+    identity: Annotated[dict | None, Depends(UserOrAPIIdentity)],
 ) -> dict:
     if identity is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")

@@ -20,8 +20,8 @@ from models.queries import (
 )
 from routes.apikeys import (
     APIIdentity,
-    AuthenticatedUserOrAPIIdentityWithUsername,
-    UserOrAPIIdentityWithUsername
+    AuthenticatedUserOrAPIIdentity,
+    UserOrAPIIdentity
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from routes.dataset import DBJSONEncoder
@@ -46,7 +46,7 @@ async def get_image(
     dataset_name: str,
     trace_id: str,
     image_id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)] = None,
+    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
 ):
     # get user_id if authenticated
     user_id = user["sub"] if user else None
@@ -68,7 +68,7 @@ async def get_image(
 
 @trace.get("/snippets")
 def get_trace_snippets(
-    request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentityWithUsername)]
+    request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentity)]
 ):
     user_id = user["sub"]
     limit = request.query_params.get("limit")
@@ -121,7 +121,7 @@ def get_trace(
     id: str,
     max_length: int = None,
     include_annotations: bool = True,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentityWithUsername)] = None,
+    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
 ):
     user_id = user["sub"] if user else None
 
@@ -141,9 +141,9 @@ def get_trace(
 async def download_trace(
     request: Request,
     id: str,
-    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentityWithUsername)] = None,
+    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
 ):
-    user_id = user_id["sub"] if user_id else None
+    user_id = user["sub"] if user else None
 
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
