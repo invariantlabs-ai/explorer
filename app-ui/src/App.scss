@@ -1370,7 +1370,14 @@ button.primary .shortcut {
     // .explorer is the content without topbar and tabs
     margin-top: 40pt;
     // 120pt leaves space for the topbar and tabs
-    height: calc(100vh - 120pt);
+    height: calc(100vh - 81pt);
+  }
+}
+
+.with-tabs {
+  .explorer {
+    // 120pt leaves space for the topbar and tabs
+    height: calc(100vh - 120pt) !important;
   }
 }
 
