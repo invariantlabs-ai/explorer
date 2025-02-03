@@ -5,7 +5,7 @@ import { SingleTrace } from "./pages/Traces/Traces.tsx";
 import "./App.scss";
 import DatasetView from "./pages/Traces/Dataset.tsx";
 import { New } from "./New.tsx";
-import { SignUp } from "./SignUp.tsx";
+import { SignUp } from "./pages/Signup/SignUp.tsx";
 import User from "./pages/User/User.tsx";
 import { Snippets } from "./Snippets.tsx";
 import { Settings } from "./Settings.tsx";

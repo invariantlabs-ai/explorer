@@ -18,11 +18,11 @@ import {
 import { useDatasetList } from "./lib/datasets";
 import { CompactSnippetList } from "./Snippets";
 import { DatasetLinkList } from "./pages/User/DatasetList";
-import { SignUp } from "./SignUp";
+import { SignUp } from "./pages/Signup/SignUp";
 import { DeploymentCommit, DeploymentInfo } from "./components/DeploymentInfo";
 import { config } from "./Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
-import { SignUpModal } from "./SignUpModal";
+import { SignUpModal } from "./pages/Signup/SignUpModal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
