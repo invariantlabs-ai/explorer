@@ -26,7 +26,7 @@ import {
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from "react-viewport-list";
 import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView.jsx";
-import { Modal } from "../../lib/Modal.js";
+import { Modal } from "../../components/Modal.js";
 import { sharedFetch } from "../../service/SharedFetch";
 import { useUserInfo } from "../../utils/UserInfo";
 import { EmptyDatasetInstructions } from "../../components/EmptyDataset";

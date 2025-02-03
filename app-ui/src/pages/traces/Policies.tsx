@@ -1,7 +1,7 @@
 import Editor from "@monaco-editor/react";
 import React from "react";
 import { BsPencilFill, BsPlusCircle, BsTrash } from "react-icons/bs";
-import { Modal } from "../../lib/Modal";
+import { Modal } from "../../components/Modal";
 
 /**
  * Content to show in the modal when deleting a policy.

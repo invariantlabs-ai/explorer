@@ -13,7 +13,7 @@ import {
 } from "react-icons/bs";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { DeleteDatasetModalContent } from "../home/NewDataset";
-import { Modal } from "../../lib/Modal";
+import { Modal } from "../../components/Modal";
 import { PoliciesView } from "./Policies";
 import {
   RemoteResource,
