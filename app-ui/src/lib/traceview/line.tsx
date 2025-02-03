@@ -7,9 +7,9 @@ import {
   Annotations,
   THUMBS_UP,
   THUMBS_DOWN,
-} from "../../AnnotationAugmentedTraceView";
-import { useUserInfo } from "../../UserInfo";
-import { alertSignup } from "../../SignUpModal";
+} from "../../pages/traces/AnnotationAugmentedTraceView";
+import { useUserInfo } from "../../utils/UserInfo";
+import { alertSignup } from "../../pages/signup/Modal";
 import { permalink } from "../permalink-navigator";
 
 /** A way to provide inline decorations to a rendered trace view. */

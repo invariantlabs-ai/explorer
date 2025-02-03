@@ -29,7 +29,7 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from util.util import delete_images, parse_and_push_images
+from util.util import delete_images, parse_and_update_messages
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -407,7 +407,7 @@ async def upload_new_single_trace(
         # The dataset_name is set to "!ROOT_DATASET_FOR_SNIPPETS" to indicate that the
         # trace does not belong to a dataset.
         # Because of the ! this is not a valid name for a dataset and will not conflict.
-        message_content = await parse_and_push_images(
+        message_content = await parse_and_update_messages(
             dataset="!ROOT_DATASET_FOR_SNIPPETS", trace_id=trace_id, messages=content
         )
         trace = Trace(
@@ -546,7 +546,7 @@ async def append_messages(
                     )
                     dataset_name = dataset_response.name
                 # parse images from new_messages and store them separately
-                new_messages = await parse_and_push_images(
+                new_messages = await parse_and_update_messages(
                     dataset=dataset_name,
                     trace_id=trace_response.id,
                     messages=new_messages,

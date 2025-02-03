@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import { sharedFetch } from "./SharedFetch";
+import { sharedFetch } from "../service/SharedFetch";
 import {
   HAS_CONSENT,
   SUPPORTS_TELEMETRY,
   useTelemetryWithIdentification,
-} from "./telemetry";
+} from "../telemetry";
 
 export interface UserInfo {
   id: string;

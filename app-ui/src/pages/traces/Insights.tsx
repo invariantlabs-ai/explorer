@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Time } from "./components/Time";
+import { Time } from "../../components/Time";
 
 function useJSONParse<T>(json: string | null): T | null {
   const [data, setData] = useState<T | null>(null);

@@ -139,7 +139,16 @@ def data_code():
 def data_line_numbers():
     with open('./data/line_numbers.jsonl', 'r') as f:
         return f.read()
-    
+
+@pytest.fixture
+def data_with_json_parseable_tool_call_arguments():
+    with open('./data/trace_with_json_parseable_tool_call_arguments.jsonl', 'r') as f:
+        return f.read()
+
+@pytest.fixture
+def data_with_non_json_parseable_tool_call_arguments():
+    with open('./data/trace_with_non_json_parseable_tool_call_arguments.jsonl', 'r') as f:
+        return f.read()
 
 ####################
 # helper functions #

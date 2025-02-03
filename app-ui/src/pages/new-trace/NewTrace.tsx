@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TraceView } from "./lib/traceview/traceview";
+import { TraceView } from "../../lib/traceview/traceview";
 
 const CONTENT = `[
   {
@@ -29,7 +29,7 @@ function postTrace(trace: string) {
 /**
  * Screen component for uploading a new snippet (single trace outside of dataset).
  */
-export function New() {
+export function NewTrace() {
   const [traceString, setTraceString] = useState(CONTENT);
   const [sideBySide, setSideBySide] = useState(true);
 

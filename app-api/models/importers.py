@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from models.datasets_and_traces import Annotation, Dataset, Trace
 from models.queries import *
 from sqlalchemy.orm import Session
-from util.util import parse_and_push_images
+from util.util import parse_and_update_messages
 
 
 def create_dataset(user_id, name, metadata, is_public: bool = False):
@@ -172,7 +172,9 @@ async def import_jsonl(
                 trace_metadata = {}
             # Otherwise, the list in this row, is the list of messages/events.
             trace_id = uuid.uuid4()
-            parsed_messages = await parse_and_push_images(name, trace_id, parsed_line)
+            parsed_messages = await parse_and_update_messages(
+                name, trace_id, parsed_line
+            )
             trace = Trace(
                 id=trace_id,
                 index=i,
@@ -192,7 +194,7 @@ async def import_jsonl(
                 else i
             )
             trace_id = uuid.uuid4()
-            parsed_messages = await parse_and_push_images(
+            parsed_messages = await parse_and_update_messages(
                 name, trace_id, parsed_line["messages"]
             )
             trace = Trace(

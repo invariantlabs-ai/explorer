@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal } from "../Modal";
-import { sharedFetch } from "../SharedFetch";
-import { useUserInfo } from "../UserInfo";
+import { sharedFetch } from "../service/SharedFetch";
+import { useUserInfo } from "../utils/UserInfo";
 
 /**
  * Calls the Delete Trace endpoint to delete a trace.

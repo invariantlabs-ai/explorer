@@ -2,7 +2,7 @@ import { Editor } from "@monaco-editor/react";
 import React, { useEffect, useState } from "react";
 import { BsVinyl } from "react-icons/bs";
 import "./Analyzer.scss";
-import logo from "./assets/invariant.svg";
+import logo from "../../assets/invariant.svg";
 
 interface Analyzer {
   running: boolean;

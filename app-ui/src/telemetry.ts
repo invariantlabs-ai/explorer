@@ -1,7 +1,7 @@
 import posthog from "posthog-js";
 import { Plugins } from "./lib/traceview/plugins";
 import { usePostHog } from "posthog-js/react";
-import { config } from "./Config";
+import { config } from "./utils/Config";
 
 export const SUPPORTS_TELEMETRY = config("telemetry");
 export const HAS_CONSENT = window.localStorage.getItem("consent") === "true";

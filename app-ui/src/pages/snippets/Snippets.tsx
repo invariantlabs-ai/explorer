@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { EntityList } from "./EntityList";
-import { useUserInfo } from "./UserInfo";
+import { EntityList } from "../../EntityList";
+import { useUserInfo } from "../../utils/UserInfo";
 import { BsUpload } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
-import { Time } from "./components/Time";
-import { DeleteSnippetModal, useSnippetsList } from "./lib/snippets";
+import { Time } from "../../components/Time";
+import { DeleteSnippetModal, useSnippetsList } from "../../lib/snippets";
 
 /**
  * Component to show the list of snippets of the current user.
