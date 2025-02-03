@@ -18,7 +18,7 @@ idna==3.10
     # via requests
 iniconfig==2.0.0
     # via pytest
-invariant-sdk==0.0.4
+invariant-sdk==0.0.7
     # via -r tests/requirements.in
 orderly-set==5.2.3
     # via deepdiff

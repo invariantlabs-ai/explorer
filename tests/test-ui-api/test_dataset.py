@@ -603,7 +603,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Benchmark must be a non-empty string if provided"
+        "benchmark must be a non-empty string"
         in await update_metadata_response.text()
     )
 
@@ -614,7 +614,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Benchmark must be a non-empty string if provided"
+        "benchmark must be of type str"
         in await update_metadata_response.text()
     )
 
@@ -625,7 +625,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Name must be a non-empty string if provided"
+        "name must be a non-empty string"
         in await update_metadata_response.text()
     )
 
@@ -636,7 +636,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Name must be a non-empty string if provided"
+        "name must be of type str"
         in await update_metadata_response.text()
     )
 
@@ -647,7 +647,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Accuracy score must be a non-negative float or int if provided"
+        "accuracy must be of type int, float"
         in await update_metadata_response.text()
     )
 
@@ -658,7 +658,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "Accuracy score must be a non-negative float or int if provided"
+        "accuracy must be a non-negative number"
         in await update_metadata_response.text()
     )
 
@@ -707,7 +707,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "invariant.test_results.num_tests must be of type int if provided"
+        "invariant.test_results.num_tests must be of type int"
         in await update_metadata_response.text()
     )
 
@@ -718,7 +718,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "invariant.test_results.num_passed must be of type int if provided"
+        "invariant.test_results.num_passed must be of type int"
         in await update_metadata_response.text()
     )
 
