@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Highlight, HighlightedJSON } from "./lib/traceview/highlights";
+import { Highlight, HighlightedJSON } from "../../lib/traceview/highlights";
 import { BsArrowDown, BsArrowUp } from "react-icons/bs";
-import { ACTIVE_HASH, permalink, reveal } from "./lib/permalink-navigator";
+import { ACTIVE_HASH, permalink, reveal } from "../../lib/permalink-navigator";
 import { safeAnchorId } from "./HighlightDetails";
 import { Tooltip } from "react-tooltip";
 

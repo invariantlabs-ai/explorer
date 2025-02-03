@@ -8,10 +8,13 @@ import {
   BsExclamationTriangleFill,
   BsXCircleFill,
 } from "react-icons/bs";
-import { GroupedHighlight, HighlightData } from "./lib/traceview/highlights";
-import { AnalysisResult } from "./lib/analysis_result";
+import {
+  GroupedHighlight,
+  HighlightData,
+} from "../../lib/traceview/highlights";
+import { AnalysisResult } from "../../lib/analysis_result";
 import { useState, useEffect } from "react";
-import { AnchorDiv } from "./lib/permalink-navigator";
+import { AnchorDiv } from "../../lib/permalink-navigator";
 
 /**
  * Renders details on specific highlights in the unfolding UI that is shown

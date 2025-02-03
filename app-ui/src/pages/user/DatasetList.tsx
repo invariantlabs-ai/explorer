@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 
 import { useUserInfo } from "../../utils/UserInfo";
 import { Link } from "react-router-dom";
-import { EntityList } from "../../EntityList";
+import { EntityList } from "../../lib/EntityList";
 import { Modal } from "../../Modal";
 import { useDatasetList } from "../../service/DatasetOperations";
 import {

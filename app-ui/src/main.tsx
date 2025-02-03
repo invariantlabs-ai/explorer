@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.scss";
-import "./invariant.scss";
-import "./App.scss";
+import "./styles/index.scss";
+import "./styles/invariant.scss";
+import "./styles/App.scss";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "./Routes";
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { EntityList } from "../../EntityList";
+import { EntityList } from "../../lib/EntityList";
 import { useUserInfo } from "../../utils/UserInfo";
 import { BsUpload } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
