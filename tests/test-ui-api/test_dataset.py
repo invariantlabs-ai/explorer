@@ -1,6 +1,7 @@
 """Tests for dataset API endpoints."""
 
 import os
+import json
 
 # add tests folder (parent) to sys.path
 import sys
@@ -928,3 +929,79 @@ async def test_upload_traces_fails_for_non_empty_dataset(context, url, data_abc)
             "Dataset with the same name already exists with traces, to add new traces use the push API"
             in await response.text()
         )
+
+
+# """
+# Download all annotated traces of a dataset in JSONL format.
+# """
+# @dataset.get("/byid/{id}/download/annotated")
+# def download_annotated_traces_by_id(
+#     request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+# ):
+#     with Session(db()) as session:
+#         try:
+#             dataset, user = load_dataset(
+#                 session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
+#             )
+#             internal_dataset_info = dataset_to_json(dataset)
+#             dataset_info = {
+#                 "metadata": {**internal_dataset_info["extra_metadata"]},
+#             }
+#             # streaming response, but triggers a download
+#             return StreamingResponse(
+#                 stream_annotated_jsonl(session, id, dataset_info, userinfo["sub"]),
+#                 media_type="application/json",
+#                 headers={
+#                     "Content-Disposition": 'attachment; filename="'
+#                     + internal_dataset_info["name"]
+#                     + '.jsonl"'
+#                 },
+#             )
+#         except Exception as e:
+#             import traceback
+#             traceback.print_exc()
+#             print(e)
+#             raise e
+
+async def test_download_traces_annotated_is_empty_for_non_annotated_dataset(context, url, data_abc):
+    """Tests that downloading annotated traces for a non-annotated dataset is empty."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        response = await context.request.get(
+            f"{url}/api/v1/dataset/byid/{dataset['id']}/download/annotated"
+        )
+        assert response.status == 200
+        content = await response.text()
+        props = jsonl_properties(content)
+        num_lines = props["num_lines"]
+        
+        assert num_lines == 0, "Expected 0 trace lines"
+
+# same with data_with_annotations, but this time there should be one trace in the output
+# the data file contains two traces, but only one with annotations
+async def test_download_traces_annotated_has_one_trace(context, url, data_with_annotations):
+    """Tests that downloading annotated traces for a dataset with annotations has one trace."""
+    async with util.TemporaryExplorerDataset(url, context, data_with_annotations) as dataset:
+        response = await context.request.get(
+            f"{url}/api/v1/dataset/byid/{dataset['id']}/download/annotated"
+        )
+        assert response.status == 200
+        content = await response.text()
+        props = jsonl_properties(content)
+        num_lines = props["num_lines"]
+        assert num_lines == 1, "Expected 1 trace line"
+
+def jsonl_properties(jsonl: str) -> dict:
+    num_lines = 0
+
+    for line in jsonl.split("\n"):
+        if len(line.strip()) == 0:
+            continue
+        data = json.loads(line)
+
+        # ignore the dataset metadata
+        if "messages" in data.keys():
+            num_lines += 1
+    
+    return {
+        "num_lines": num_lines
+    }
