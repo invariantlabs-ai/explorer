@@ -46,12 +46,8 @@ async def get_image(
     dataset_name: str,
     trace_id: str,
     image_id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
-    # get user_id if authenticated
-    user_id = user["sub"] if user else None
-
-    # ensure the trace is accessible to the user
     with Session(db()) as session:
         trace = load_trace(
             session, trace_id, user_id, allow_public=True, allow_shared=True
@@ -68,9 +64,8 @@ async def get_image(
 
 @trace.get("/snippets")
 def get_trace_snippets(
-    request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentity)]
+    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserOrAPIIdentity)]
 ):
-    user_id = user["sub"]
     limit = request.query_params.get("limit")
     limit = limit if limit != "" else None
 
@@ -121,10 +116,8 @@ def get_trace(
     id: str,
     max_length: int = None,
     include_annotations: bool = True,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
-    user_id = user["sub"] if user else None
-
     with Session(db()) as session:
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
@@ -141,10 +134,8 @@ def get_trace(
 async def download_trace(
     request: Request,
     id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
-    user_id = user["sub"] if user else None
-
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
 
@@ -162,8 +153,12 @@ async def download_trace(
 @trace.get("/{id}/shared")
 def get_trace_sharing(
     request: Request,
-    id: str
+    id: str,
+    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
+    # never None (always authenticated)
+    user_id = userinfo["sub"]
+
     with Session(db()) as session:
         return {"shared": has_link_sharing(session, id)}
 
