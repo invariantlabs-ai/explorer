@@ -25,12 +25,12 @@ import {
 } from "react-router-dom";
 import ClockLoader from "react-spinners/ClockLoader";
 import { ViewportList } from "react-viewport-list";
-import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView";
-import { Modal } from "../../Modal";
+import { AnnotationAugmentedTraceView } from "./AnnotationAugmentedTraceView.jsx";
+import { Modal } from "../../components/Modal.js";
 import { sharedFetch } from "../../service/SharedFetch";
 import { useUserInfo } from "../../utils/UserInfo";
 import { EmptyDatasetInstructions } from "../../components/EmptyDataset";
-import { useTelemetry } from "../../telemetry";
+import { useTelemetry } from "../../utils/telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";

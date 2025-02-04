@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUserInfo } from "../utils/UserInfo";
-import { HAS_CONSENT } from "../telemetry";
+import { HAS_CONSENT } from "../utils/telemetry";
 
 /**
  * Cookie consent banner for analytics.

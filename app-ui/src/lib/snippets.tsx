@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal } from "../Modal";
+import { Modal } from "../components/Modal";
 import { sharedFetch } from "../service/SharedFetch";
 import { useUserInfo } from "../utils/UserInfo";
 

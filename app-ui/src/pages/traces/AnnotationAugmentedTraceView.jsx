@@ -2,9 +2,12 @@ import React, { act, useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
-import "../../Explorer.scss";
+import "../../styles/Explorer.scss";
 
-import { RemoteResource, useRemoteResource } from "../../RemoteResource";
+import {
+  RemoteResource,
+  useRemoteResource,
+} from "../../service/RemoteResource";
 import { useUserInfo } from "../../utils/UserInfo";
 import UserIcon from "../../lib/UserIcon";
 
@@ -15,11 +18,11 @@ import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
 import { RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
-import { useTelemetry } from "../../telemetry";
+import { useTelemetry } from "../../utils/telemetry";
 import { AnnotationsParser } from "../../lib/annotations_parser";
-import { HighlightDetails } from "../../HighlightDetails";
+import { HighlightDetails } from "./HighlightDetails";
 
-import { HighlightsNavigator } from "../../HighlightsNavigator";
+import { HighlightsNavigator } from "./HighlightsNavigator";
 
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
 import {
