@@ -419,7 +419,7 @@ interface RenderedTraceState {
 
 // a broadcast event to allow parent components to call into handlers
 // in child views (e.g. to expand/collapse all messages)
-class BroadcastEvent {
+export class BroadcastEvent {
   listeners: any[];
 
   constructor() {

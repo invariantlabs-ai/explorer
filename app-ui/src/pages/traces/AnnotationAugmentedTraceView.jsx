@@ -13,7 +13,7 @@ import { Metadata } from "../../lib/metadata";
 import { AnalysisResult } from "../../lib/analysis_result";
 import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
-import { RenderedTrace } from "../../lib/traceview/traceview";
+import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
 import { useTelemetry } from "../../telemetry";
 import { AnnotationsParser } from "../../lib/annotations_parser";
@@ -316,6 +316,10 @@ export function AnnotationAugmentedTraceView(props) {
     localStorage.setItem("analyzerOpen", open);
   };
 
+  const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
+    new BroadcastEvent()
+  );
+
   return (
     <>
       <header className="toolbar">
@@ -432,6 +436,7 @@ export function AnnotationAugmentedTraceView(props) {
               storedOutput={top_level_annotations.filter(
                 (a) => a.source == "analyzer-model"
               )}
+              onRunAnalyzer={onRunAnalyzerEvent}
             />
           }
           padding={{ right: analyzerOpen ? "310pt" : "0pt" }}
@@ -441,6 +446,7 @@ export function AnnotationAugmentedTraceView(props) {
           output={analyzer.output}
           analyzer={analyzer}
           running={analyzer.running}
+          debugInfo={analyzer.debugInfo}
           storedOutput={top_level_annotations.filter(
             (a) => a.source == "analyzer-model"
           )}
@@ -449,6 +455,7 @@ export function AnnotationAugmentedTraceView(props) {
           username={props.username}
           onDiscardAnalysisResult={onDiscardAnalysisResult}
           dataset={props.dataset}
+          onAnalyzeEvent={onRunAnalyzerEvent}
         />
       </div>
       <Tooltip

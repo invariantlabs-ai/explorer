@@ -91,6 +91,11 @@ span.secondary-flashing {
   }
 }
 
+.with-tabs .analyzer-sidebar {
+  top: 75pt;
+  height: calc(100vh - 125pt) !important;
+}
+
 .analyzer-sidebar {
   flex: 0;
   padding: 0pt;
@@ -98,9 +103,11 @@ span.secondary-flashing {
   transition: margin-right 0.1s !important;
   margin-right: 5pt !important;
   position: fixed !important;
-  top: 75pt;
   right: 5pt;
   overflow-x: hidden;
+
+  top: 40pt;
+  height: calc(100vh - 90pt) !important;
 
   .logo {
     // zoom in on appearance
@@ -230,6 +237,7 @@ span.secondary-flashing {
     text-align: right;
     display: block;
     margin-top: 5pt;
+    margin-right: 10pt;
 
     span {
       font-style: italic;
@@ -337,8 +345,42 @@ span.secondary-flashing {
   -webkit-user-select: none;
   height: 30pt;
 
+  svg.arrow {
+    margin-left: 4pt;
+  }
+
+  button.inline {
+    margin-left: auto;
+    border-radius: 4pt;
+    margin-right: -2pt;
+    height: 25pt;
+    margin-top: -2.5pt;
+    color: white !important;
+    opacity: 1 !important;
+    padding-left: 8pt;
+    padding-right: 8pt;
+
+    .shortcut {
+      margin-left: 2pt;
+      margin-right: -6pt;
+      margin-top: -1.5pt;
+    }
+  }
+
+  a.action {
+    font-size: 10pt;
+    margin-left: auto;
+    opacity: 0.6;
+
+    &:hover {
+      text-decoration: underline;
+      opacity: 0.8;
+    }
+  }
+
   svg.icon {
     color: #3e3aff;
+    margin-top: -2pt;
   }
 
   .secondary,

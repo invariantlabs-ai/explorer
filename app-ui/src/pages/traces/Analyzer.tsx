@@ -1,5 +1,5 @@
 import { Editor } from "@monaco-editor/react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BsArrowRight,
   BsBan,
@@ -10,6 +10,7 @@ import {
 import "./Analyzer.scss";
 import logo from "../../assets/invariant.svg";
 import { reveal } from "../../lib/permalink-navigator";
+import { BroadcastEvent } from "../../lib/traceview/traceview";
 
 interface Analyzer {
   running: boolean;
@@ -282,6 +283,7 @@ function createAnalysis(
             setRunning(false);
             setError(chunk.slice(7)); // Remove "error: "
             receivedError = true;
+            alert("Analysis Error: " + chunk.slice(7));
           }
 
           readStream(); // Continue streaming
@@ -327,6 +329,7 @@ export function AnalyzerPreview(props: {
   storedOutput;
   analyzer: Analyzer;
   running: boolean;
+  onRunAnalyzer?: BroadcastEvent;
 }) {
   const issues = useIssues(props.output, props.storedOutput);
 
@@ -342,12 +345,25 @@ export function AnalyzerPreview(props: {
 
   let content: React.ReactNode = null;
 
+  const onAnalyze = (e) => {
+    e.stopPropagation();
+    props.setAnalyzerOpen(true);
+    props.onRunAnalyzer?.fire(null);
+  };
+
   if (notYetRun) {
     content = (
       <div className="secondary">
         <BsStars className="icon" />
         Analyze this trace to identify issues
-        {!props.open && <BsArrowRight className="right" />}
+        {props.onRunAnalyzer && (
+          <button className="inline primary" onClick={onAnalyze}>
+            Analyze
+            <span className="shortcut">
+              <kbd>Ctrl</kbd>+<kbd>R</kbd>
+            </span>
+          </button>
+        )}
       </div>
     );
   } else if (props.running) {
@@ -367,6 +383,9 @@ export function AnalyzerPreview(props: {
         <BsXCircle />
         <br />
         No issues found
+        <a className="action" onClick={onAnalyze}>
+          Rerun
+        </a>
       </div>
     );
   } else {
@@ -375,12 +394,31 @@ export function AnalyzerPreview(props: {
         <div className="secondary">
           <img src={logo} alt="Invariant logo" className="logo" />
           Analysis has identified {issues.length} issue
-          {issues.length > 1 ? "s" : ""}.
-          {!props.open && <BsArrowRight className="right" />}
+          {issues.length > 1 ? "s" : ""}
+          {!props.open && <BsArrowRight className="arrow" />}
+          <a className="action" onClick={onAnalyze}>
+            Rerun
+          </a>
         </div>
       </>
     );
   }
+
+  // ctrl+r shortcut
+  useEffect(() => {
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === "r" && e.ctrlKey) {
+        if (!props.open) {
+          props.setAnalyzerOpen(true);
+        }
+        props.onRunAnalyzer?.fire(null);
+      }
+    };
+    document.addEventListener("keydown", onKeydown);
+    return () => {
+      document.removeEventListener("keydown", onKeydown);
+    };
+  }, [props.open, props.onRunAnalyzer]);
 
   return (
     <div
@@ -405,7 +443,10 @@ export function AnalyzerSidebar(props: {
   datasetId: string;
   username: string;
   dataset: string;
+  debugInfo: any;
   onDiscardAnalysisResult: (output: any) => void;
+  // passes onRun to parent component in callback
+  onAnalyzeEvent?: BroadcastEvent;
 }) {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig") ||
@@ -429,12 +470,15 @@ export function AnalyzerSidebar(props: {
   const [status, setStatus] = useState("Ready");
 
   const issues = useIssues(props.output, props.storedOutput);
+  const numIssues = issues.filter((i) => !i.loading).length;
 
-  const storedIsEmpty = !props.storedOutput?.length;
+  const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
   const outputIsEmpty =
-    !props.output || props.output.filter((o) => !o.loading).length === 0;
+    !props.output ||
+    (props.output.filter((o) => !o.loading).length === 0 && !props.running);
 
-  const notYetRun = storedIsEmpty && outputIsEmpty;
+  const notYetRun =
+    storedIsEmpty && outputIsEmpty && !props.running && numIssues === 0;
 
   // on unmount, abort the analysis
   useEffect(() => {
@@ -443,7 +487,14 @@ export function AnalyzerSidebar(props: {
     };
   }, [abortController]);
 
-  const onRun = async () => {
+  // on change of trace abort
+  // on unmount, abort the analysis
+  useEffect(() => {
+    props.analyzer.setRunning(false);
+    abortController.abort();
+  }, [props.traceId]);
+
+  const onRun = useCallback(async () => {
     // props.setAnalyzerOpen(false);
     props.analyzer.setRunning(true);
     props.analyzer.setError(null);
@@ -500,7 +551,17 @@ export function AnalyzerSidebar(props: {
       props.analyzer.setOutput(null);
       setStatus(error + "");
     }
-  };
+  }, [
+    props.analyzer,
+    props.traceId,
+    props.datasetId,
+    props.username,
+    props.dataset,
+  ]);
+
+  if (props.onAnalyzeEvent) {
+    props.onAnalyzeEvent.listeners = [onRun];
+  }
 
   return (
     <div
@@ -524,6 +585,16 @@ export function AnalyzerSidebar(props: {
             <BsBan />
           </button>
         )}
+        <button
+          className="inline icon"
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          data-tooltip-id="highlight-tooltip"
+          data-tooltip-content={
+            settingsOpen ? "Hide Settings" : "Show Settings"
+          }
+        >
+          <BsGearFill />
+        </button>
         {props.running && abortController && (
           <button
             className="inline"
@@ -537,16 +608,6 @@ export function AnalyzerSidebar(props: {
             Cancel
           </button>
         )}
-        <button
-          className="inline icon"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          data-tooltip-id="highlight-tooltip"
-          data-tooltip-content={
-            settingsOpen ? "Hide Settings" : "Show Settings"
-          }
-        >
-          <BsGearFill />
-        </button>
         <button
           className="primary inline"
           onClick={onRun}
@@ -594,14 +655,14 @@ export function AnalyzerSidebar(props: {
         </div>
       )}
       <span className="debug-info">
-        {props.analyzer.debugInfo?.stats &&
-          props.analyzer.debugInfo?.stats.length > 0 &&
-          props.analyzer.debugInfo.stats.map((stat: any, i: number) => (
+        {props.debugInfo?.stats &&
+          props.debugInfo?.stats.length > 0 &&
+          props.debugInfo.stats.map((stat: any, i: number) => (
             <span key={"stat-" + i} className="stat">
               {stat}
             </span>
           ))}
-        {props.analyzer.debugInfo?.traces?.map((trace: string, i: number) => (
+        {props.debugInfo?.traces?.map((trace: string, i: number) => (
           <a
             key={"trace-url-" + i}
             href={trace}
