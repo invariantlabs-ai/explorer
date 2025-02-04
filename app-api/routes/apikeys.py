@@ -5,7 +5,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from models.datasets_and_traces import APIKey, User, db
+from models.datasets_and_traces import APIKey, User, db, UserInfo
 from models.queries import *
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy.orm import Session
@@ -102,26 +102,26 @@ The resulting user identity looks like a UserIdentity object, but limited to the
 """
 
 
-async def APIIdentity(request: Request):
+async def APIIdentity(request: Request) -> UserInfo:
     try:
         # check for DEV_MODE
         if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
             "referer", []
         ):
-            return {
-                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-                "username": "developer",
-                "apikey": "with DEV_MODE true",
-            }
+            return UserInfo(
+                id="3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+                username="developer",
+                api_key="with DEV_MODE true",
+            )
         if (
             "noauth=user1" in request.headers.get("referer", [])
             and os.getenv("DEV_MODE") == "true"
         ):
-            return {
-                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-                "username": "Developer2",
-                "apikey": "with DEV_MODE true",
-            }
+            return UserInfo(
+                id="3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+                username="developer2",
+                api_key="with DEV_MODE true",
+            )
 
         apikey = request.headers.get("Authorization")
         bearer_token = re.match(r"Bearer (.+)", apikey)
@@ -145,32 +145,26 @@ async def APIIdentity(request: Request):
                     status_code=401, detail="You must provide a valid API key."
                 )
 
-            return {
-                "sub": str(key.User.id),
-                "username": key.User.username,
-                "apikey": "*******" + key.APIKey.hashed_key[-4:],
-            }
+            return UserInfo(
+                id=str(key.User.id),
+                username=key.User.username,
+                api_key="*******" + key.APIKey.hashed_key[-4:],
+            )
     except Exception:
         raise HTTPException(status_code=401, detail="You must provide a valid API key.")
 
-async def UserOrAPIIdentity(request: Request) -> dict | None:
+async def UserOrAPIIdentity(request: Request) -> UserInfo:
     apikey = request.headers.get("Authorization")
     if apikey is not None:
         identity = await APIIdentity(request)
     else:
         identity = await UserIdentity(request)
 
-    if identity["sub"] is None:
-        return None
-
-    return {
-        "sub": identity["sub"],
-        "username": identity["username"],
-    }
+    return identity
 
 async def AuthenticatedUserOrAPIIdentity(
-    identity: Annotated[dict | None, Depends(UserOrAPIIdentity)],
-) -> dict:
+    identity: Annotated[UserInfo, Depends(UserOrAPIIdentity)],
+) -> UserInfo:
     if identity is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity

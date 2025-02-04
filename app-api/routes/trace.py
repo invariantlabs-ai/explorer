@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from logging_config import get_logger
-from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
+from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, UserInfo, db
 from models.queries import (
     annotation_to_json,
     has_link_sharing,
@@ -46,15 +46,13 @@ async def get_image(
     dataset_name: str,
     trace_id: str,
     image_id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)] = UserInfo.anonymous(),
 ):
-    # get user_id if authenticated
-    user_id = user["sub"] if user else None
 
     # ensure the trace is accessible to the user
     with Session(db()) as session:
         trace = load_trace(
-            session, trace_id, user_id, allow_public=True, allow_shared=True
+            session, trace_id, user.id, allow_public=True, allow_shared=True
         )
 
     # First check if there is a local image
@@ -70,7 +68,6 @@ async def get_image(
 def get_trace_snippets(
     request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentity)]
 ):
-    user_id = user["sub"]
     limit = request.query_params.get("limit")
     limit = limit if limit != "" else None
 
@@ -78,7 +75,7 @@ def get_trace_snippets(
     with Session(db()) as session:
         traces = (
             session.query(Trace)
-            .filter(Trace.user_id == user_id, Trace.dataset_id == None)
+            .filter(Trace.user_id == user.id, Trace.dataset_id == None)
             .order_by(Trace.time_created.desc())
             .limit(limit)
             .all()
@@ -88,13 +85,12 @@ def get_trace_snippets(
 
 @trace.delete("/{id}")
 async def delete_trace(
-    id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    id: str, userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)]
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         # can only delete own traces
-        trace = load_trace(session, id, user_id, allow_public=False, allow_shared=False)
+        trace = load_trace(session, id, userinfo.id, allow_public=False, allow_shared=False)
 
         # delete shared link if it exists
         session.query(SharedLinks).filter(SharedLinks.trace_id == id).delete()
@@ -103,7 +99,7 @@ async def delete_trace(
         # delete images
         dataset_name = DATASET_NAME_FOR_SNIPPETS
         if trace.dataset_id:
-            dataset = load_dataset(session, trace.dataset_id, user_id)
+            dataset = load_dataset(session, trace.dataset_id, userinfo.id)
             dataset_name = dataset.name
         # delete images
         await delete_images(dataset_name=dataset_name, trace_id=str(trace.id))
@@ -121,18 +117,17 @@ def get_trace(
     id: str,
     max_length: int = None,
     include_annotations: bool = True,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    userinfo: Annotated[UserInfo, Depends(UserOrAPIIdentity)] = UserInfo.anonymous(),
 ):
-    user_id = user["sub"] if user else None
 
     with Session(db()) as session:
         trace, user = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True, return_user=True
+            session, id, userinfo.id, allow_public=True, allow_shared=True, return_user=True
         )
         return trace_to_json(
             trace,
             annotations=load_annotations(session, id) if include_annotations else None,
-            user=user.username,
+            user=userinfo.username,
             max_length=max_length,
         )
 
@@ -141,12 +136,11 @@ def get_trace(
 async def download_trace(
     request: Request,
     id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)] = None,
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)] = UserInfo.anonymous(),
 ):
-    user_id = user["sub"] if user else None
 
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
+        trace = load_trace(session, id, user.id, allow_public=True, allow_shared=True)
 
         trace_data = await trace_to_exported_json(trace, load_annotations(session, id))
         trace_data = json.dumps(trace_data, cls=DBJSONEncoder) + "\n"
@@ -172,16 +166,14 @@ def get_trace_sharing(
 def share_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    # never None (always authenticated)
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         # load trace to check for auth
-        trace = load_trace(session, id, user_id)
+        trace = load_trace(session, id, userinfo.id)
         # assert that the trace is owned by the user
-        if trace.user_id != user_id:
+        if trace.user_id != userinfo.id:
             raise HTTPException(status_code=401, detail="Cannot share a trace the current user does not own")
 
         shared_link = (
@@ -200,12 +192,11 @@ def share_trace(
 def unshare_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id)  # load trace to check for auth
+        trace = load_trace(session, id, userinfo.id)  # load trace to check for auth
         shared_link = (
             session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
         )
@@ -222,13 +213,12 @@ def unshare_trace(
 async def annotate_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
+            session, id, userinfo.id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         # get address and content from request
         payload = await request.json()
@@ -238,7 +228,7 @@ async def annotate_trace(
 
         annotation = Annotation(
             trace_id=trace.id,
-            user_id=user_id,
+            user_id=userinfo.id,
             address=address,
             content=str(content),
             extra_metadata=extra_metadata,
@@ -256,8 +246,6 @@ async def replace_annotations(
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
 ):
     from sqlalchemy import String
-
-    user_id = userinfo["sub"]
 
     # payload will be {'source': 'annotation-source', 'annotations': [list of annotations]}
     payload = await request.json()
@@ -278,7 +266,7 @@ async def replace_annotations(
     try:
         with Session(db()) as session:
             trace = load_trace(
-                session, id, user_id, allow_public=True, allow_shared=True
+                session, id, userinfo.id, allow_public=True, allow_shared=True
             )
 
             # delete all annotations of the source
@@ -293,7 +281,7 @@ async def replace_annotations(
 
                 new_annotation = Annotation(
                     trace_id=trace.id,
-                    user_id=user_id,
+                    user_id=userinfo.id,
                     address=address,
                     content=str(content),
                     extra_metadata=extra_metadata,
@@ -314,14 +302,11 @@ async def replace_annotations(
 # get all annotations of a trace
 @trace.get("/{id}/annotations")
 def get_annotations(
-    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+    request: Request, id: str, userinfo: Annotated[UserInfo, Depends(UserIdentity)]
 ):
-    # may be None for anons
-    user_id = userinfo["sub"]
-
     with Session(db()) as session:
         trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
+            session, id, userinfo.id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         return [annotation_to_json(a, u) for a, u in load_annotations(session, id)]
 
@@ -332,13 +317,12 @@ def delete_annotation(
     request: Request,
     id: str,
     annotation_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
+            session, id, userinfo.id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         annotation = (
             session.query(Annotation).filter(Annotation.id == annotation_id).first()
@@ -347,7 +331,7 @@ def delete_annotation(
         if annotation is None:
             raise HTTPException(status_code=404, detail="Annotation not found")
 
-        if str(annotation.user_id) != user_id:
+        if str(annotation.user_id) != userinfo.id:
             raise HTTPException(status_code=401, detail="Unauthorized delete")
 
         session.delete(annotation)
@@ -362,13 +346,12 @@ async def update_annotation(
     request: Request,
     id: str,
     annotation_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True
+            session, id, userinfo.id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         annotation, user = (
             session.query(Annotation, User)
@@ -380,7 +363,7 @@ async def update_annotation(
         if annotation is None:
             raise HTTPException(status_code=404, detail="Annotation not found")
 
-        if str(annotation.user_id) != user_id:
+        if str(annotation.user_id) != userinfo.id:
             raise HTTPException(status_code=401, detail="Unauthorized delete")
 
         payload = await request.json()
@@ -393,9 +376,8 @@ async def update_annotation(
 
 @trace.post("/snippets/new")
 async def upload_new_single_trace(
-    request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    request: Request, userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)]
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         payload = await request.json()
@@ -414,7 +396,7 @@ async def upload_new_single_trace(
             id=trace_id,
             dataset_id=None,
             index=0,
-            user_id=user_id,
+            user_id=userinfo.id,
             content=message_content,
             extra_metadata=extra_metadata,
             name=payload.get("name", "Single Trace"),
@@ -458,7 +440,7 @@ def merge_sorted_messages(
 
 @trace.post("/{trace_id}/messages")
 async def append_messages(
-    request: Request, trace_id: str, userinfo: Annotated[dict, Depends(APIIdentity)]
+    request: Request, trace_id: str, userinfo: Annotated[UserInfo, Depends(APIIdentity)]
 ):
     """
     Append messages to an existing trace.
@@ -470,11 +452,7 @@ async def append_messages(
     It is possible that the existing messages in the trace do not have timestamps - in this case,
     the trace creation timestamp is used as a reference for sorting.
     """
-    user_id = userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to add messages"
-        )
+
 
     payload = await request.json()
     new_messages = payload.get("messages", [])
@@ -519,7 +497,7 @@ async def append_messages(
                 trace_response = (
                     session.query(Trace)
                     .filter(
-                        and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id))
+                        and_(Trace.id == UUID(trace_id), Trace.user_id == userinfo.id)
                     )
                     .with_for_update()
                     .first()
@@ -539,7 +517,7 @@ async def append_messages(
                         .filter(
                             and_(
                                 Dataset.id == trace_response.dataset_id,
-                                Dataset.user_id == UUID(user_id),
+                                Dataset.user_id == userinfo.id,
                             )
                         )
                         .first()

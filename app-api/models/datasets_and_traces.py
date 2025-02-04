@@ -110,6 +110,21 @@ class User(Base):
     image_url_hash = mapped_column(String, nullable=False)
 
 
+class UserInfo(BaseModel):
+    id: UUID | None
+    username: str | None
+    email: str | None = None
+    name: str | None = None
+    api_key: str | None = None
+
+    def is_anonymous(self) -> bool:
+        return self.id is None
+
+    @classmethod
+    def anonymous(cls) -> "UserInfo":
+        return cls(id=None, username=None)
+
+
 class Annotation(Base):
     __objectname__ = "Annotation"
     __tablename__ = "annotations"

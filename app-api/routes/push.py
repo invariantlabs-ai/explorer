@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
 from logging_config import get_logger
-from models.datasets_and_traces import Annotation, Dataset, Trace, db
+from models.datasets_and_traces import Annotation, Dataset, Trace, db, UserInfo
 from models.queries import load_dataset
 from routes.apikeys import APIIdentity
 from sqlalchemy.orm import Session
@@ -25,9 +25,7 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    userid = userinfo.get("sub")
+async def push_trace(request: Request, userinfo: Annotated[UserInfo, Depends(APIIdentity)]):
 
     # extract payload
     payload = await request.json()
@@ -91,7 +89,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 dataset = load_dataset(
                     session,
                     {"User.username": userinfo.get("username"), "name": dataset_name},
-                    str(userid),
+                    str(userinfo.id),
                     allow_public=False,
                     return_user=False,
                 )
@@ -108,7 +106,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 if e.status_code == 404 and e.detail == "Dataset not found":
                     dataset = Dataset(
                         id=uuid.uuid4(),
-                        user_id=str(userid),
+                        user_id=str(userinfo.id),
                         name=dataset_name,
                         extra_metadata=dict(),
                     )
@@ -130,7 +128,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 index=(next_index + i) if dataset_id else 0,
                 name=message_metadata.get("name", f"Run {next_index + i}"),
                 hierarchy_path=message_metadata.get("hierarchy_path", []),
-                user_id=userid,
+                user_id=userinfo.id,
                 content=message_content,
                 extra_metadata=message_metadata,
             )
@@ -158,7 +156,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 for ann in trace_annotations:
                     new_annotation = Annotation(
                         trace_id=result_ids[i],
-                        user_id=userid,
+                        user_id=userinfo.id,
                         content=ann["content"],
                         address=ann["address"],
                         extra_metadata=ann.get("extra_metadata", None),

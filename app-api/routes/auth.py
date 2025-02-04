@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from models.datasets_and_traces import UserInfo
 from keycloak import KeycloakOpenID  # pip require python-keycloak
 from util.config import config
 
@@ -90,7 +91,7 @@ async def write_back_refreshed_token(request: Request, call_next):
     return response
 
 
-async def UserIdentity(request: Request):
+async def UserIdentity(request: Request) -> UserInfo:
     # check for DEV_MODE
     if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
         "referer", []
@@ -101,12 +102,12 @@ async def UserIdentity(request: Request):
             "refresh_token": "dev-refresh"
         }
 
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-            "email": "dev@mail.com",
-            "username": "developer",
-            "name": "Developer",
-        }
+        return UserInfo(
+            id="3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+            email="dev@mail.com",
+            username="developer",
+            name="Developer",
+        )
     if (
         "noauth=user1" in request.headers.get("referer", [])
         and os.getenv("DEV_MODE") == "true"
@@ -117,12 +118,12 @@ async def UserIdentity(request: Request):
             "refresh_token": "dev-refresh"
         }
 
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-            "email": "dev2@mail.com",
-            "username": "developer2",
-            "name": "Developer2",
-        }
+        return UserInfo(
+            id="3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+            email="dev2@mail.com",
+            username="developer2",
+            name="Developer2",
+        )
 
     try:
         token = json.loads(request.cookies.get("jwt"))
@@ -140,13 +141,13 @@ async def UserIdentity(request: Request):
         request.state.userinfo = userinfo
 
         assert userinfo["sub"] is not None, "a logged-in user must have a sub"
-
-        return {
-            "sub": userinfo["sub"],
-            "email": userinfo["email"],
-            "username": userinfo["username"],
-            "name": userinfo["name"],
-        }
+        
+        return UserInfo(
+            id=userinfo["sub"],
+            email=userinfo["email"],
+            username=userinfo["preferred_username"],
+            name=userinfo["name"],
+        )
     except Exception:
         # otherwise, this is an anonymous user
 
@@ -160,10 +161,9 @@ async def UserIdentity(request: Request):
             )
 
         # on public instances, we allow anonymous access to some endpoints
-        return {"sub": None, "email": "", "username": "", "name": ""}
+        return UserInfo(id=None, username=None)
 
-
-async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
-    if identity["sub"] is None:
+async def AuthenticatedUserIdentity(identity: Annotated[UserInfo, Depends(UserIdentity)]) -> UserInfo:
+    if identity.is_anonymous():
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity

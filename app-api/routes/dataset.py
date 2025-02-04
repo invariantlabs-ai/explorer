@@ -21,6 +21,7 @@ from models.datasets_and_traces import (
     SharedLinks,
     Trace,
     User,
+    UserInfo,
     db,
 )
 from models.importers import import_jsonl
@@ -35,7 +36,7 @@ from models.queries import (
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
+from routes.apikeys import APIIdentity, UserOrAPIIdentity, AuthenticatedUserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -98,14 +99,10 @@ def str_to_bool(key: str, value: str) -> bool:
 
 @dataset.post("/create")
 async def create(
-    request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    request: Request, userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)]
 ):
     """Create a dataset."""
-    user_id = userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to create a dataset"
-        )
+
 
     data = await request.json()
     name = data.get("name")
@@ -127,7 +124,7 @@ async def create(
     with Session(db()) as session:
         dataset = Dataset(
             id=uuid.uuid4(),
-            user_id=user_id,
+            user_id=userinfo.id,
             name=name,
             is_public=is_public,
             extra_metadata=metadata,
@@ -145,7 +142,7 @@ async def create(
 @dataset.post("/upload")
 async def upload_file(
     request: Request,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
     file: UploadFile = File(...),
 ):
     """Create a dataset via file upload."""
@@ -155,11 +152,7 @@ async def upload_file(
     # is_public is a string because of Multipart request, convert to boolean
     is_public = str_to_bool("is_public", form.get("is_public", "false"))
 
-    user_id = userinfo["sub"]
-    if user_id is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to upload a dataset"
-        )
+
     validate_dataset_name(name)
 
     # Fail eagerly if a dataset with the same name already exists with some traces
@@ -167,7 +160,7 @@ async def upload_file(
     with Session(db()) as session:
         existing_dataset = (
             session.query(Dataset)
-            .filter(and_(Dataset.user_id == user_id, Dataset.name == name))
+            .filter(and_(Dataset.user_id == userinfo.id, Dataset.name == name))
             .first()
         )
         if existing_dataset is not None:
@@ -187,7 +180,7 @@ async def upload_file(
         dataset = await import_jsonl(
             session,
             name,
-            user_id,
+            userinfo.id,
             lines,
             existing_dataset=existing_dataset,
             is_public=is_public,
@@ -231,15 +224,9 @@ def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]
 @dataset.get("/list")
 def list_datasets(
     kind: DatasetKind,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserOrAPIIdentity)],
     limit: Optional[int] = None,
 ):
-    if user is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to list datasets"
-        )
-    # get user ID
-    user_id = user['sub']
     
     with Session(db()) as session:
         if kind == DatasetKind.HOMEPAGE:
@@ -248,11 +235,11 @@ def list_datasets(
 
         query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
         if kind == DatasetKind.PRIVATE:
-            query = query.filter(Dataset.user_id == user_id)
+            query = query.filter(Dataset.user_id == userinfo.id)
         elif kind == DatasetKind.PUBLIC:
             query = query.filter(Dataset.is_public)
         elif kind == DatasetKind.ANY:
-            query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
+            query = query.filter(or_(Dataset.is_public, Dataset.user_id == userinfo.id))
 
         datasets = query.order_by(Dataset.time_created.desc()).limit(limit).all()
         return [dataset_to_json(dataset, user) for dataset, user in datasets]
@@ -260,7 +247,7 @@ def list_datasets(
 
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(
-    request: Request, user_name: str, user: Annotated[dict, Depends(UserIdentity)]
+    request: Request, user_name: str, _: Annotated[UserInfo, Depends(UserIdentity)]
 ):
     with Session(db()) as session:
         user_exists = session.query(exists().where(User.username == user_name)).scalar()
@@ -281,12 +268,11 @@ def list_datasets_by_user(
 
 
 async def delete_dataset(
-    by: dict, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    by: dict, userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)]
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset = load_dataset(session, by, user_id)
+        dataset = load_dataset(session, by, userinfo.id)
 
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
@@ -322,7 +308,7 @@ async def delete_dataset(
 async def delete_dataset_by_id(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     return await delete_dataset({"id": id}, userinfo)
 
@@ -332,7 +318,7 @@ async def delete_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     return await delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
 
@@ -362,10 +348,10 @@ def get_dataset(by: dict, user_id: UUID | None) -> dict:
 def get_dataset_by_id(
     request: Request,
     id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)],
 ):
-    user_id = user['sub'] if user is not None else None
-    return get_dataset({"id": id}, user_id=user_id)
+    # user may be anonymous (user.id is None)
+    return get_dataset({"id": id}, user_id=user.id)
 
 
 @dataset.get("/byuser/{username}/{dataset_name}")
@@ -373,11 +359,11 @@ def get_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)],
 ):
-    user_id = user['sub'] if user is not None else None
+    # user may be anonymous (user.id is None)
     return get_dataset(
-        {"User.username": username, "name": dataset_name}, user_id=user_id
+        {"User.username": username, "name": dataset_name}, user_id=user.id
     )
 
 
@@ -391,14 +377,13 @@ def search_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(UserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(UserIdentity)],
     query: str = None,
 ):
-    user_id = userinfo["sub"]
     with Session(db()) as session:
         by = {"User.username": username, "name": dataset_name}
         dataset, _ = load_dataset(
-            session, by, user_id, allow_public=True, return_user=True
+            session, by, userinfo.id, allow_public=True, return_user=True
         )
 
         mappings = {}
@@ -468,17 +453,16 @@ async def save_query(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
     with Session(db()) as session:
         by = {"User.username": username, "name": dataset_name}
         dataset, _ = load_dataset(
-            session, by, user_id, allow_public=True, return_user=True
+            session, by, userinfo.id, allow_public=True, return_user=True
         )
         data = await request.json()
         savedquery = SavedQueries(
-            user_id=user_id,
+            user_id=userinfo.id,
             dataset_id=dataset.id,
             query=data["query"],
             name=data["name"],
@@ -491,13 +475,12 @@ async def save_query(
 async def delete_query(
     request: Request,
     query_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
     with Session(db()) as session:
         query = session.query(SavedQueries).filter(SavedQueries.id == query_id).first()
 
-        if str(query.user_id) != user_id:
+        if str(query.user_id) != userinfo.id:
             raise HTTPException(status_code=403, detail="Not allowed to delete query")
 
         session.delete(query)
@@ -512,13 +495,12 @@ async def delete_query(
 async def update_dataset(
     request: Request,
     by: dict,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     # never None, 'userinfo' is authenticated
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
-        dataset, user = load_dataset(session, by, user_id, return_user=True)
+        dataset, user = load_dataset(session, by, userinfo.id, return_user=True)
         payload = await request.json()
         is_public = bool(payload.get("content"))
         dataset.is_public = is_public
@@ -529,7 +511,7 @@ async def update_dataset(
         return dataset_to_json(
             dataset,
             num_traces=num_traces,
-            queries=get_savedqueries(session, dataset, user_id, num_traces),
+            queries=get_savedqueries(session, dataset, userinfo.id, num_traces),
         )
 
 
@@ -537,7 +519,7 @@ async def update_dataset(
 async def update_dataset_by_id(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     return await update_dataset(request, {"id": id}, userinfo)
 
@@ -547,7 +529,7 @@ async def update_dataset_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     return await update_dataset(
         request, {"User.username": username, "name": dataset_name}, userinfo
@@ -634,10 +616,9 @@ def get_traces(
 def get_traces_by_id(
     request: Request,
     id: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)],
 ):
-    user_id = user['sub'] if user is not None else None
-    return get_traces(request, {"id": id}, user_id=user_id)
+    return get_traces(request, {"id": id}, user_id=user.id)
 
 
 class DBJSONEncoder(json.JSONEncoder):
@@ -682,11 +663,11 @@ Download the dataset in JSONL format.
 
 @dataset.get("/byid/{id}/download")
 async def download_traces_by_id(
-    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+    request: Request, id: str, userinfo: Annotated[UserInfo, Depends(UserIdentity)]
 ):
     with Session(db()) as session:
         dataset, user = load_dataset(
-            session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
+            session, {"id": id}, userinfo.id, allow_public=True, return_user=True
         )
         internal_dataset_info = dataset_to_json(dataset)
         dataset_info = {
@@ -694,7 +675,7 @@ async def download_traces_by_id(
         }
         # streaming response, but triggers a download
         return StreamingResponse(
-            stream_jsonl(session, id, dataset_info, userinfo["sub"]),
+            stream_jsonl(session, id, dataset_info, userinfo.id),
             media_type="application/json",
             headers={
                 "Content-Disposition": 'attachment; filename="'
@@ -733,11 +714,11 @@ Download all annotated traces of a dataset in JSONL format.
 """
 @dataset.get("/byid/{id}/download/annotated")
 def download_annotated_traces_by_id(
-    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+    request: Request, id: str, userinfo: Annotated[UserInfo, Depends(UserIdentity)]
 ):
     with Session(db()) as session:
         dataset, user = load_dataset(
-            session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
+            session, {"id": id}, userinfo.id, allow_public=True, return_user=True
         )
         internal_dataset_info = dataset_to_json(dataset)
         dataset_info = {
@@ -745,7 +726,7 @@ def download_annotated_traces_by_id(
         }
         # streaming response, but triggers a download
         return StreamingResponse(
-            stream_annotated_jsonl(session, id, dataset_info, userinfo["sub"]),
+            stream_annotated_jsonl(session, id, dataset_info, userinfo.id),
             media_type="application/json",
             headers={
                 "Content-Disposition": 'attachment; filename="'
@@ -760,15 +741,14 @@ def get_traces_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    user: Annotated[dict | None, Depends(UserOrAPIIdentity)],
+    user: Annotated[UserInfo, Depends(UserOrAPIIdentity)],
 ):
-    user_id = user['sub'] if user is not None else None
     indices = request.query_params.get("indices")
     indices = [int(i) for i in indices.split(",")] if indices is not None else None
     return get_traces(
         request,
         {"User.username": username, "name": dataset_name},
-        user_id=user_id,
+        user_id=user.id,
         indices=indices,
     )
 
@@ -779,14 +759,13 @@ def get_trace_indices_by_name(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(UserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(UserIdentity)],
 ):
     with Session(db()) as session:
-        user_id = userinfo["sub"]
         dataset, user = load_dataset(
             session,
             {"User.username": username, "name": dataset_name},
-            user_id,
+            userinfo.id,
             allow_public=True,
             return_user=True,
         )
@@ -815,7 +794,7 @@ def get_traces_by_name_full(
     request: Request,
     username: str,
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(UserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(UserIdentity)],
 ):
     return get_all_traces({"User.username": username, "name": dataset_name}, userinfo)
 
@@ -825,10 +804,10 @@ def get_traces_by_name_full(
 ########################################
 
 
-def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
+def get_all_traces(by: dict, user: Annotated[UserInfo, Depends(UserIdentity)]):
     with Session(db()) as session:
         dataset, user = load_dataset(
-            session, by, user["sub"], allow_public=True, return_user=True
+            session, by, user.id, allow_public=True, return_user=True
         )
 
         out = dataset_to_json(dataset)
@@ -845,17 +824,16 @@ def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
 async def create_policy(
     request: Request,
     dataset_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     """Creates a new policy for a dataset."""
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         dataset = load_dataset(
-            session, dataset_id, user_id, allow_public=True, return_user=False
+            session, dataset_id, userinfo.id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can create a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if str(dataset.user_id) !=  userinfo.id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to create policy for this dataset"
             )
@@ -896,17 +874,16 @@ async def update_policy(
     request: Request,
     dataset_id: str,
     policy_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     """Updates a policy for a dataset."""
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         dataset = load_dataset(
-            session, dataset_id, user_id, allow_public=True, return_user=False
+            session, dataset_id, userinfo.id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can update a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if str(dataset.user_id) != userinfo.id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to update policy for this dataset"
             )
@@ -950,17 +927,16 @@ async def update_policy(
 async def delete_policy(
     dataset_id: str,
     policy_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)],
 ):
     """Deletes a policy for a dataset."""
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         dataset = load_dataset(
-            session, dataset_id, user_id, allow_public=True, return_user=False
+            session, dataset_id, userinfo.id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can delete a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if str(dataset.user_id) != userinfo.id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to delete policy for this dataset"
             )
@@ -980,7 +956,7 @@ async def delete_policy(
 @dataset.get("/metadata/{dataset_name}")
 async def get_metadata(
     dataset_name: str,
-    userinfo: Annotated[dict, Depends(APIIdentity)],
+    userinfo: Annotated[UserInfo, Depends(APIIdentity)],
     owner_username: str = None,  # The username of the owner of the dataset (u/<username>).
 ):
     """
@@ -993,8 +969,7 @@ async def get_metadata(
     - If no `owner_username` is provided, return the metadata for the dataset if
       the caller is the owner of the dataset.
     """
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    user_id = userinfo.get("sub")
+
 
     with Session(db()) as session:
         if owner_username:
@@ -1010,7 +985,7 @@ async def get_metadata(
             )
             # If the dataset is private and the caller is not the owner of the dataset,
             # return a 403.
-            if not dataset_response.is_public and user_id != str(owner_user.id):
+            if not dataset_response.is_public and userinfo.id != str(owner_user.id):
                 raise HTTPException(
                     status_code=403,
                     detail="Not allowed to view metadata for this dataset",
@@ -1018,8 +993,8 @@ async def get_metadata(
         else:
             dataset_response = load_dataset(
                 session,
-                by={"name": dataset_name, "user_id": uuid.UUID(user_id)},
-                user_id=user_id,
+                by={"name": dataset_name, "user_id": uuid.UUID(userinfo.id)},
+                user_id=userinfo.id,
                 allow_public=True,
                 return_user=False,
             )
@@ -1035,11 +1010,9 @@ async def get_metadata(
 # register update metadata route
 @dataset.put("/metadata/{dataset_name}")
 async def update_metadata(
-    dataset_name: str, request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]
+    dataset_name: str, request: Request, userinfo: Annotated[UserInfo, Depends(APIIdentity)]
 ):
     """Update metadata for a dataset. Only the owner of a dataset can update its metadata."""
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    user_id = userinfo.get("sub")
 
     payload = await request.json()
     metadata = payload.get("metadata", {})
@@ -1063,4 +1036,4 @@ async def update_metadata(
     if not isinstance(replace_all, bool):
         raise HTTPException(status_code=400, detail="replace_all must be a boolean")
     
-    return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
+    return await update_dataset_metadata(userinfo.id, dataset_name, metadata, replace_all)
