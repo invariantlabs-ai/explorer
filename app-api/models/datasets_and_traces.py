@@ -16,6 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
+
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 from sqlalchemy.sql import func
@@ -111,7 +112,7 @@ class User(Base):
 
 
 class UserInfo(BaseModel):
-    id: UUID | None
+    id: uuid.UUID | None
     username: str | None
     email: str | None = None
     name: str | None = None

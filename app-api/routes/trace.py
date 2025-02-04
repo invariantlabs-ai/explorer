@@ -66,7 +66,7 @@ async def get_image(
 
 @trace.get("/snippets")
 def get_trace_snippets(
-    request: Request, user: Annotated[dict, Depends(AuthenticatedUserOrAPIIdentity)]
+    request: Request, user: Annotated[UserInfo, Depends(AuthenticatedUserOrAPIIdentity)]
 ):
     limit = request.query_params.get("limit")
     limit = limit if limit != "" else None
@@ -243,7 +243,7 @@ async def annotate_trace(
 async def replace_annotations(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    userinfo: Annotated[UserInfo, Depends(AuthenticatedUserIdentity)]
 ):
     from sqlalchemy import String
 
