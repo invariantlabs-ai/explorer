@@ -21,8 +21,10 @@ import { HighlightDetails } from "../../HighlightDetails";
 
 import { HighlightsNavigator } from "../../HighlightsNavigator";
 
-import { Analyzer, AnalyzerOutput } from "./Analyzer";
+import { AnalyzerPreview, AnalyzerSidebar, useAnalyzer } from "./Analyzer";
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
+
+import "./Analyzer.scss";
 
 import {
   BsArrowDown,
@@ -33,6 +35,7 @@ import {
   BsCheck,
   BsCommand,
   BsDownload,
+  BsLayoutSidebarInsetReverse,
   BsPencilFill,
   BsShare,
   BsTerminal,
@@ -51,7 +54,7 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotations`,
       `/api/v1/trace/${traceId}/annotation`,
       `/api/v1/trace/${traceId}/annotation`,
-      `/api/v1/trace/${traceId}/annotate`,
+      `/api/v1/trace/${traceId}/annotate`
     );
     this.traceId = traceId;
   }
@@ -92,7 +95,6 @@ export class Annotations extends RemoteResource {
  * @param {boolean} props.isUserOwned - whether the trace is owned by the user
  * @param {boolean} props.enableNux - callback to enable the NUX
  * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
- * @param {Analyzer} props.analyzer - the analyzer to use for the trace (optional)
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -131,7 +133,10 @@ export function AnnotationAugmentedTraceView(props) {
   // get telemetry object
   const telemetry = useTelemetry();
 
-  const [lastPushedAnalyzerResult, setLastPushedAnalyzerResult] = useState(null);
+  const [lastPushedAnalyzerResult, setLastPushedAnalyzerResult] =
+    useState(null);
+
+  const analyzer = useAnalyzer();
 
   // expand all messages
   const onExpandAll = () => {
@@ -170,44 +175,48 @@ export function AnnotationAugmentedTraceView(props) {
     }
   }, [activeTrace]);
 
-
-  // whenever the analyzer finishes
+  // reset analyzer when trace changes
   useEffect(() => {
-    if (!props.analyzer) return;
-    if (props.analyzer.running) return;
-    if (props.analyzer.output) {
+    analyzer.reset();
+  }, [activeTraceId]);
+
+  // whenever the analyzer finishes, store the result as an annotation
+  useEffect(() => {
+    if (!analyzer) return;
+    if (analyzer.running) return;
+    if (analyzer.output) {
       // store the analyzer output in the backend (as an annotation)
-      let analyzer_output = JSON.stringify(props.analyzer.output);
+      let analyzer_output = JSON.stringify(analyzer.output);
 
       // make sure we don't push the same result twice
       if (analyzer_output == lastPushedAnalyzerResult) return;
       setLastPushedAnalyzerResult(analyzer_output);
 
-      fetch('/api/v1/trace/' + activeTraceId + '/annotations/update', {
-        method: 'POST',
+      fetch("/api/v1/trace/" + activeTraceId + "/annotations/update", {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            source: 'analyzer-model',
-            annotations: [
-                {
-                    content: analyzer_output,
-                    address: '<root>',
-                    extra_metadata: {
-                        'source': 'analyzer-model'
-                    }
-                }
-            ]
+          source: "analyzer-model",
+          annotations: [
+            {
+              content: analyzer_output,
+              address: "<root>",
+              extra_metadata: {
+                source: "analyzer-model",
+              },
+            },
+          ],
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          annotator.refresh();
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-      annotator.refresh();
-    })
-    .catch(error => console.error(error))
+        .catch((error) => console.error(error));
     }
-  }, [props.analyzer, props.analyzer?.running, annotator]);
+  }, [analyzer, analyzer.running, annotator]);
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -287,17 +296,25 @@ export function AnnotationAugmentedTraceView(props) {
     highlights.traceId == activeTraceId
       ? highlights.highlights
       : HighlightedJSON.empty();
-    
+
   const onDiscardAnalysisResult = async (analysis_annotations) => {
-    await analysis_annotations.forEach(async a => {
+    await analysis_annotations.forEach(async (a) => {
       // delete the corresponding stored annotation by ID (if it exists)
       if (a.id) await annotator.delete(a.id);
-    })
+    });
     // set local analyzer output to null
-    props.analyzer.setOutput(null);
+    analyzer.setOutput(null);
     // wait for delete to finish, then refresh the annotations
     window.setTimeout(() => annotator.refresh(), 20);
-  }
+  };
+
+  const [analyzerOpen, _setAnalyzerOpen] = useState(
+    localStorage.getItem("analyzerOpen") == "true"
+  );
+  const setAnalyzerOpen = (open) => {
+    _setAnalyzerOpen(open);
+    localStorage.setItem("analyzerOpen", open);
+  };
 
   return (
     <>
@@ -380,6 +397,13 @@ export function AnnotationAugmentedTraceView(props) {
                 )}
               </button>
             )}
+            <button
+              className="inline analyzer-button"
+              onClick={() => setAnalyzerOpen(!analyzerOpen)}
+            >
+              Analysis
+              <BsLayoutSidebarInsetReverse />
+            </button>
           </>
         )}
       </header>
@@ -399,15 +423,32 @@ export function AnnotationAugmentedTraceView(props) {
           onUpvoteDownvoteCreate={onAnnotationCreate}
           onUpvoteDownvoteDelete={onAnnotationDelete}
           prelude={
-            <AnalyzerOutput
-              analyzerOutput={props.analyzer?.output}
-              debugInfo={props.analyzer?.debugInfo}
-              storedOutput={top_level_annotations.filter(a => a.source == "analyzer-model")}
-              trace={activeTrace}
-              running={props.analyzer.running}
-              onDiscard={() => onDiscardAnalysisResult(top_level_annotations.filter(a => a.source == "analyzer-model"))}
+            <AnalyzerPreview
+              analyzer={analyzer}
+              open={analyzerOpen}
+              setAnalyzerOpen={setAnalyzerOpen}
+              output={analyzer.output}
+              running={analyzer.running}
+              storedOutput={top_level_annotations.filter(
+                (a) => a.source == "analyzer-model"
+              )}
             />
           }
+          padding={{ right: analyzerOpen ? "310pt" : "0pt" }}
+        />
+        <AnalyzerSidebar
+          open={analyzerOpen}
+          output={analyzer.output}
+          analyzer={analyzer}
+          running={analyzer.running}
+          storedOutput={top_level_annotations.filter(
+            (a) => a.source == "analyzer-model"
+          )}
+          traceId={activeTraceId}
+          datasetId={props.datasetId}
+          username={props.username}
+          onDiscardAnalysisResult={onDiscardAnalysisResult}
+          dataset={props.dataset}
         />
       </div>
       <Tooltip
@@ -435,6 +476,7 @@ function TraceViewContent(props) {
     traceIndex,
     onUpvoteDownvoteCreate,
     onUpvoteDownvoteDelete,
+    padding,
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
@@ -481,6 +523,7 @@ function TraceViewContent(props) {
       traceIndex={traceIndex}
       onUpvoteDownvoteCreate={onUpvoteDownvoteCreate}
       onUpvoteDownvoteDelete={onUpvoteDownvoteDelete}
+      padding={padding}
     />
   );
 }
@@ -623,8 +666,13 @@ function Annotation(props) {
         <header className="username">
           <BsCaretLeftFill className="caret" />
           <div>
-            <b>{props.user.username}</b> 
-            {source && <span className="source"> via <b>{source}</b> </span>}
+            <b>{props.user.username}</b>
+            {source && (
+              <span className="source">
+                {" "}
+                via <b>{source}</b>{" "}
+              </span>
+            )}
             annotated{" "}
             <span className="time">
               {" "}

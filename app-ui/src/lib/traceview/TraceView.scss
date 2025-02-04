@@ -679,6 +679,8 @@ body {
   margin-top: -2.5pt;
   overflow-y: auto;
 
+  transition: padding 0.1s ease-in-out;
+
   div.address {
     text-transform: none;
     opacity: 0.4;

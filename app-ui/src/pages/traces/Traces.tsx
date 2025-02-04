@@ -47,10 +47,6 @@ import {
   isClientError,
 } from "../notfound/NotFound";
 import { Tooltip } from "react-tooltip";
-import "./Analyzer.scss";
-import { BiSolidVideoRecording } from "react-icons/bi";
-import { Editor } from "@monaco-editor/react";
-import { Analyzer, AnalyzerOutput, useAnalyzer } from "./Analyzer";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
@@ -705,10 +701,6 @@ export function Traces(props) {
   const navigate = useNavigate();
   // load the dataset metadata
   const { dataset, datasetLoadingError } = props;
-  // feature set enabled for this dataset
-  const featureSet = new FeatureSet(
-    dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {}
-  );
   // load information about the traces in the dataset
   const [traces, hierarchyPaths, refresh] = useTraces(username, datasetname);
   // trigger whether share modal is shown
@@ -737,18 +729,11 @@ export function Traces(props) {
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id;
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null);
-  // tracks whether analyzer panel is open
-  const [analyzerOpen, setAnalyzerOpen] = React.useState(false);
 
   const [renderNux, setRenderNux] = React.useState(false);
 
-  // composite analyzer state
-  const analyzer = useAnalyzer();
-
   // when the trace index changes, update the activeTrace
   useEffect(() => {
-    // reset analyzer state
-    analyzer.reset();
     // if search or analyzer was run, get the flattened list of results
     const flattenedDisplayedIndices: number[] =
       flattenDisplayedIndices(displayedIndices);
@@ -924,7 +909,6 @@ export function Traces(props) {
             activeTrace={traceVisible ? activeTrace : null}
             selectedTraceId={activeTrace?.id}
             selectedTraceIndex={activeTrace?.index}
-            analyzer={analyzer}
             // shown when no trace is selected
             empty={emptyView}
             collapsed={isTest}
@@ -974,12 +958,6 @@ export function Traces(props) {
                     <BsTrash />
                   </button>
                 )}
-                <button
-                  className="inline analyze"
-                  onClick={() => setAnalyzerOpen(!analyzerOpen)}
-                >
-                  <BsRecord2Fill /> Analyze
-                </button>
               </>
             }
             onAnnotationCreate={onAnnotationCreate}
@@ -987,18 +965,12 @@ export function Traces(props) {
             enableNux={enableNux}
             datasetname={datasetname}
             isUserOwned={isUserOwned}
+            datasetId={dataset.id}
+            username={dataset.user_id}
+            dataset={dataset.name}
           />
         }
         {renderNux && <TracePageNUX />}
-        <Analyzer
-          open={analyzerOpen}
-          setAnalyzerOpen={setAnalyzerOpen}
-          analyzer={analyzer}
-          traceId={activeTrace?.id}
-          datasetId={dataset.id}
-          dataset={datasetname}
-          username={username}
-        />
       </div>
       {/* seperate sidebar tooltip so it doesn't affect rendering other tooltips */}
       <Tooltip id="sidebar-button-tooltip" place="bottom" />
@@ -1786,11 +1758,6 @@ export function SingleTrace() {
   // tracks whether the current user owns this dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == trace?.user_id;
 
-  // analyzer instance to use
-  const analyzer = useAnalyzer();
-
-  const [analyzerOpen, setAnalyzerOpen] = React.useState(false);
-
   // fetch trace data
   React.useEffect(() => {
     if (!props.traceId) {
@@ -1915,7 +1882,6 @@ export function SingleTrace() {
               ? () => setShowShareModal(true)
               : null
           }
-          analyzer={analyzer}
           sharingEnabled={sharingEnabled}
           actions={
             <>
@@ -1927,25 +1893,10 @@ export function SingleTrace() {
                   <BsTrash />
                 </button>
               )}
-              <button
-                className="inline analyze"
-                onClick={() => setAnalyzerOpen(!analyzerOpen)}
-              >
-                <BsRecord2Fill /> Analyze
-              </button>
             </>
           }
         />
       </div>
-      <Analyzer
-        open={analyzerOpen}
-        setAnalyzerOpen={setAnalyzerOpen}
-        analyzer={analyzer}
-        traceId={trace?.id}
-        datasetId={"snippets"}
-        dataset="snippets"
-        username={trace?.user || "anonymous"}
-      />
     </div>
   );
 }

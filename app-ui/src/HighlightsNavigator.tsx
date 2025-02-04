@@ -22,6 +22,7 @@ function isNavigatableHighlight(highlight: Highlight) {
 
 // indicates whether we can navigate to this type of highlight and it is a passed test
 function isNavigatablePassed(highlight: Highlight) {
+  console.log(highlight);
   return (
     highlight?.content?.extra_metadata?.test &&
     highlight?.content?.extra_metadata?.passed
@@ -113,6 +114,10 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
     : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
 
   highlights.sort((a, b) => compareAddresses(a, b));
+
+  if (highlights.length === 0) {
+    return null;
+  }
 
   // create anchors for each highlight (top-level and inline)
   let anchors: NavigationAnchor[] = props.top_level_annotations.map((tla) => ({

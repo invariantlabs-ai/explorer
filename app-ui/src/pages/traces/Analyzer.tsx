@@ -1,8 +1,15 @@
 import { Editor } from "@monaco-editor/react";
 import React, { useEffect, useState } from "react";
-import { BsVinyl } from "react-icons/bs";
+import {
+  BsArrowRight,
+  BsBan,
+  BsGearFill,
+  BsStars,
+  BsXCircle,
+} from "react-icons/bs";
 import "./Analyzer.scss";
 import logo from "../../assets/invariant.svg";
+import { reveal } from "../../lib/permalink-navigator";
 
 interface Analyzer {
   running: boolean;
@@ -19,6 +26,11 @@ interface Analyzer {
   reset: () => void;
 }
 
+/**
+ * Analyzer state hook.
+ *
+ * @returns Analyzer state
+ */
 export function useAnalyzer(): Analyzer {
   const [running, setRunning] = useState(false);
   const [output, setOutput] = useState(null);
@@ -45,44 +57,29 @@ export function useAnalyzer(): Analyzer {
 }
 
 /**
- * Panel that shows the output of an analysis run (streamed in or loaded from storage).
- *
- * @param props
- * @param props.analyzerOutput Output of the analysis run
- * @param props.running Whether the analysis is currently running
- * @param props.trace Trace data
- * @param props.storedOutput Previously stored output (if any)
- * @param props.onDiscard Callback to discard the stored output
+ * Parses and sorts the issues from the analyzer output.
  */
-export function AnalyzerOutput(props: {
-  analyzerOutput: any;
-  running: boolean;
-  trace: any;
-  storedOutput?: any;
-  onDiscard?: () => void;
-  debugInfo?: any;
-}) {
-  const { analyzerOutput, running } = props;
+function useIssues(analyzerOutput: any, storedOutput?: any) {
   const [issues, setIssues] = useState([] as any[]);
 
   // take analyzer output as list and sort by severity key
   useEffect(() => {
-    let output = props.analyzerOutput;
+    let output = analyzerOutput;
 
     // if there is no current (just generated) analyzer output, parse the stored output instead
     if (!output) {
       output = [];
       try {
-        for (let i = 0; i < props.storedOutput.length; i++) {
-          if (props.storedOutput[i].source === "analyzer-model") {
+        for (let i = 0; i < storedOutput.length; i++) {
+          if (storedOutput[i].source === "analyzer-model") {
             try {
-              JSON.parse(props.storedOutput[i].content).forEach((item: any) => {
+              JSON.parse(storedOutput[i].content).forEach((item: any) => {
                 output.push(item);
               });
             } catch (e) {
               console.error(
                 "Failed to parse stored analyzer output:",
-                props.storedOutput[i]
+                storedOutput[i]
               );
             }
             break;
@@ -115,239 +112,20 @@ export function AnalyzerOutput(props: {
     }
 
     setIssues(issues);
-  }, [analyzerOutput, props.storedOutput]);
+  }, [analyzerOutput, storedOutput]);
 
-  if (!issues || !issues.length) {
-    return null;
-  }
-
-  return (
-    <div className="event analyzer-output">
-      <b>
-        <img src={logo} alt="Invariant logo" className="logo" />
-        Invariant Analysis{" "}
-        {running ? (
-          <span className="secondary-flashing">Analyzing...</span>
-        ) : (
-          ""
-        )}
-        {!running && (
-          <span className="debug-info">
-            {props.debugInfo?.stats &&
-              props.debugInfo?.stats.length > 0 &&
-              props.debugInfo.stats.map((stat: any, i: number) => (
-                <span key={"stat-" + i} className="stat">
-                  {stat}
-                </span>
-              ))}
-            {props.debugInfo?.traces?.map((trace: string, i: number) => (
-              <a
-                key={"trace-url-" + i}
-                href={trace}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View Trace
-              </a>
-            ))}
-          </span>
-        )}
-        <div className="actions">
-          {!running && props.storedOutput && props.onDiscard && (
-            <a className="discard" onClick={props.onDiscard}>
-              Discard
-            </a>
-          )}
-        </div>
-      </b>
-      {issues.map((output, i) =>
-        output.loading ? (
-          running ? (
-            <Loading key="issues-loading" />
-          ) : null
-        ) : (
-          <pre key={"issue-" + i}>{JSON.stringify(output, null, 2)}</pre>
-        )
-      )}
-      {issues.filter((issue) => !issue.loading).length === 0 && !running && (
-        <div className="output-empty">No issues found</div>
-      )}
-    </div>
-  );
+  return issues;
 }
 
+/**
+ * Displays a loading bar while the analysis is running.
+ */
 function Loading(props) {
   return (
     <div className="output-running">
       Analyzing...
       <div className="output-running-bar">
         <div className="output-running-bar-inner" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Panel that allows the user to configure and run an analysis.
- *
- * @param props
- * @param props.open Whether the analyzer panel is open
- * @param props.traceId Trace ID to analyze
- * @param props.setAnalyzerOpen Callback to set the analyzer panel open
- * @param props.analyzer Analyzer state
- *
- * Apart form this, the following properties are passed to the analysis model, when a run is initiated:
- *
- * @param props.datasetId Dataset ID
- * @param props.username Username
- * @param props.dataset Dataset name
- */
-export function Analyzer(props: {
-  open: boolean;
-  traceId?: string;
-  setAnalyzerOpen: (value: boolean) => void;
-  analyzer: Analyzer;
-  datasetId: string;
-  username: string;
-  dataset: string;
-}) {
-  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
-    localStorage.getItem("analyzerConfig") ||
-      (`{
-  "model": "i01",
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "<api key on the Explorer above>"
-}` as string | undefined)
-  );
-
-  const [abortController, setAbortController] = React.useState(
-    new AbortController()
-  );
-
-  const status = props.analyzer.status;
-
-  const setAnalyzerConfig = (value: string | undefined) => {
-    localStorage.setItem("analyzerConfig", value || "{}");
-    _setAnalyzerConfig(value);
-  };
-
-  // on unmount, abort the analysis
-  useEffect(() => {
-    return () => {
-      abortController.abort();
-    };
-  }, [abortController]);
-
-  const onRun = async () => {
-    // props.setAnalyzerOpen(false);
-    props.analyzer.setRunning(true);
-    props.analyzer.setError(null);
-    props.analyzer.setOutput([
-      {
-        loading: true,
-      },
-    ]);
-    props.setAnalyzerOpen(false);
-
-    let config = "{}" as any;
-    try {
-      config = JSON.parse(analyzerConfig || "{}");
-    } catch (e) {
-      alert("Analyzer: invalid configuration " + e);
-      return;
-    }
-
-    let endpoint =
-      config.endpoint ||
-      "https://preview-explorer.invariantlabs.ai/api/v1/analysis/create";
-    let apikey = config.apikey || "";
-    if (!apikey) {
-      delete config.apikey;
-    }
-
-    if (!props.traceId) {
-      console.error("analyzer: no trace ID provided");
-      return;
-    }
-
-    const { trace, context } = await prepareAnalysisInputs(
-      props.traceId,
-      props.datasetId,
-      props.username,
-      props.dataset
-    );
-
-    let ctrl = createAnalysis(
-      config,
-      JSON.stringify(trace, null, 2),
-      props.analyzer.setRunning,
-      props.analyzer.setError,
-      props.analyzer.setOutput,
-      endpoint,
-      apikey,
-      context,
-      props.analyzer.setDebug
-    );
-    setAbortController(ctrl);
-  };
-
-  const onMount = (editor, monaco) => {
-    // register completion item provider
-    monaco.languages.registerCompletionItemProvider("json", {
-      provideCompletionItems: function (model, position) {
-        return {
-          suggestions: [
-            {
-              label: "local",
-              kind: monaco.languages.CompletionItemKind.Text,
-              insertText: `{
-  "model": "i01",
-  "endpoint": "http://localhost:8000",
-  "apikey": "<not needed>"
-}`,
-            },
-            {
-              label: "preview",
-              kind: monaco.languages.CompletionItemKind.Text,
-              insertText: `{
-  "model": "i01",
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "<api key on the Explorer above>"
-}`,
-            },
-          ],
-        };
-      },
-    });
-  };
-
-  return (
-    <div className={"analyzer" + (props.open ? " open" : "")}>
-      <div className="box">
-        <h2>
-          Analyzer
-          <button
-            className="primary inline"
-            onClick={onRun}
-            disabled={props.analyzer.running}
-          >
-            {props.analyzer.running ? "Running..." : "Run"}
-          </button>
-        </h2>
-        <Editor
-          language="json"
-          value={analyzerConfig}
-          onMount={onMount}
-          onChange={(value, model) => setAnalyzerConfig(value)}
-          options={{
-            minimap: {
-              enabled: false,
-            },
-            lineNumbers: "off",
-            wordWrap: "on",
-          }}
-        />
-        <div className="status">{status}</div>
       </div>
     </div>
   );
@@ -364,27 +142,43 @@ export function Analyzer(props: {
  */
 async function prepareAnalysisInputs(
   traceId: string,
-  dataset_id: string,
-  username: string,
-  dataset: string
+  dataset_id?: string,
+  username?: string,
+  dataset?: string
 ) {
   try {
-    const [traceRes, contextRes] = await Promise.all([
-      fetch(`/api/v1/trace/${traceId}/download`),
-      fetch(`/api/v1/dataset/byid/${dataset_id}/download/annotated`),
+    // get trace data
+    const traceRes = fetch(`/api/v1/trace/${traceId}/download`);
+    // get additional context from dataset (if available)
+    const contextRes = dataset_id
+      ? fetch(`/api/v1/dataset/byid/${dataset_id}/download/annotated`)
+      : Promise.resolve(null);
+
+    // wait for both to load
+    const [traceResponse, contextResponse] = await Promise.all([
+      traceRes,
+      contextRes,
     ]);
 
-    if (!traceRes.ok) {
-      throw new Error(`Failed to fetch trace data: HTTP ${traceRes.status}`);
-    }
-    if (!contextRes.ok) {
-      throw new Error(`Failed to fetch context: HTTP ${contextRes.status}`);
+    // check that they ar eok
+    if (!traceResponse.ok) {
+      throw new Error(
+        `Failed to fetch trace data: HTTP ${traceResponse.status}`
+      );
     }
 
-    const traceData = await traceRes.json();
-    const context = await contextRes.text();
-
+    const traceData = await traceResponse.json();
     const trace = traceData.messages;
+
+    let context = "";
+    if (contextResponse) {
+      if (!contextResponse.ok) {
+        throw new Error(
+          `Failed to fetch dataset context: HTTP ${contextResponse.status}`
+        );
+      }
+      context = await contextResponse.text();
+    }
 
     return {
       trace,
@@ -492,9 +286,15 @@ function createAnalysis(
 
           readStream(); // Continue streaming
         } catch (streamError: any) {
+          if ("was aborted" in streamError.toString()) {
+            setRunning(false);
+            setError("Analysis was aborted");
+            return;
+          }
           console.error("Stream Read Error:", streamError);
           setRunning(false);
           setError(streamError.message);
+          setOutput(null);
           alert("Stream Read Error: " + streamError.message);
         }
       }
@@ -518,4 +318,410 @@ function createAnalysis(
 
   startAnalysis();
   return abortController;
+}
+
+export function AnalyzerPreview(props: {
+  open: boolean;
+  setAnalyzerOpen: (open: boolean) => void;
+  output: any;
+  storedOutput;
+  analyzer: Analyzer;
+  running: boolean;
+}) {
+  const issues = useIssues(props.output, props.storedOutput);
+
+  const numIssues = issues.filter((i) => !i.loading).length;
+
+  const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
+  const outputIsEmpty =
+    !props.output ||
+    (props.output.filter((o) => !o.loading).length === 0 && !props.running);
+
+  const notYetRun =
+    storedIsEmpty && outputIsEmpty && !props.running && numIssues === 0;
+
+  let content: React.ReactNode = null;
+
+  if (notYetRun) {
+    content = (
+      <div className="secondary">
+        <BsStars className="icon" />
+        Analyze this trace to identify issues
+        {!props.open && <BsArrowRight className="right" />}
+      </div>
+    );
+  } else if (props.running) {
+    content = (
+      <div className="secondary">
+        <div className="analyzer-loader big" /> Analyzing...
+        {numIssues > 0 && (
+          <span className="num-issues">
+            {"(" + numIssues + " issue" + (numIssues > 1 ? "s" : "") + ")"}
+          </span>
+        )}
+      </div>
+    );
+  } else if (numIssues === 0) {
+    content = (
+      <div className="output-empty">
+        <BsXCircle />
+        <br />
+        No issues found
+      </div>
+    );
+  } else {
+    content = (
+      <>
+        <div className="secondary">
+          <img src={logo} alt="Invariant logo" className="logo" />
+          Analysis has identified {issues.length} issue
+          {issues.length > 1 ? "s" : ""}.
+          {!props.open && <BsArrowRight className="right" />}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div
+      className="event analyzer-hint"
+      onClick={() => props.setAnalyzerOpen(!props.open)}
+    >
+      {content}
+    </div>
+  );
+}
+
+/**
+ * Sidebar for the analysis of a trace.
+ */
+export function AnalyzerSidebar(props: {
+  open: boolean;
+  output: any;
+  running: boolean;
+  analyzer: Analyzer;
+  storedOutput;
+  traceId: string;
+  datasetId: string;
+  username: string;
+  dataset: string;
+  onDiscardAnalysisResult: (output: any) => void;
+}) {
+  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
+    localStorage.getItem("analyzerConfig") ||
+      (`{
+  "model": "i01",
+  "endpoint": "https://preview-explorer.invariantlabs.ai",
+  "apikey": "<api key on the Explorer above>"
+}` as string | undefined)
+  );
+
+  const setAnalyzerConfig = (value: string | undefined) => {
+    localStorage.setItem("analyzerConfig", value || "{}");
+    _setAnalyzerConfig(value);
+  };
+
+  const [abortController, setAbortController] = React.useState(
+    new AbortController()
+  );
+
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [status, setStatus] = useState("Ready");
+
+  const issues = useIssues(props.output, props.storedOutput);
+
+  const storedIsEmpty = !props.storedOutput?.length;
+  const outputIsEmpty =
+    !props.output || props.output.filter((o) => !o.loading).length === 0;
+
+  const notYetRun = storedIsEmpty && outputIsEmpty;
+
+  // on unmount, abort the analysis
+  useEffect(() => {
+    return () => {
+      abortController.abort();
+    };
+  }, [abortController]);
+
+  const onRun = async () => {
+    // props.setAnalyzerOpen(false);
+    props.analyzer.setRunning(true);
+    props.analyzer.setError(null);
+    props.analyzer.setOutput([
+      {
+        loading: true,
+      },
+    ]);
+
+    let config = "{}" as any;
+    try {
+      config = JSON.parse(analyzerConfig || "{}");
+    } catch (e) {
+      alert("Analyzer: invalid configuration " + e);
+      return;
+    }
+
+    let endpoint =
+      config.endpoint ||
+      "https://preview-explorer.invariantlabs.ai/api/v1/analysis/create";
+    let apikey = config.apikey || "";
+    if (!apikey) {
+      delete config.apikey;
+    }
+
+    if (!props.traceId) {
+      console.error("analyzer: no trace ID provided");
+      return;
+    }
+
+    try {
+      const { trace, context } = await prepareAnalysisInputs(
+        props.traceId,
+        props.datasetId,
+        props.username,
+        props.dataset
+      );
+
+      let ctrl = createAnalysis(
+        config,
+        JSON.stringify(trace, null, 2),
+        props.analyzer.setRunning,
+        props.analyzer.setError,
+        props.analyzer.setOutput,
+        endpoint,
+        apikey,
+        context,
+        props.analyzer.setDebug
+      );
+      setAbortController(ctrl);
+    } catch (error) {
+      props.analyzer.setRunning(false);
+      props.analyzer.setError(error + "");
+      props.analyzer.setOutput(null);
+      setStatus(error + "");
+    }
+  };
+
+  return (
+    <div
+      className={"box analyzer-sidebar sidebar " + (props.open ? "open" : "")}
+    >
+      <h2>
+        {props.running ? (
+          <div className="analyzer-loader" />
+        ) : (
+          <img src={logo} alt="Invariant logo" className="logo" />
+        )}
+        Analysis
+        <div className="spacer" />
+        {!notYetRun && !props.running && (
+          <button
+            className="inline icon"
+            onClick={() => props.onDiscardAnalysisResult(props.storedOutput)}
+            data-tooltip-id="highlight-tooltip"
+            data-tooltip-content="Discard Results"
+          >
+            <BsBan />
+          </button>
+        )}
+        {props.running && abortController && (
+          <button
+            className="inline"
+            onClick={() => {
+              abortController.abort();
+              props.analyzer.setRunning(false);
+            }}
+            data-tooltip-id="highlight-tooltip"
+            data-tooltip-content="Stop Analysis"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          className="inline icon"
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          data-tooltip-id="highlight-tooltip"
+          data-tooltip-content={
+            settingsOpen ? "Hide Settings" : "Show Settings"
+          }
+        >
+          <BsGearFill />
+        </button>
+        <button
+          className="primary inline"
+          onClick={onRun}
+          disabled={props.running}
+        >
+          {props.running ? "Running..." : "Analyze"}
+        </button>
+      </h2>
+      {settingsOpen && (
+        <>
+          <Editor
+            language="json"
+            theme="vs-dark"
+            className="analyzer-config"
+            value={analyzerConfig}
+            onMount={onMountConfigEditor}
+            onChange={(value, model) => setAnalyzerConfig(value)}
+            height="200pt"
+            options={{
+              minimap: {
+                enabled: false,
+              },
+              lineNumbers: "off",
+              wordWrap: "on",
+            }}
+          />
+        </>
+      )}
+      <div className="status">{status}</div>
+      <div className="issues">
+        {issues.map((output, i) =>
+          output.loading ? (
+            props.running ? (
+              <Loading key="issues-loading" />
+            ) : null
+          ) : (
+            <Issues key={props.traceId + "-" + "issue-" + i} issue={output} />
+          )
+        )}
+      </div>
+      {notYetRun && (
+        <div className="output-empty">
+          <br />
+          Analyze the trace to identify issues
+        </div>
+      )}
+      <span className="debug-info">
+        {props.analyzer.debugInfo?.stats &&
+          props.analyzer.debugInfo?.stats.length > 0 &&
+          props.analyzer.debugInfo.stats.map((stat: any, i: number) => (
+            <span key={"stat-" + i} className="stat">
+              {stat}
+            </span>
+          ))}
+        {props.analyzer.debugInfo?.traces?.map((trace: string, i: number) => (
+          <a
+            key={"trace-url-" + i}
+            href={trace}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View Trace
+          </a>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function onMountConfigEditor(editor, monaco) {
+  // register completion item provider
+  monaco.languages.registerCompletionItemProvider("json", {
+    provideCompletionItems: function (model, position) {
+      return {
+        suggestions: [
+          {
+            label: "local",
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: `{
+"model": "i01",
+"endpoint": "http://localhost:8000",
+"apikey": "<not needed>"
+}`,
+          },
+          {
+            label: "preview",
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: `{
+"model": "i01",
+"endpoint": "https://preview-explorer.invariantlabs.ai",
+"apikey": "<api key on the Explorer above>"
+}`,
+          },
+        ],
+      };
+    },
+  });
+}
+
+export function Issues(props: {
+  issue: object & { severity: number; content: string; location: string };
+}) {
+  // content: [abc] content
+  let errorContent = "";
+  let content = props.issue.content;
+  if (content.match(/\[.*\]/)) {
+    let start = content.indexOf("[");
+    let end = content.indexOf("]");
+    errorContent = content.substring(start + 1, end);
+    content = content.substring(0, start) + content.substring(end + 1);
+  }
+
+  const first_location =
+    locations(props.issue.location).length > 0
+      ? locations(props.issue.location)[0]
+      : "";
+
+  const [clickLocation, setClickLocation] = useState(first_location);
+
+  const onNextLocation = () => {
+    const locs = locations(props.issue.location);
+    let idx = locs.indexOf(clickLocation);
+    idx = (idx + 1) % locs.length;
+    setClickLocation(locs[idx]);
+  };
+
+  // reset click location when issue changes
+  useEffect(() => {
+    setClickLocation(first_location);
+  }, [props.issue]);
+
+  return (
+    <div
+      className="issue"
+      onClick={() => {
+        reveal(clickLocation);
+        onNextLocation();
+      }}
+    >
+      <div className="issue-content">
+        <b>[{errorContent}]</b> {content}
+      </div>
+      <div className="issue-header">
+        <Location location={props.issue.location} />
+        <br />
+        <span className="severity">
+          Severity: {(props.issue.severity || 0.0).toString()}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function Location(props: { location: string }) {
+  // location is either a single location, or a comma+space separated list of locations
+  let locations = props.location?.split(", ") || [];
+  return (
+    <div className="locations">
+      {locations.map((location, i) => (
+        <div
+          key={"loc-" + i}
+          className="location"
+          onClick={(e) => {
+            e.stopPropagation();
+            reveal(location);
+          }}
+        >
+          {location}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function locations(locs: string) {
+  if (!locs) return [];
+  return locs.split(", ");
 }
