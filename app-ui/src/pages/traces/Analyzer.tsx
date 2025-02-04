@@ -22,7 +22,7 @@ interface Analyzer {
 
   // debugging info (if provided by the analysis model)
   debugInfo?: any;
-  setDebug?: (debug: any) => void;
+  setDebug: (debug: any) => void;
 
   reset: () => void;
 }
@@ -498,6 +498,7 @@ export function AnalyzerSidebar(props: {
     // props.setAnalyzerOpen(false);
     props.analyzer.setRunning(true);
     props.analyzer.setError(null);
+    props.analyzer.setDebug(null);
     props.analyzer.setOutput([
       {
         loading: true,
@@ -557,6 +558,7 @@ export function AnalyzerSidebar(props: {
     props.datasetId,
     props.username,
     props.dataset,
+    analyzerConfig,
   ]);
 
   if (props.onAnalyzeEvent) {

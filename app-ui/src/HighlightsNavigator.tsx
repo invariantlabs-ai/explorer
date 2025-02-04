@@ -22,7 +22,6 @@ function isNavigatableHighlight(highlight: Highlight) {
 
 // indicates whether we can navigate to this type of highlight and it is a passed test
 function isNavigatablePassed(highlight: Highlight) {
-  console.log(highlight);
   return (
     highlight?.content?.extra_metadata?.test &&
     highlight?.content?.extra_metadata?.passed
@@ -107,36 +106,44 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
     return null;
   }
 
-  const all = props.highlights.allHighlights();
+  const [anchors, setAnchors] = useState<NavigationAnchor[]>([]);
 
-  const highlights: [string, Highlight][] = isAllPassed(all)
-    ? all.filter(([_, highlight]) => isNavigatablePassed(highlight))
-    : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
+  useEffect(() => {
+    const all = props.highlights.allHighlights();
 
-  highlights.sort((a, b) => compareAddresses(a, b));
+    const highlights: [string, Highlight][] = isAllPassed(all)
+      ? all.filter(([_, highlight]) => isNavigatablePassed(highlight))
+      : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
 
-  if (highlights.length === 0) {
-    return null;
-  }
+    highlights.sort((a, b) => compareAddresses(a, b));
 
-  // create anchors for each highlight (top-level and inline)
-  let anchors: NavigationAnchor[] = props.top_level_annotations.map((tla) => ({
-    label: tla.content,
-    anchor: safeAnchorId(tla.annotationId || ""),
-  }));
+    if (highlights.length === 0) {
+      setAnchors([]);
+    }
 
-  anchors = [
-    ...anchors,
-    ...highlights.map(([address, highlight]) => {
-      return {
-        label: highlight.content.content,
-        anchor: permalink(
-          getNavigationAnchor(address, highlight.start, highlight.end),
-          true
-        ),
-      };
-    }),
-  ];
+    // create anchors for each highlight (top-level and inline)
+    let anchors: NavigationAnchor[] = props.top_level_annotations.map(
+      (tla) => ({
+        label: tla.content,
+        anchor: safeAnchorId(tla.annotationId || ""),
+      })
+    );
+
+    anchors = [
+      ...anchors,
+      ...highlights.map(([address, highlight]) => {
+        return {
+          label: highlight.content.content,
+          anchor: permalink(
+            getNavigationAnchor(address, highlight.start, highlight.end),
+            true
+          ),
+        };
+      }),
+    ];
+
+    setAnchors(anchors);
+  }, [props.highlights, props.top_level_annotations]);
 
   // reset counter when the total number changes
   useEffect(() => {

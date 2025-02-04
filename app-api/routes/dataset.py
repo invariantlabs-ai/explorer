@@ -286,13 +286,9 @@ async def delete_dataset(
         trace_ids = [trace.id for trace in traces]
 
         # delete all annotations
-        session.query(Annotation).filter(
-            Annotation.trace_id.in_(trace_ids)
-        ).delete()
+        session.query(Annotation).filter(Annotation.trace_id.in_(trace_ids)).delete()
         # delete all shared links
-        session.query(SharedLinks).filter(
-            SharedLinks.trace_id.in_(trace_ids)
-        ).delete()
+        session.query(SharedLinks).filter(SharedLinks.trace_id.in_(trace_ids)).delete()
         # delete all images
         image_deletion_tasks = [
             delete_images(dataset_name=dataset.name, trace_id=str(trace_id))
@@ -327,7 +323,9 @@ async def delete_dataset_by_name(
     dataset_name: str,
     userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
 ):
-    return await delete_dataset({"User.username": username, "name": dataset_name}, userinfo)
+    return await delete_dataset(
+        {"User.username": username, "name": dataset_name}, userinfo
+    )
 
 
 ########################################
@@ -584,8 +582,8 @@ def get_traces(
         # with join, count number of annotations per trace
         traces = (
             traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
-            # only count line annotations here (i.e. user annotations)
-            .filter((Annotation.address.like("%:L%") | (Annotation.address.is_(None))))
+            # only count line annotations here (i.e. user annotations), also allow NULL in the annotation column
+            # .filter((Annotation.address.like("%:L%") | (Annotation.address.is_(None))))
             .group_by(Trace.id)
             .add_columns(
                 Trace.name,
@@ -594,6 +592,9 @@ def get_traces(
                 Trace.index,
                 Trace.extra_metadata,
                 func.count(Annotation.id).label("num_annotations"),
+                func.count(Annotation.id)
+                .filter(Annotation.address.like("%:L%"))
+                .label("num_line_annotations"),
             )
         )
 
@@ -613,6 +614,7 @@ def get_traces(
                 "index": trace.index,
                 "messages": [],
                 "num_annotations": trace.num_annotations,
+                "num_line_annotations": trace.num_line_annotations,
                 "extra_metadata": trace.extra_metadata,
                 "name": trace.name,
                 "hierarchy_path": trace.hierarchy_path,
@@ -693,7 +695,10 @@ async def download_traces_by_id(
             },
         )
 
-async def stream_annotated_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
+
+async def stream_annotated_jsonl(
+    session, dataset_id: str, dataset_info: dict, user_id: str
+):
     """
     Used to stream out the trace data as JSONL to download the dataset traces with annotations.
     """
@@ -721,6 +726,8 @@ async def stream_annotated_jsonl(session, dataset_id: str, dataset_info: dict, u
 """
 Download all annotated traces of a dataset in JSONL format.
 """
+
+
 @dataset.get("/byid/{id}/download/annotated")
 def download_annotated_traces_by_id(
     request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
@@ -1014,12 +1021,13 @@ async def get_metadata(
             )
 
         metadata_response = dataset_response.extra_metadata
-        
+
         metadata_response.pop("policies", None)
-        
+
         return {
             **metadata_response,
         }
+
 
 # register update metadata route
 @dataset.put("/metadata/{dataset_name}")
@@ -1032,11 +1040,11 @@ async def update_metadata(
 
     payload = await request.json()
     metadata = payload.get("metadata", {})
-    
+
     # make sure metadata is a dictionary
     if not isinstance(metadata, dict):
         raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    
+
     # we support two update modes: 'incremental' (default) or 'replace_all' (when replace_all is True)
     # When replace_all is False (incremental update):
     # * If a field doesn't exist or is None in the payload, ignore it (keep the existing value).
@@ -1044,12 +1052,12 @@ async def update_metadata(
     # When replace_all is True:
     # * If a field doesn't exist or is None in the payload, delete the field from extra_metadata.
     # * Otherwise, update the field in extra_metadata with the new value.
-    
+
     # This holds true for nested objects like invariant.test_results too.
     # Thus the caller cannot update only a part of the nested object - they need to provide the
     # full object.
     replace_all = payload.get("replace_all", False)
     if not isinstance(replace_all, bool):
         raise HTTPException(status_code=400, detail="replace_all must be a boolean")
-    
+
     return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)

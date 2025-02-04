@@ -139,6 +139,8 @@ export interface Trace {
   preloaded?: boolean;
   // number of annotations for this trace
   num_annotations?: number;
+  // number of line annotations
+  num_line_annotations?: number;
 }
 
 /**
@@ -815,7 +817,7 @@ export function Traces(props) {
   const onAnnotationCreate = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      trace.num_annotations = (trace.num_annotations ?? 0) + 1;
+      trace.num_line_annotations = (trace.num_line_annotations ?? 0) + 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -823,9 +825,12 @@ export function Traces(props) {
   const onAnnotationDelete = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      if (trace.num_annotations === undefined || trace.num_annotations === 0)
+      if (
+        trace.num_line_annotations === undefined ||
+        trace.num_line_annotations === 0
+      )
         return;
-      trace.num_annotations = trace.num_annotations - 1;
+      trace.num_line_annotations = trace.num_line_annotations - 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -1674,8 +1679,8 @@ function TraceRowContents(props: { trace: Trace }) {
     return (
       <>
         {name}
-        {(trace.num_annotations || 0) > 0 ? (
-          <span className="badge">{trace?.num_annotations}</span>
+        {(trace.num_line_annotations || 0) > 0 ? (
+          <span className="badge">{trace?.num_line_annotations}</span>
         ) : null}
         <div className="spacer" />
       </>
