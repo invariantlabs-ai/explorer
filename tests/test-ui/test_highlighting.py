@@ -26,7 +26,7 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
         await page.wait_for_selector("text=Tool")
 
         # # first construct a frame for the second .event on screen (0th .event is the metadata)
-        second_message = page.locator("css=.event").nth(2)
+        second_message = page.locator("css=.event:not(.analyzer-hint)").nth(2)
 
         # take screenshot of the table
         table_screenshot = await screenshot(second_message.locator("table"))
@@ -61,7 +61,7 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
         await page.wait_for_selector("text=Tool")
 
         # # first construct a frame for the first .event on screen (0th .event is the metadata)
-        user_msg = page.locator("css=.event").nth(1)
+        user_msg = page.locator("css=.event:not(.analyzer-hint)").nth(1)
 
         # take screenshot of message
         msg_screenshot = await screenshot(user_msg)
@@ -99,8 +99,8 @@ async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
         await page.wait_for_selector("text=Tool")
         await screenshot(page)
 
-        snippet_1 = page.locator("css=.event").nth(1)
-        snippet_2 = page.locator("css=.event").nth(2)
+        snippet_1 = page.locator("css=.event:not(.analyzer-hint)").nth(1)
+        snippet_2 = page.locator("css=.event:not(.analyzer-hint)").nth(2)
 
         # take screenshot of message
         snippet_1_screenshot = await screenshot(snippet_1)
