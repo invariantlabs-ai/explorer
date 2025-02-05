@@ -180,7 +180,7 @@ class ReadOnlyMetadataField(MetadataField):
     def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
         pass
     
-async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dict, replace_all: bool = False):
+async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: dict, replace_all: bool = False):
     """
     Updates the metadata of a dataset.
 
@@ -217,7 +217,7 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
     with Session(db()) as session:
         dataset_response = load_dataset(
             session,
-            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
+            {"name": dataset_name, "user_id": user_id},
             user_id,
             allow_public=True,
             return_user=False,

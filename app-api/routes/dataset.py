@@ -1000,7 +1000,7 @@ async def get_metadata(
         else:
             dataset_response = load_dataset(
                 session,
-                by={"name": dataset_name, "user_id": uuid.UUID(user_id)},
+                by={"name": dataset_name, "user_id": user_id},
                 user_id=user_id,
                 allow_public=True,
                 return_user=False,
