@@ -719,7 +719,7 @@ function onMountConfigEditor(editor, monaco) {
             insertText: `{
 "model": "i01",
 "endpoint": "https://preview-explorer.invariantlabs.ai",
-"apikey": ${TEMPLATE_API_KEY}
+"apikey": "${TEMPLATE_API_KEY}"
 }`,
           },
         ],
