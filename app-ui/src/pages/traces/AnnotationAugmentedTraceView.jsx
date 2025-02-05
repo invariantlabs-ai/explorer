@@ -182,8 +182,12 @@ export function AnnotationAugmentedTraceView(props) {
 
   // whenever the analyzer finishes, store the result as an annotation
   useEffect(() => {
+    // do not store anything if the analyzer is not set
     if (!analyzer) return;
+    // do not store anything yet, if the analyzer is still running
     if (analyzer.running) return;
+    // only store the analyzer output if the user owns the trace
+    if (!props.isUserOwned) return;
     if (analyzer.output) {
       // store the analyzer output in the backend (as an annotation)
       let analyzer_output = JSON.stringify(analyzer.output);
@@ -216,7 +220,7 @@ export function AnnotationAugmentedTraceView(props) {
         })
         .catch((error) => console.error(error));
     }
-  }, [analyzer, analyzer.running, annotator]);
+  }, [analyzer, analyzer.running, annotator, activeTraceId, props.isUserOwned]);
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -453,7 +457,9 @@ export function AnnotationAugmentedTraceView(props) {
           traceId={activeTraceId}
           datasetId={props.datasetId}
           username={props.username}
-          onDiscardAnalysisResult={onDiscardAnalysisResult}
+          onDiscardAnalysisResult={
+            props.isUserOwned ? onDiscardAnalysisResult : null
+          }
           dataset={props.dataset}
           onAnalyzeEvent={onRunAnalyzerEvent}
         />

@@ -576,6 +576,7 @@ button {
       font-weight: 500;
       margin-bottom: 20pt;
       margin-bottom: 10pt;
+      margin-top: -5pt;
     }
 
     h2 {
@@ -681,10 +682,24 @@ button.tool {
 
   a.button {
     margin-bottom: 10pt;
+    line-height: 35pt;
+  }
+
+  p {
+    margin: 0pt;
+    margin-top: 5pt;
+    padding: 0pt;
+    font-size: 14pt;
+
+    &:last-of-type {
+      margin-bottom: 20pt;
+    }
   }
 
   h1 {
     text-align: left;
+    margin-bottom: 0pt !important;
+    padding-bottom: 0pt;
   }
 
   input.link {
@@ -1322,7 +1337,7 @@ button.primary .shortcut {
           color: black;
           background: none;
           font-size: 10pt;
-          
+
           svg {
             margin-right: 4pt;
             position: relative;
@@ -1357,7 +1372,7 @@ button.primary .shortcut {
       margin-left: -265pt;
 
       .dataset-metadata {
-        opacity: 0.0 !important;
+        opacity: 0 !important;
       }
 
       ul {
@@ -2825,7 +2840,6 @@ p.footer-links {
     border-radius: 0px;
   }
 }
-
 
 span.highlight-dot {
   display: inline-block;

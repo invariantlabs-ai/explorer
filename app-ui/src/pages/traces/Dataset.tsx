@@ -48,7 +48,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`
     );
     //@ts-ignore
     this.username = username;
@@ -240,17 +240,19 @@ function DatasetView() {
             Traces
           </div>
         </button>
-        {hasAnalysis && <button
-          key="analysis"
-          className={`tab ${"insights" === selectedTab ? "active" : ""}`}
-          onClick={() => setSelectedTab("insights")}
-        >
-          <div className="inner">
-            <BsFileEarmarkBreak />
-            Analysis
-            <span className='highlight-dot'></span>
-          </div>
-        </button>}
+        {hasAnalysis && (
+          <button
+            key="analysis"
+            className={`tab ${"insights" === selectedTab ? "active" : ""}`}
+            onClick={() => setSelectedTab("insights")}
+          >
+            <div className="inner">
+              <BsFileEarmarkBreak />
+              Analysis
+              <span className="highlight-dot"></span>
+            </div>
+          </button>
+        )}
         <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
@@ -278,7 +280,12 @@ function DatasetView() {
       )}
 
       {selectedTab === "insights" && (
-        <Insights dataset={dataset} datasetLoadingError={datasetError} username={props.username} datasetname={props.datasetname} />
+        <Insights
+          dataset={dataset}
+          datasetLoadingError={datasetError}
+          username={props.username}
+          datasetname={props.datasetname}
+        />
       )}
 
       {selectedTab === "metadata" && (

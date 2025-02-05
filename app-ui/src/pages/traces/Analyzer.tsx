@@ -11,6 +11,8 @@ import "./Analyzer.scss";
 import logo from "../../assets/invariant.svg";
 import { reveal } from "../../lib/permalink-navigator";
 import { BroadcastEvent } from "../../lib/traceview/traceview";
+import { capture } from "../../telemetry";
+import { alertModelAccess } from "./ModelModal";
 
 interface Analyzer {
   running: boolean;
@@ -312,6 +314,13 @@ function createAnalysis(
           "Unauthorized: Please provide a valid API key to use an analysis model."
         );
         return;
+      } else if (
+        error.message.includes("do not have access to this resource")
+      ) {
+        capture("tried-analysis", { error: error.message });
+        // alert("Unauthorized: You do not have access to this resource.");
+        alertModelAccess("You do not have access to this resource.");
+        return;
       }
 
       alert("Analysis Error: " + error.message);
@@ -444,7 +453,7 @@ export function AnalyzerSidebar(props: {
   username: string;
   dataset: string;
   debugInfo: any;
-  onDiscardAnalysisResult: (output: any) => void;
+  onDiscardAnalysisResult?: (output: any) => void;
   // passes onRun to parent component in callback
   onAnalyzeEvent?: BroadcastEvent;
 }) {
@@ -577,10 +586,10 @@ export function AnalyzerSidebar(props: {
         )}
         Analysis
         <div className="spacer" />
-        {!notYetRun && !props.running && (
+        {!notYetRun && !props.running && props.onDiscardAnalysisResult && (
           <button
             className="inline icon"
-            onClick={() => props.onDiscardAnalysisResult(props.storedOutput)}
+            onClick={() => props.onDiscardAnalysisResult?.(props.storedOutput)}
             data-tooltip-id="highlight-tooltip"
             data-tooltip-content="Discard Results"
           >

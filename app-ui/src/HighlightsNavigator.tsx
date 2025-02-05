@@ -29,8 +29,14 @@ function isNavigatablePassed(highlight: Highlight) {
 }
 
 // indicates whether all highlights are passing assertions
-function isAllPassed(highlights: [string, Highlight][]) {
-  return highlights.every(([_, highlight]) => isNavigatablePassed(highlight));
+function isAllPassed(
+  highlights: [string, Highlight][],
+  top_level_annotations: Highlight[]
+) {
+  return (
+    highlights.every(([_, highlight]) => isNavigatablePassed(highlight)) &&
+    top_level_annotations.every((tla) => isNavigatablePassed(tla))
+  );
 }
 
 // compare two ranges (ascending)
@@ -110,10 +116,17 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
 
   useEffect(() => {
     const all = props.highlights.allHighlights();
+    const allPassed = isAllPassed(all, props.top_level_annotations);
 
-    const highlights: [string, Highlight][] = isAllPassed(all)
+    const highlights: [string, Highlight][] = allPassed
       ? all.filter(([_, highlight]) => isNavigatablePassed(highlight))
       : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
+
+    const filtered_top_level_highlights = allPassed
+      ? props.top_level_annotations.filter((tla) => isNavigatablePassed(tla))
+      : props.top_level_annotations.filter((tla) =>
+          isNavigatableHighlight(tla)
+        );
 
     highlights.sort((a, b) => compareAddresses(a, b));
 
@@ -122,7 +135,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
     }
 
     // create anchors for each highlight (top-level and inline)
-    let anchors: NavigationAnchor[] = props.top_level_annotations.map(
+    let anchors: NavigationAnchor[] = filtered_top_level_highlights.map(
       (tla) => ({
         label: tla.content,
         anchor: safeAnchorId(tla.annotationId || ""),
