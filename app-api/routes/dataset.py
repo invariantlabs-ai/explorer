@@ -33,6 +33,7 @@ from models.queries import (
     search_term_mappings,
     trace_to_exported_json,
     trace_to_json,
+    ExportConfig,
 )
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
@@ -645,7 +646,9 @@ class DBJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
+async def stream_jsonl(
+    session, dataset_id: str, dataset_info: dict, user_id: str, config: ExportConfig
+):
     """
     Used to stream out the trace data as JSONL to download the dataset.
     """
@@ -661,21 +664,19 @@ async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: st
     for trace in traces:
         # load annotations for this trace
         annotations = load_annotations(session, trace.id)
-        json_dict = await trace_to_exported_json(trace, annotations)
+        json_dict = await trace_to_exported_json(trace, annotations, config)
         yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
 
         # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
-
-
-"""
-Download the dataset in JSONL format.
-"""
 
 
 @dataset.get("/byid/{id}/download")
 async def download_traces_by_id(
     request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
 ):
+    """
+    Download the dataset in JSONL format.
+    """
     with Session(db()) as session:
         dataset, user = load_dataset(
             session, {"id": id}, userinfo["sub"], allow_public=True, return_user=True
@@ -686,7 +687,13 @@ async def download_traces_by_id(
         }
         # streaming response, but triggers a download
         return StreamingResponse(
-            stream_jsonl(session, id, dataset_info, userinfo["sub"]),
+            stream_jsonl(
+                session,
+                id,
+                dataset_info,
+                userinfo["sub"],
+                ExportConfig.from_request(request),
+            ),
             media_type="application/json",
             headers={
                 "Content-Disposition": 'attachment; filename="'
@@ -697,7 +704,7 @@ async def download_traces_by_id(
 
 
 async def stream_annotated_jsonl(
-    session, dataset_id: str, dataset_info: dict, user_id: str
+    session, dataset_id: str, dataset_info: dict, config: ExportConfig
 ):
     """
     Used to stream out the trace data as JSONL to download the dataset traces with annotations.
@@ -714,10 +721,11 @@ async def stream_annotated_jsonl(
         .order_by(Trace.index)
         .all()
     )
+    # write out traces
     for trace in traces:
         # load annotations for this trace
         annotations = load_annotations(session, trace.id)
-        json_dict = await trace_to_exported_json(trace, annotations)
+        json_dict = await trace_to_exported_json(trace, annotations, config)
         yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
 
         # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
@@ -742,7 +750,9 @@ def download_annotated_traces_by_id(
         }
         # streaming response, but triggers a download
         return StreamingResponse(
-            stream_annotated_jsonl(session, id, dataset_info, userinfo["sub"]),
+            stream_annotated_jsonl(
+                session, id, dataset_info, ExportConfig.from_request(request)
+            ),
             media_type="application/json",
             headers={
                 "Content-Disposition": 'attachment; filename="'
