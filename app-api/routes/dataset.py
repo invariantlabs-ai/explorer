@@ -812,10 +812,10 @@ def get_traces_by_name_full(
 ########################################
 
 
-def get_all_traces(by: dict, user: Annotated[dict, Depends(UserIdentity)]):
+def get_all_traces(by: dict, user_id: Annotated[UUID, Depends(UserIdentity)]):
     with Session(db()) as session:
         dataset, user = load_dataset(
-            session, by, user["sub"], allow_public=True, return_user=True
+            session, by, user_id, allow_public=True, return_user=True
         )
 
         out = dataset_to_json(dataset)

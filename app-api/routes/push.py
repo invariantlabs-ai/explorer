@@ -26,7 +26,7 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdentity)]):
+async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]):
 
 
     # extract payload

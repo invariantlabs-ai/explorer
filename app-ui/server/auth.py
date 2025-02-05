@@ -6,6 +6,7 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from keycloak import KeycloakOpenID # pip require python-keycloak
 import os
+from uuid import UUID
 from typing import Annotated
 from config import config
 
@@ -140,7 +141,7 @@ async def UserIdentity(request: Request):
             "name": ''
         }
 
-async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
+async def AuthenticatedUserIdentity(identity: Annotated[UUID, Depends(UserIdentity)]):
     if identity["sub"] is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity
