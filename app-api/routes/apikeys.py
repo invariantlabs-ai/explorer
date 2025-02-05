@@ -103,7 +103,7 @@ async def APIIdentity(request: Request) -> UUID:
         if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
             "referer", []
         ):
-            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ca")
+            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ce")
         if (
             "noauth=user1" in request.headers.get("referer", [])
             and os.getenv("DEV_MODE") == "true"

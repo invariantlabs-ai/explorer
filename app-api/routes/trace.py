@@ -49,7 +49,7 @@ async def get_image(
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
-        trace = load_trace(
+        _ = load_trace(
             session, trace_id, user_id, allow_public=True, allow_shared=True
         )
 
