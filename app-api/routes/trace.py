@@ -332,7 +332,7 @@ def delete_annotation(
         if annotation is None:
             raise HTTPException(status_code=404, detail="Annotation not found")
 
-        if str(annotation.user_id) != user_id:
+        if annotation.user_id != user_id:
             raise HTTPException(status_code=401, detail="Unauthorized delete")
 
         session.delete(annotation)
@@ -364,7 +364,7 @@ async def update_annotation(
         if annotation is None:
             raise HTTPException(status_code=404, detail="Annotation not found")
 
-        if str(annotation.user_id) != user_id:
+        if annotation.user_id != user_id:
             raise HTTPException(status_code=401, detail="Unauthorized delete")
 
         payload = await request.json()

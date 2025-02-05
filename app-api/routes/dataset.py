@@ -480,7 +480,7 @@ async def delete_query(
     with Session(db()) as session:
         query = session.query(SavedQueries).filter(SavedQueries.id == query_id).first()
 
-        if str(query.user_id) != user_id:
+        if query.user_id != user_id:
             raise HTTPException(status_code=403, detail="Not allowed to delete query")
 
         session.delete(query)
@@ -841,7 +841,7 @@ async def create_policy(
             session, dataset_id, user_id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can create a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if dataset.user_id != user_id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to create policy for this dataset"
             )
@@ -891,7 +891,7 @@ async def update_policy(
             session, dataset_id, user_id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can update a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if dataset.user_id != user_id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to update policy for this dataset"
             )
@@ -944,7 +944,7 @@ async def delete_policy(
             session, dataset_id, user_id, allow_public=True, return_user=False
         )
         # Only the owner of the dataset can delete a policy for the dataset.
-        if str(dataset.user_id) != user_id:
+        if dataset.user_id != user_id:
             raise HTTPException(
                 status_code=403, detail="Not allowed to delete policy for this dataset"
             )
@@ -986,13 +986,13 @@ async def get_metadata(
             dataset_response = load_dataset(
                 session,
                 by={"name": dataset_name, "user_id": owner_user.id},
-                user_id=str(owner_user.id),
+                user_id=owner_user.id,
                 allow_public=True,
                 return_user=False,
             )
             # If the dataset is private and the caller is not the owner of the dataset,
             # return a 403.
-            if not dataset_response.is_public and user_id != str(owner_user.id):
+            if not dataset_response.is_public and user_id != owner_user.id:
                 raise HTTPException(
                     status_code=403,
                     detail="Not allowed to view metadata for this dataset",
