@@ -805,5 +805,11 @@ export function Location(props: { location: string }) {
 
 function locations(locs: string) {
   if (!locs) return [];
-  return locs.split(", ");
+  // TODO: support nested locations like .content.final_sql in permalink-navigator.ts
+  let updated_locs = locs.split(", ");
+  // remove everything after the first .
+  updated_locs = updated_locs.map((loc) => {
+    return loc.split(".")[0];
+  });
+  return updated_locs;
 }
