@@ -441,7 +441,7 @@ def merge_sorted_messages(
 
 @trace.post("/{trace_id}/messages")
 async def append_messages(
-    request: Request, trace_id: str, userinfo: Annotated[dict, Depends(APIIdentity)]
+    request: Request, trace_id: str, user_id: Annotated[UUID, Depends(APIIdentity)]
 ):
     """
     Append messages to an existing trace.
@@ -453,7 +453,6 @@ async def append_messages(
     It is possible that the existing messages in the trace do not have timestamps - in this case,
     the trace creation timestamp is used as a reference for sorting.
     """
-    user_id = userinfo["sub"]
     if user_id is None:
         raise HTTPException(
             status_code=401, detail="Must be authenticated to add messages"
@@ -494,7 +493,7 @@ async def append_messages(
                         "Expected format: ISO 8601, e.g., 2025-01-23T10:30:00+00:00"
                     ),
                 ) from e
-
+    print("new messages", new_messages)
     try:
         with Session(db()) as session:
             with session.begin():  # Start transaction
@@ -502,7 +501,7 @@ async def append_messages(
                 trace_response = (
                     session.query(Trace)
                     .filter(
-                        and_(Trace.id == UUID(trace_id), Trace.user_id == UUID(user_id))
+                        and_(Trace.id == UUID(trace_id), Trace.user_id == user_id)
                     )
                     .with_for_update()
                     .first()
@@ -514,7 +513,7 @@ async def append_messages(
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
-
+                print("here", new_messages)
                 dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
                 if trace_response.dataset_id:
                     dataset_response = (
@@ -522,7 +521,7 @@ async def append_messages(
                         .filter(
                             and_(
                                 Dataset.id == trace_response.dataset_id,
-                                Dataset.user_id == UUID(user_id),
+                                Dataset.user_id == user_id,
                             )
                         )
                         .first()
