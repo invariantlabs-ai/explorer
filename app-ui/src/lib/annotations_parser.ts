@@ -114,6 +114,7 @@ export class AnnotationsParser {
             ? annotation.extra_metadata["source"]
             : "unknown",
           annotationId: "<top level>:" + i,
+          id: annotation.id
         };
 
         if (annotation.extra_metadata) {

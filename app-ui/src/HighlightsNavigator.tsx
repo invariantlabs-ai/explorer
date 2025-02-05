@@ -29,8 +29,14 @@ function isNavigatablePassed(highlight: Highlight) {
 }
 
 // indicates whether all highlights are passing assertions
-function isAllPassed(highlights: [string, Highlight][]) {
-  return highlights.every(([_, highlight]) => isNavigatablePassed(highlight));
+function isAllPassed(
+  highlights: [string, Highlight][],
+  top_level_annotations: Highlight[]
+) {
+  return (
+    highlights.every(([_, highlight]) => isNavigatablePassed(highlight)) &&
+    top_level_annotations.every((tla) => isNavigatablePassed(tla))
+  );
 }
 
 // compare two ranges (ascending)
@@ -47,7 +53,7 @@ function compareRanges(arange: [number, number], brange: [number, number]) {
 // compare two addresses and their ranges (ascending)
 function compareAddresses(
   apair: [string, Highlight],
-  bpair: [string, Highlight],
+  bpair: [string, Highlight]
 ) {
   // compare by the messages index and then by the tool_calls index
   const [a, a_highlight] = apair;
@@ -73,7 +79,7 @@ function compareAddresses(
 
   return compareRanges(
     [a_highlight.start, a_highlight.end],
-    [b_highlight.start, b_highlight.end],
+    [b_highlight.start, b_highlight.end]
   );
 }
 
@@ -106,32 +112,51 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
     return null;
   }
 
-  const all = props.highlights.allHighlights();
+  const [anchors, setAnchors] = useState<NavigationAnchor[]>([]);
 
-  const highlights: [string, Highlight][] = isAllPassed(all)
-    ? all.filter(([_, highlight]) => isNavigatablePassed(highlight))
-    : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
+  useEffect(() => {
+    const all = props.highlights.allHighlights();
+    const allPassed = isAllPassed(all, props.top_level_annotations);
 
-  highlights.sort((a, b) => compareAddresses(a, b));
+    const highlights: [string, Highlight][] = allPassed
+      ? all.filter(([_, highlight]) => isNavigatablePassed(highlight))
+      : all.filter(([_, highlight]) => isNavigatableHighlight(highlight));
 
-  // create anchors for each highlight (top-level and inline)
-  let anchors: NavigationAnchor[] = props.top_level_annotations.map((tla) => ({
-    label: tla.content,
-    anchor: safeAnchorId(tla.annotationId || ""),
-  }));
+    const filtered_top_level_highlights = allPassed
+      ? props.top_level_annotations.filter((tla) => isNavigatablePassed(tla))
+      : props.top_level_annotations.filter((tla) =>
+          isNavigatableHighlight(tla)
+        );
 
-  anchors = [
-    ...anchors,
-    ...highlights.map(([address, highlight]) => {
-      return {
-        label: highlight.content.content,
-        anchor: permalink(
-          getNavigationAnchor(address, highlight.start, highlight.end),
-          true,
-        ),
-      };
-    }),
-  ];
+    highlights.sort((a, b) => compareAddresses(a, b));
+
+    if (highlights.length === 0) {
+      setAnchors([]);
+    }
+
+    // create anchors for each highlight (top-level and inline)
+    let anchors: NavigationAnchor[] = filtered_top_level_highlights.map(
+      (tla) => ({
+        label: tla.content,
+        anchor: safeAnchorId(tla.annotationId || ""),
+      })
+    );
+
+    anchors = [
+      ...anchors,
+      ...highlights.map(([address, highlight]) => {
+        return {
+          label: highlight.content.content,
+          anchor: permalink(
+            getNavigationAnchor(address, highlight.start, highlight.end),
+            true
+          ),
+        };
+      }),
+    ];
+
+    setAnchors(anchors);
+  }, [props.highlights, props.top_level_annotations]);
 
   // reset counter when the total number changes
   useEffect(() => {
@@ -176,7 +201,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
         onNavigateTo(anchors[updated_index - 1].anchor, "annotations");
       }
     },
-    [selectedHighlight, anchors],
+    [selectedHighlight, anchors]
   );
 
   // called when the user clicks on the navigator
@@ -205,7 +230,7 @@ export function HighlightsNavigator(props: HighlightsNavigatorProps) {
             <BsArrowUp />
           </button>
           <button
-            disabled={selectedHighlight === highlights.length}
+            disabled={selectedHighlight === anchors.length}
             onClick={() => setSelectedHighlight((s) => s + 1)}
             data-tooltip-id="highlights-navigator-tooltip"
             data-tooltip-content="Next"

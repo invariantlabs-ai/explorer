@@ -350,3 +350,93 @@ async def test_append_messages_succeeds_starting_with_empty_snippet_trace(contex
     # Delete the snippet
     deletion_response = await context.request.delete(f"{url}/api/v1/trace/{snippet_id}")
     assert deletion_response.status == 200
+
+#
+async def test_add_and_get_simple_annotation(url, context, data_abc):
+    """Test that adding and getting a simple annotation works."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # get all annotations of a trace
+        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+
+        assert response.status == 200
+        annotations = await response.json()
+        assert len(annotations) == 0
+
+        # add an annotation
+        annotation = {
+            "content": "test annotation",
+            "address": "messages[0]:L0",
+            "extra_metadata": {"source": "test"},
+        }
+        response = await context.request.post(
+            f"{url}/api/v1/trace/{trace_id}/annotate", data=annotation
+        )
+
+        assert response.status == 200
+        annotation = await response.json()
+        assert annotation["content"] == "test annotation"
+        assert annotation["address"] == "messages[0]:L0"
+        assert annotation["extra_metadata"] == {"source": "test"}
+
+
+async def test_add_annotation_without_source_then_with_then_replace_but_only_source(url, context, data_abc):
+    """Test that adding an annotation without a source, then with a source, then replacing only the source works."""
+    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # get all annotations of a trace
+        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        assert response.status == 200
+        annotations = await response.json()
+        assert len(annotations) == 0
+
+        # add an annotation without source
+        annotation = {
+            "content": "test annotation",
+            "address": "messages[0]:L0",
+            "extra_metadata": {},
+        }
+        response = await context.request.post(
+            f"{url}/api/v1/trace/{trace_id}/annotate", data=annotation
+        )
+        assert response.status == 200
+
+        # add an annotation with source
+        annotation = {
+            "content": "test annotation with source",
+            "address": "messages[0]:L0",
+            "extra_metadata": {"source": "test"},
+        }
+        response = await context.request.post(
+            f"{url}/api/v1/trace/{trace_id}/annotate", data=annotation
+        )
+        assert response.status == 200
+
+        # get all annotations of a trace
+        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        assert response.status == 200
+        annotations = await response.json()
+        assert len(annotations) == 2
+
+        # replace all annotations of a certain source
+        response = await context.request.post(
+            f"{url}/api/v1/trace/{trace_id}/annotations/update",
+            data={"source": "test", "annotations": [{
+                "content": "replaced annotation",
+                "address": "messages[0]:L0",
+                "extra_metadata": {"source": "test"},
+            }]},
+        )
+        assert response.status == 200
+
+        # get all annotations of a trace
+        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        assert response.status == 200
+        annotations = await response.json()
+        assert len(annotations) == 2
+        assert annotations[0]["content"] == "test annotation"
+        assert annotations[1]["content"] == "replaced annotation"

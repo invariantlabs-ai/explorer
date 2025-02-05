@@ -34,7 +34,7 @@ from models.queries import (
     trace_to_json,
 )
 from pydantic import ValidationError
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
+from routes.apikeys import APIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -196,6 +196,7 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
         NonEmptyStringMetadataField('name', str),
         PositiveNumber('accuracy', (int, float)),
         ReadOnlyMetadataField('policies', include_in_response=False, clear_on_replace=False),
+        PrimitiveMetadataField('analysis_report', str),
     ]
 
     # validate all allowed fields

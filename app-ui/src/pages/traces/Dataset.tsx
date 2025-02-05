@@ -5,6 +5,8 @@ import {
   BsCodeSlash,
   BsCollection,
   BsDownload,
+  BsFileEarmarkBreak,
+  BsFillLightningChargeFill,
   BsGear,
   BsGlobe,
   BsPencilFill,
@@ -22,6 +24,7 @@ import { config } from "../../utils/Config";
 import { useTelemetry } from "../../telemetry";
 import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
+import { Insights } from "./Insights";
 
 interface Query {
   id: string;
@@ -45,7 +48,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`
     );
     //@ts-ignore
     this.username = username;
@@ -159,6 +162,14 @@ function DatasetView() {
   const [selectedTab, _setSelectedTab] = React.useState("traces");
   const setSelectedTab = telemetry.wrap(_setSelectedTab, "dataset.select-tab");
 
+  // track whether the dataset has analysis results
+  const [hasAnalysis, setHasAnalysis] = React.useState(false);
+
+  // on dataset updates, check if the dataset has analysis results
+  useEffect(() => {
+    setHasAnalysis(dataset?.extra_metadata?.analysis_report);
+  }, [dataset]);
+
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
     // log event
@@ -208,6 +219,10 @@ function DatasetView() {
     // 2. we don't show the featureset as part of the Metadata component.
     const { policies, featureset, ...filteredMetadata } = metadata;
 
+    if ("analysis_report" in filteredMetadata) {
+      delete filteredMetadata["analysis_report"];
+    }
+
     return filteredMetadata;
   };
 
@@ -225,6 +240,19 @@ function DatasetView() {
             Traces
           </div>
         </button>
+        {hasAnalysis && (
+          <button
+            key="analysis"
+            className={`tab ${"insights" === selectedTab ? "active" : ""}`}
+            onClick={() => setSelectedTab("insights")}
+          >
+            <div className="inner">
+              <BsFileEarmarkBreak />
+              Analysis
+              <span className="highlight-dot"></span>
+            </div>
+          </button>
+        )}
         <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
@@ -249,6 +277,15 @@ function DatasetView() {
 
       {selectedTab === "traces" && (
         <Traces dataset={dataset} datasetLoadingError={datasetError} />
+      )}
+
+      {selectedTab === "insights" && (
+        <Insights
+          dataset={dataset}
+          datasetLoadingError={datasetError}
+          username={props.username}
+          datasetname={props.datasetname}
+        />
       )}
 
       {selectedTab === "metadata" && (

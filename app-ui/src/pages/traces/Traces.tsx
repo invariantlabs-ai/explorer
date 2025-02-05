@@ -16,6 +16,12 @@ import {
   BsSearch,
   BsTools,
   BsTrash,
+  BsGear,
+  BsFillRecord2Fill,
+  BsFileEarmarkBreak,
+  BsTerminal,
+  BsLayoutSidebarInsetReverse,
+  BsRecord2Fill,
 } from "react-icons/bs";
 import {
   Link,
@@ -83,7 +89,7 @@ export interface DatasetData {
  */
 function useDataset(
   username: string,
-  datasetname: string,
+  datasetname: string
 ): [DatasetData | null, Response | null] {
   const [dataset, setDataset] = React.useState(null);
   const [error, setError] = React.useState(null as Response | null);
@@ -133,6 +139,8 @@ export interface Trace {
   preloaded?: boolean;
   // number of annotations for this trace
   num_annotations?: number;
+  // number of line annotations
+  num_line_annotations?: number;
 }
 
 /**
@@ -163,7 +171,7 @@ class LightweightTraces {
     public n: number,
     public username: string,
     public datasetname: string,
-    initialData: Record<number, Trace> | null = null,
+    initialData: Record<number, Trace> | null = null
   ) {
     if (initialData) {
       this.data = initialData;
@@ -238,7 +246,7 @@ class LightweightTraces {
     indices.forEach((i) => this.loadingIndices.add(i));
 
     sharedFetch(
-      `/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(",")}`,
+      `/api/v1/dataset/byuser/${this.username}/${this.datasetname}/traces?indices=${indices.join(",")}`
     )
       .then((traces) => {
         // update fetched traces
@@ -263,7 +271,7 @@ class LightweightTraces {
   off(index: number, callback: (Trace) => void) {
     if (this.callbacks[index]) {
       this.callbacks[index] = this.callbacks[index].filter(
-        (c) => c !== callback,
+        (c) => c !== callback
       );
       if (this.callbacks[index].length === 0) {
         this.unschedule(index);
@@ -321,7 +329,7 @@ interface HierarchyPath {
 // hook to load all traces in a dataset, represented as a LightweightTraces object
 function useTraces(
   username: string,
-  datasetname: string,
+  datasetname: string
 ): [LightweightTraces | null, Record<string, HierarchyPath>, () => void] {
   const [traces, setTraces] = React.useState<LightweightTraces | null>(null);
   const [hierarchyPaths, setHierarchyPaths] = React.useState<
@@ -457,7 +465,7 @@ function ShareModalContent(props) {
 // the current user does not have permission to view sharing status)
 function useTraceShared(
   traceId: string | null | undefined,
-  userInfo: UserInfo | null,
+  userInfo: UserInfo | null
 ): [boolean | null, (shared: boolean) => void] {
   const [shared, setShared] = React.useState(false as boolean | null);
   const telemetry = useTelemetry();
@@ -508,7 +516,7 @@ function useTraceShared(
           .catch((e) => alert("Error unsharing trace"));
       }
     },
-    [traceId],
+    [traceId]
   );
 
   if (!traceId || !isUserLoggedIn) {
@@ -544,14 +552,14 @@ type DisplayedTracesT = Record<string, DisplayedTracesRHS>;
 // flattens the displayed indices into a single list of trace indices
 // MAY contain duplicates
 function flattenDisplayedIndices(
-  displayedIndices: DisplayedTracesT | null,
+  displayedIndices: DisplayedTracesT | null
 ): number[] {
   const flattenedDisplayedIndices: number[] = [];
   if (displayedIndices) {
     const keys = Object.keys(displayedIndices).sort(
       (a, b) =>
         (displayedIndices[b].severity || 0) -
-        (displayedIndices[a].severity || 0),
+        (displayedIndices[a].severity || 0)
     );
     keys.forEach((key) => {
       displayedIndices[key].traces.forEach((index) => {
@@ -571,12 +579,12 @@ function useSearch() {
   } = useLoaderData() as any;
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, _setSearchQuery] = React.useState<string | null>(
-    searchParams.get("query") || null,
+    searchParams.get("query") || null
   );
   const [displayedIndices, setDisplayedIndices] =
     React.useState<DisplayedTracesT>({ all: { traces: [] } });
   const [highlightMappings, setHighlightMappings] = React.useState(
-    {} as { [key: number]: any },
+    {} as { [key: number]: any }
   );
   interface SearchQuery {
     query: string;
@@ -594,21 +602,21 @@ function useSearch() {
     query.status = "searching";
     const encodedQuery = encodeURIComponent(query.query);
     return sharedFetch(
-      `/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${encodedQuery}`,
+      `/api/v1/dataset/byuser/${props.username}/${props.datasetname}/s?query=${encodedQuery}`
     )
       .then((data) => {
         query.status = "completed";
         // check that this is still the newest query to complete
         if (
           searchQueue.current.filter(
-            (q) => q.status === "completed" && q.date > query.date,
+            (q) => q.status === "completed" && q.date > query.date
           ).length === 0
         ) {
           setHighlightMappings(data.mappings);
           setDisplayedIndices(data.result);
           // remove all queries that are older than this
           searchQueue.current = searchQueue.current.filter(
-            (q) => q.date >= query.date,
+            (q) => q.date >= query.date
           );
         } else {
           // console.log('discarding result for', query)
@@ -695,10 +703,6 @@ export function Traces(props) {
   const navigate = useNavigate();
   // load the dataset metadata
   const { dataset, datasetLoadingError } = props;
-  // feature set enabled for this dataset
-  const featureSet = new FeatureSet(
-    dataset?.extra_metadata ? dataset.extra_metadata?.featureset : {},
-  );
   // load information about the traces in the dataset
   const [traces, hierarchyPaths, refresh] = useTraces(username, datasetname);
   // trigger whether share modal is shown
@@ -711,7 +715,7 @@ export function Traces(props) {
   // load the sharing status of the active trace (link sharing enabled/disabled)
   const [sharingEnabled, setSharingEnabled] = useTraceShared(
     traces && traceIndex != null ? traces.get(traceIndex)?.id : null,
-    userInfo,
+    userInfo
   );
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
   const [
@@ -758,7 +762,7 @@ export function Traces(props) {
         `/u/${username}/${datasetname}/t/${new_index}` +
           window.location.search +
           window.location.hash,
-        { replace: true },
+        { replace: true }
       );
     }
   }, [traceIndex, traces, displayedIndices]);
@@ -784,11 +788,11 @@ export function Traces(props) {
       navigate(
         `/u/${username}/${datasetname}/t/${traceIndex || ""}` +
           window.location.search +
-          window.location.hash,
+          window.location.hash
       );
       refresh();
     },
-    [username, datasetname],
+    [username, datasetname]
   );
 
   // error state of this view
@@ -813,7 +817,7 @@ export function Traces(props) {
   const onAnnotationCreate = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      trace.num_annotations = (trace.num_annotations ?? 0) + 1;
+      trace.num_line_annotations = (trace.num_line_annotations ?? 0) + 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -821,9 +825,12 @@ export function Traces(props) {
   const onAnnotationDelete = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      if (trace.num_annotations === undefined || trace.num_annotations === 0)
+      if (
+        trace.num_line_annotations === undefined ||
+        trace.num_line_annotations === 0
+      )
         return;
-      trace.num_annotations = trace.num_annotations - 1;
+      trace.num_line_annotations = trace.num_line_annotations - 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -897,6 +904,7 @@ export function Traces(props) {
             searchNow={searchNow}
             searching={searching}
             setHighlightMappings={setHighlightMappings}
+            datasetMetadata={dataset?.extra_metadata}
           />
         )}
         {/* actual trace viewer */}
@@ -962,6 +970,9 @@ export function Traces(props) {
             enableNux={enableNux}
             datasetname={datasetname}
             isUserOwned={isUserOwned}
+            datasetId={dataset.id}
+            username={dataset.user_id}
+            dataset={dataset.name}
           />
         }
         {renderNux && <TracePageNUX />}
@@ -1073,6 +1084,7 @@ function Sidebar(props: {
   searching: boolean;
   hierarchyPaths: Record<string, HierarchyPath>;
   setHighlightMappings: (value: any) => void;
+  datasetMetadata: any;
 }) {
   const searchQuery = props.searchQuery;
   const setSearchQuery = props.setSearchQuery;
@@ -1082,7 +1094,7 @@ function Sidebar(props: {
   const { username, datasetname, traces } = props;
   const [visible, setVisible] = React.useState(true);
   const [activeIndices, setActiveIndices] = React.useState<DisplayedTracesT>(
-    {},
+    {}
   );
 
   // ref to HTML element that contains the ViewportList
@@ -1098,13 +1110,13 @@ function Sidebar(props: {
 
   // tracks which hierarchy panels are collapsed
   const [hierarchyCollapsed, setHierarchyCollapsed] = React.useState(
-    {} as Record<string, boolean>,
+    {} as Record<string, boolean>
   );
 
   const filterRef = React.useRef<HTMLDetailsElement | null>(null);
 
   const [selectedFilter, setSelectedFilter] = React.useState<string | null>(
-    null,
+    null
   );
 
   const filters = [
@@ -1248,7 +1260,7 @@ function Sidebar(props: {
     Object.keys(activeIndices)
       .sort(
         (a, b) =>
-          (activeIndices[b].severity || 0) - (activeIndices[a].severity || 0),
+          (activeIndices[b].severity || 0) - (activeIndices[a].severity || 0)
       )
       .forEach((key) => {
         if (key !== "all" && activeIndices[key].traces.length > 0) {
@@ -1292,11 +1304,11 @@ function Sidebar(props: {
               description={activeIndices[key].description || ""}
               icon={icon || null}
               severity={activeIndices[key].severity || 0}
-            />,
+            />
           );
 
           const indices = (activeIndices[key].traces || []).sort((a, b) =>
-            compareTraces(traces.get(a), traces.get(b)),
+            compareTraces(traces.get(a), traces.get(b))
           );
           indices.forEach((index) => {
             const trace = traces.get(index) || null;
@@ -1316,7 +1328,7 @@ function Sidebar(props: {
                 searchQuery={searchQuery}
                 activeTraceIndex={props.activeTraceIndex}
                 level={0}
-              />,
+              />
             );
           });
         } else {
@@ -1347,7 +1359,7 @@ function Sidebar(props: {
                 className={viewItems.length > 0 ? "spacer" : ""}
                 onToggle={toggleVisibility}
                 collapsed={hierarchyCollapsed[path.slug]}
-              />,
+              />
             );
             // show the traces in the hierarchy path
             indices.forEach((index) => {
@@ -1366,7 +1378,7 @@ function Sidebar(props: {
                   searchQuery={searchQuery}
                   activeTraceIndex={props.activeTraceIndex}
                   level={1}
-                />,
+                />
               );
             });
           });
@@ -1393,7 +1405,7 @@ function Sidebar(props: {
                   searchQuery={searchQuery}
                   activeTraceIndex={props.activeTraceIndex}
                   level={0}
-                />,
+                />
               );
               first = false;
             });
@@ -1467,6 +1479,7 @@ function Sidebar(props: {
           activeIndices={activeIndices}
           searchOrFilterApplied={selectedFilter !== null || searchQuery !== ""}
           clearFiltersAndSearchQuery={clearFiltersAndSearchQuery}
+          datasetMetadata={props.datasetMetadata}
         />
       </header>
       <ul ref={viewportContainerRef}>
@@ -1492,6 +1505,7 @@ function SidebarStatus(props: {
   activeIndices: DisplayedTracesT;
   searchOrFilterApplied: boolean;
   clearFiltersAndSearchQuery: () => void;
+  datasetMetadata: any;
 }) {
   const {
     traces,
@@ -1511,16 +1525,20 @@ function SidebarStatus(props: {
               className="clear-filters"
               onClick={() => clearFiltersAndSearchQuery()}
             >
-              <BsXSquareFill />
-            </button>{" "}
-            Clear filters and search
+              <BsXSquareFill /> Clear filters and search
+            </button>
           </h1>
         )}
         <h1 className="header-long">
-          {Object.values(activeIndices).reduce(
-            (acc, group) => acc + group.traces.length,
-            0,
-          ) + " Traces"}
+          <div>
+            {Object.values(activeIndices).reduce(
+              (acc, group) => acc + group.traces.length,
+              0
+            ) + " Traces"}
+          </div>
+          {!searchOrFilterApplied && (
+            <DatasetStatus metadata={props.datasetMetadata} />
+          )}
         </h1>
       </>
     );
@@ -1531,6 +1549,23 @@ function SidebarStatus(props: {
       </h1>
     );
   }
+}
+
+function DatasetStatus(props: { metadata: any }) {
+  const metadata = props.metadata;
+  if (!metadata) return null;
+
+  // invariant.test_results{"num_tests":10,"num_passed":1}
+  if (metadata["invariant.test_results"]) {
+    const test_results = metadata["invariant.test_results"];
+    return (
+      <div className="dataset-metadata">
+        {test_results.num_passed}/{test_results.num_tests} passed
+      </div>
+    );
+  }
+
+  return null;
 }
 
 /** A single row in the sidebar list of traces */
@@ -1644,8 +1679,8 @@ function TraceRowContents(props: { trace: Trace }) {
     return (
       <>
         {name}
-        {(trace.num_annotations || 0) > 0 ? (
-          <span className="badge">{trace?.num_annotations}</span>
+        {(trace.num_line_annotations || 0) > 0 ? (
+          <span className="badge">{trace?.num_line_annotations}</span>
         ) : null}
         <div className="spacer" />
       </>
@@ -1713,7 +1748,7 @@ export function SingleTrace() {
   // whether link sharing is enabled for the current trace
   const [sharingEnabled, setSharingEnabled] = useTraceShared(
     props.traceId,
-    userInfo,
+    userInfo
   );
   const [showShareModal, setShowShareModal] = React.useState(false);
   // only set if we are showing a snippet trace (a trace without dataset)

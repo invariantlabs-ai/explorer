@@ -117,7 +117,7 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
 
         # add an annotation to Run 1
         await page.locator("div.plugin.code-highlighter").nth(1).click()
-        await page.locator("textarea").fill("Annotation added here.")
+        await page.locator("div.plugin.code-highlighter").nth(1).locator("textarea").fill("Annotation added here.")
         await screenshot(page)
         await page.locator('button[aria-label="save-annotation"]').click()
         await screenshot(page)

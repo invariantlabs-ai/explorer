@@ -13,7 +13,7 @@ import { Metadata } from "../../lib/metadata";
 import { AnalysisResult } from "../../lib/analysis_result";
 import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
-import { RenderedTrace } from "../../lib/traceview/traceview";
+import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
 import { useTelemetry } from "../../telemetry";
 import { AnnotationsParser } from "../../lib/annotations_parser";
@@ -21,7 +21,11 @@ import { HighlightDetails } from "../../HighlightDetails";
 
 import { HighlightsNavigator } from "../../HighlightsNavigator";
 
+import { AnalyzerPreview, AnalyzerSidebar, useAnalyzer } from "./Analyzer";
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
+
+import "./Analyzer.scss";
+
 import {
   BsArrowDown,
   BsArrowsCollapse,
@@ -31,6 +35,7 @@ import {
   BsCheck,
   BsCommand,
   BsDownload,
+  BsLayoutSidebarInsetReverse,
   BsPencilFill,
   BsShare,
   BsTerminal,
@@ -49,7 +54,7 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotations`,
       `/api/v1/trace/${traceId}/annotation`,
       `/api/v1/trace/${traceId}/annotation`,
-      `/api/v1/trace/${traceId}/annotate`,
+      `/api/v1/trace/${traceId}/annotate`
     );
     this.traceId = traceId;
   }
@@ -88,6 +93,8 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.actions - the actions component (e.g. share, download, open in playground)
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  * @param {boolean} props.isUserOwned - whether the trace is owned by the user
+ * @param {boolean} props.enableNux - callback to enable the NUX
+ * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -126,6 +133,11 @@ export function AnnotationAugmentedTraceView(props) {
   // get telemetry object
   const telemetry = useTelemetry();
 
+  const [lastPushedAnalyzerResult, setLastPushedAnalyzerResult] =
+    useState(null);
+
+  const analyzer = useAnalyzer();
+
   // expand all messages
   const onExpandAll = () => {
     setAllExpand(true);
@@ -162,6 +174,53 @@ export function AnnotationAugmentedTraceView(props) {
       events.expandAll?.fire();
     }
   }, [activeTrace]);
+
+  // reset analyzer when trace changes
+  useEffect(() => {
+    analyzer.reset();
+  }, [activeTraceId]);
+
+  // whenever the analyzer finishes, store the result as an annotation
+  useEffect(() => {
+    // do not store anything if the analyzer is not set
+    if (!analyzer) return;
+    // do not store anything yet, if the analyzer is still running
+    if (analyzer.running) return;
+    // only store the analyzer output if the user owns the trace
+    if (!props.isUserOwned) return;
+    if (analyzer.output) {
+      // store the analyzer output in the backend (as an annotation)
+      let analyzer_output = JSON.stringify(analyzer.output);
+
+      // make sure we don't push the same result twice
+      if (analyzer_output == lastPushedAnalyzerResult) return;
+      setLastPushedAnalyzerResult(analyzer_output);
+
+      fetch("/api/v1/trace/" + activeTraceId + "/annotations/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          source: "analyzer-model",
+          annotations: [
+            {
+              content: analyzer_output,
+              address: "<root>",
+              extra_metadata: {
+                source: "analyzer-model",
+              },
+            },
+          ],
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          annotator.refresh();
+        })
+        .catch((error) => console.error(error));
+    }
+  }, [analyzer, analyzer.running, annotator, activeTraceId, props.isUserOwned]);
 
   // whenever annotations change, update mappings
   useEffect(() => {
@@ -241,6 +300,30 @@ export function AnnotationAugmentedTraceView(props) {
     highlights.traceId == activeTraceId
       ? highlights.highlights
       : HighlightedJSON.empty();
+
+  const onDiscardAnalysisResult = async (analysis_annotations) => {
+    await analysis_annotations.forEach(async (a) => {
+      // delete the corresponding stored annotation by ID (if it exists)
+      if (a.id) await annotator.delete(a.id);
+    });
+    // set local analyzer output to null
+    analyzer.setOutput(null);
+    // wait for delete to finish, then refresh the annotations
+    window.setTimeout(() => annotator.refresh(), 20);
+  };
+
+  const [analyzerOpen, _setAnalyzerOpen] = useState(
+    localStorage.getItem("analyzerOpen") == "true"
+  );
+  const setAnalyzerOpen = (open) => {
+    _setAnalyzerOpen(open);
+    localStorage.setItem("analyzerOpen", open);
+  };
+
+  const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
+    new BroadcastEvent()
+  );
+
   return (
     <>
       <header className="toolbar">
@@ -322,6 +405,13 @@ export function AnnotationAugmentedTraceView(props) {
                 )}
               </button>
             )}
+            <button
+              className="inline analyzer-button"
+              onClick={() => setAnalyzerOpen(!analyzerOpen)}
+            >
+              Analysis
+              <BsLayoutSidebarInsetReverse />
+            </button>
           </>
         )}
       </header>
@@ -340,6 +430,38 @@ export function AnnotationAugmentedTraceView(props) {
           traceIndex={activeTraceIndex}
           onUpvoteDownvoteCreate={onAnnotationCreate}
           onUpvoteDownvoteDelete={onAnnotationDelete}
+          prelude={
+            <AnalyzerPreview
+              analyzer={analyzer}
+              open={analyzerOpen}
+              setAnalyzerOpen={setAnalyzerOpen}
+              output={analyzer.output}
+              running={analyzer.running}
+              storedOutput={top_level_annotations.filter(
+                (a) => a.source == "analyzer-model"
+              )}
+              onRunAnalyzer={onRunAnalyzerEvent}
+            />
+          }
+          padding={{ right: analyzerOpen ? "370pt" : "0pt" }}
+        />
+        <AnalyzerSidebar
+          open={analyzerOpen}
+          output={analyzer.output}
+          analyzer={analyzer}
+          running={analyzer.running}
+          debugInfo={analyzer.debugInfo}
+          storedOutput={top_level_annotations.filter(
+            (a) => a.source == "analyzer-model"
+          )}
+          traceId={activeTraceId}
+          datasetId={props.datasetId}
+          username={props.username}
+          onDiscardAnalysisResult={
+            props.isUserOwned ? onDiscardAnalysisResult : null
+          }
+          dataset={props.dataset}
+          onAnalyzeEvent={onRunAnalyzerEvent}
         />
       </div>
       <Tooltip
@@ -367,6 +489,7 @@ function TraceViewContent(props) {
     traceIndex,
     onUpvoteDownvoteCreate,
     onUpvoteDownvoteDelete,
+    padding,
   } = props;
   const EmptyComponent =
     props.empty || (() => <div className="empty">No trace selected</div>);
@@ -405,6 +528,7 @@ function TraceViewContent(props) {
             excluded={["invariant.num-warnings", "invariant.num-failures"]}
           />
           {errors.length > 0 && <AnalysisResult errors={errors} />}
+          {props.prelude}
         </>
       }
       allExpanded={props.allExpanded}
@@ -412,6 +536,7 @@ function TraceViewContent(props) {
       traceIndex={traceIndex}
       onUpvoteDownvoteCreate={onUpvoteDownvoteCreate}
       onUpvoteDownvoteDelete={onUpvoteDownvoteDelete}
+      padding={padding}
     />
   );
 }
@@ -433,7 +558,6 @@ function TopLevelHighlights(props) {
   // render the highlights
   return (
     <div className="event top-level-highlights">
-      <div className="role">Issues</div>
       <HighlightDetails highlights={[highlights]} />
     </div>
   );
@@ -544,6 +668,8 @@ function Annotation(props) {
     );
   }
 
+  const source = props.extra_metadata?.source;
+
   return (
     <div className="annotation">
       <div className="user">
@@ -553,7 +679,14 @@ function Annotation(props) {
         <header className="username">
           <BsCaretLeftFill className="caret" />
           <div>
-            <b>{props.user.username}</b> annotated{" "}
+            <b>{props.user.username}</b>
+            {source && (
+              <span className="source">
+                {" "}
+                via <b>{source}</b>{" "}
+              </span>
+            )}
+            annotated{" "}
             <span className="time">
               {" "}
               <Time>{props.time_created}</Time>{" "}

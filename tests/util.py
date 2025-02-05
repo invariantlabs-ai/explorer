@@ -124,6 +124,11 @@ def data_abc_with_trace_metadata():
 def data_abc():
     with open('./data/abc.jsonl', 'r') as f:
         return f.read()
+    
+@pytest.fixture
+def data_with_annotations():
+    with open('./data/with_annotations.jsonl', 'r') as f:
+        return f.read()
 
 @pytest.fixture
 def data_code():

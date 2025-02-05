@@ -1,0 +1,451 @@
+@import "../../Colors.scss";
+
+.output-running {
+  background-color: #f9f9f9;
+  padding: 10pt;
+  text-align: center;
+  font-size: 10pt;
+  border: 1px solid #ebebeb;
+  width: 200pt;
+  margin: 0 auto;
+  margin-top: 20pt;
+  margin-bottom: 20pt;
+  border-radius: 5pt;
+
+  // <div className='output-running-bar'>
+  // <div className='output-running-bar-inner' />
+  // </div>
+
+  .output-running-bar {
+    width: 100%;
+    height: 2pt;
+    background-color: #ccc;
+    border-radius: 5pt;
+    overflow: hidden;
+    margin-top: 5pt;
+  }
+
+  .output-running-bar-inner {
+    width: 0;
+    transition: width 20ms;
+    height: 100%;
+    background-color: #3e3aff;
+  }
+
+  .output-running-bar-inner {
+    animation: running-bar 30s infinite;
+  }
+}
+
+.output-empty {
+  text-align: center;
+  padding: 20pt;
+  font-size: 10pt;
+  color: #999;
+}
+
+// let's be real: it never really finishes
+@keyframes running-bar {
+  0% {
+    width: 0;
+  }
+
+  20% {
+    width: 20%;
+  }
+
+  40% {
+    width: 30%;
+  }
+
+  60% {
+    width: 40%;
+  }
+
+  80% {
+    width: 50%;
+  }
+
+  100% {
+    width: 95%;
+  }
+}
+
+span.secondary-flashing {
+  color: grey;
+  animation: flashing 1s infinite;
+  font-weight: normal;
+}
+
+@keyframes flashing {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.with-tabs .analyzer-sidebar {
+  top: 75pt;
+  height: calc(100vh - 125pt) !important;
+}
+
+.analyzer-sidebar {
+  flex: 0;
+  padding: 0pt;
+  overflow: hidden;
+  transition: margin-right 0.1s !important;
+  margin-right: 5pt !important;
+  position: fixed !important;
+  right: 5pt;
+  overflow-x: hidden;
+
+  top: 40pt;
+  height: calc(100vh - 90pt) !important;
+
+  .logo {
+    // zoom in on appearance
+    animation: zoomIn 0.2s;
+  }
+
+  h2 {
+    border: none;
+    padding-left: 10pt;
+    padding-top: 5pt;
+    width: calc(100% - 10pt);
+
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+
+    img {
+      width: 15pt;
+      height: 15pt;
+      margin-right: 5pt;
+    }
+
+    button {
+      // no text wrapping
+      white-space: nowrap;
+      text-overflow: unset;
+    }
+  }
+
+  &:not(.open) {
+    margin-right: -320pt !important;
+  }
+
+  .inner-content {
+    padding: 10pt;
+  }
+
+  button.icon {
+    border: 0;
+
+    svg {
+      width: 8pt;
+      height: 8pt;
+      position: relative;
+      top: -2pt;
+    }
+  }
+
+  .analyzer-config {
+    height: 180pt;
+    border-radius: 5pt;
+    overflow: hidden;
+    margin-left: 5pt;
+    margin-right: 5pt;
+    margin-top: 3pt;
+  }
+
+  .box {
+    height: 200pt;
+  }
+
+  .status {
+    position: absolute;
+    bottom: 0pt;
+    right: 0pt;
+    left: 0pt;
+    width: 100%;
+    height: 20pt;
+    padding-left: 0pt;
+    opacity: 0.8;
+    line-height: 20pt;
+    text-align: left;
+    font-weight: normal;
+    font-size: 8pt;
+    margin-right: auto;
+    margin-left: 5pt;
+  }
+
+  .issue {
+    background-color: rgb(245, 245, 245);
+    margin-top: 5pt;
+    border-radius: 5pt;
+    padding: 5pt;
+
+    font-size: 11pt;
+    line-height: 1.5;
+
+    // animate in
+    animation: slideIn 0.2s;
+    position: relative;
+    right: -400pt;
+    animation-fill-mode: forwards;
+
+    &:hover {
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+
+    &:active {
+      background-color: #e6e6e6;
+    }
+
+    // for 1-20, delay animation by 0.1s
+    @for $i from 1 through 20 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.04}s;
+      }
+    }
+  }
+
+  .issues {
+    padding-top: 5pt;
+    padding-left: 5pt;
+    padding-right: 5pt;
+  }
+
+  .severity {
+    font-size: 10pt;
+    color: #666;
+    margin-right: 5pt;
+  }
+
+  .debug-info {
+    font-size: 8pt;
+    font-style: italic;
+    text-align: right;
+    display: block;
+    margin-top: 5pt;
+    margin-right: 10pt;
+
+    span {
+      font-style: italic;
+      margin-right: 4pt;
+      opacity: 0.5;
+      color: #595959;
+    }
+
+    a {
+      color: #939393;
+    }
+  }
+}
+
+.analyzer-loader,
+.analyzer-sidebar h2 .analyzer-loader {
+  background-color: #3e3aff;
+  width: 2pt;
+  height: 2pt;
+  border-radius: 50%;
+  margin-left: -4pt;
+  margin-right: 2pt;
+
+  animation: pulse 2s infinite;
+
+  &.big {
+    width: 30pt;
+    height: 30pt;
+    position: relative;
+    top: 5pt;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.3);
+  }
+
+  50% {
+    transform: scale(0.5);
+  }
+
+  100% {
+    transform: scale(0.3);
+  }
+}
+
+@keyframes zoomIn {
+  0% {
+    transform: scale(0.5);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    right: -100pt;
+  }
+
+  100% {
+    opacity: 1;
+    right: 0pt;
+  }
+}
+
+.locations {
+  display: inline-block;
+
+  .location {
+    display: inline-block;
+    background-color: #e6e6ff;
+    padding: 2pt 5pt;
+    font-size: 8pt;
+    border-radius: 50pt;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:hover {
+      background-color: #d9d9ff;
+      cursor: pointer;
+    }
+
+    &:active {
+      background-color: #ccc;
+    }
+  }
+}
+
+.event.analyzer-hint {
+  padding-top: 5pt;
+  padding-bottom: 5pt;
+
+  border: none;
+  background-color: #0000000c;
+  margin-bottom: 10pt;
+
+  position: relative;
+  transition: background-color 0.1s;
+
+  user-select: none;
+  -webkit-user-select: none;
+  height: 30pt;
+
+  svg.arrow {
+    margin-left: 4pt;
+  }
+
+  button.inline {
+    margin-left: auto;
+    border-radius: 4pt;
+    margin-right: -2pt;
+    height: 25pt;
+    margin-top: -2.5pt;
+    color: white !important;
+    opacity: 1 !important;
+    padding-left: 8pt;
+    padding-right: 8pt;
+
+    .shortcut {
+      margin-left: 2pt;
+      margin-right: -6pt;
+      margin-top: -1.5pt;
+    }
+  }
+
+  a.action {
+    font-size: 10pt;
+    margin-left: auto;
+    opacity: 0.6;
+
+    &:hover {
+      text-decoration: underline;
+      opacity: 0.8;
+    }
+  }
+
+  svg.icon {
+    color: #3e3aff;
+    margin-top: -2pt;
+  }
+
+  .secondary,
+  .secondary-flashing {
+    display: inline-block;
+    margin: 5pt 10pt;
+    color: #1f1f1f;
+    opacity: 0.9;
+    font-weight: 500;
+    font-size: 12pt;
+    display: flex;
+    align-items: center;
+
+    img {
+      width: 15pt;
+      height: 15pt;
+      margin-right: 5pt;
+    }
+
+    .analyzer-loader {
+      margin-top: -10pt;
+    }
+
+    .num-issues {
+      opacity: 0.3;
+      margin-left: 4pt;
+    }
+  }
+
+  svg:not(.right) {
+    margin-right: 5pt;
+  }
+
+  svg.right {
+    position: absolute;
+    right: 20pt;
+    top: calc(50% - 7pt);
+    width: 15pt;
+    height: 15pt;
+    opacity: 0.5;
+  }
+
+  &:hover {
+    background-color: #0000000f;
+    cursor: pointer;
+  }
+
+  &:active {
+    background-color: #0000001f;
+  }
+}
+
+.analyzer-sidebar {
+  pre {
+    white-space: pre-wrap;
+  }
+}
+
+.analyzer-button {
+  svg {
+    margin-left: 8pt;
+    margin-right: 0pt;
+  }
+}
+
+.app-modal .form.analysis {
+  width: 350pt;
+}

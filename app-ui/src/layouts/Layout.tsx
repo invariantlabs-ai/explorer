@@ -23,6 +23,7 @@ import { DeploymentCommit, DeploymentInfo } from "../components/DeploymentInfo";
 import { config } from "../utils/Config";
 import { ConsentBanner, RevokeConsent } from "./ConsentBanner";
 import { SignUpModal } from "../pages/signup/Modal";
+import { ModelAccessModal } from "../pages/traces/ModelModal";
 
 /**
  * Hook to manage a state that transitions between two states with a delay (for animations via CSS classes).
@@ -53,7 +54,7 @@ function useAnimatedClassState(initialState: boolean) {
         }, 100);
       }
     },
-    [state, immState],
+    [state, immState]
   );
 
   if (state) {
@@ -348,6 +349,7 @@ function Layout(props: {
       </div>
       <ConsentBanner />
       <SignUpModal />
+      <ModelAccessModal />
       <Tooltip id="button-tooltip" place="bottom" />
     </>
   );
