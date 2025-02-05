@@ -198,6 +198,8 @@ async function prepareAnalysisInputs(
   }
 }
 
+const TEMPLATE_API_KEY = "<api key on the Explorer above>";
+
 /**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.
  *
@@ -231,6 +233,10 @@ function createAnalysis(
 
   async function startAnalysis() {
     try {
+      if (apikey == TEMPLATE_API_KEY) {
+        throw new Error("Unauthorized: Please provide a valid API key.");
+      }
+
       setRunning(true);
       const response = await fetch(endpoint, {
         method: "POST",
@@ -309,17 +315,21 @@ function createAnalysis(
       setRunning(false);
       setError(error.message);
       setOutput(null);
-      if (error.message.includes("Unauthorized")) {
-        alert(
-          "Unauthorized: Please provide a valid API key to use an analysis model."
-        );
-        return;
-      } else if (
-        error.message.includes("do not have access to this resource")
+
+      if (
+        // in case the server says the user is not whitelisted
+        error.message.includes("do not have access to this resource") ||
+        // in case a user just clicks 'Analyze' with an empty config
+        apikey == TEMPLATE_API_KEY
       ) {
         capture("tried-analysis", { error: error.message });
         // alert("Unauthorized: You do not have access to this resource.");
         alertModelAccess("You do not have access to this resource.");
+        return;
+      } else if (error.message.includes("Unauthorized")) {
+        alert(
+          "Unauthorized: Please provide a valid API key to use an analysis model."
+        );
         return;
       }
 
@@ -462,7 +472,7 @@ export function AnalyzerSidebar(props: {
       (`{
   "model": "i01",
   "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "<api key on the Explorer above>"
+  "apikey": "${TEMPLATE_API_KEY}"
 }` as string | undefined)
   );
 
@@ -709,7 +719,7 @@ function onMountConfigEditor(editor, monaco) {
             insertText: `{
 "model": "i01",
 "endpoint": "https://preview-explorer.invariantlabs.ai",
-"apikey": "<api key on the Explorer above>"
+"apikey": ${TEMPLATE_API_KEY}
 }`,
           },
         ],
