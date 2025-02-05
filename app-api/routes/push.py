@@ -13,6 +13,7 @@ from models.datasets_and_traces import Annotation, Dataset, Trace, db
 from models.queries import load_dataset
 from routes.apikeys import APIIdentity
 from sqlalchemy.orm import Session
+from routes.user import user_by_id
 from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
@@ -30,7 +31,7 @@ async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdent
 
     # extract payload
     payload = await request.json()
-
+    user = user_by_id(user_id)
     # extract api_key
     apikey = request.headers.get("Authorization")
 
@@ -92,8 +93,8 @@ async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdent
             try:
                 dataset = load_dataset(
                     session,
-                    {"User.username": userinfo.get("username"), "name": dataset_name},
-                    str(userid),
+                    {"User.username": user.username, "name": dataset_name},
+                    user_id,
                     allow_public=False,
                     return_user=False,
                 )
@@ -105,12 +106,13 @@ async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdent
                     .first()
                     or (0,)
                 )[0] + 1
+
             except HTTPException as e:
                 # If the dataset is not found, create the dataset.
                 if e.status_code == 404 and e.detail == "Dataset not found":
                     dataset = Dataset(
                         id=uuid.uuid4(),
-                        user_id=str(userid),
+                        user_id=user_id,
                         name=dataset_name,
                         extra_metadata=dict(),
                     )
@@ -176,5 +178,5 @@ async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdent
         return {
             "id": result_ids,
             **({"dataset": dataset.name} if dataset_id else {}),
-            "username": userinfo.get("username"),
+            "username": user.username,
         }
