@@ -22,6 +22,18 @@ keycloak_openid = KeycloakOpenID(
     client_secret_key=os.getenv("KEYCLOAK_CLIENT_ID_SECRET"),
 )
 
+DEVELOPER_USER = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+    "email": "dev@mail.com",
+    "username": "developer",
+    "name": "Developer"
+}
+DEVELOPER_USER2 = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+    "email": "dev2@mail.com",
+    "username": "developer2",
+    "name": "Developer2"
+}
 
 def install_authorization_endpoints(app):
     """
@@ -97,30 +109,20 @@ async def UserIdentity(request: Request) -> UUID | None:
     if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
         "referer", []
     ):
+        request.state.userinfo = DEVELOPER_USER
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh",
+            "refresh_token": "dev-refresh"
         }
 
-        request.state.userinfo = {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-            "email": "dev@mail.com",
-            "username": "developer",
-            "name": "Developer",
-        }
         return UUID(request.state.userinfo["sub"])
 
     if (
         "noauth=user1" in request.headers.get("referer", [])
         and os.getenv("DEV_MODE") == "true"
     ):
-        request.state.userinfo = {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-            "email": "dev2@mail.com",
-            "username": "developer2",
-            "name": "Developer2",
-        }
+        request.state.userinfo = DEVELOPER_USER2
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",

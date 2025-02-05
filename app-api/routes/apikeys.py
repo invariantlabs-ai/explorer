@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, HTTPException, Request
 from models.datasets_and_traces import APIKey, db
 from models.queries import *
-from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.auth import AuthenticatedUserIdentity, UserIdentity, DEVELOPER_USER, DEVELOPER_USER2
 from sqlalchemy.orm import Session
 
 # dataset routes
@@ -103,12 +103,12 @@ async def APIIdentity(request: Request) -> UUID:
         if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
             "referer", []
         ):
-            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ce")
+            return UUID(DEVELOPER_USER["sub"])
         if (
             "noauth=user1" in request.headers.get("referer", [])
             and os.getenv("DEV_MODE") == "true"
         ):
-            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ca")
+            return UUID(DEVELOPER_USER2["sub"])
 
         apikey = request.headers.get("Authorization")
         bearer_token = re.match(r"Bearer (.+)", apikey)
