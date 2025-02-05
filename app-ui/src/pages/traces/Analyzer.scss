@@ -164,6 +164,11 @@ span.secondary-flashing {
     margin-left: 5pt;
     margin-right: 5pt;
     margin-top: 3pt;
+    
+    .editor-widget {
+      max-width: 200pt !important;
+      left: 5px !important;
+    }
   }
 
   .box {

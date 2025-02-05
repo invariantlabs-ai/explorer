@@ -1143,7 +1143,7 @@ function Sidebar(props: {
     let chs = hierarchyCollapsed;
     Object.keys(hierarchyPaths).forEach((key) => {
       if (!chs.hasOwnProperty(key)) {
-        chs[key] = false;
+        chs[key] = true;
       }
     });
     setHierarchyCollapsed(chs);
