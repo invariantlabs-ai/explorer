@@ -5,7 +5,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from models.datasets_and_traces import APIKey, User, db
+from models.datasets_and_traces import APIKey, db
 from models.queries import *
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy.orm import Session
@@ -15,18 +15,17 @@ apikeys = FastAPI()
 
 
 @apikeys.post("/create")
-async def create_apikey(userinfo: UserIdentity = Depends(AuthenticatedUserIdentity)):
+async def create_apikey(user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]):
     """
     Create a new API key for the user.
     """
-    userid = userinfo.get("sub")
 
     with Session(db()) as session:
         key = APIKey.generate_key()
         hashed_key = APIKey.hash_key(key)
 
         apikey = APIKey(
-            hashed_key=hashed_key, user_id=userid, time_created=datetime.datetime.now()
+            hashed_key=hashed_key, user_id=user_id, time_created=datetime.datetime.now()
         )
 
         id = str(apikey.id)
@@ -38,20 +37,19 @@ async def create_apikey(userinfo: UserIdentity = Depends(AuthenticatedUserIdenti
 
 
 @apikeys.get("/list")
-def get_apikeys(userinfo: UserIdentity = Depends(AuthenticatedUserIdentity)):
+def get_apikeys(user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]):
     """Get all API keys for the user."""
-    userid = userinfo.get("sub")
 
     with Session(db()) as session:
         apikeys = (
             session.query(APIKey)
-            .filter(APIKey.user_id == userid)
+            .filter(APIKey.user_id == user_id)
             .order_by(APIKey.expired, APIKey.time_created.desc())
             .all()
         )
 
         return {
-            "userid": userid,
+            "userid": user_id,
             "keys": [
                 {
                     "id": key.id,
@@ -65,17 +63,14 @@ def get_apikeys(userinfo: UserIdentity = Depends(AuthenticatedUserIdentity)):
 
 
 @apikeys.delete("/{key_id}")
-def delete_apikey(
-    key_id: str, userinfo: UserIdentity = Depends(AuthenticatedUserIdentity)
-):
+def delete_apikey(key_id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]):
     """Expire an API key. Keys are never truly deleted, only expired so they can be audited."""
-    userid = userinfo.get("sub")
 
     with Session(db()) as session:
         key = session.query(APIKey).filter(APIKey.id == key_id).first()
         if key is None:
             raise HTTPException(status_code=404, detail="API key not found")
-        if str(key.user_id) != str(userid):
+        if str(key.user_id) != str(user_id):
             raise HTTPException(
                 status_code=403, detail="API key does not belong to user"
             )
@@ -102,26 +97,18 @@ The resulting user identity looks like a UserIdentity object, but limited to the
 """
 
 
-async def APIIdentity(request: Request):
+async def APIIdentity(request: Request) -> UUID:
     try:
         # check for DEV_MODE
         if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
             "referer", []
         ):
-            return {
-                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-                "username": "developer",
-                "apikey": "with DEV_MODE true",
-            }
+            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ca")
         if (
             "noauth=user1" in request.headers.get("referer", [])
             and os.getenv("DEV_MODE") == "true"
         ):
-            return {
-                "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-                "username": "Developer2",
-                "apikey": "with DEV_MODE true",
-            }
+            return UUID("3752ff38-da1a-4fa5-84a2-9e44a4b167ca")
 
         apikey = request.headers.get("Authorization")
         bearer_token = re.match(r"Bearer (.+)", apikey)
@@ -135,8 +122,7 @@ async def APIIdentity(request: Request):
 
         with Session(db()) as session:
             key = (
-                session.query(APIKey, User)
-                .join(User, User.id == APIKey.user_id)
+                session.query(APIKey)
                 .filter(APIKey.hashed_key == hashed_key)
                 .first()
             )
@@ -145,11 +131,8 @@ async def APIIdentity(request: Request):
                     status_code=401, detail="You must provide a valid API key."
                 )
 
-            return {
-                "sub": str(key.User.id),
-                "username": key.User.username,
-                "apikey": "*******" + key.APIKey.hashed_key[-4:],
-            }
+            return UUID(key.user_id)
+
     except Exception:
         raise HTTPException(status_code=401, detail="You must provide a valid API key.")
 
@@ -160,7 +143,7 @@ async def UserOrAPIIdentity(request: Request) -> UUID | None:
         identity = await APIIdentity(request)
     else:
         identity = await UserIdentity(request)
-    return UUID(identity["sub"]) if identity["sub"] else None
+    return identity
 
 
 async def AuthenticatedUserOrAPIIdentity(

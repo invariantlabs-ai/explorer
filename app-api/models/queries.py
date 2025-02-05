@@ -348,7 +348,7 @@ def annotation_to_exported_json(annotation, user=None, **kwargs):
     return out
 
 
-def user_to_json(user):
+def user_to_json(user: User):
     return {
         "id": user.id,
         "username": user.username,

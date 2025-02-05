@@ -25,12 +25,14 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    userid = userinfo.get("sub")
+async def push_trace(request: Request, user_id: Annotated[dict, Depends(APIIdentity)]):
+
 
     # extract payload
     payload = await request.json()
+
+    # extract api_key
+    apikey = request.headers.get("Authorization")
 
     messages = payload.get("messages")
     annotations = payload.get("annotations")
@@ -77,7 +79,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     )
     # mark API key id that was used to upload the trace
     for md in metadata:
-        md["uploader"] = "Via API " + str(userinfo.get("apikey"))
+        md["uploader"] = "Via API " + str(apikey)
 
     traces = []
     with Session(db()) as session:
@@ -130,7 +132,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 index=(next_index + i) if dataset_id else 0,
                 name=message_metadata.get("name", f"Run {next_index + i}"),
                 hierarchy_path=message_metadata.get("hierarchy_path", []),
-                user_id=userid,
+                user_id=user_id,
                 content=message_content,
                 extra_metadata=message_metadata,
             )
@@ -158,7 +160,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 for ann in trace_annotations:
                     new_annotation = Annotation(
                         trace_id=result_ids[i],
-                        user_id=userid,
+                        user_id=user_id,
                         content=ann["content"],
                         address=ann["address"],
                         extra_metadata=ann.get("extra_metadata", None),

@@ -83,9 +83,8 @@ def get_trace_snippets(
 
 @trace.delete("/{id}")
 async def delete_trace(
-    id: str, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         # can only delete own traces
@@ -154,10 +153,8 @@ async def download_trace(
 def get_trace_sharing(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    _: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    # never None (always authenticated)
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         return {"shared": has_link_sharing(session, id)}
@@ -167,10 +164,9 @@ def get_trace_sharing(
 def share_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
     # never None (always authenticated)
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         # load trace to check for auth
@@ -195,9 +191,8 @@ def share_trace(
 def unshare_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(session, id, user_id)  # load trace to check for auth
@@ -217,10 +212,8 @@ def unshare_trace(
 async def annotate_trace(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
-
     with Session(db()) as session:
         trace = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -248,11 +241,10 @@ async def annotate_trace(
 async def replace_annotations(
     request: Request,
     id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
     from sqlalchemy import String
 
-    user_id = userinfo["sub"]
 
     # payload will be {'source': 'annotation-source', 'annotations': [list of annotations]}
     payload = await request.json()
@@ -309,10 +301,9 @@ async def replace_annotations(
 # get all annotations of a trace
 @trace.get("/{id}/annotations")
 def get_annotations(
-    request: Request, id: str, userinfo: Annotated[dict, Depends(UserIdentity)]
+    request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
 ):
-    # may be None for anons
-    user_id = userinfo["sub"]
+    # user_id may be None for anons
 
     with Session(db()) as session:
         trace = load_trace(
@@ -327,9 +318,8 @@ def delete_annotation(
     request: Request,
     id: str,
     annotation_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(
@@ -357,9 +347,8 @@ async def update_annotation(
     request: Request,
     id: str,
     annotation_id: str,
-    userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         trace = load_trace(
@@ -388,9 +377,8 @@ async def update_annotation(
 
 @trace.post("/snippets/new")
 async def upload_new_single_trace(
-    request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-    user_id = userinfo["sub"]
 
     with Session(db()) as session:
         payload = await request.json()
