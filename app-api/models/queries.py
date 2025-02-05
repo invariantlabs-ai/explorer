@@ -100,7 +100,7 @@ def get_query_filter(by, main_object, *other_objects, default_key="id"):
     return and_(*query_filter)
 
 
-def load_dataset(session: Session, by, user_id: UUID, allow_public=False, return_user=False):
+def load_dataset(session: Session, by: dict, user_id: UUID, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Dataset, User)
     # join on user_id to get real user name
     result = (
@@ -111,10 +111,8 @@ def load_dataset(session: Session, by, user_id: UUID, allow_public=False, return
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
-    dataset, user = result
+    dataset, user = result.tuple()
 
-    if dataset is None:
-        raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == str(user_id)):
         raise HTTPException(status_code=401, detail="Unauthorized get")
     # If the dataset is public but the requestor is not the owner, remove the policies from the dataset response.
@@ -426,12 +424,12 @@ def query_traces(session, dataset, query, count=False):
                         try:
                             rhs = float(rhs)
                             rhs_type = "float"
-                        except:
+                        except Exception:
                             pass
                         try:
                             rhs = int(rhs)
                             rhs_type = "int"
-                        except:
+                        except Exception:
                             pass
 
                     if rhs_type == "str":

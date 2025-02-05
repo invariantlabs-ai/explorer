@@ -59,7 +59,7 @@ def install_authorization_endpoints(app):
                 scope="openid profile email",
             )
 
-            userinfo = await keycloak_openid.a_userinfo(access_token["access_token"])
+            _ = await keycloak_openid.a_userinfo(access_token["access_token"])
             response.set_cookie(
                 key="jwt", value=json.dumps(access_token), httponly=True
             )

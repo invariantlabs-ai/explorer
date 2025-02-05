@@ -73,7 +73,7 @@ def get_trace_snippets(
     with Session(db()) as session:
         traces = (
             session.query(Trace)
-            .filter(Trace.user_id == user_id, Trace.dataset_id == None)
+            .filter(Trace.user_id == user_id, Trace.dataset_id is None)
             .order_by(Trace.time_created.desc())
             .limit(limit)
             .all()
@@ -195,7 +195,7 @@ def unshare_trace(
 ):
 
     with Session(db()) as session:
-        trace = load_trace(session, id, user_id)  # load trace to check for auth
+        _ = load_trace(session, id, user_id)  # load trace to check for auth
         shared_link = (
             session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
         )
@@ -243,7 +243,6 @@ async def replace_annotations(
     id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-    from sqlalchemy import String
 
 
     # payload will be {'source': 'annotation-source', 'annotations': [list of annotations]}
@@ -291,7 +290,7 @@ async def replace_annotations(
                 session.add(new_annotation)
 
             session.commit()
-    except Exception as e:
+    except Exception:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="An error occurred while updating annotations")
@@ -306,7 +305,7 @@ def get_annotations(
     # user_id may be None for anons
 
     with Session(db()) as session:
-        trace = load_trace(
+        _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         return [annotation_to_json(a, u) for a, u in load_annotations(session, id)]
@@ -322,7 +321,7 @@ def delete_annotation(
 ):
 
     with Session(db()) as session:
-        trace = load_trace(
+        _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         annotation = (
@@ -351,7 +350,7 @@ async def update_annotation(
 ):
 
     with Session(db()) as session:
-        trace = load_trace(
+        _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
         )  # load trace to check for auth
         annotation, user = (

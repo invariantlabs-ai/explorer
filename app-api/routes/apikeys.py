@@ -6,7 +6,6 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from models.datasets_and_traces import APIKey, db
-from models.queries import *
 from routes.auth import AuthenticatedUserIdentity, UserIdentity, DEVELOPER_USER, DEVELOPER_USER2
 from sqlalchemy.orm import Session
 
