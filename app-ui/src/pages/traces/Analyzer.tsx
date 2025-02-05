@@ -713,7 +713,7 @@ function onMountConfigEditor(editor, monaco) {
 }`,
           },
           {
-            label: "google",
+            label: "sql",
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: `{
   "model": "i01",
@@ -722,9 +722,18 @@ function onMountConfigEditor(editor, monaco) {
   "k": 3,
   "truncate_length": 12000,
   "stateless_retrieval": true,
-  "guidelines": "[<ERROR CODE>] <ERROR MESSAGE> (use <ERROR CODE> in your error message)\n\n[question]\nThe question is unclear, misleading or ambiguous. For example, it does not specify a key part of the task or all the information that needs to be included in the answer.\n\n[gold-sql]\nThe ground truth is wrong or unclear. \n\n[context-retrieval]\nThe information in context retrieval is misleading or incomplete (it can not be incorrect by design).\n\n[column]\nThe result contains either additional or incorrect columns.\n\n[query]\nThe solution query contains a logical error."
+  "guidelines": ` + `"[<ERROR CODE>] <ERROR MESSAGE> (use <ERROR CODE> in your error message)\n\n[question]\nThe question is unclear, misleading or ambiguous. For example, it does not specify a key part of the task or all the information that needs to be included in the answer.\n\n[gold-sql]\nThe ground truth is wrong or unclear. \n\n[context-retrieval]\nThe information in context retrieval is misleading or incomplete (it can not be incorrect by design).\n\n[column]\nThe result contains either additional or incorrect columns.\n\n[query]\nThe solution query contains a logical error."`.replaceAll('\n', '\\n') + `\n}`,
+          },
+          {
+            label: "dojo",
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: `{
+"model": "i01",
+"endpoint": "http://localhost:8000",
+"apikey": "<not needed>"
 }`,
           },
+
         ],
       };
     },
