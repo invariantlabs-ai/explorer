@@ -734,7 +734,7 @@ export function Issues(props: {
   // content: [abc] content
   let errorContent = "";
   let content = props.issue.content;
-  if (content.match(/\[.*\]/)) {
+  if (content && content.match(/\[.*\]/)) {
     let start = content.indexOf("[");
     let end = content.indexOf("]");
     errorContent = content.substring(start + 1, end);
@@ -774,9 +774,11 @@ export function Issues(props: {
       <div className="issue-header">
         <Location location={props.issue.location} />
         <br />
-        <span className="severity">
-          Severity: {(props.issue.severity || 0.0).toString()}
-        </span>
+        {typeof props.issue.severity === "number" && (
+          <span className="severity">
+            Severity: {(props.issue.severity || 0.0).toString()}
+          </span>
+        )}
       </div>
     </div>
   );
