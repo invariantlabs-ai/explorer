@@ -98,7 +98,7 @@ async def UserIdentity(request: Request):
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh"
+            "refresh_token": "dev-refresh",
         }
 
         return {
@@ -114,7 +114,7 @@ async def UserIdentity(request: Request):
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh"
+            "refresh_token": "dev-refresh",
         }
 
         return {
@@ -144,7 +144,7 @@ async def UserIdentity(request: Request):
         return {
             "sub": userinfo["sub"],
             "email": userinfo["email"],
-            "username": userinfo["username"],
+            "username": userinfo["preferred_username"],
             "name": userinfo["name"],
         }
     except Exception:
