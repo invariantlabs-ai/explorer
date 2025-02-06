@@ -73,7 +73,7 @@ def get_trace_snippets(
     with Session(db()) as session:
         traces = (
             session.query(Trace)
-            .filter(Trace.user_id == user_id, Trace.dataset_id is None)
+            .filter(Trace.user_id == user_id, Trace.dataset_id == None)
             .order_by(Trace.time_created.desc())
             .limit(limit)
             .all()
