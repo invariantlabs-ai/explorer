@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -21,6 +22,18 @@ keycloak_openid = KeycloakOpenID(
     client_secret_key=os.getenv("KEYCLOAK_CLIENT_ID_SECRET"),
 )
 
+DEVELOPER_USER = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+    "email": "dev@mail.com",
+    "username": "developer",
+    "name": "Developer"
+}
+DEVELOPER_USER2 = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+    "email": "dev2@mail.com",
+    "username": "developer2",
+    "name": "Developer2"
+}
 
 def install_authorization_endpoints(app):
     """
@@ -46,7 +59,7 @@ def install_authorization_endpoints(app):
                 scope="openid profile email",
             )
 
-            userinfo = await keycloak_openid.a_userinfo(access_token["access_token"])
+            _ = await keycloak_openid.a_userinfo(access_token["access_token"])
             response.set_cookie(
                 key="jwt", value=json.dumps(access_token), httponly=True
             )
@@ -90,39 +103,33 @@ async def write_back_refreshed_token(request: Request, call_next):
     return response
 
 
-async def UserIdentity(request: Request):
+async def UserIdentity(request: Request) -> UUID | None:
+    # None stands for anonymous user
     # check for DEV_MODE
     if os.getenv("DEV_MODE") == "true" and "noauth" not in request.headers.get(
         "referer", []
     ):
+        request.state.userinfo = DEVELOPER_USER
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh",
+            "refresh_token": "dev-refresh"
         }
 
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-            "email": "dev@mail.com",
-            "username": "developer",
-            "name": "Developer",
-        }
+        return UUID(request.state.userinfo["sub"])
+
     if (
         "noauth=user1" in request.headers.get("referer", [])
         and os.getenv("DEV_MODE") == "true"
     ):
+        request.state.userinfo = DEVELOPER_USER2
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh",
+            "refresh_token": "dev-refresh"
         }
 
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-            "email": "dev2@mail.com",
-            "username": "developer2",
-            "name": "Developer2",
-        }
+        return UUID(request.state.userinfo["sub"])
 
     try:
         token = json.loads(request.cookies.get("jwt"))
@@ -136,17 +143,11 @@ async def UserIdentity(request: Request):
             request.state.refreshed_token = token
 
             userinfo = await keycloak_openid.a_userinfo(token["access_token"])
-
         request.state.userinfo = userinfo
 
         assert userinfo["sub"] is not None, "a logged-in user must have a sub"
 
-        return {
-            "sub": userinfo["sub"],
-            "email": userinfo["email"],
-            "username": userinfo["preferred_username"],
-            "name": userinfo["name"],
-        }
+        return UUID(userinfo["sub"])
     except Exception:
         # otherwise, this is an anonymous user
 
@@ -158,12 +159,12 @@ async def UserIdentity(request: Request):
             raise HTTPException(
                 status_code=401, detail="Private instance, login required"
             )
+        request.state.userinfo = None
+        # on public instances, we allow anonymous access to some endpoints. In this case, return None.
+        return None
 
-        # on public instances, we allow anonymous access to some endpoints
-        return {"sub": None, "email": "", "username": "", "name": ""}
 
-
-async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
-    if identity["sub"] is None:
+async def AuthenticatedUserIdentity(identity: Annotated[UUID | None, Depends(UserIdentity)]) -> UUID:
+    if identity is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity

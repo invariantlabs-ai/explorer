@@ -1,47 +1,14 @@
 """Defines routes for APIs related to dataset metadata."""
 
-import datetime
-import json
-import os
-import re
-import uuid
-from enum import Enum
-from typing import Annotated, Any, Optional
+
+from typing import Any
 from uuid import UUID
 
-from cachetools import TTLCache, cached
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import StreamingResponse
-from models.datasets_and_traces import (
-    Annotation,
-    Dataset,
-    DatasetPolicy,
-    SavedQueries,
-    SharedLinks,
-    Trace,
-    User,
-    db,
-)
-from models.importers import import_jsonl
-from models.queries import (
-    dataset_to_json,
-    get_savedqueries,
-    load_annotations,
-    load_dataset,
-    query_traces,
-    search_term_mappings,
-    trace_to_exported_json,
-    trace_to_json,
-)
-from pydantic import ValidationError
-from routes.apikeys import APIIdentity
-from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from sqlalchemy import and_, or_
-from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from models.datasets_and_traces import db
+from models.queries import load_dataset
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from sqlalchemy.sql import exists, func
-from util.util import validate_dataset_name
 
 """
 A metadata field is a field in a datasets 'extra_metadata' dictionary that can be updated via the API. 
@@ -180,7 +147,7 @@ class ReadOnlyMetadataField(MetadataField):
     def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
         pass
     
-async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dict, replace_all: bool = False):
+async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: dict, replace_all: bool = False):
     """
     Updates the metadata of a dataset.
 
@@ -217,7 +184,7 @@ async def update_dataset_metadata(user_id: str, dataset_name: str, metadata: dic
     with Session(db()) as session:
         dataset_response = load_dataset(
             session,
-            {"name": dataset_name, "user_id": uuid.UUID(user_id)},
+            {"name": dataset_name, "user_id": user_id},
             user_id,
             allow_public=True,
             return_user=False,

@@ -13,6 +13,7 @@ from models.datasets_and_traces import Annotation, Dataset, Trace, db
 from models.queries import load_dataset
 from routes.apikeys import APIIdentity
 from sqlalchemy.orm import Session
+from routes.user import user_by_id
 from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
@@ -25,12 +26,14 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIdentity)]):
-    assert userinfo.get("sub") is not None, "cannot resolve API key to user identity"
-    userid = userinfo.get("sub")
+async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]):
+
 
     # extract payload
     payload = await request.json()
+    user = user_by_id(user_id)
+    # extract api_key
+    apikey = request.headers.get("Authorization")
 
     messages = payload.get("messages")
     annotations = payload.get("annotations")
@@ -77,7 +80,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
     )
     # mark API key id that was used to upload the trace
     for md in metadata:
-        md["uploader"] = "Via API " + str(userinfo.get("apikey"))
+        md["uploader"] = "Via API " + str(apikey)
 
     traces = []
     with Session(db()) as session:
@@ -90,8 +93,8 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
             try:
                 dataset = load_dataset(
                     session,
-                    {"User.username": userinfo.get("username"), "name": dataset_name},
-                    str(userid),
+                    {"User.username": user.username, "name": dataset_name},
+                    user_id,
                     allow_public=False,
                     return_user=False,
                 )
@@ -103,12 +106,13 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                     .first()
                     or (0,)
                 )[0] + 1
+
             except HTTPException as e:
                 # If the dataset is not found, create the dataset.
                 if e.status_code == 404 and e.detail == "Dataset not found":
                     dataset = Dataset(
                         id=uuid.uuid4(),
-                        user_id=str(userid),
+                        user_id=user_id,
                         name=dataset_name,
                         extra_metadata=dict(),
                     )
@@ -130,7 +134,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 index=(next_index + i) if dataset_id else 0,
                 name=message_metadata.get("name", f"Run {next_index + i}"),
                 hierarchy_path=message_metadata.get("hierarchy_path", []),
-                user_id=userid,
+                user_id=user_id,
                 content=message_content,
                 extra_metadata=message_metadata,
             )
@@ -158,7 +162,7 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
                 for ann in trace_annotations:
                     new_annotation = Annotation(
                         trace_id=result_ids[i],
-                        user_id=userid,
+                        user_id=user_id,
                         content=ann["content"],
                         address=ann["address"],
                         extra_metadata=ann.get("extra_metadata", None),
@@ -174,5 +178,5 @@ async def push_trace(request: Request, userinfo: Annotated[dict, Depends(APIIden
         return {
             "id": result_ids,
             **({"dataset": dataset.name} if dataset_id else {}),
-            "username": userinfo.get("username"),
+            "username": user.username,
         }
