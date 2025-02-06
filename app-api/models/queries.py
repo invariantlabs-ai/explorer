@@ -25,6 +25,20 @@ from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
 
 import base64
+from fastapi import Request
+from pydantic import BaseModel
+
+
+class ExportConfig(BaseModel):
+    # whether to include trace IDs in the export trace JSON
+    include_trace_ids: bool = False
+
+    @staticmethod
+    def from_request(request: Request) -> "ExportConfig":
+        include_trace_ids = (
+            request.query_params.get("include_trace_ids", "false") == "true"
+        )
+        return ExportConfig(include_trace_ids=include_trace_ids)
 
 
 def load_trace(
@@ -224,18 +238,20 @@ def save_user(session, userinfo):
         )
         session.add(dataset)
 
-        asyncio.run(import_jsonl(
-            session,
-            "Welcome-to-Explorer",
-            user["id"],
-            sample_jsonl,
-            existing_dataset=dataset,
-        ))
+        asyncio.run(
+            import_jsonl(
+                session,
+                "Welcome-to-Explorer",
+                user["id"],
+                sample_jsonl,
+                existing_dataset=dataset,
+            )
+        )
 
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:
-        max_length = config('server_truncation_limit')
+        max_length = config("server_truncation_limit")
     if "uploader" in trace.extra_metadata:
         trace.extra_metadata.pop("uploader")
     out = {
@@ -277,20 +293,21 @@ def annotation_to_json(annotation, user=None, **kwargs):
 # Custom JSON serialization for exporting data out of the database (exclude internal IDs and user information)
 ###
 
+
 async def convert_local_image_link_to_base64(image_link):
-    """Given an image link of the format: `local_img_link: /path/to/image.png`, 
+    """Given an image link of the format: `local_img_link: /path/to/image.png`,
     find the image from the local path and convert it to base64.
     """
     image_path = image_link.split(":")[1].strip()
     try:
         async with aiofiles.open(image_path, "rb") as image_file:
             file_content = await image_file.read()
-            base64_image = base64.b64encode(file_content).decode('utf-8')
-        return 'local_base64_img: ' + base64_image
+            base64_image = base64.b64encode(file_content).decode("utf-8")
+        return "local_base64_img: " + base64_image
     except FileNotFoundError:
         print(f"Image not found at path: {image_path}")
         return None
-    
+
 
 async def images_to_base64(trace):
     """Converts local image links in the trace content to base64 encoded strings in place."""
@@ -301,23 +318,23 @@ async def images_to_base64(trace):
 
     for i, message in enumerate(trace.content):
         if (
-            isinstance(message, dict) and
-            'content' in message and 
-            isinstance(message.get('content'), str) 
-            and message.get('content').startswith('local_img_link')
+            isinstance(message, dict)
+            and "content" in message
+            and isinstance(message.get("content"), str)
+            and message.get("content").startswith("local_img_link")
         ):
             image_tasks.append(
-                (convert_local_image_link_to_base64(message.get('content')), i)
+                (convert_local_image_link_to_base64(message.get("content")), i)
             )
 
     images = await asyncio.gather(*[task[0] for task in image_tasks])
 
     for i, image in enumerate(images):
         if image is not None:
-            trace.content[image_tasks[i][1]]['content'] = image
+            trace.content[image_tasks[i][1]]["content"] = image
 
 
-async def trace_to_exported_json(trace, annotations=None, user=None):
+async def trace_to_exported_json(trace, annotations=None, config: ExportConfig = None):
     # Convert local image links to base64 encoded strings
     await images_to_base64(trace)
 
@@ -327,14 +344,15 @@ async def trace_to_exported_json(trace, annotations=None, user=None):
         "metadata": trace.extra_metadata,
     }
 
+    if config is not None and config.include_trace_ids:
+        out["id"] = trace.id
 
     if annotations is not None:
         out["annotations"] = [
             annotation_to_exported_json(annotation, user=user)
             for annotation, user in annotations
         ]
-    
-    
+
     return out
 
 

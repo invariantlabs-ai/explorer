@@ -443,7 +443,7 @@ export function AnnotationAugmentedTraceView(props) {
               onRunAnalyzer={onRunAnalyzerEvent}
             />
           }
-          padding={{ right: analyzerOpen ? "370pt" : "0pt" }}
+          padding={{ right: analyzerOpen ? "370pt" : "65pt" }}
         />
         <AnalyzerSidebar
           open={analyzerOpen}
