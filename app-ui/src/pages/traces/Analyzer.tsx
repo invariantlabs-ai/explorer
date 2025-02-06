@@ -14,6 +14,8 @@ import { BroadcastEvent } from "../../lib/traceview/traceview";
 import { capture } from "../../telemetry";
 import { alertModelAccess } from "./ModelModal";
 
+import { events } from "fetch-event-stream";
+
 interface Analyzer {
   running: boolean;
   setRunning: (running: boolean) => void;
@@ -254,69 +256,52 @@ function createAnalysis(
 
       if (!response.body) throw new Error("Response body is null");
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let receivedError = false;
 
-      async function readStream() {
-        try {
-          const { value, done } = await reader.read();
-          if (done) {
-            setRunning(false);
-            if (!receivedError) setError(null);
-            return;
-          }
+      let stream = events(response, abortController.signal);
+      let event: any = null;
 
-          let chunk = decoder.decode(value, { stream: true });
-
-          if (chunk.startsWith("data: ")) {
-            chunk = chunk.slice(6); // Remove "data: "
-            try {
-              const chunk_data = JSON.parse(chunk);
-              // handle debug messages separately
-              if (chunk_data.debug) {
-                if (setDebug) {
-                  setDebug(chunk_data.debug);
-                }
-              } else {
-                setOutput((prev) => [...(prev || []), chunk_data]);
+      for await (event of stream) {
+        if (event.data) {
+          try {
+            const chunk_data = JSON.parse(event.data);
+            // handle debug messages separately
+            if (chunk_data.error) {
+              setRunning(false);
+              setError(chunk_data.error);
+              receivedError = true;
+              alert("Analysis Error: " + chunk_data.error);
+              return;
+            } else if (chunk_data.debug) {
+              if (setDebug) {
+                setDebug(chunk_data.debug);
               }
-            } catch {
-              setOutput((prev) => [
-                ...(prev || []),
-                { type: "error", content: "ERROR: " + chunk },
-              ]);
+            } else {
+              setOutput((prev) => [...(prev || []), chunk_data]);
             }
-          } else if (chunk.startsWith("error: ")) {
-            setRunning(false);
-            setError(chunk.slice(7)); // Remove "error: "
-            receivedError = true;
-            alert("Analysis Error: " + chunk.slice(7));
+          } catch {
+            setOutput((prev) => [
+              ...(prev || []),
+              { type: "error", content: "ERROR: " + event.data },
+            ]);
           }
-
-          readStream(); // Continue streaming
-        } catch (streamError: any) {
-          if ("was aborted" in streamError.toString()) {
-            setRunning(false);
-            setError("Analysis was aborted");
-            return;
-          }
-          console.error("Stream Read Error:", streamError);
-          setRunning(false);
-          setError(streamError.message);
-          setOutput(null);
-          alert("Stream Read Error: " + streamError.message);
         }
       }
-
-      readStream();
+      setRunning(false);
+      if (!receivedError) setError(null);
     } catch (error: any) {
-      console.error("Analysis Error:", error);
       setRunning(false);
       setError(error.message);
       setOutput(null);
 
       if (
+        // in case the user aborts the fetch
+        error.toString().includes("Fetch is aborted")
+      ) {
+        setRunning(false);
+        setError("Analysis was aborted");
+        return;
+      } else if (
         // in case the server says the user is not whitelisted
         error.message.includes("do not have access to this resource") ||
         // in case a user just clicks 'Analyze' with an empty config
@@ -331,9 +316,9 @@ function createAnalysis(
           "Unauthorized: Please provide a valid API key to use an analysis model."
         );
         return;
+      } else {
+        alert("Analysis Error: " + error.message);
       }
-
-      alert("Analysis Error: " + error.message);
     }
   }
 
@@ -449,6 +434,29 @@ export function AnalyzerPreview(props: {
   );
 }
 
+function parseConfig(analyzerConfig: string | undefined): {
+  config: any;
+  endpoint: string;
+  apikey: string;
+} {
+  let config = "{}" as any;
+  try {
+    config = JSON.parse(analyzerConfig || "{}");
+  } catch (e) {
+    alert("Analyzer: invalid configuration " + e);
+    throw e;
+  }
+
+  let endpoint =
+    config.endpoint || "https://preview-explorer.invariantlabs.ai/";
+  let apikey = config.apikey || "";
+  if (!apikey) {
+    delete config.apikey;
+  }
+
+  return { config, endpoint, apikey };
+}
+
 /**
  * Sidebar for the analysis of a trace.
  */
@@ -524,21 +532,7 @@ export function AnalyzerSidebar(props: {
       },
     ]);
 
-    let config = "{}" as any;
-    try {
-      config = JSON.parse(analyzerConfig || "{}");
-    } catch (e) {
-      alert("Analyzer: invalid configuration " + e);
-      return;
-    }
-
-    let endpoint =
-      config.endpoint ||
-      "https://preview-explorer.invariantlabs.ai/api/v1/analysis/create";
-    let apikey = config.apikey || "";
-    if (!apikey) {
-      delete config.apikey;
-    }
+    const { config, endpoint, apikey } = parseConfig(analyzerConfig);
 
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
