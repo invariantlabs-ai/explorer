@@ -6,7 +6,12 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from models.datasets_and_traces import APIKey, db
-from routes.auth import AuthenticatedUserIdentity, UserIdentity, DEVELOPER_USER, DEVELOPER_USER2
+from routes.auth import (
+    AuthenticatedUserIdentity,
+    UserIdentity,
+    DEVELOPER_USER,
+    DEVELOPER_USER2,
+)
 from sqlalchemy.orm import Session
 
 # dataset routes
@@ -62,7 +67,9 @@ def get_apikeys(user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]):
 
 
 @apikeys.delete("/{key_id}")
-def delete_apikey(key_id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]):
+def delete_apikey(
+    key_id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
+):
     """Expire an API key. Keys are never truly deleted, only expired so they can be audited."""
 
     with Session(db()) as session:
@@ -122,15 +129,15 @@ async def APIIdentity(request: Request) -> UUID:
         with Session(db()) as session:
             key = (
                 session.query(APIKey)
-                .filter(APIKey.hashed_key == hashed_key)
+                .filter(APIKey.hashed_key == str(hashed_key))
                 .first()
             )
-            if key is None or key.APIKey.expired:
+            if key is None or key.expired:
                 raise HTTPException(
                     status_code=401, detail="You must provide a valid API key."
                 )
 
-            return UUID(key.user_id)
+            return key.user_id
 
     except Exception:
         raise HTTPException(status_code=401, detail="You must provide a valid API key.")
