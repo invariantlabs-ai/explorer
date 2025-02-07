@@ -66,19 +66,17 @@ def install_metrics_middleware(app):
     @app.middleware("http")
     async def count_active_users(request: Request, call_next):
         try:
-            userinfo = await UserIdentity(request)
+            user_id = await UserIdentity(request)
         except Exception:
-            userinfo = {}
+            user_id = None
 
-        userid = userinfo.get("sub") or request.headers.get(
-            "x-forwarded-for", "anonymous"
-        )
+        userid = user_id or request.headers.get("x-forwarded-for", "anonymous")
 
         # ignore the /metrics endpoint
         if not request.url.path.endswith("/metrics"):
             ACTIVE_USERS.add(userid)
             # track anonymous users in a separate set
-            if userinfo.get("sub") is None:
+            if user_id is None:
                 ACTIVE_ANONYMOUS_USERS.add(userid)
 
         active_users.set(len(ACTIVE_USERS))
