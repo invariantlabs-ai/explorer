@@ -367,9 +367,9 @@ class ImageViewer extends React.Component<
       return null;
     }
 
-    // Stop at the next tool message
+    // Stop at the next message where the content is an image
     function stopAtMessage(message: any) {
-      if (message.role === "tool") {
+      if (message.role === "tool" || message.role === "user") {
         // only continue until next tool message
         return true;
       }
