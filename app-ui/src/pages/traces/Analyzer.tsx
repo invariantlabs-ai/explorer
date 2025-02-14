@@ -244,7 +244,8 @@ function createAnalysis(
         method: "POST",
         body,
         headers: {
-          Authorization: "Bearer " + apikey,
+          "Authorization": "Bearer " + apikey,
+          "Content-Type": "application/json",
         },
         signal: abortController.signal,
       });
