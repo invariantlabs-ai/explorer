@@ -979,6 +979,7 @@ class MessageView extends React.Component<
                         highlightContext={this.props.highlightContext}
                         address={this.props.address + ".content"}
                         message={message}
+                        messages={this.props.messages}
                         traceIndex={this.props.traceIndex}
                         onUpvoteDownvoteCreate={
                           this.props.onUpvoteDownvoteCreate
@@ -1066,6 +1067,7 @@ function formatJSONArray(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  messages: any[];
   traceIndex?: number;
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;
@@ -1096,6 +1098,7 @@ function formatJSONArray(props: {
             address={props.address + ".content"}
             highlightContext={props.highlightContext}
             message={props.message}
+            messages={props.messages}
             traceIndex={props.traceIndex}
             onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
             onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
@@ -1111,6 +1114,7 @@ function MessageJSONContent(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  messages: any[];
   traceIndex?: number;
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;
@@ -1139,6 +1143,7 @@ function MessageJSONContent(props: {
                   address={props.address + "." + key}
                   highlightContext={props.highlightContext}
                   message={props.message}
+                  messages={props.messages}
                   traceIndex={props.traceIndex}
                   onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
                   onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
@@ -1503,6 +1508,7 @@ function AnnotatedStringifiedJSON(props: {
   highlightContext?: HighlightContext;
   address: string;
   message?: any;
+  messages?: any[];
   traceIndex?: number;
   onUpvoteDownvoteCreate?: (traceIndex: number) => void;
   onUpvoteDownvoteDelete?: (traceIndex: number) => void;
