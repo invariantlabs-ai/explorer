@@ -5,9 +5,9 @@
 #    pip-compile --output-file=app-api/requirements.txt app-api/requirements.in
 #
 aiofiles==24.1.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 alembic==1.14.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 annotated-types==0.7.0
     # via pydantic
 anyio==4.7.0
@@ -18,7 +18,7 @@ anyio==4.7.0
 async-property==0.2.2
     # via python-keycloak
 cachetools==5.5.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 certifi==2024.12.14
     # via
     #   httpcore
@@ -30,7 +30,7 @@ charset-normalizer==3.4.0
     # via requests
 click==8.1.7
     # via uvicorn
-cryptography==44.0.0
+cryptography==44.0.1
     # via jwcrypto
 deprecation==2.1.0
     # via python-keycloak
@@ -38,10 +38,10 @@ distro==1.9.0
     # via openai
 fastapi==0.115.6
     # via
-    #   -r app-api/requirements.in
+    #   -r requirements.in
     #   fastapi-keycloak-middleware
 fastapi-keycloak-middleware==1.1.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 h11==0.14.0
     # via
     #   httpcore
@@ -66,15 +66,15 @@ mako==1.3.8
 markupsafe==3.0.2
     # via mako
 openai==1.58.1
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 packaging==24.2
     # via deprecation
 pillow==11.0.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 prometheus-client==0.21.1
     # via prometheus-fastapi-instrumentator
 prometheus-fastapi-instrumentator==7.0.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 psycopg2==2.9.10
     # via sqlalchemy
 pycparser==2.22
@@ -88,9 +88,9 @@ pydantic-core==2.27.2
 python-keycloak==4.7.3
     # via fastapi-keycloak-middleware
 python-multipart==0.0.20
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 pyyaml==6.0.2
-    # via -r app-api/requirements.in
+    # via -r requirements.in
 requests==2.32.3
     # via
     #   python-keycloak
@@ -103,7 +103,7 @@ sniffio==1.3.1
     #   openai
 sqlalchemy[postgresql]==2.0.36
     # via
-    #   -r app-api/requirements.in
+    #   -r requirements.in
     #   alembic
 starlette==0.41.3
     # via
@@ -123,4 +123,4 @@ typing-extensions==4.12.2
 urllib3==2.2.3
     # via requests
 uvicorn==0.34.0
-    # via -r app-api/requirements.in
+    # via -r requirements.in
