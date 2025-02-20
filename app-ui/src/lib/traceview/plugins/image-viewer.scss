@@ -62,6 +62,7 @@ span.image-wrapper {
   pointer-events: none;
   border-radius: 2px;
   border-style: solid;
+  border-width: 1px;
   border-color: rgb(88 85 255);
 
   &.test-assertion-passed {
