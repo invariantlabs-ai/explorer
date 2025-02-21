@@ -808,8 +808,6 @@ async def queue_analysis(
             trace_json async for trace_json in traces_exporter.traces(session)
         ]
 
-        print(analysis_input)
-
         # construct analysis context (retrieval examples + some metadata)
         context = {
             "explorer_tracedata": tracedata,

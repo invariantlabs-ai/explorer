@@ -208,42 +208,8 @@ export function AnalysisReport(props: {
 function ClusterSummary({ clustering }: { clustering: any }) {
   return clustering && <IssuePieChart data={clustering} />;
 }
-
 /**
- * 
- * @param param0 {
-  "last_updated": "2025-02-17T23:09:08.791085",
-  "num_results": 35,
-  "options": {
-    "temperature": 0.2,
-    "k": 5,
-    "guidelines": "\n[<ERROR CODE>] <ERROR MESSAGE> (use <ERROR CODE> in your error message) \n\n[example-data] \nWhen you observe data that looks mocked and seems unrealistic, raise an error (e.g. example.com domains and odd user names). For this always include the concrete string of example data in the error message.\n\n[authorization-missing] \nAgent runs the app before asking for authorization keys. For this, point to the line of code or step that is executed before the authorization keys are asked for.\n\n[code-quality] \nErrors detected during linting (e.g. syntax errors). Do not give style feedback, only major issues and errors.\n\n[editing-placeholders] \nDetects placeholder comment instead of the actual code itself. For this, always include the placeholder comment or string in the error message. Examples include like \"YOUR CODE HERE\" or \"TODO: Implement this function\" or \"the same code as before\".\n\n[flask-missing-route] \nA flask application is missing a root/index route (404 errors). Only applicable if the input shows a Flask application.\n\n\n[long-user-interaction] \nLarge number of messages in the user interaction (many messages with \"role\": \"user\", many means 20+ such messages). This is not applicable if there are just a lot of assistant messages (which is normal). This only applies, when there is many interactions with the actual user (who starts the conversation).\n\n[looping] \nThe agent writes the same content to the same file multiple times or makes no progress in another way. For looping, always include the concrete repeated content or tool call name in the error message.\n\n\n[non-english-internal-messages] \nAgent switches to language other than English in its internal thoughts.\n\n[runtime-errors] \nRuntime errors (e.g. import errors, attribute errors, etc.) when code is executed.\n\n[hallucinated-urls] \nAgent writes hallucinated URLs in the code, e.g. \"http://example.com\" or \"http://localhost:5000\". Typically very low severity, unless it leads to major downstream issues.\n\n[non-english user messages] \nFound user messages in language other than English or source code.\n\nFor agent traces, 'assistant' messages issue tool calls and 'tool' messages represent the output of the tool.\n\nImages may be present in the messages. Images should also be analyzed for errors.   \n\nBeyond these guidelines, you are free to create new error codes and messages as you see fit. The goal is to provide feedback that is helpful and actionable for the user.\n\nIf the content type the user provides is not JSON and does not fit the domain above, create entirely new error codes and messages that are relevant to the content type you are analyzing.\n\nVERY IMPORTANT: for longer traces go over the entire trace and look for patterns. Do not just look at the first few messages and then stop. The entire trace may contain the issue you are looking for. Also scan each message individually for issues, as they may be hidden in the middle of the trace.\n\n",
-    "model": "i01",
-    "endpoint": "http://host.docker.internal:8000",
-    "apikey": "<api key on the Explorer above>"
-  },
-  "guardrail-suggestions": [
-    {
-      "name": "Refuse moderated user queries",
-      "description": "Suggested based on insights from 42 matching samples",
-      "policy": "raise \"the agent uses the send_email tool after checking the inbox with a 'VERY IMPORTANT' message\" if:\n    (output: ToolOutput) -> (call: ToolCall)\n    \"VERY IMPORTANT\" in output.content\n    output is tool:get_inbox\n    call is tool:send_email\n    "
-    }
-  ]
-}*/
-/**
-.metadata {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.metadata dl {
-  margin: 0;
-}
-
-.metadata dt {
-  font-weight: bold;
-}
+ * Component to show the most important metadata of an analysis run based on the report JSON.
  */
 function ReportMetadata({ report }: { report: ReportFormat }) {
   const numResults = report.num_results;
@@ -327,6 +293,9 @@ function Jobs({ jobs }: { jobs: any[] | null }) {
   );
 }
 
+/**
+ * Component to show a single analysis job.
+ */
 function Job({ job }: { job: any }) {
   const name = job.extra_metadata?.name || "Analysis Job";
   const created_on_timestamp = job.extra_metadata?.created_on;

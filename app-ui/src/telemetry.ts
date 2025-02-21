@@ -78,22 +78,3 @@ export function useTelemetryWithIdentification(
 
   return telemetry;
 }
-
-/**
- * Returns true if the feature flag with the given name is enabled.
- * 
- * Only checks the flag once per page load.
- */
-export function useFeatureFlag(name: string): boolean {
-  const [enabled, setEnabled] = useState(false);
-  const telemetry = useTelemetry();
-
-  useEffect(() => {
-    telemetry?.posthog?.onFeatureFlags((flags: any) => {
-      console.log("got flags", flags)
-      setEnabled(flags[name]);
-    });
-  }, [name, telemetry]);
-
-  return enabled || config('instance_name') === 'local';
-}

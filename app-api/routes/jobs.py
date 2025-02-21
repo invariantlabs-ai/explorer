@@ -1,3 +1,15 @@
+"""
+Jobs are the Explorer-side representation of long-running operations running on datasets
+like analysis, trace generation, etc.
+
+On the Explorer side, we regularly check the status of all jobs and update their status
+in the database, and apply potential effects of their results (like updating the dataset
+metadata).
+
+Otherwise, Explorer is not responsible for the actual job execution, which is done by
+other services, like the Analysis Model Inference service.
+"""
+
 import datetime
 from typing import Dict, List, Any, Optional
 import aiohttp
@@ -21,7 +33,7 @@ JOB_HANDLERS = {}
 
 def on_job_result(job_type: str):
     """
-    Decorator to register a job handler for a specific job type.
+    Decorator to register a job handler for a specific job type (e.g. 'analysis').
     """
 
     def decorator(f):
@@ -119,6 +131,11 @@ async def cancel_job(session: Session, job: DatasetJob):
 
 
 async def check_job(session: Session, job: DatasetJob):
+    """
+    Checks the status of all active jobs and updates their status in the database.
+
+    If the job is done, it handles the result and deletes the job from the database.
+    """
     endpoint = job.extra_metadata.get("endpoint")
     job_id = job.extra_metadata.get("job_id")
     apikey = job.secret_metadata.get("apikey")
@@ -202,6 +219,11 @@ async def handle_job_result(job: DatasetJob, results: Any):
 
 @on_job_result("analysis")
 async def on_analysis_result(job: DatasetJob, results: Any):
+    """
+    Handles the outcome of 'analysis' jobs.
+
+    The results are stored in the dataset metadata.
+    """
     with Session(db()) as session:
         dataset = load_dataset(
             session, {"id": job.dataset_id}, job.user_id, allow_public=False

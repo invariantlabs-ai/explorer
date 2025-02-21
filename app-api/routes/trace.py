@@ -242,7 +242,11 @@ async def replace_annotations(
     source: str,
     annotations: List[Dict],
 ) -> Dict[str, int]:
-    """Replaces all annotations of a given source with new ones."""
+    """
+    Replaces all annotations of a given source with new ones.
+
+    This is used, e.g. to update the analysis model output, once a new run has completed.
+    """
 
     if not isinstance(annotations, list):
         raise ValueError("Annotations must be a list")
@@ -275,7 +279,6 @@ async def replace_annotations(
     return {"deleted": num_deleted, "inserted": num_inserted}
 
 
-# FastAPI endpoint
 @trace.post("/{id}/annotations/update")
 async def update_annotations(
     request: Request,

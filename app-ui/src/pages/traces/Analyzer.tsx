@@ -204,57 +204,6 @@ async function prepareAnalysisInputs(
   }
 }
 
-/**
- * Creates the analysis inputs for a dataset-level analysis.
- *
- * In contrast to the trace-level analysis, the dataset-level analysis retrieves the full dataset via /download (not just annotated), and passes it as input to the analysis model.
- */
-export function prepareDatasetAnalysisInputs(
-  dataset_id: string,
-  username?: string,
-  dataset?: string
-) {
-  // these two in parallel:
-  // fetch all traces in dataset
-  const task1 = fetch(
-    `/api/v1/dataset/byid/${dataset_id}/download?include_trace_ids=true`
-  )
-    .then((response) => response.text())
-    // remove first line
-    .then((data) => {
-      // process line by line, ignore first line, parse rest as JSON and extract down to the 'messages' object
-      const lines = data.split("\n");
-      let trace_data = [] as string[];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i]) continue;
-        const parsed = JSON.parse(lines[i]);
-        trace_data.push(JSON.stringify(parsed.messages));
-      }
-      return trace_data;
-    });
-
-  // fetch annotated traces to be included as context
-  const task2 = fetch(
-    `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`
-  )
-    .then((response) => response.text())
-    .catch((error) => {
-      console.error("Failed to fetch annotated traces:", error);
-      return "";
-    });
-
-  return Promise.all([task1, task2]).then(([traceData, context]) => {
-    return {
-      input: traceData,
-      context: {
-        explorer_tracedata: context,
-        user: username,
-        dataset: dataset,
-      },
-    };
-  });
-}
-
 const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
 /**
