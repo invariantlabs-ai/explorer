@@ -2859,10 +2859,14 @@ span.highlight-dot {
   background-color: #3d3aff;
   position: relative;
   top: -0.5em;
+
+  &.red {
+    background-color: #ff3d3d;
+  }
 }
 
 .insights {
-  margin-top: 40px !important;
+  margin-top: 20pt !important;
   margin: auto;
   border-radius: 5pt;
   padding: 10pt;
@@ -2892,7 +2896,17 @@ span.highlight-dot {
         overflow: auto;
         white-space: pre-wrap;
         font-size: 10pt;
-        max-height: 200pt;
+        width: calc(100% - 20pt);
+        height: calc(100% - 50pt);
+        background-color: #f1f1f1;
+        margin: 5pt;
+        border-radius: 5pt;
+        padding: 5pt;
+        // hide scrollbar
+
+        &::-webkit-scrollbar {
+          display: none;
+        }
       }
 
       h1 {
@@ -2956,6 +2970,35 @@ span.highlight-dot {
           display: flex;
           gap: 5pt;
         }
+      }
+    }
+
+    .tile.scroll {
+      h1 {
+        position: sticky;
+        top: 5pt;
+      }
+
+      overflow-y: auto;
+      overflow-x: hidden;
+      max-height: 400pt;
+    }
+
+    table.metadata {
+      width: 100%;
+
+      // table, td should vertically align to the top
+      th {
+        vertical-align: top;
+        text-align: right;
+        min-width: 120pt;
+        padding-right: 10pt;
+        opacity: 0.8;
+      }
+
+      pre {
+        margin-top: -3pt;
+        overflow: auto;
       }
     }
   }

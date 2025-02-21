@@ -26,7 +26,7 @@ import { config } from "../../utils/Config";
 import { useFeatureFlag, useTelemetry } from "../../telemetry";
 import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
-import { Insights } from "./Insights";
+import { AnalysisReport } from "./AnalysisTab";
 import { Guardrails } from "./Guardrails";
 
 interface Query {
@@ -168,13 +168,6 @@ function DatasetView() {
       "traces"
   );
 
-  // optional tabs
-  const hasAnalysisTab = useFeatureFlag("analysis-tab");
-  const hasGuardrailsTab = useFeatureFlag("guardrails-tab");
-
-  console.log("hasAnalysisTab", hasAnalysisTab);
-  console.log("hasGuardrailsTab", hasGuardrailsTab);
-
   const setSelectedTab = (tab) => {
     const url = new URL(window.location.href);
     url.searchParams.set("tab", tab);
@@ -258,10 +251,6 @@ function DatasetView() {
       delete filteredMetadata["analysis_report"];
     }
 
-    if ("guardrails" in filteredMetadata) {
-      delete filteredMetadata["guardrails"];
-    }
-
     return filteredMetadata;
   };
 
@@ -299,17 +288,6 @@ function DatasetView() {
           </button>
         )}
         <button
-          key="guardrails"
-          className={`tab ${"guardrails" === selectedTab ? "active" : ""}`}
-          onClick={() => setSelectedTab("guardrails")}
-        >
-          <div className="inner">
-            <BsDatabaseLock />
-            Guardrails
-            <span className="highlight-dot"></span>
-          </div>
-        </button>
-        <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("metadata")}
@@ -340,20 +318,9 @@ function DatasetView() {
       )}
 
       {selectedTab === "insights" && (
-        <Insights
+        <AnalysisReport
           dataset={dataset}
           datasetLoadingError={datasetError}
-          username={props.username}
-          datasetname={props.datasetname}
-          onRefreshReport={() => datasetLoader.refresh()}
-        />
-      )}
-
-      {selectedTab === "guardrails" && (
-        <Guardrails
-          dataset={dataset}
-          datasetLoadingError={datasetError}
-          datasetError={datasetError}
           username={props.username}
           datasetname={props.datasetname}
           onRefreshReport={() => datasetLoader.refresh()}

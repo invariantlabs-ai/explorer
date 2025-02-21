@@ -43,7 +43,7 @@ export interface ReportFormat {
  *
  * This component is rendered as a separate tab in the dataset view.
  */
-export function Insights(props: {
+export function AnalysisReport(props: {
   dataset: any;
   datasetLoadingError: any;
   username: string;
@@ -69,6 +69,9 @@ export function Insights(props: {
         if (r.length === 0 && props.onRefreshReport) {
           props.onRefreshReport();
         }
+      })
+      .catch((e) => {
+        console.error("Failed to refresh jobs", e);
       });
   };
 
@@ -104,10 +107,12 @@ export function Insights(props: {
           r.text().then((t) => console.error(t));
           throw new Error("Failed to start analysis job");
         }
-
         return r.json();
       })
       .then((r) => {
+        if (!r) {
+          throw new Error("Failed to start analysis job");
+        }
         setJobs((jobs) => [...(jobs || []), r]);
         refreshJobs();
       })
@@ -143,12 +148,6 @@ export function Insights(props: {
               <div className="tile wide">
                 <h1>Issue Types</h1>
                 <ClusterSummary clustering={report?.clustering?.clusters} />
-              </div>
-            )}
-            {report && (
-              <div className="tile">
-                <h1>Top Issues</h1>
-                <TopIssues clustering={report?.clustering?.clusters} />
               </div>
             )}
             {report && (
@@ -307,54 +306,6 @@ function ReportMetadata({ report }: { report: ReportFormat }) {
         )}
       </tbody>
     </table>
-  );
-}
-
-function TopIssues({ clustering }: { clustering: any }) {
-  // count number of issues and show list of top-5 clusters
-  const numIssues = clustering.reduce(
-    (acc: number, cluster: any) => acc + cluster.issues.length,
-    0
-  );
-
-  const navigate = useNavigate();
-
-  const topClusters = clustering
-    .map((cluster: any) => ({
-      name: cluster.name,
-      issues: cluster.issues,
-    }))
-    .sort((a: any, b: any) => b.issues.length - a.issues.length)
-    .slice(0, 5);
-
-  return (
-    <div className="top-issues">
-      <ul>
-        {topClusters.map((cluster: any) => (
-          <li
-            key={cluster.name}
-            onClick={() => {
-              // get cluster indices from data and navigate to /t/?query=filter:cluster_name:id1,id2,id3
-              const clusterIndices = cluster.issues.map(
-                (issue: any) => issue.metadata?.index
-              );
-              const clusterFilter = `filter:${cluster.name}:${clusterIndices.join(",")}`;
-              // current address looks like: http://localhost/u/developer/abc/t/41
-              // navigate to ?query=filter:cluster_name:id1,id2,id3
-              navigate({
-                search: `?query=${clusterFilter}`,
-              });
-              setTimeout(() => window.location.reload(), 10);
-            }}
-          >
-            <BsExclamationCircle />
-            <span className="name">{cluster.name}</span>
-            <span className="spacer" />
-            <span className="count">{cluster.issues.length}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

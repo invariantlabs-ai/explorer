@@ -758,131 +758,124 @@ async def queue_analysis(
     """
     Queue an analysis job for a dataset.
     """
-    try:
-        with Session(db()) as session:
-            # first check for pending dataset jobs of type 'analysis'
-            pending_jobs = [
-                job
-                for job in load_jobs(session, dataset_id=id, user_id=user_id)
-                if job.extra_metadata.get("type") == "analysis"
-            ]
+    with Session(db()) as session:
+        # first check for pending dataset jobs of type 'analysis'
+        pending_jobs = [
+            job
+            for job in load_jobs(session, dataset_id=id, user_id=user_id)
+            if job.extra_metadata.get("type") == "analysis"
+        ]
 
-            # do not allow multiple analysis jobs for the same dataset
-            if len(pending_jobs) > 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail="There is already an analysis job pending for this dataset.",
-                )
-
-            # get all traces to include in analysis context
-            context_exporter = TraceExporter(
-                user_id=user_id,
-                dataset_id=id,
-                export_config=ExportConfig(only_annotated=True, include_trace_ids=True),
+        # do not allow multiple analysis jobs for the same dataset
+        if len(pending_jobs) > 0:
+            raise HTTPException(
+                status_code=400,
+                detail="There is already an analysis job pending for this dataset.",
             )
 
-            user, dataset_info, trace_generator = await context_exporter.prepare(
-                session
+        # get all traces to include in analysis context
+        context_exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=ExportConfig(only_annotated=True, include_trace_ids=True),
+        )
+
+        user, dataset_info, trace_generator = await context_exporter.prepare(session)
+
+        # ensure user owns this dataset
+        if dataset_info["user_id"] != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Not allowed to queue analysis for this dataset, if you are not the owner.",
             )
 
-            # ensure user owns this dataset
-            if dataset_info["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Not allowed to queue analysis for this dataset, if you are not the owner.",
-                )
+        # get trace data
+        tracedata = "".join([trace_json async for trace_json in trace_generator()])
 
-            # get trace data
-            tracedata = "".join([trace_json async for trace_json in trace_generator()])
+        # get all other dataset traces
+        traces_exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=ExportConfig(
+                only_annotated=False,
+                include_trace_ids=True,
+                include_annotations=False,
+            ),
+        )
 
-            # get all other dataset traces
-            traces_exporter = TraceExporter(
-                user_id=user_id,
-                dataset_id=id,
-                export_config=ExportConfig(
-                    only_annotated=False,
-                    include_trace_ids=True,
-                    include_annotations=False,
-                ),
-            )
+        # construct analysis input
+        analysis_input = [
+            trace_json async for trace_json in traces_exporter.traces(session)
+        ]
 
-            # construct analysis input
-            analysis_input = [
-                trace_json async for trace_json in traces_exporter.traces(session)
-            ]
+        print(analysis_input)
 
-            print(analysis_input)
+        # construct analysis context (retrieval examples + some metadata)
+        context = {
+            "explorer_tracedata": tracedata,
+            "dataset": dataset_info["name"],
+            "user": user.username,
+        }
 
-            # construct analysis context (retrieval examples + some metadata)
-            context = {
-                "explorer_tracedata": tracedata,
-                "dataset": dataset_info["name"],
-                "user": user.username,
-            }
+        # keep api key as secret metadata in the DB, so we can check and
+        # retrieve the job status later (deleted once job is done)
+        secret_metadata = {
+            "apikey": analysis_request.apikey,
+        }
 
-            # keep api key as secret metadata in the DB, so we can check and
-            # retrieve the job status later (deleted once job is done)
-            secret_metadata = {
-                "apikey": analysis_request.apikey,
-            }
-
-            try:
-                async with aiohttp.ClientSession() as client:
-                    # queue job with analysis service
-                    async with client.post(
-                        f"{analysis_request.endpoint}/api/v1/analysis/job",
-                        json={
-                            "input": analysis_input,
-                            "context": context,
-                            "options": analysis_request.options,
-                        },
-                        headers={"Authorization": f"Bearer {analysis_request.apikey}"},
-                    ) as response:
-                        # if status is bad, raise exception
-                        if response.status != 200:
-                            raise HTTPException(
-                                status_code=response.status,
-                                detail="Analysis service returned an error.",
-                            )
-
-                        result = await response.json()
-                        job_id = result["job_id"]
-                        status = result.get("status", "queued")
-
-                        # create DatasetJob object to keep track of this job
-
-                        # basic job metadata
-                        job_metadata = {
-                            "name": "Analysis Run",
-                            "type": "analysis",
-                            "created_on": str(
-                                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            ),
-                            "endpoint": analysis_request.endpoint,
-                            "status": status,
-                            "job_id": job_id,
-                        }
-
-                        job = DatasetJob(
-                            id=uuid.uuid4(),
-                            user_id=user_id,
-                            dataset_id=id,
-                            extra_metadata=job_metadata,
-                            secret_metadata=secret_metadata,
+        try:
+            async with aiohttp.ClientSession() as client:
+                # queue job with analysis service
+                async with client.post(
+                    f"{analysis_request.endpoint}/api/v1/analysis/job",
+                    json={
+                        "input": analysis_input,
+                        "context": context,
+                        "options": analysis_request.options,
+                    },
+                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                ) as response:
+                    # if status is bad, raise exception
+                    if response.status != 200:
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail="Analysis service returned an error.",
                         )
-                        session.add(job)
-                        session.commit()
 
-                        return job.to_dict()
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to reach analysis service: " + str(e),
-                ) from e
-    except Exception as e:
-        import traceback
+                    result = await response.json()
+                    job_id = result["job_id"]
+                    status = result.get("status", "queued")
 
-        traceback.print_exc()
+                    # create DatasetJob object to keep track of this job
+
+                    # basic job metadata
+                    job_metadata = {
+                        "name": "Analysis Run",
+                        "type": "analysis",
+                        "created_on": str(
+                            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        ),
+                        "endpoint": analysis_request.endpoint,
+                        "status": status,
+                        "job_id": job_id,
+                    }
+
+                    job = DatasetJob(
+                        id=uuid.uuid4(),
+                        user_id=user_id,
+                        dataset_id=id,
+                        extra_metadata=job_metadata,
+                        secret_metadata=secret_metadata,
+                    )
+                    session.add(job)
+                    session.commit()
+
+                    return job.to_dict()
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to reach analysis service: " + str(e),
+            ) from e
 
 
 @dataset.get("/byid/{id}/download/annotated")

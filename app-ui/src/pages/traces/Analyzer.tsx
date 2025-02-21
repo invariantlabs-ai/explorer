@@ -282,28 +282,6 @@ function createAnalysis(
   const abortController = new AbortController();
   const endpoint = baseurl + "/api/v1/analysis/create";
 
-  // server side we have
-  /**
-    class AnalysisRunParameters(BaseModel):
-    # analysis input data
-    input: str = Field(
-        ..., example='[{"role": "assistant", "content": "I am an agent"}]'
-    )
-
-    # model configuration options (example provided but no default)
-    options: dict = Field(..., example={"model": "i01", "temperature": 0.7, "k": 5})
-
-    # context to run analysis in
-    context: dict = Field(
-        ...,
-        example={"user": "myuser", "dataset": "mydataset"},
-    )
-   */
-
-  console.log(typeof traceData);
-  console.log(typeof config, config);
-  console.log(typeof context, context);
-
   const body = JSON.stringify({
     input: traceData,
     options: config,
@@ -748,7 +726,10 @@ export function AnalyzerSidebar(props: {
               <Loading key="issues-loading" />
             ) : null
           ) : (
-            <Issues key={props.traceId + "-" + "issue-" + i} issue={output} />
+            <Issues
+              key={props.traceId + "-" + "issue-" + i + "-" + output.content}
+              issue={output}
+            />
           )
         )}
       </div>
