@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+from typing import List
 from uuid import UUID, uuid4
 
 import aiofiles
@@ -11,6 +12,7 @@ from fastapi import HTTPException
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
+    DatasetJob,
     SavedQueries,
     SharedLinks,
     Trace,
@@ -26,10 +28,135 @@ from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
 
 import base64
+from fastapi import Request
+from pydantic import BaseModel
+import uuid
+
+from .datasets_and_traces import db
+
+
+class ExportConfig(BaseModel):
+    # whether to include trace IDs in the export trace JSON
+    include_trace_ids: bool = False
+    only_annotated: bool = False
+    include_trace_metadata: bool = True
+    include_annotations: bool = True
+
+    @staticmethod
+    def from_request(request: Request) -> "ExportConfig":
+        include_trace_ids = (
+            request.query_params.get("include_trace_ids", "false") == "true"
+        )
+        return ExportConfig(include_trace_ids=include_trace_ids)
+
+
+class DBJSONEncoder(json.JSONEncoder):
+    """
+    JSON encoder that can handle UUIDs and datetime objects.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+
+class TraceExporter:
+    def __init__(self, user_id: str, dataset_id: str, export_config: ExportConfig):
+        self.user_id = user_id
+        self.dataset_id = dataset_id
+        self.export_config = export_config
+
+    async def prepare(self, session: Session):
+        dataset, user = load_dataset(
+            session,
+            {"id": self.dataset_id},
+            self.user_id,
+            allow_public=True,
+            return_user=True,
+        )
+        dataset_info = dataset_to_json(dataset)
+        dataset_metadata = {
+            "metadata": {**dataset_info["extra_metadata"]},
+        }
+
+        async def trace_generator():
+            if self.export_config.include_trace_metadata:
+                # write out metadata message
+                yield json.dumps(dataset_metadata) + "\n"
+
+            if self.export_config.only_annotated:
+                traces = (
+                    session.query(Trace)
+                    .filter(Trace.dataset_id == self.dataset_id)
+                    .join(Annotation, Trace.id == Annotation.trace_id)
+                    .group_by(Trace.id)
+                    .having(func.count(Annotation.id) > 0)
+                    .order_by(Trace.index)
+                    .all()
+                )
+            else:
+                traces = (
+                    session.query(Trace)
+                    .filter(Trace.dataset_id == self.dataset_id)
+                    .order_by(Trace.index)
+                    .all()
+                )
+
+            # write out traces
+            for trace in traces:
+                # load annotations for this trace
+                annotations = (
+                    load_annotations(session, trace.id)
+                    if self.export_config.include_annotations
+                    else None
+                )
+                json_dict = await trace_to_exported_json(
+                    trace, annotations, self.export_config
+                )
+                yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
+
+                # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
+
+        return user, dataset_info, trace_generator
+
+    async def traces(self, session: Session):
+        """
+        Async generator that yields JSON strings for each trace in the dataset according to the export configuration.
+        """
+        _, _, trace_generator = await self.prepare(session)
+
+        async for trace in trace_generator():
+            yield trace
+
+    async def stream(self, session: Session):
+        """
+        Streaming FastAPI response that streams JSON lines for each trace in the dataset according to the export configuration.
+        """
+        from fastapi.responses import StreamingResponse
+
+        _, dataset_info, trace_generator = await self.prepare(session)
+
+        return StreamingResponse(
+            trace_generator(),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": 'attachment; filename="'
+                + dataset_info["name"]
+                + '.jsonl"'
+            },
+        )
 
 
 def load_trace(
-    session: Session, by: UUID | str, user_id: UUID, allow_shared:bool=False, allow_public:bool=False, return_user:bool=False
+    session: Session,
+    by: UUID | str,
+    user_id: UUID,
+    allow_shared: bool = False,
+    allow_public: bool = False,
+    return_user: bool = False,
 ):
     if not isinstance(by, UUID):
         try:
@@ -73,6 +200,30 @@ def load_trace(
         return trace
 
 
+def load_jobs(
+    session: Session, dataset_id: UUID, user_id: UUID, return_user: bool = False
+) -> List[DatasetJob]:
+    query_filter = get_query_filter(
+        {"dataset_id": dataset_id, "user_id": user_id}, DatasetJob
+    )
+    if return_user:
+        result = (
+            session.query(DatasetJob, User)
+            .filter(query_filter)
+            .join(User, User.id == DatasetJob.user_id)
+            .all()
+        )
+    else:
+        result = session.query(DatasetJob).filter(query_filter).all()
+
+    return result
+
+
+def get_all_jobs(session: Session) -> List[DatasetJob]:
+    result = session.query(DatasetJob).all()
+    return result
+
+
 # TODO: Fix typo in the function name
 def load_annotations(session: Session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
@@ -100,7 +251,9 @@ def get_query_filter(by, main_object, *other_objects, default_key="id"):
     return and_(*query_filter)
 
 
-def load_dataset(session: Session, by: dict, user_id: UUID, allow_public=False, return_user=False):
+def load_dataset(
+    session: Session, by: dict, user_id: UUID, allow_public=False, return_user=False
+):
     query_filter = get_query_filter(by, Dataset, User)
     # join on user_id to get real user name
     result = (
@@ -184,9 +337,10 @@ def has_link_sharing(session: Session, trace_id: UUID):
 
 
 def save_user(session, userinfo):
+    print(userinfo, flush=True)
     user = {
         "id": userinfo["sub"],
-        "username": userinfo["username"],
+        "username": userinfo.get("username", userinfo.get("preferred_username")),
         "image_url_hash": get_gravatar_hash(userinfo["email"]),
     }
     stmt = sqlite_upsert(User).values([user])
@@ -222,18 +376,20 @@ def save_user(session, userinfo):
         )
         session.add(dataset)
 
-        asyncio.run(import_jsonl(
-            session,
-            "Welcome-to-Explorer",
-            user["id"],
-            sample_jsonl,
-            existing_dataset=dataset,
-        ))
+        asyncio.run(
+            import_jsonl(
+                session,
+                "Welcome-to-Explorer",
+                user["id"],
+                sample_jsonl,
+                existing_dataset=dataset,
+            )
+        )
 
 
 def trace_to_json(trace, annotations=None, user=None, max_length=None):
     if max_length is None:
-        max_length = config('server_truncation_limit')
+        max_length = config("server_truncation_limit")
     if "uploader" in trace.extra_metadata:
         trace.extra_metadata.pop("uploader")
     out = {
@@ -275,20 +431,21 @@ def annotation_to_json(annotation, user=None, **kwargs):
 # Custom JSON serialization for exporting data out of the database (exclude internal IDs and user information)
 ###
 
+
 async def convert_local_image_link_to_base64(image_link):
-    """Given an image link of the format: `local_img_link: /path/to/image.png`, 
+    """Given an image link of the format: `local_img_link: /path/to/image.png`,
     find the image from the local path and convert it to base64.
     """
     image_path = image_link.split(":")[1].strip()
     try:
         async with aiofiles.open(image_path, "rb") as image_file:
             file_content = await image_file.read()
-            base64_image = base64.b64encode(file_content).decode('utf-8')
-        return 'local_base64_img: ' + base64_image
+            base64_image = base64.b64encode(file_content).decode("utf-8")
+        return "local_base64_img: " + base64_image
     except FileNotFoundError:
         print(f"Image not found at path: {image_path}")
         return None
-    
+
 
 async def images_to_base64(trace):
     """Converts local image links in the trace content to base64 encoded strings in place."""
@@ -299,23 +456,23 @@ async def images_to_base64(trace):
 
     for i, message in enumerate(trace.content):
         if (
-            isinstance(message, dict) and
-            'content' in message and 
-            isinstance(message.get('content'), str) 
-            and message.get('content').startswith('local_img_link')
+            isinstance(message, dict)
+            and "content" in message
+            and isinstance(message.get("content"), str)
+            and message.get("content").startswith("local_img_link")
         ):
             image_tasks.append(
-                (convert_local_image_link_to_base64(message.get('content')), i)
+                (convert_local_image_link_to_base64(message.get("content")), i)
             )
 
     images = await asyncio.gather(*[task[0] for task in image_tasks])
 
     for i, image in enumerate(images):
         if image is not None:
-            trace.content[image_tasks[i][1]]['content'] = image
+            trace.content[image_tasks[i][1]]["content"] = image
 
 
-async def trace_to_exported_json(trace, annotations=None, user=None):
+async def trace_to_exported_json(trace, annotations=None, config: ExportConfig = None):
     # Convert local image links to base64 encoded strings
     await images_to_base64(trace)
 
@@ -325,14 +482,15 @@ async def trace_to_exported_json(trace, annotations=None, user=None):
         "metadata": trace.extra_metadata,
     }
 
+    if config is not None and config.include_trace_ids:
+        out["id"] = trace.id
 
     if annotations is not None:
         out["annotations"] = [
             annotation_to_exported_json(annotation, user=user)
             for annotation, user in annotations
         ]
-    
-    
+
     return out
 
 

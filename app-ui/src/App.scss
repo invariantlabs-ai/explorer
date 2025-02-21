@@ -1888,6 +1888,7 @@ table.api-keys {
   border-radius: 5pt;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  background-color: white;
 
   & > * {
     display: inline-block;
@@ -1932,6 +1933,13 @@ table.api-keys {
     outline: none;
   }
 
+  .search-text.fancy:not(:focus) {
+    text-align: center;
+    background-color: var(--color-secondary-background);
+    text-overflow: ellipsis;
+    color: rgb(87, 87, 87);
+  }
+
   .search-text:disabled::placeholder {
     opacity: 0.5;
   }
@@ -1942,6 +1950,7 @@ table.api-keys {
     width: 100%;
     padding: 0;
     margin: 0;
+    background-color: transparent;
 
     .spinner {
       margin-left: 12pt;

@@ -2,6 +2,7 @@ import posthog from "posthog-js";
 import { Plugins } from "./lib/traceview/plugins";
 import { usePostHog } from "posthog-js/react";
 import { config } from "./utils/Config";
+import { useEffect, useState } from "react";
 
 export const SUPPORTS_TELEMETRY = config("telemetry");
 export const HAS_CONSENT = window.localStorage.getItem("consent") === "true";
@@ -76,4 +77,23 @@ export function useTelemetryWithIdentification(
   window["telemetry_identified"] = true;
 
   return telemetry;
+}
+
+/**
+ * Returns true if the feature flag with the given name is enabled.
+ * 
+ * Only checks the flag once per page load.
+ */
+export function useFeatureFlag(name: string): boolean {
+  const [enabled, setEnabled] = useState(false);
+  const telemetry = useTelemetry();
+
+  useEffect(() => {
+    telemetry?.posthog?.onFeatureFlags((flags: any) => {
+      console.log("got flags", flags)
+      setEnabled(flags[name]);
+    });
+  }, [name, telemetry]);
+
+  return enabled || config('instance_name') === 'local';
 }

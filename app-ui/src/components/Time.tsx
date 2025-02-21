@@ -14,6 +14,7 @@ export function Time(props: {
   text?: boolean;
   noNow?: boolean;
   className?: string;
+  timestampOnly?: boolean;
 }) {
   const timestamp = props.children.toString();
   // for anything older than 6m show date, otherwise show time passed
@@ -75,8 +76,12 @@ export function Time(props: {
     return text;
   }
 
+  if (props.timestampOnly) {
+    return <span className="time">{date.toLocaleString()}</span>;
+  }
+
   return (
-    <span className={"swap-on-hover " + (props.className || "")}>
+    <span className={"time swap-on-hover " + (props.className || "")}>
       <span> {text} </span>
       <span>{date.toLocaleString()}</span>
     </span>

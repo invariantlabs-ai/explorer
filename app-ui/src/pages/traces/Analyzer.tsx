@@ -153,10 +153,14 @@ async function prepareAnalysisInputs(
 ) {
   try {
     // get trace data
-    const traceRes = fetch(`/api/v1/trace/${traceId}/download`);
+    const traceRes = fetch(
+      `/api/v1/trace/${traceId}/download?include_trace_ids=true`
+    );
     // get additional context from dataset (if available)
     const contextRes = dataset_id
-      ? fetch(`/api/v1/dataset/byid/${dataset_id}/download/annotated`)
+      ? fetch(
+          `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`
+        )
       : Promise.resolve(null);
 
     // wait for both to load
@@ -200,6 +204,57 @@ async function prepareAnalysisInputs(
   }
 }
 
+/**
+ * Creates the analysis inputs for a dataset-level analysis.
+ *
+ * In contrast to the trace-level analysis, the dataset-level analysis retrieves the full dataset via /download (not just annotated), and passes it as input to the analysis model.
+ */
+export function prepareDatasetAnalysisInputs(
+  dataset_id: string,
+  username?: string,
+  dataset?: string
+) {
+  // these two in parallel:
+  // fetch all traces in dataset
+  const task1 = fetch(
+    `/api/v1/dataset/byid/${dataset_id}/download?include_trace_ids=true`
+  )
+    .then((response) => response.text())
+    // remove first line
+    .then((data) => {
+      // process line by line, ignore first line, parse rest as JSON and extract down to the 'messages' object
+      const lines = data.split("\n");
+      let trace_data = [] as string[];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i]) continue;
+        const parsed = JSON.parse(lines[i]);
+        trace_data.push(JSON.stringify(parsed.messages));
+      }
+      return trace_data;
+    });
+
+  // fetch annotated traces to be included as context
+  const task2 = fetch(
+    `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`
+  )
+    .then((response) => response.text())
+    .catch((error) => {
+      console.error("Failed to fetch annotated traces:", error);
+      return "";
+    });
+
+  return Promise.all([task1, task2]).then(([traceData, context]) => {
+    return {
+      input: traceData,
+      context: {
+        explorer_tracedata: context,
+        user: username,
+        dataset: dataset,
+      },
+    };
+  });
+}
+
 const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
 /**
@@ -227,6 +282,28 @@ function createAnalysis(
   const abortController = new AbortController();
   const endpoint = baseurl + "/api/v1/analysis/create";
 
+  // server side we have
+  /**
+    class AnalysisRunParameters(BaseModel):
+    # analysis input data
+    input: str = Field(
+        ..., example='[{"role": "assistant", "content": "I am an agent"}]'
+    )
+
+    # model configuration options (example provided but no default)
+    options: dict = Field(..., example={"model": "i01", "temperature": 0.7, "k": 5})
+
+    # context to run analysis in
+    context: dict = Field(
+        ...,
+        example={"user": "myuser", "dataset": "mydataset"},
+    )
+   */
+
+  console.log(typeof traceData);
+  console.log(typeof config, config);
+  console.log(typeof context, context);
+
   const body = JSON.stringify({
     input: traceData,
     options: config,
@@ -244,7 +321,7 @@ function createAnalysis(
         method: "POST",
         body,
         headers: {
-          "Authorization": "Bearer " + apikey,
+          Authorization: "Bearer " + apikey,
           "Content-Type": "application/json",
         },
         signal: abortController.signal,
@@ -398,7 +475,7 @@ export function AnalyzerPreview(props: {
       <>
         <div className="secondary">
           <img src={logo} alt="Invariant logo" className="logo" />
-          Analysis has identified {issues.length} issue
+          Offline Analysis has identified {issues.length} issue
           {issues.length > 1 ? "s" : ""}
           {!props.open && <BsArrowRight className="arrow" />}
           <a className="action" onClick={onAnalyze}>
@@ -458,6 +535,47 @@ function parseConfig(analyzerConfig: string | undefined): {
   return { config, endpoint, apikey };
 }
 
+export function AnalyzerConfigEditor(props: { configType: string }) {
+  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
+    localStorage.getItem("analyzerConfig-" + props.configType) ||
+      (`{
+  "model": "i01",
+  "endpoint": "https://preview-explorer.invariantlabs.ai",
+  "apikey": "${TEMPLATE_API_KEY}"
+}` as string | undefined)
+  );
+
+  const setAnalyzerConfig = (value: string | undefined) => {
+    localStorage.setItem("analyzerConfig-" + props.configType, value || "{}");
+    _setAnalyzerConfig(value);
+  };
+
+  return (
+    <Editor
+      language="json"
+      theme="vs-dark"
+      className="analyzer-config"
+      value={analyzerConfig}
+      onMount={onMountConfigEditor}
+      onChange={(value, model) => setAnalyzerConfig(value)}
+      height="200pt"
+      options={{
+        minimap: {
+          enabled: false,
+        },
+        lineNumbers: "off",
+        wordWrap: "on",
+      }}
+    />
+  );
+}
+
+export function clientAnalyzerConfig(configType: string) {
+  return parseConfig(
+    localStorage.getItem("analyzerConfig-" + configType) || "{}"
+  );
+}
+
 /**
  * Sidebar for the analysis of a trace.
  */
@@ -476,20 +594,6 @@ export function AnalyzerSidebar(props: {
   // passes onRun to parent component in callback
   onAnalyzeEvent?: BroadcastEvent;
 }) {
-  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
-    localStorage.getItem("analyzerConfig") ||
-      (`{
-  "model": "i01",
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}"
-}` as string | undefined)
-  );
-
-  const setAnalyzerConfig = (value: string | undefined) => {
-    localStorage.setItem("analyzerConfig", value || "{}");
-    _setAnalyzerConfig(value);
-  };
-
   const [abortController, setAbortController] = React.useState(
     new AbortController()
   );
@@ -533,7 +637,7 @@ export function AnalyzerSidebar(props: {
       },
     ]);
 
-    const { config, endpoint, apikey } = parseConfig(analyzerConfig);
+    const { config, endpoint, apikey } = clientAnalyzerConfig("single");
 
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
@@ -572,7 +676,6 @@ export function AnalyzerSidebar(props: {
     props.datasetId,
     props.username,
     props.dataset,
-    analyzerConfig,
   ]);
 
   if (props.onAnalyzeEvent) {
@@ -634,22 +737,7 @@ export function AnalyzerSidebar(props: {
       </h2>
       {settingsOpen && (
         <>
-          <Editor
-            language="json"
-            theme="vs-dark"
-            className="analyzer-config"
-            value={analyzerConfig}
-            onMount={onMountConfigEditor}
-            onChange={(value, model) => setAnalyzerConfig(value)}
-            height="200pt"
-            options={{
-              minimap: {
-                enabled: false,
-              },
-              lineNumbers: "off",
-              wordWrap: "on",
-            }}
-          />
+          <AnalyzerConfigEditor configType="single" />
         </>
       )}
       <div className="status">{status}</div>

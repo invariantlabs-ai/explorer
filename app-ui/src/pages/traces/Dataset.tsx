@@ -4,6 +4,8 @@ import {
   BsCheckCircleFill,
   BsCodeSlash,
   BsCollection,
+  BsDatabaseFillLock,
+  BsDatabaseLock,
   BsDownload,
   BsFileEarmarkBreak,
   BsFillLightningChargeFill,
@@ -21,10 +23,11 @@ import { RemoteResource, useRemoteResource } from "../../RemoteResource";
 import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../utils/Config";
-import { useTelemetry } from "../../telemetry";
+import { useFeatureFlag, useTelemetry } from "../../telemetry";
 import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
 import { Insights } from "./Insights";
+import { Guardrails } from "./Guardrails";
 
 interface Query {
   id: string;
@@ -159,15 +162,47 @@ function DatasetView() {
   // telemetry
   const telemetry = useTelemetry();
   // state to track the selected tab
-  const [selectedTab, _setSelectedTab] = React.useState("traces");
-  const setSelectedTab = telemetry.wrap(_setSelectedTab, "dataset.select-tab");
+  const [selectedTab, _setSelectedTab] = React.useState(
+    new URLSearchParams(window.location.search).get("tab") ||
+      props.tab ||
+      "traces"
+  );
+
+  // optional tabs
+  const hasAnalysisTab = useFeatureFlag("analysis-tab");
+  const hasGuardrailsTab = useFeatureFlag("guardrails-tab");
+
+  console.log("hasAnalysisTab", hasAnalysisTab);
+  console.log("hasGuardrailsTab", hasGuardrailsTab);
+
+  const setSelectedTab = (tab) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.pushState({}, "", url);
+
+    telemetry.wrap(_setSelectedTab, "dataset.select-tab")(tab);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab =
+        new URLSearchParams(window.location.search).get("tab") || "traces";
+      _setSelectedTab(tab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
 
   // track whether the dataset has analysis results
   const [hasAnalysis, setHasAnalysis] = React.useState(false);
 
   // on dataset updates, check if the dataset has analysis results
   useEffect(() => {
-    setHasAnalysis(dataset?.extra_metadata?.analysis_report);
+    setHasAnalysis(dataset?.extra_metadata?.analysis_report || true);
   }, [dataset]);
 
   // callback for when a user toggles the public/private status of a dataset
@@ -223,6 +258,10 @@ function DatasetView() {
       delete filteredMetadata["analysis_report"];
     }
 
+    if ("guardrails" in filteredMetadata) {
+      delete filteredMetadata["guardrails"];
+    }
+
     return filteredMetadata;
   };
 
@@ -233,7 +272,13 @@ function DatasetView() {
         <button
           key="traces"
           className={`tab ${"traces" === selectedTab ? "active" : ""}`}
-          onClick={() => setSelectedTab("traces")}
+          onClick={() => {
+            // clear 'query' query parameter
+            const url = new URL(window.location.href);
+            url.searchParams.delete("query");
+            window.history.pushState({}, "", url);
+            setSelectedTab("traces");
+          }}
         >
           <div className="inner">
             <BsCollection />
@@ -253,6 +298,17 @@ function DatasetView() {
             </div>
           </button>
         )}
+        <button
+          key="guardrails"
+          className={`tab ${"guardrails" === selectedTab ? "active" : ""}`}
+          onClick={() => setSelectedTab("guardrails")}
+        >
+          <div className="inner">
+            <BsDatabaseLock />
+            Guardrails
+            <span className="highlight-dot"></span>
+          </div>
+        </button>
         <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
@@ -276,7 +332,11 @@ function DatasetView() {
       </div>
 
       {selectedTab === "traces" && (
-        <Traces dataset={dataset} datasetLoadingError={datasetError} />
+        <Traces
+          dataset={dataset}
+          datasetLoadingError={datasetError}
+          enableAnalyzer={true}
+        />
       )}
 
       {selectedTab === "insights" && (
@@ -285,6 +345,18 @@ function DatasetView() {
           datasetLoadingError={datasetError}
           username={props.username}
           datasetname={props.datasetname}
+          onRefreshReport={() => datasetLoader.refresh()}
+        />
+      )}
+
+      {selectedTab === "guardrails" && (
+        <Guardrails
+          dataset={dataset}
+          datasetLoadingError={datasetError}
+          datasetError={datasetError}
+          username={props.username}
+          datasetname={props.datasetname}
+          onRefreshReport={() => datasetLoader.refresh()}
         />
       )}
 

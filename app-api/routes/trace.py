@@ -2,7 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Dict, List
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -17,14 +17,14 @@ from models.queries import (
     load_trace,
     trace_to_exported_json,
     trace_to_json,
+    DBJSONEncoder,
 )
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
-    UserOrAPIIdentity
+    UserOrAPIIdentity,
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from routes.dataset import DBJSONEncoder
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -49,9 +49,7 @@ async def get_image(
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
     with Session(db()) as session:
-        _ = load_trace(
-            session, trace_id, user_id, allow_public=True, allow_shared=True
-        )
+        _ = load_trace(session, trace_id, user_id, allow_public=True, allow_shared=True)
 
     # First check if there is a local image
     img_path = f"/srv/images/{dataset_name}/{trace_id}/{image_id}.png"
@@ -85,7 +83,6 @@ def get_trace_snippets(
 async def delete_trace(
     id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-
     with Session(db()) as session:
         # can only delete own traces
         trace = load_trace(session, id, user_id, allow_public=False, allow_shared=False)
@@ -155,7 +152,6 @@ def get_trace_sharing(
     id: str,
     _: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
     with Session(db()) as session:
         return {"shared": has_link_sharing(session, id)}
 
@@ -173,7 +169,10 @@ def share_trace(
         trace = load_trace(session, id, user_id)
         # assert that the trace is owned by the user
         if trace.user_id != user_id:
-            raise HTTPException(status_code=401, detail="Cannot share a trace the current user does not own")
+            raise HTTPException(
+                status_code=401,
+                detail="Cannot share a trace the current user does not own",
+            )
 
         shared_link = (
             session.query(SharedLinks).filter(SharedLinks.trace_id == id).first()
@@ -193,7 +192,6 @@ def unshare_trace(
     id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
     with Session(db()) as session:
         _ = load_trace(session, id, user_id)  # load trace to check for auth
         shared_link = (
@@ -236,66 +234,77 @@ async def annotate_trace(
         session.commit()
         return annotation_to_json(annotation)
 
-# replace all annotations of a certain source
-@trace.post("/{id}/annotations/update")
+
 async def replace_annotations(
+    session: Session,
+    trace_id: str,
+    user_id: UUID,
+    source: str,
+    annotations: List[Dict],
+) -> Dict[str, int]:
+    """Replaces all annotations of a given source with new ones."""
+
+    if not isinstance(annotations, list):
+        raise ValueError("Annotations must be a list")
+    if not isinstance(source, str):
+        raise ValueError("Source must be a string")
+
+    num_deleted = (
+        session.query(Annotation)
+        .filter(
+            Annotation.trace_id == trace_id,
+            Annotation.extra_metadata.op("->>")("source") == source,
+        )
+        .delete()
+    )
+
+    num_inserted = len(annotations)
+
+    for annotation in annotations:
+        new_annotation = Annotation(
+            trace_id=trace_id,
+            user_id=user_id,
+            address=annotation.get("address"),
+            content=str(annotation.get("content")),
+            extra_metadata=annotation.get("extra_metadata"),
+        )
+        session.add(new_annotation)
+
+    session.commit()
+
+    return {"deleted": num_deleted, "inserted": num_inserted}
+
+
+# FastAPI endpoint
+@trace.post("/{id}/annotations/update")
+async def update_annotations(
     request: Request,
     id: str,
-    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
-
-    # payload will be {'source': 'annotation-source', 'annotations': [list of annotations]}
+    """API endpoint to replace annotations."""
     payload = await request.json()
     source = payload.get("source")
     annotations = payload.get("annotations")
-
-    if not isinstance(annotations, list):
-        raise HTTPException(status_code=400, detail="Annotations must be a list")
-    
-    # check source
-    if not isinstance(source, str):
-        raise HTTPException(status_code=400, detail="Source must be a string")
-    
-    # track how many we deleted
-    num_deleted = 0
-    num_inserted = len(annotations)
 
     try:
         with Session(db()) as session:
             trace = load_trace(
                 session, id, user_id, allow_public=True, allow_shared=True
             )
-
-            # delete all annotations of the source
-            # for json lookup, do it on the text level
-            num_deleted = session.query(Annotation).filter(Annotation.trace_id == id, Annotation.extra_metadata.op("->>")("source") == source).delete()
-
-            # add new annotations
-            for annotation in annotations:
-                content = annotation.get("content")
-                address = annotation.get("address")
-                extra_metadata = annotation.get("extra_metadata")
-
-                new_annotation = Annotation(
-                    trace_id=trace.id,
-                    user_id=user_id,
-                    address=address,
-                    content=str(content),
-                    extra_metadata=extra_metadata,
-                )
-
-                print("created annotation", new_annotation.content)
-
-                session.add(new_annotation)
-
-            session.commit()
+            return await replace_annotations(
+                session, trace.id, user_id, source, annotations
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="An error occurred while updating annotations")
 
-    return {"deleted": num_deleted, "inserted": num_inserted}
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, detail="An error occurred while updating annotations"
+        )
+
 
 # get all annotations of a trace
 @trace.get("/{id}/annotations")
@@ -319,7 +328,6 @@ def delete_annotation(
     annotation_id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
     with Session(db()) as session:
         _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -348,7 +356,6 @@ async def update_annotation(
     annotation_id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
     with Session(db()) as session:
         _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -378,7 +385,6 @@ async def update_annotation(
 async def upload_new_single_trace(
     request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-
     with Session(db()) as session:
         payload = await request.json()
         content = payload.get("content", [])
@@ -499,9 +505,7 @@ async def append_messages(
                 # Lock the trace row for update
                 trace_response = (
                     session.query(Trace)
-                    .filter(
-                        and_(Trace.id == UUID(trace_id), Trace.user_id == user_id)
-                    )
+                    .filter(and_(Trace.id == UUID(trace_id), Trace.user_id == user_id))
                     .with_for_update()
                     .first()
                 )
