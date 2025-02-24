@@ -10,3 +10,4 @@ fastapi-keycloak-middleware
 prometheus-fastapi-instrumentator
 pillow
 aiofiles
+aiohttp
