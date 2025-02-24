@@ -12,6 +12,11 @@ from util import *  # needed for pytest fixtures
 pytest_plugins = ("pytest_asyncio",)
 
 
+async def is_highlighted_html(element):
+    inner_html = await element.inner_html()
+    return '<span style="color:' in inner_html and "font-weight: normal;" in inner_html
+
+
 async def test_highlighted_tool_arg(context, url, data_code, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
@@ -28,10 +33,11 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
         # # first construct a frame for the second .event on screen (0th .event is the metadata)
         second_message = page.locator("css=.event:not(.analyzer-hint)").nth(2)
 
-        # take screenshot of the table
-        table_screenshot = await screenshot(second_message.locator("table"))
-        assert is_highlighted(
-            table_screenshot
+        # take screenshot of the table for debugging
+        await screenshot(second_message.locator("table"))
+
+        assert await is_highlighted_html(
+            second_message.locator("table")
         ), "Code shown in table should be highlighted"
 
         # # get 'Formatted' button in second message
@@ -40,11 +46,12 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
             .get_by_role("button")
             .click()
         )
+        # screenshot for debugging
         await screenshot(page)
-        table_screenshot = await screenshot(second_message.locator("table"))
-        assert not is_highlighted(
-            table_screenshot
-        ), "Code shown in table should not be highlighted"
+        # get and print table html
+        assert not await is_highlighted_html(
+            second_message.locator("table")
+        ), "Code shown in table should be highlighted"
 
 
 async def test_highlighted_user_msg(context, url, data_code, screenshot):
