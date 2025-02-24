@@ -186,8 +186,13 @@ async def is_highlighted_html(element):
     Like is_highlighted, but via the html of the individual elements,
     which is more robust in case the screenshot is overlapping with other
     UI elements that have colors.
+
+    is_highlighted is to be preferred, but this is a good fallback in case
+    it is flaky via the screenshots only.
     """
     inner_html = await element.inner_html()
+    # this checks for the presence of a <span> with color and font-weight: normal
+    # as it is emitted by the code highlighter when it is highlighted
     return '<span style="color:' in inner_html and "font-weight: normal;" in inner_html
 
 
