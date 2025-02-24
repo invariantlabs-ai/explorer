@@ -12,11 +12,6 @@ from util import *  # needed for pytest fixtures
 pytest_plugins = ("pytest_asyncio",)
 
 
-async def is_highlighted_html(element):
-    inner_html = await element.inner_html()
-    return '<span style="color:' in inner_html and "font-weight: normal;" in inner_html
-
-
 async def test_highlighted_tool_arg(context, url, data_code, screenshot):
     async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
@@ -184,6 +179,16 @@ def extract_line_numbers_from_text(text):
         int(match.group(1))
         for match in re.finditer(line_number_pattern, text, re.MULTILINE)
     ]
+
+
+async def is_highlighted_html(element):
+    """
+    Like is_highlighted, but via the html of the individual elements,
+    which is more robust in case the screenshot is overlapping with other
+    UI elements that have colors.
+    """
+    inner_html = await element.inner_html()
+    return '<span style="color:' in inner_html and "font-weight: normal;" in inner_html
 
 
 def is_highlighted(screenshot):
