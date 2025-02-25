@@ -11,11 +11,20 @@ from uuid import UUID
 
 import asyncio
 from cachetools import TTLCache, cached
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
+    DatasetJob,
     DatasetPolicy,
     SavedQueries,
     SharedLinks,
@@ -29,10 +38,12 @@ from models.queries import (
     get_savedqueries,
     load_annotations,
     load_dataset,
+    load_jobs,
     query_traces,
     search_term_mappings,
-    trace_to_exported_json,
     trace_to_json,
+    ExportConfig,
+    TraceExporter,
 )
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
@@ -45,6 +56,10 @@ from sqlalchemy.sql import exists, func
 from util.util import delete_images, validate_dataset_name
 
 from routes.dataset_metadata import update_dataset_metadata
+from routes.jobs import cancel_job, check_all_jobs
+
+from pydantic import BaseModel
+import aiohttp
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
 homepage_dataset_ids = (
@@ -251,7 +266,9 @@ def list_datasets(
 
 @dataset.get("/list/byuser/{user_name}")
 def list_datasets_by_user(
-    request: Request, user_name: str, user: Annotated[UUID | None, Depends(UserIdentity)]
+    request: Request,
+    user_name: str,
+    user: Annotated[UUID | None, Depends(UserIdentity)],
 ):
     with Session(db()) as session:
         user_exists = session.query(exists().where(User.username == user_name)).scalar()
@@ -274,9 +291,13 @@ def list_datasets_by_user(
 async def delete_dataset(
     by: dict, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
-
     with Session(db()) as session:
         dataset = load_dataset(session, by, user_id)
+
+        # delete all saved queries
+        session.query(SavedQueries).filter(
+            SavedQueries.dataset_id == dataset.id
+        ).delete()
 
         # delete all traces
         traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
@@ -421,9 +442,9 @@ def search_dataset_by_name(
             filter_query = query.strip()[len("filter:") :].strip()
             filter_message, indices = filter_query.split(":")
             indices = [int(i) for i in indices.split(",")]
-            result["Filtered Traces"] = {
+            result[filter_message] = {
                 "traces": indices,
-                "description": filter_message,
+                "description": "filtered selection",
             }
         else:
             selected_traces, search_term, filter_terms = query_traces(
@@ -497,7 +518,6 @@ async def update_dataset(
     by: dict,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-
     with Session(db()) as session:
         dataset, user = load_dataset(session, by, user_id, return_user=True)
         payload = await request.json()
@@ -624,124 +644,254 @@ def get_traces_by_id(
     return get_traces(request, {"id": id}, user_id=user_id)
 
 
-class DBJSONEncoder(json.JSONEncoder):
-    """
-    JSON encoder that can handle UUIDs and datetime objects.
-    """
-
-    def default(self, obj):
-        if isinstance(obj, uuid.UUID):
-            return str(obj)
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
-
-
-async def stream_jsonl(session, dataset_id: str, dataset_info: dict, user_id: str):
-    """
-    Used to stream out the trace data as JSONL to download the dataset.
-    """
-    # write out metadata message
-    yield json.dumps(dataset_info) + "\n"
-
-    traces = (
-        session.query(Trace)
-        .filter(Trace.dataset_id == dataset_id)
-        .order_by(Trace.index)
-        .all()
-    )
-    for trace in traces:
-        # load annotations for this trace
-        annotations = load_annotations(session, trace.id)
-        json_dict = await trace_to_exported_json(trace, annotations)
-        yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
-
-        # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
-
-
-"""
-Download the dataset in JSONL format.
-"""
-
-
 @dataset.get("/byid/{id}/download")
 async def download_traces_by_id(
     request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
 ):
+    """
+    Download the dataset in JSONL format.
+    """
+    export_config = ExportConfig.from_request(request)
+
     with Session(db()) as session:
-        dataset, user = load_dataset(
-            session, {"id": id}, user_id, allow_public=True, return_user=True
+        exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=export_config,
         )
-        internal_dataset_info = dataset_to_json(dataset)
-        dataset_info = {
-            "metadata": {**internal_dataset_info["extra_metadata"]},
-        }
-        # streaming response, but triggers a download
-        return StreamingResponse(
-            stream_jsonl(session, id, dataset_info, user_id),
-            media_type="application/json",
-            headers={
-                "Content-Disposition": 'attachment; filename="'
-                + internal_dataset_info["name"]
-                + '.jsonl"'
-            },
-        )
+        # streams out trace data
+        return await exporter.stream(session)
 
 
-async def stream_annotated_jsonl(
-    session, dataset_id: str, dataset_info: dict, user_id: str
+class AnalysisRequest(BaseModel):
+    # model service
+    endpoint: str
+    apikey: str
+
+    # analysis arguments
+    options: dict
+
+
+@dataset.get("/byid/{id}/jobs")
+async def get_dataset_jobs(
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    request: Request,
+    background_tasks: BackgroundTasks,
 ):
     """
-    Used to stream out the trace data as JSONL to download the dataset traces with annotations.
+    Gets all jobs associated with this dataset.
     """
-    # write out metadata message
-    yield json.dumps(dataset_info) + "\n"
+    with Session(db()) as session:
+        # create background task to check all jobs for progress
+        task = asyncio.create_task(check_all_jobs())
+        # see if we can already get some result as part of this request
+        # (but don't wait for it too long, if it takes too long, we'll
+        # just return the job status as is)
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=1)
+        except asyncio.TimeoutError:
+            pass  # timeouts are ok
 
-    traces = (
-        session.query(Trace)
-        .filter(Trace.dataset_id == dataset_id)
-        .join(Annotation, Trace.id == Annotation.trace_id)
-        .group_by(Trace.id)
-        .having(func.count(Annotation.id) > 0)
-        .order_by(Trace.index)
-        .all()
-    )
-    for trace in traces:
-        # load annotations for this trace
-        annotations = load_annotations(session, trace.id)
-        json_dict = await trace_to_exported_json(trace, annotations)
-        yield json.dumps(json_dict, cls=DBJSONEncoder) + "\n"
-
-        # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
+        jobs = load_jobs(session=session, dataset_id=id, user_id=user_id)
+        return [job.to_dict() for job in jobs]
 
 
-"""
-Download all annotated traces of a dataset in JSONL format.
-"""
+@dataset.delete("/byid/{id}/analysis")
+async def cancel_analysis(
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    request: Request,
+):
+    """
+    Cancel all analysis jobs associated with this dataset.
+    """
+    with Session(db()) as session:
+        # first check for pending dataset jobs of type 'analysis'
+        pending_jobs = [
+            job
+            for job in load_jobs(session, dataset_id=id, user_id=user_id)
+            if job.extra_metadata.get("type") == "analysis"
+        ]
+
+        # try to cancel all pending jobs
+        for job in pending_jobs:
+            await cancel_job(session, job)
+
+        # wait and check at most 2s
+        wait_and_check_timeout = 2
+        start_time = datetime.datetime.now()
+
+        # wait and check for job status changes to be processed (at most 10 times)
+        while len(pending_jobs) > 0:
+            # set off background task for checking jobs
+            asyncio.create_task(check_all_jobs())
+
+            # get pending jobs
+            pending_jobs = [
+                job
+                for job in load_jobs(session, dataset_id=id, user_id=user_id)
+                if job.extra_metadata.get("type") == "analysis"
+            ]
+            # wait a bit
+            await asyncio.sleep(0.5)
+
+            # check if we waited too long overall
+            if (
+                datetime.datetime.now() - start_time
+            ).total_seconds() > wait_and_check_timeout:
+                break
+
+        # return remaining jobs
+        return {
+            "jobs": [job.to_dict() for job in pending_jobs],
+        }
+
+
+@dataset.post("/byid/{id}/analysis")
+async def queue_analysis(
+    id: str,
+    analysis_request: AnalysisRequest,
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    request: Request,
+):
+    """
+    Queue an analysis job for a dataset.
+    """
+    with Session(db()) as session:
+        # first check for pending dataset jobs of type 'analysis'
+        pending_jobs = [
+            job
+            for job in load_jobs(session, dataset_id=id, user_id=user_id)
+            if job.extra_metadata.get("type") == "analysis"
+        ]
+
+        # do not allow multiple analysis jobs for the same dataset
+        if len(pending_jobs) > 0:
+            raise HTTPException(
+                status_code=400,
+                detail="There is already an analysis job pending for this dataset.",
+            )
+
+        # get all traces to include in analysis context
+        context_exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=ExportConfig(only_annotated=True, include_trace_ids=True),
+        )
+
+        user, dataset_info, trace_generator = await context_exporter.prepare(session)
+
+        # ensure user owns this dataset
+        if dataset_info["user_id"] != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Not allowed to queue analysis for this dataset, if you are not the owner.",
+            )
+
+        # get trace data
+        tracedata = "".join([trace_json async for trace_json in trace_generator()])
+
+        # get all other dataset traces
+        traces_exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=ExportConfig(
+                only_annotated=False,
+                include_trace_ids=True,
+                include_annotations=False,
+            ),
+        )
+
+        # construct analysis input
+        analysis_input = [
+            trace_json async for trace_json in traces_exporter.traces(session)
+        ]
+
+        # construct analysis context (retrieval examples + some metadata)
+        context = {
+            "explorer_tracedata": tracedata,
+            "dataset": dataset_info["name"],
+            "user": user.username,
+        }
+
+        # keep api key as secret metadata in the DB, so we can check and
+        # retrieve the job status later (deleted once job is done)
+        secret_metadata = {
+            "apikey": analysis_request.apikey,
+        }
+
+        try:
+            async with aiohttp.ClientSession() as client:
+                # queue job with analysis service
+                async with client.post(
+                    f"{analysis_request.endpoint}/api/v1/analysis/job",
+                    json={
+                        "input": analysis_input,
+                        "context": context,
+                        "options": analysis_request.options,
+                    },
+                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                ) as response:
+                    # if status is bad, raise exception
+                    if response.status != 200:
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail="Analysis service returned an error.",
+                        )
+
+                    result = await response.json()
+                    job_id = result["job_id"]
+                    status = result.get("status", "queued")
+
+                    # create DatasetJob object to keep track of this job
+
+                    # basic job metadata
+                    job_metadata = {
+                        "name": "Analysis Run",
+                        "type": "analysis",
+                        "created_on": str(
+                            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        ),
+                        "endpoint": analysis_request.endpoint,
+                        "status": status,
+                        "job_id": job_id,
+                    }
+
+                    job = DatasetJob(
+                        id=uuid.uuid4(),
+                        user_id=user_id,
+                        dataset_id=id,
+                        extra_metadata=job_metadata,
+                        secret_metadata=secret_metadata,
+                    )
+                    session.add(job)
+                    session.commit()
+
+                    return job.to_dict()
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to reach analysis service: " + str(e),
+            ) from e
 
 
 @dataset.get("/byid/{id}/download/annotated")
-def download_annotated_traces_by_id(
+async def download_annotated_traces_by_id(
     request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
-):
+) -> StreamingResponse:
+    export_config = ExportConfig.from_request(request)
+
+    export_config.only_annotated = True
+
     with Session(db()) as session:
-        dataset, user = load_dataset(
-            session, {"id": id}, user_id, allow_public=True, return_user=True
+        exporter = TraceExporter(
+            user_id=user_id,
+            dataset_id=id,
+            export_config=export_config,
         )
-        internal_dataset_info = dataset_to_json(dataset)
-        dataset_info = {
-            "metadata": {**internal_dataset_info["extra_metadata"]},
-        }
-        # streaming response, but triggers a download
-        return StreamingResponse(
-            stream_annotated_jsonl(session, id, dataset_info, user_id),
-            media_type="application/json",
-            headers={
-                "Content-Disposition": 'attachment; filename="'
-                + internal_dataset_info["name"]
-                + '.jsonl"'
-            },
-        )
+        # streams out trace data
+        return await exporter.stream(session)
 
 
 @dataset.get("/byuser/{username}/{dataset_name}/traces")
@@ -1018,7 +1168,9 @@ async def get_metadata(
 # register update metadata route
 @dataset.put("/metadata/{dataset_name}")
 async def update_metadata(
-    dataset_name: str, request: Request, user_id: Annotated[UUID, Depends(APIIdentity)]
+    dataset_name: str,
+    request: Request,
+    user_id: Annotated[UUID, Depends(UserOrAPIIdentity)],
 ):
     """Update metadata for a dataset. Only the owner of a dataset can update its metadata."""
 
