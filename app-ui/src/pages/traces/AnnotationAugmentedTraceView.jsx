@@ -18,7 +18,7 @@ import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
 import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
-import { useTelemetry } from "../../utils/telemetry";
+import { useTelemetry } from "../../utils/Telemetry";
 import { AnnotationsParser } from "../../lib/annotations_parser";
 import { HighlightDetails } from "./HighlightDetails";
 
@@ -57,7 +57,7 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotations`,
       `/api/v1/trace/${traceId}/annotation`,
       `/api/v1/trace/${traceId}/annotation`,
-      `/api/v1/trace/${traceId}/annotate`
+      `/api/v1/trace/${traceId}/annotate`,
     );
     this.traceId = traceId;
   }
@@ -316,7 +316,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [analyzerOpen, _setAnalyzerOpen] = useState(
-    localStorage.getItem("analyzerOpen") == "true"
+    localStorage.getItem("analyzerOpen") == "true",
   );
   const setAnalyzerOpen = (open) => {
     _setAnalyzerOpen(open);
@@ -324,7 +324,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
-    new BroadcastEvent()
+    new BroadcastEvent(),
   );
 
   return (
@@ -441,7 +441,7 @@ export function AnnotationAugmentedTraceView(props) {
               output={analyzer.output}
               running={analyzer.running}
               storedOutput={top_level_annotations.filter(
-                (a) => a.source == "analyzer-model"
+                (a) => a.source == "analyzer-model",
               )}
               onRunAnalyzer={onRunAnalyzerEvent}
             />
@@ -455,7 +455,7 @@ export function AnnotationAugmentedTraceView(props) {
           running={analyzer.running}
           debugInfo={analyzer.debugInfo}
           storedOutput={top_level_annotations.filter(
-            (a) => a.source == "analyzer-model"
+            (a) => a.source == "analyzer-model",
           )}
           traceId={activeTraceId}
           datasetId={props.datasetId}
