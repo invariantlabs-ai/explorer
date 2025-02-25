@@ -1,6 +1,5 @@
 """Defines routes for APIs related to dataset metadata."""
 
-
 from typing import Any
 from uuid import UUID
 
@@ -25,12 +24,16 @@ A field is characterised by the following properties/methods:
 
 For pre-defined metadata behavior, see also the subclasses of MetadataField below.
 """
+
+
 class MetadataField:
-    def __init__(self, key: str, include_in_response: bool = True, clear_on_replace: bool = True):
+    def __init__(
+        self, key: str, include_in_response: bool = True, clear_on_replace: bool = True
+    ):
         """
         :param key: The key of the field on the top level of the metadata dictionary.
         :param include_in_response: Whether to include the field in the response.
-        :param clear_on_replace: Whether to delete this field, when it is not present in the new metadata that is supposed to 
+        :param clear_on_replace: Whether to delete this field, when it is not present in the new metadata that is supposed to
                                  'replace_all' the current metadata. If False, the field will be retained, even on a 'replace_all'
                                  operation, if it is not present in the new metadata.
         """
@@ -40,8 +43,8 @@ class MetadataField:
 
     def validate(self, value: Any):
         raise NotImplementedError
-    
-    def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
+
+    def update(self, metadata_dict: dict, new_value: Any | None, mode="incremental"):
         """
         Updates a field in the existing metadata dictionary.
 
@@ -53,9 +56,10 @@ class MetadataField:
         """
         raise NotImplementedError
 
+
 class TestReportField(MetadataField):
     def __init__(self):
-        super().__init__('invariant.test_results')
+        super().__init__("invariant.test_results")
         self.allowed_keys = [("num_tests", int), ("num_passed", int)]
 
     def validate(self, value: Any):
@@ -64,7 +68,7 @@ class TestReportField(MetadataField):
                 status_code=400,
                 detail="invariant.test_results must be a dictionary if provided",
             )
-        
+
         # type check all allowed keys
         for key, ttype in self.allowed_keys:
             if key not in value:
@@ -72,23 +76,27 @@ class TestReportField(MetadataField):
             if not isinstance(value[key], ttype) and value[key] is not None:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"invariant.test_results.{key} must be of type {ttype.__name__} (got {type(value[key]).__name__})"
+                    detail=f"invariant.test_results.{key} must be of type {ttype.__name__} (got {type(value[key]).__name__})",
                 )
-            
+
         # make sure at least one of the allowed keys is present
         if not any(key in value for key, _ in self.allowed_keys):
             raise HTTPException(
                 status_code=400,
-                detail="invariant.test_results must not be empty if provided"
+                detail="invariant.test_results must not be empty if provided",
             )
 
-    def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
+    def update(self, metadata_dict: dict, new_value: Any | None, mode="incremental"):
         valid_keys = [k for k, _ in self.allowed_keys]
-        if mode == 'replace_all':
+        if mode == "replace_all":
             if new_value is None:
                 metadata_dict.pop(self.key, None)
             else:
-                metadata_dict[self.key] = {k: new_value[k] for k in new_value if new_value[k] is not None and k in valid_keys}
+                metadata_dict[self.key] = {
+                    k: new_value[k]
+                    for k in new_value
+                    if new_value[k] is not None and k in valid_keys
+                }
         else:
             if new_value is not None:
                 metadata_dict[self.key] = {}
@@ -96,21 +104,43 @@ class TestReportField(MetadataField):
                     if new_value[key] is not None and key in valid_keys:
                         metadata_dict[self.key][key] = new_value[key]
 
+
 class PrimitiveMetadataField(MetadataField):
-    def __init__(self, key: str, ttype: type, include_in_response: bool = True, clear_on_replace: bool = True):
-        super().__init__(key, include_in_response=include_in_response, clear_on_replace=clear_on_replace)
+    def __init__(
+        self,
+        key: str,
+        ttype: type,
+        include_in_response: bool = True,
+        clear_on_replace: bool = True,
+        none_removes_it: bool = False,
+    ):
+        """
+        :param ttype: The type of the field.
+        :param none_removes_it: Whether None should remove the field from the metadata, when updating it.
+        """
+        super().__init__(
+            key,
+            include_in_response=include_in_response,
+            clear_on_replace=clear_on_replace,
+        )
         self.ttype = ttype
+        self.none_removes_it = none_removes_it
 
     def validate(self, value: Any):
-        if not isinstance(value, self.ttype):
-            types = ", ".join([t.__name__ for t in self.ttype]) if isinstance(self.ttype, tuple) else self.ttype.__name__
+        if not isinstance(value, self.ttype) and (
+            value is not None or not self.none_removes_it
+        ):
+            types = (
+                ", ".join([t.__name__ for t in self.ttype])
+                if isinstance(self.ttype, tuple)
+                else self.ttype.__name__
+            )
             raise HTTPException(
-                status_code=400,
-                detail=f"{self.key} must be of type {types}"
+                status_code=400, detail=f"{self.key} must be of type {types}"
             )
 
-    def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
-        if mode == 'replace_all':
+    def update(self, metadata_dict: dict, new_value: Any | None, mode="incremental"):
+        if mode == "replace_all":
             if new_value is None:
                 metadata_dict.pop(self.key, None)
             else:
@@ -118,36 +148,42 @@ class PrimitiveMetadataField(MetadataField):
         else:
             if new_value is not None:
                 metadata_dict[self.key] = new_value
+            elif self.none_removes_it:
+                metadata_dict.pop(self.key, None)
+
 
 class NonEmptyStringMetadataField(PrimitiveMetadataField):
     def validate(self, value: Any):
         super().validate(value)
         if not value:
             raise HTTPException(
-                status_code=400,
-                detail=f"{self.key} must be a non-empty string"
+                status_code=400, detail=f"{self.key} must be a non-empty string"
             )
+
 
 class PositiveNumber(PrimitiveMetadataField):
     def validate(self, value: Any):
         super().validate(value)
         if value < 0:
             raise HTTPException(
-                status_code=400,
-                detail=f"{self.key} must be a non-negative number"
+                status_code=400, detail=f"{self.key} must be a non-negative number"
             )
+
 
 class ReadOnlyMetadataField(MetadataField):
     def validate(self, value: Any):
         raise HTTPException(
             status_code=400,
-            detail=f"{self.key} cannot be updated via the /metadata API"
+            detail=f"{self.key} cannot be updated via the /metadata API",
         )
 
-    def update(self, metadata_dict: dict, new_value: Any|None, mode='incremental'):
+    def update(self, metadata_dict: dict, new_value: Any | None, mode="incremental"):
         pass
-    
-async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: dict, replace_all: bool = False):
+
+
+async def update_dataset_metadata(
+    user_id: UUID, dataset_name: str, metadata: dict, replace_all: bool = False
+):
     """
     Updates the metadata of a dataset.
 
@@ -159,11 +195,13 @@ async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: di
     """
     validated_fields = [
         TestReportField(),
-        NonEmptyStringMetadataField('benchmark', str),
-        NonEmptyStringMetadataField('name', str),
-        PositiveNumber('accuracy', (int, float)),
-        ReadOnlyMetadataField('policies', include_in_response=False, clear_on_replace=False),
-        PrimitiveMetadataField('analysis_report', str),
+        NonEmptyStringMetadataField("benchmark", str),
+        NonEmptyStringMetadataField("name", str),
+        PositiveNumber("accuracy", (int, float)),
+        ReadOnlyMetadataField(
+            "policies", include_in_response=False, clear_on_replace=False
+        ),
+        PrimitiveMetadataField("analysis_report", str),
     ]
 
     # validate all allowed fields
@@ -172,14 +210,14 @@ async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: di
         if field.key in metadata:
             field.validate(metadata[field.key])
         validated_keys.append(field.key)
-    
+
     # make sure metadata only contains the allowed keys
     if any(key not in validated_keys for key in metadata):
         raise HTTPException(
             status_code=400,
-            detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}"
+            detail=f"metadata must only contain the keys {', '.join([k for k in validated_keys])}",
         )
-    
+
     # update the metadata (based on the update mode)
     with Session(db()) as session:
         dataset_response = load_dataset(
@@ -192,28 +230,38 @@ async def update_dataset_metadata(user_id: UUID, dataset_name: str, metadata: di
         # update all allowed fields
         if replace_all:
             for field in validated_fields:
-                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='replace_all')
+                field.update(
+                    dataset_response.extra_metadata,
+                    metadata.get(field.key),
+                    mode="replace_all",
+                )
         else:
             for field in validated_fields:
-                field.update(dataset_response.extra_metadata, metadata.get(field.key), mode='incremental')
-        
+                field.update(
+                    dataset_response.extra_metadata,
+                    metadata.get(field.key),
+                    mode="incremental",
+                )
+
         # mark the extra_metadata field as modified
         flag_modified(dataset_response, "extra_metadata")
         session.commit()
-        
+
         metadata_response = dataset_response.extra_metadata
         updated_metadata = {}
-        
+
         # system fields
         validated_field_names = [field.key for field in validated_fields]
-        system_fields = [key for key in metadata_response if key not in validated_field_names]
+        system_fields = [
+            key for key in metadata_response if key not in validated_field_names
+        ]
 
         # remove fields that should not be visible in the response
         for field in validated_fields:
             if field.include_in_response and field.key in metadata_response:
                 updated_metadata[field.key] = metadata_response[field.key]
-        
-        # add system fields 
+
+        # add system fields
         for field in system_fields:
             updated_metadata[field] = metadata_response[field]
 

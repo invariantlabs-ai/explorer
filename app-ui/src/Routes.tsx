@@ -73,7 +73,7 @@ export const routes = [
     path: "/u/:username/:datasetname/t",
     label: "Dataset",
     element: (
-      <Layout fullscreen>
+      <Layout fullscreen withTabs>
         <DatasetView />
       </Layout>
     ),

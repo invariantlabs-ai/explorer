@@ -28,10 +28,11 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
         # # first construct a frame for the second .event on screen (0th .event is the metadata)
         second_message = page.locator("css=.event:not(.analyzer-hint)").nth(2)
 
-        # take screenshot of the table
-        table_screenshot = await screenshot(second_message.locator("table"))
-        assert is_highlighted(
-            table_screenshot
+        # take screenshot of the table for debugging
+        await screenshot(second_message.locator("table"))
+
+        assert await is_highlighted_html(
+            second_message.locator("table")
         ), "Code shown in table should be highlighted"
 
         # # get 'Formatted' button in second message
@@ -40,11 +41,12 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
             .get_by_role("button")
             .click()
         )
+        # screenshot for debugging
         await screenshot(page)
-        table_screenshot = await screenshot(second_message.locator("table"))
-        assert not is_highlighted(
-            table_screenshot
-        ), "Code shown in table should not be highlighted"
+        # get and print table html
+        assert not await is_highlighted_html(
+            second_message.locator("table")
+        ), "Code shown in table should be highlighted"
 
 
 async def test_highlighted_user_msg(context, url, data_code, screenshot):
@@ -177,6 +179,21 @@ def extract_line_numbers_from_text(text):
         int(match.group(1))
         for match in re.finditer(line_number_pattern, text, re.MULTILINE)
     ]
+
+
+async def is_highlighted_html(element):
+    """
+    Like is_highlighted, but via the html of the individual elements,
+    which is more robust in case the screenshot is overlapping with other
+    UI elements that have colors.
+
+    is_highlighted is to be preferred, but this is a good fallback in case
+    it is flaky via the screenshots only.
+    """
+    inner_html = await element.inner_html()
+    # this checks for the presence of a <span> with color and font-weight: normal
+    # as it is emitted by the code highlighter when it is highlighted
+    return '<span style="color:' in inner_html and "font-weight: normal;" in inner_html
 
 
 def is_highlighted(screenshot):

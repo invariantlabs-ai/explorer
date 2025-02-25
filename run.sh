@@ -97,10 +97,19 @@ setup-venv() {
 }
 
 compile_requirements() {
-  # Compile requirements.txt
+  # Compile requirements.txt for tests/
   setup-venv
   pip-compile --output-file=tests/requirements.txt tests/requirements.in
-  pip-compile --output-file=app-api/requirements.txt app-api/requirements.in
+  
+  # Compile requirements.txt for docker-compose.local.yml (this must happen in container, as it may use packages
+  # that are not available on the host architecture (arm64))
+  
+  # first stop the containers
+  docker compose -f docker-compose.local.yml down
+  # then start the containers 
+  docker compose -f docker-compose.local.yml up -d
+  # then run the command in the container
+  docker exec -it explorer-app-api-1 bash -c "pip install pip-tools && pip-compile --output-file=/srv/app/requirements.txt /srv/app/requirements.in"
 }
 # -----------------------------
 # Command dispatcher

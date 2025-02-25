@@ -449,3 +449,178 @@ span.secondary-flashing {
 .app-modal .form.analysis {
   width: 350pt;
 }
+
+.analysis-job-controls {
+  flex-direction: column;
+  display: flex;
+
+  .analyzer-config {
+    margin-bottom: 10pt;
+  }
+
+  h1 {
+    button {
+      margin-left: auto;
+      height: 25pt;
+      border: none;
+      margin-right: 10pt;
+    }
+  }
+
+  label {
+    padding-left: 7pt;
+  }
+
+  input {
+    display: block;
+    margin: 4pt;
+    padding: 10pt;
+    border-radius: 4pt;
+    width: calc(100% - 30pt);
+    border: none;
+    background-color: #eeeeee;
+    margin-bottom: 10pt;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+
+    button {
+      height: 30pt;
+      transition: none;
+    }
+
+    button:disabled,
+    button[disabled]:hover {
+      opacity: 0.5;
+      background-color: #adadad;
+    }
+  }
+
+  ul.jobs {
+    margin-bottom: 10pt !important;
+
+    li {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start !important;
+
+      .time {
+        margin-left: 2pt;
+        margin-right: auto;
+      }
+    }
+
+    li.empty {
+      text-align: center !important;
+      justify-content: center !important;
+      opacity: 0.5;
+      padding-top: 70pt;
+    }
+
+    .progress {
+      font-size: 10pt;
+      border-radius: 5pt;
+      background-color: rgb(227, 227, 227);
+      padding: 2pt 4pt;
+      margin: 0pt 4pt;
+    }
+  }
+}
+
+.tile {
+  height: 300pt;
+
+  .issue-pie-chart {
+    .pie-chart {
+      margin-top: 10pt;
+      width: 100% !important;
+      height: calc(100% - 10pt) !important;
+    }
+  }
+}
+
+.tile.wide {
+  min-width: 500pt !important;
+  width: auto !important;
+  flex-grow: 1;
+}
+
+.top-issues {
+  li {
+    padding: 10pt !important;
+    font-size: 12pt !important;
+    font-weight: 500;
+    color: rgb(83, 83, 83);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 10pt;
+    border-radius: 5pt;
+    border: 1px solid #ebebeb;
+    font-style: italic !important;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
+
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+
+    .name {
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    svg {
+      margin-right: 10pt;
+      position: relative;
+      top: 3pt;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .count {
+      font-weight: 500;
+      background-color: #dadada;
+      width: 20pt;
+      border-radius: 4pt;
+      text-align: center;
+      color: grey;
+      font-size: 12pt;
+      font-style: normal;
+    }
+
+    &:hover {
+      border-color: #ccc;
+    }
+
+    &:last-child {
+      border-bottom: 1px solid #ebebeb !important;
+    }
+  }
+}
+
+.traceid.status {
+  margin-left: 5pt;
+  color: black;
+
+  .time {
+    color: black;
+    opacity: 1;
+    font-size: 12pt;
+  }
+}
