@@ -76,6 +76,10 @@
         position: relative;
         overflow: visible;
 
+        b {
+          margin-right: 4pt;
+        }
+
         svg.caret {
           position: absolute;
           left: -7pt;

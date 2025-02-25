@@ -32,22 +32,25 @@ export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
 
   // analyzer highlights
   const analyzerHighlights = highlights.filter(
-    (highlight) => highlight.source == "analyzer",
+    (highlight) => highlight.source == "analyzer"
   );
   let otherHighlights = highlights.filter(
-    (highlight) => highlight.source != "analyzer",
+    (highlight) => highlight.source != "analyzer"
   );
 
   // test highlights
   const testHighlights = otherHighlights.filter((highlight) =>
-    highlight.source?.startsWith("test-"),
+    highlight.source?.startsWith("test-")
   );
   otherHighlights = otherHighlights.filter(
-    (highlight) => !highlight.source?.startsWith("test-"),
+    (highlight) => !highlight.source?.startsWith("test-")
   );
 
   return (
     <>
+      {(analyzerHighlights.length > 0 || testHighlights.length > 0) && (
+        <div className="role">Issues</div>
+      )}
       {analyzerHighlights.length > 0 && (
         <AnalysisResultDetail highlights={analyzerHighlights} />
       )}
@@ -101,10 +104,10 @@ export function AnalysisResultDetail(props: { highlights: HighlightData[] }) {
 export function TestResultDetail(props: { highlights: HighlightData[] }) {
   // keep original order, but sort by -passed first
   let passed = props.highlights.filter((highlight) =>
-    highlight.source?.endsWith("-passed"),
+    highlight.source?.endsWith("-passed")
   );
   let failed = props.highlights.filter(
-    (highlight) => !highlight.source?.endsWith("-passed"),
+    (highlight) => !highlight.source?.endsWith("-passed")
   );
 
   // always show failed on top

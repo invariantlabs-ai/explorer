@@ -6,8 +6,22 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from keycloak import KeycloakOpenID # pip require python-keycloak
 import os
+from uuid import UUID
 from typing import Annotated
 from config import config
+
+DEVELOPER_USER = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
+    "email": "dev@mail.com",
+    "username": "developer",
+    "name": "Developer"
+}
+DEVELOPER_USER2 = {
+    "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
+    "email": "dev2@mail.com",
+    "username": "developer2",
+    "name": "Developer2"
+}
 
 is_preview_deployment = os.getenv("PREVIEW") == "1"
 base_url = "https://" + os.getenv("APP_NAME") + ".invariantlabs.ai"
@@ -84,19 +98,9 @@ async def write_back_refreshed_token(request: Request, call_next):
 async def UserIdentity(request: Request):
     # check for DEV_MODE
     if os.getenv("DEV_MODE") == "true" and not "noauth" in request.headers.get("referer", []):
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
-            "email": "dev@mail.com",
-            "preferred_username": "developer",
-            "name": "Developer"
-        }
+        return DEVELOPER_USER
     if "noauth=user1" in request.headers.get("referer", []) and os.getenv("DEV_MODE") == "true":
-        return {
-            "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
-            "email": "dev2@mail.com",
-            "preferred_username": "developer2",
-            "name": "Developer2"
-        }
+        return DEVELOPER_USER2
 
     try:
         token = json.loads(request.cookies.get("jwt"))
@@ -118,7 +122,7 @@ async def UserIdentity(request: Request):
         return {
             "sub": userinfo["sub"],
             "email": userinfo["email"],
-            "preferred_username": userinfo["preferred_username"],
+            "username": userinfo["username"],
             "name": userinfo["name"]
         }
     except Exception as e:
@@ -133,11 +137,11 @@ async def UserIdentity(request: Request):
         return {
             "sub": None,
             "email": '',
-            "preferred_username": '',
+            "username": '',
             "name": ''
         }
 
-async def AuthenticatedUserIdentity(identity: Annotated[dict, Depends(UserIdentity)]):
+async def AuthenticatedUserIdentity(identity: Annotated[UUID, Depends(UserIdentity)]):
     if identity["sub"] is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity

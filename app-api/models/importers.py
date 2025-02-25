@@ -11,7 +11,6 @@ from typing import Dict
 
 from fastapi import HTTPException
 from models.datasets_and_traces import Annotation, Dataset, Trace
-from models.queries import *
 from sqlalchemy.orm import Session
 from util.util import parse_and_update_messages
 

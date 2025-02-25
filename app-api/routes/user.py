@@ -1,8 +1,8 @@
 from typing import Annotated
-
+from uuid import UUID
 from fastapi import Depends, FastAPI, Request
-from models.datasets_and_traces import Dataset, User, db
-from models.queries import *
+from models.datasets_and_traces import Dataset, User, db, Annotation, Trace, SharedLinks
+from models.queries import save_user, user_to_json, dataset_to_json, annotation_to_json, trace_to_json
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -12,50 +12,63 @@ from routes.apikeys import APIIdentity
 user = FastAPI()
 
 
+def user_by_id(user_id: UUID) -> User | None:
+    with Session(db()) as session:
+        return session.query(User).filter(User.id == user_id).first()
+
+
 @user.get("/info")
-def get_user(userinfo: Annotated[dict, Depends(UserIdentity)]):
-    userid = userinfo["sub"]
+def get_user(request: Request, user_id: Annotated[UUID | None, Depends(UserIdentity)]):
     signedup = False
+    if user_id is not None:
+        session_user = user_by_id(user_id)
+        if session_user is None:
+            # stange edge condition where the user is not in the database
+            return {
+                "id": user_id,
+                "username": "unknown",
+                "signedUp": False,
+            }
 
-    if userid is not None:
-        with Session(db()) as session:
-            session_user = (
-                session.query(User).filter(User.id == userinfo["sub"]).first()
-            )
-            signedup = session_user is not None
+        user_info = user_to_json(session_user)
+        user_info["signedUp"] = True
+        user_info["name"] = request.state.userinfo["name"]
+        user_info["email"] = request.state.userinfo["email"]
+        return user_info
 
+    # anonymous user
     return {
-        "id": userinfo["sub"],
-        "username": userinfo["preferred_username"],
-        "email": userinfo["email"],
-        "name": userinfo["name"],
-        "image_url_hash": get_gravatar_hash(userinfo["email"]),
-        "signedUp": signedup,
+        "id": None,
+        "username": "unknown",
+        "email": "unknown",
+        "name": "unknown",
+        "image_url_hash": "unknown",
+        "signedUp": False,
     }
 
 
 @user.post("/signup")
 def signup(
-    request: Request, userinfo: Annotated[dict, Depends(AuthenticatedUserIdentity)]
+    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
     with Session(db()) as session:
-        save_user(session, userinfo)
+        save_user(session, request.state.userinfo)
         session.commit()
     return {"success": True}
 
 # to get the user identity for an API key, run
 # curl <INSTANCE_URL>/api/v1/user/identity -H "Authorization: Bearer <API_KEY>"
 @user.get("/identity")
-def identity(userinfo: Annotated[dict, Depends(APIIdentity)]):
+def identity(user_id: Annotated[UUID, Depends(APIIdentity)]):
+    user = user_by_id(user_id)
     return {
-        "username": userinfo["username"],
+        "username": user.username,
     }
 
 @user.get("/events")
 def events(
-    request: Request, userinfo: Annotated[dict, Depends(UserIdentity)], limit: int = 20
+    request: Request, user_id: Annotated[UUID | None, Depends(UserIdentity)], limit: int = 20
 ):
-    user_id = userinfo["sub"]
 
     # events are:
     # - public dataset is created

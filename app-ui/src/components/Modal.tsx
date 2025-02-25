@@ -45,7 +45,7 @@ export function Modal(props) {
 
         {props.hasFooter && (
           <footer>
-            <button onClick={props.onClose}>Close</button>
+            <button onClick={props.onClose}>Dismiss</button>
           </footer>
         )}
       </div>

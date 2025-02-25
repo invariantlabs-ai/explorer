@@ -1,3 +1,4 @@
+import json
 import os
 
 # add tests folder (parent) to sys.path

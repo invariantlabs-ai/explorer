@@ -3,6 +3,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from util import *  # needed for pytest fixtures
 
@@ -47,14 +49,15 @@ async def get_trace_messages(context, url, trace_id):
     return trace.get("messages", [])
 
 
-def append_messages(invariant_client, trace_id, messages):
-    """Helper function to post messages to a trace."""
-    return invariant_client.create_request_and_append_messages(
-        trace_id=trace_id, messages=messages
-    )
-
-
-async def test_append_messages(context, url, invariant_client, data_abc):
+@pytest.mark.parametrize("is_async", [True, False])
+async def test_append_messages(
+    is_async,
+    context,
+    url,
+    data_abc,
+    invariant_client,
+    async_invariant_client,
+):
     """Test that consecutive calls to append_messages succeeds."""
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
@@ -65,9 +68,14 @@ async def test_append_messages(context, url, invariant_client, data_abc):
         assert len(initial_messages) == 2
 
         # Append first set of messages
-        response = append_messages(
-            invariant_client, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
-        )
+        if is_async:
+            response = await async_invariant_client.create_request_and_append_messages(
+                trace_id=trace_id, messages=MESSAGES_WITHOUT_TOOL_CALLS
+            )
+        else:
+            response = invariant_client.create_request_and_append_messages(
+                trace_id=trace_id, messages=MESSAGES_WITHOUT_TOOL_CALLS
+            )
         assert response.get("success", False)
 
         # verify that the messages were appended
@@ -86,7 +94,14 @@ async def test_append_messages(context, url, invariant_client, data_abc):
         assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
 
         # Append second set of messages
-        response = append_messages(invariant_client, trace_id, MESSAGES_WITH_TOOL_CALLS)
+        if is_async:
+            response = await async_invariant_client.create_request_and_append_messages(
+                trace_id=trace_id, messages=MESSAGES_WITH_TOOL_CALLS
+            )
+        else:
+            response = invariant_client.create_request_and_append_messages(
+                trace_id=trace_id, messages=MESSAGES_WITH_TOOL_CALLS
+            )
         assert response.get("success", False)
 
         # verify that the messages were appended

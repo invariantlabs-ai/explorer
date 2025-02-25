@@ -116,12 +116,23 @@ def validate_trace_responses(
 
 
 @pytest.mark.parametrize(
-    "include_annotations, include_metadata",
-    [(True, True), (True, False), (False, True), (False, False)],
+    "is_async, include_annotations, include_metadata",
+    [
+        (True, True, True),
+        (True, True, False),
+        (True, False, True),
+        (True, False, False),
+        (False, True, True),
+        (False, True, False),
+        (False, False, True),
+        (False, False, False),
+    ],
 )
 async def test_create_request_and_push_trace_without_dataset(
+    is_async,
     context,
     url,
+    async_invariant_client,
     invariant_client,
     push_traces_messages,
     push_traces_annotations,
@@ -132,11 +143,18 @@ async def test_create_request_and_push_trace_without_dataset(
     """Test creating request and pushing trace without dataset."""
     annotations = push_traces_annotations if include_annotations else None
     metadata = push_traces_metadata if include_metadata else None
-    response = invariant_client.create_request_and_push_trace(
-        messages=push_traces_messages,
-        annotations=annotations,
-        metadata=metadata,
-    )
+    if is_async:
+        response = await async_invariant_client.create_request_and_push_trace(
+            messages=push_traces_messages,
+            annotations=annotations,
+            metadata=metadata,
+        )
+    else:
+        response = invariant_client.create_request_and_push_trace(
+            messages=push_traces_messages,
+            annotations=annotations,
+            metadata=metadata,
+        )
 
     assert len(response.id) == 2
     assert response.dataset is None
@@ -162,13 +180,24 @@ async def test_create_request_and_push_trace_without_dataset(
 
 
 @pytest.mark.parametrize(
-    "include_annotations, include_metadata",
-    [(True, True), (True, False), (False, True), (False, False)],
+    "is_async, include_annotations, include_metadata",
+    [
+        (True, True, True),
+        (True, True, False),
+        (True, False, True),
+        (True, False, False),
+        (False, True, True),
+        (False, True, False),
+        (False, False, True),
+        (False, False, False),
+    ],
 )
 async def test_create_request_and_push_trace_with_existing_dataset(
+    is_async,
     context,
     url,
     data_abc,
+    async_invariant_client,
     invariant_client,
     push_traces_messages,
     push_traces_annotations,
@@ -180,12 +209,20 @@ async def test_create_request_and_push_trace_with_existing_dataset(
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         annotations = push_traces_annotations if include_annotations else None
         metadata = push_traces_metadata if include_metadata else None
-        response = invariant_client.create_request_and_push_trace(
-            messages=push_traces_messages,
-            annotations=annotations,
-            metadata=metadata,
-            dataset=dataset["name"],
-        )
+        if is_async:
+            response = await async_invariant_client.create_request_and_push_trace(
+                messages=push_traces_messages,
+                annotations=annotations,
+                metadata=metadata,
+                dataset=dataset["name"],
+            )
+        else:
+            response = invariant_client.create_request_and_push_trace(
+                messages=push_traces_messages,
+                annotations=annotations,
+                metadata=metadata,
+                dataset=dataset["name"],
+            )
 
         assert len(response.id) == 2
         assert response.dataset == dataset["name"]
@@ -217,12 +254,23 @@ async def test_create_request_and_push_trace_with_existing_dataset(
 
 
 @pytest.mark.parametrize(
-    "include_annotations, include_metadata",
-    [(True, True), (True, False), (False, True), (False, False)],
+    "is_async, include_annotations, include_metadata",
+    [
+        (True, True, True),
+        (True, True, False),
+        (True, False, True),
+        (True, False, False),
+        (False, True, True),
+        (False, True, False),
+        (False, False, True),
+        (False, False, False),
+    ],
 )
 async def test_create_request_and_push_trace_while_creating_dataset(
+    is_async,
     context,
     url,
+    async_invariant_client,
     invariant_client,
     push_traces_messages,
     push_traces_annotations,
@@ -235,12 +283,20 @@ async def test_create_request_and_push_trace_while_creating_dataset(
     metadata = push_traces_metadata if include_metadata else None
     # This dataset doesn't exist and will be created as part of the push traces request.
     dataset_name = "test_dataset" + str(uuid.uuid4())
-    response = invariant_client.create_request_and_push_trace(
-        messages=push_traces_messages,
-        annotations=annotations,
-        metadata=metadata,
-        dataset=dataset_name,
-    )
+    if is_async:
+        response = await async_invariant_client.create_request_and_push_trace(
+            messages=push_traces_messages,
+            annotations=annotations,
+            metadata=metadata,
+            dataset=dataset_name,
+        )
+    else:
+        response = invariant_client.create_request_and_push_trace(
+            messages=push_traces_messages,
+            annotations=annotations,
+            metadata=metadata,
+            dataset=dataset_name,
+        )
 
     assert len(response.id) == 2
     assert response.dataset == dataset_name

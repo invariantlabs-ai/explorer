@@ -1,7 +1,7 @@
 import datetime
 import json
 import re
-import uuid
+from uuid import UUID, uuid4
 
 import aiofiles
 import asyncio
@@ -20,6 +20,7 @@ from models.importers import import_jsonl
 from sqlalchemy import and_
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlalchemy.sql import func
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast
 from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
@@ -28,12 +29,13 @@ import base64
 
 
 def load_trace(
-    session, by, user_id, allow_shared=False, allow_public=False, return_user=False
+    session: Session, by: UUID | str, user_id: UUID, allow_shared:bool=False, allow_public:bool=False, return_user:bool=False
 ):
-    try:
-        by = uuid.UUID(str(by))
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Trace not a valid UUID")
+    if not isinstance(by, UUID):
+        try:
+            by = UUID(str(by))
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Trace not a valid UUID")
     query_filter = get_query_filter(by, Trace, User)
     if return_user:
         # join on user_id to get real user name
@@ -46,16 +48,15 @@ def load_trace(
         if result is None:
             raise HTTPException(status_code=404, detail="Trace not found")
         else:
-            trace, user = result
+            trace, user = result.tuple()
     else:
         trace = session.query(Trace).filter(query_filter).first()
     if trace is None:
         raise HTTPException(status_code=404, detail="Trace not found")
 
     dataset = session.query(Dataset).filter(Dataset.id == trace.dataset_id).first()
-
     if not (
-        str(trace.user_id) == str(user_id)  # correct user
+        trace.user_id == user_id  # correct user
         or (allow_shared and has_link_sharing(session, trace.id))  # in sharing mode
         or (
             dataset is not None and allow_public and dataset.is_public
@@ -73,7 +74,7 @@ def load_trace(
 
 
 # TODO: Fix typo in the function name
-def load_annotations(session, by):
+def load_annotations(session: Session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
     return (
         session.query(Annotation, User)
@@ -99,9 +100,8 @@ def get_query_filter(by, main_object, *other_objects, default_key="id"):
     return and_(*query_filter)
 
 
-def load_dataset(session, by, user_id, allow_public=False, return_user=False):
+def load_dataset(session: Session, by: dict, user_id: UUID, allow_public=False, return_user=False):
     query_filter = get_query_filter(by, Dataset, User)
-
     # join on user_id to get real user name
     result = (
         session.query(Dataset, User)
@@ -111,10 +111,8 @@ def load_dataset(session, by, user_id, allow_public=False, return_user=False):
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
-    dataset, user = result
+    dataset, user = result.tuple()
 
-    if dataset is None:
-        raise HTTPException(status_code=404, detail="Dataset not found")
     if not (allow_public and dataset.is_public or str(dataset.user_id) == str(user_id)):
         raise HTTPException(status_code=401, detail="Unauthorized get")
     # If the dataset is public but the requestor is not the owner, remove the policies from the dataset response.
@@ -175,7 +173,7 @@ def get_savedqueries(session, dataset: Dataset, user_id, num_traces: int):
     return queries
 
 
-def has_link_sharing(session, trace_id):
+def has_link_sharing(session: Session, trace_id: UUID):
     try:
         trace = (
             session.query(SharedLinks).filter(SharedLinks.trace_id == trace_id).first()
@@ -188,7 +186,7 @@ def has_link_sharing(session, trace_id):
 def save_user(session, userinfo):
     user = {
         "id": userinfo["sub"],
-        "username": userinfo["preferred_username"],
+        "username": userinfo["username"],
         "image_url_hash": get_gravatar_hash(userinfo["email"]),
     }
     stmt = sqlite_upsert(User).values([user])
@@ -217,7 +215,7 @@ def save_user(session, userinfo):
 
         # Create the dataset
         dataset = Dataset(
-            id=uuid.uuid4(),
+            id=uuid4(),
             user_id=user["id"],
             name="Welcome-to-Explorer",
             extra_metadata=metadata,
@@ -348,7 +346,7 @@ def annotation_to_exported_json(annotation, user=None, **kwargs):
     return out
 
 
-def user_to_json(user):
+def user_to_json(user: User):
     return {
         "id": user.id,
         "username": user.username,
@@ -426,12 +424,12 @@ def query_traces(session, dataset, query, count=False):
                         try:
                             rhs = float(rhs)
                             rhs_type = "float"
-                        except:
+                        except Exception:
                             pass
                         try:
                             rhs = int(rhs)
                             rhs_type = "int"
-                        except:
+                        except Exception:
                             pass
 
                     if rhs_type == "str":

@@ -175,7 +175,7 @@ export function UploadDatasetModalContent(props) {
           {" "}
           <a
             target="_blank"
-            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/Uploading_Traces/push_api/"
+            href="https://explorer.invariantlabs.ai/docs/explorer/api/uploading-traces/push-api/"
           >
             Explorer Push API
           </a>
@@ -203,7 +203,7 @@ export function UploadDatasetModalContent(props) {
           {" "}
           <a
             target="_blank"
-            href="https://explorer.invariantlabs.ai/docs/explorer/Explorer_API/2_traces/"
+            href="https://explorer.invariantlabs.ai/docs/explorer/api/trace-format/"
           >
             correct format
           </a>
