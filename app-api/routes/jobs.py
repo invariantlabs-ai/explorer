@@ -235,12 +235,15 @@ async def on_analysis_result(job: DatasetJob, results: Any):
         }
 
         # go over analysis results (trace results and report parts)
+        cost = None
         for result in results:
-            trace_id = result.get("id")
-
+            trace_id = result.get("sample_id")
+            if result.get("cost"):
+                cost = cost or 0
+                cost += result["cost"]
             # handle trace ID results
             if trace_id is not None:
-                analyzer_results = result.get("result")
+                analyzer_results = result.get("issues")
                 report["num_results"] += len(analyzer_results)
 
                 source = "analyzer-model"
@@ -261,6 +264,7 @@ async def on_analysis_result(job: DatasetJob, results: Any):
             elif "report" in result:
                 # assign everything in the report to the report
                 report.update(result["report"])
+        report["cost"] = cost
 
         # update analysis report
         await update_dataset_metadata(

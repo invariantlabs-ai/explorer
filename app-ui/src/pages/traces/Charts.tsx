@@ -27,16 +27,17 @@ const IssuePieChart = (props) => {
     return null;
   }
 
-  const data = rawData.map((cluster, index) => ({
+  const data = rawData.map((cluster) => ({
     name: cluster.name,
-    value: Array.from(
-      new Set(cluster.issues.map((issue) => issue.metadata?.index))
-    ).length,
+    value: cluster.issues.length,
     clusterIndices: Array.from(
       new Set(cluster.issues.map((issue) => issue.metadata?.index))
     ),
   }));
-
+  console.log("rawData")
+  console.log(rawData)
+  console.log("data")
+  console.log(data)
   return (
     <div className="issue-pie-chart">
       <ResponsiveContainer height={400}>
@@ -66,12 +67,14 @@ const IssuePieChart = (props) => {
               const clusterFilter = `filter:${name}:${clusterIndices.join(
                 ","
               )}`;
+              console.log(clusterFilter);
+              console.log(data);
               // current address looks like: http://localhost/u/developer/abc/t/41
               // navigate to ?query=filter:cluster_name:id1,id2,id3
-              navigate({
-                search: `?query=${clusterFilter}`,
-              });
-              setTimeout(() => window.location.reload(), 10);
+              // navigate({
+              //   search: `?query=${clusterFilter}`,
+              // });
+              // setTimeout(() => window.location.reload(), 10);
             }}
           >
             {data.map((entry, index) => (
