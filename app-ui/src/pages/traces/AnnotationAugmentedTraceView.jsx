@@ -2,9 +2,12 @@ import React, { act, useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
-import "../../Explorer.scss";
+import "../../styles/Explorer.scss";
 
-import { RemoteResource, useRemoteResource } from "../../RemoteResource";
+import {
+  RemoteResource,
+  useRemoteResource,
+} from "../../service/RemoteResource";
 import { useUserInfo } from "../../utils/UserInfo";
 import UserIcon from "../../lib/UserIcon";
 
@@ -15,11 +18,11 @@ import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
 import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
-import { useTelemetry } from "../../telemetry";
+import { useTelemetry } from "../../utils/Telemetry";
 import { AnnotationsParser } from "../../lib/annotations_parser";
-import { HighlightDetails } from "../../HighlightDetails";
+import { HighlightDetails } from "./HighlightDetails";
 
-import { HighlightsNavigator } from "../../HighlightsNavigator";
+import { HighlightsNavigator } from "./HighlightsNavigator";
 
 import { AnalyzerPreview, AnalyzerSidebar, useAnalyzer } from "./Analyzer";
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
@@ -54,7 +57,7 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotations`,
       `/api/v1/trace/${traceId}/annotation`,
       `/api/v1/trace/${traceId}/annotation`,
-      `/api/v1/trace/${traceId}/annotate`
+      `/api/v1/trace/${traceId}/annotate`,
     );
     this.traceId = traceId;
   }
@@ -228,7 +231,7 @@ export function AnnotationAugmentedTraceView(props) {
     let { highlights, errors, filtered_annotations, top_level_annotations } =
       AnnotationsParser.parse_annotations(
         !props.hideAnnotations ? annotations : [],
-        props.mappings
+        props.mappings,
       );
 
     setHighlights({
@@ -317,7 +320,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [analyzerOpen, _setAnalyzerOpen] = useState(
-    localStorage.getItem("analyzerOpen") == "true"
+    localStorage.getItem("analyzerOpen") == "true",
   );
   const setAnalyzerOpen = (open) => {
     _setAnalyzerOpen(open);
@@ -325,7 +328,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
-    new BroadcastEvent()
+    new BroadcastEvent(),
   );
 
   return (
@@ -444,7 +447,7 @@ export function AnnotationAugmentedTraceView(props) {
                   output={analyzer.output}
                   running={analyzer.running}
                   storedOutput={top_level_annotations.filter(
-                    (a) => a.source == "analyzer-model"
+                    (a) => a.source == "analyzer-model",
                   )}
                   onRunAnalyzer={onRunAnalyzerEvent}
                 />
@@ -463,7 +466,7 @@ export function AnnotationAugmentedTraceView(props) {
             running={analyzer.running}
             debugInfo={analyzer.debugInfo}
             storedOutput={top_level_annotations.filter(
-              (a) => a.source == "analyzer-model"
+              (a) => a.source == "analyzer-model",
             )}
             traceId={activeTraceId}
             datasetId={props.datasetId}

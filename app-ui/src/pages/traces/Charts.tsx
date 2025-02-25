@@ -30,10 +30,10 @@ const IssuePieChart = (props) => {
   const data = rawData.map((cluster, index) => ({
     name: cluster.name,
     value: Array.from(
-      new Set(cluster.issues.map((issue) => issue.metadata?.index))
+      new Set(cluster.issues.map((issue) => issue.metadata?.index)),
     ).length,
     clusterIndices: Array.from(
-      new Set(cluster.issues.map((issue) => issue.metadata?.index))
+      new Set(cluster.issues.map((issue) => issue.metadata?.index)),
     ),
   }));
 
@@ -64,7 +64,7 @@ const IssuePieChart = (props) => {
               // replace everything but [A-Za-z0-9_] with ''
               const name = data.name.replace(/[^A-Za-z0-9_ ]/g, "");
               const clusterFilter = `filter:${name}:${clusterIndices.join(
-                ","
+                ",",
               )}`;
               // current address looks like: http://localhost/u/developer/abc/t/41
               // navigate to ?query=filter:cluster_name:id1,id2,id3

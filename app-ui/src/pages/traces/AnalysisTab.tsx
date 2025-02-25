@@ -350,7 +350,7 @@ function CancelButton({
         `/api/v1/dataset/byid/${datasetId}/analysis`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       if (response.ok) {

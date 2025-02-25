@@ -17,13 +17,16 @@ import {
 } from "react-icons/bs";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { DeleteDatasetModalContent } from "../home/NewDataset";
-import { Modal } from "../../Modal";
+import { Modal } from "../../components/Modal";
 import { PoliciesView } from "./Policies";
-import { RemoteResource, useRemoteResource } from "../../RemoteResource";
+import {
+  RemoteResource,
+  useRemoteResource,
+} from "../../service/RemoteResource";
 import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../utils/Config";
-import { useFeatureFlag, useTelemetry } from "../../telemetry";
+import { useTelemetry } from "../../utils/Telemetry";
 import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
 import { AnalysisReport } from "./AnalysisTab";
@@ -51,7 +54,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
     );
     //@ts-ignore
     this.username = username;
@@ -165,7 +168,7 @@ function DatasetView() {
   const [selectedTab, _setSelectedTab] = React.useState(
     new URLSearchParams(window.location.search).get("tab") ||
       props.tab ||
-      "traces"
+      "traces",
   );
 
   const setSelectedTab = (tab) => {

@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.scss";
-import "./invariant.scss";
-import "./App.scss";
+import "./styles/index.scss";
+import "./styles/invariant.scss";
+import "./styles/App.scss";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "./Routes";
 
@@ -12,7 +12,7 @@ import {
   HAS_CONSENT,
   capture,
   SUPPORTS_TELEMETRY,
-} from "./telemetry";
+} from "./utils/Telemetry";
 
 import { install } from "./lib/permalink-navigator";
 

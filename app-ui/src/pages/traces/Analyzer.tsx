@@ -11,7 +11,7 @@ import "./Analyzer.scss";
 import logo from "../../assets/invariant.svg";
 import { reveal } from "../../lib/permalink-navigator";
 import { BroadcastEvent } from "../../lib/traceview/traceview";
-import { capture } from "../../telemetry";
+import { capture } from "../../utils/Telemetry";
 import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
@@ -84,7 +84,7 @@ function useIssues(analyzerOutput: any, storedOutput?: any) {
             } catch (e) {
               console.error(
                 "Failed to parse stored analyzer output:",
-                storedOutput[i]
+                storedOutput[i],
               );
             }
             break;
@@ -149,17 +149,17 @@ async function prepareAnalysisInputs(
   traceId: string,
   dataset_id?: string,
   username?: string,
-  dataset?: string
+  dataset?: string,
 ) {
   try {
     // get trace data
     const traceRes = fetch(
-      `/api/v1/trace/${traceId}/download?include_trace_ids=true`
+      `/api/v1/trace/${traceId}/download?include_trace_ids=true`,
     );
     // get additional context from dataset (if available)
     const contextRes = dataset_id
       ? fetch(
-          `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`
+          `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`,
         )
       : Promise.resolve(null);
 
@@ -172,7 +172,7 @@ async function prepareAnalysisInputs(
     // check that they ar eok
     if (!traceResponse.ok) {
       throw new Error(
-        `Failed to fetch trace data: HTTP ${traceResponse.status}`
+        `Failed to fetch trace data: HTTP ${traceResponse.status}`,
       );
     }
 
@@ -183,7 +183,7 @@ async function prepareAnalysisInputs(
     if (contextResponse) {
       if (!contextResponse.ok) {
         throw new Error(
-          `Failed to fetch dataset context: HTTP ${contextResponse.status}`
+          `Failed to fetch dataset context: HTTP ${contextResponse.status}`,
         );
       }
       context = await contextResponse.text();
@@ -226,7 +226,7 @@ function createAnalysis(
   baseurl: string,
   apikey: string,
   context: any,
-  setDebug?: (debug: any) => void
+  setDebug?: (debug: any) => void,
 ): AbortController {
   const abortController = new AbortController();
   const endpoint = baseurl + "/api/v1/analysis/create";
@@ -318,7 +318,7 @@ function createAnalysis(
         return;
       } else if (error.message.includes("Unauthorized")) {
         alert(
-          "Unauthorized: Please provide a valid API key to use an analysis model."
+          "Unauthorized: Please provide a valid API key to use an analysis model.",
         );
         return;
       } else {
@@ -469,7 +469,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
   "model": "i01",
   "endpoint": "https://preview-explorer.invariantlabs.ai",
   "apikey": "${TEMPLATE_API_KEY}"
-}` as string | undefined)
+}` as string | undefined),
   );
 
   const setAnalyzerConfig = (value: string | undefined) => {
@@ -499,7 +499,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
 
 export function clientAnalyzerConfig(configType: string) {
   return parseConfig(
-    localStorage.getItem("analyzerConfig-" + configType) || "{}"
+    localStorage.getItem("analyzerConfig-" + configType) || "{}",
   );
 }
 
@@ -522,7 +522,7 @@ export function AnalyzerSidebar(props: {
   onAnalyzeEvent?: BroadcastEvent;
 }) {
   const [abortController, setAbortController] = React.useState(
-    new AbortController()
+    new AbortController(),
   );
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -576,7 +576,7 @@ export function AnalyzerSidebar(props: {
         props.traceId,
         props.datasetId,
         props.username,
-        props.dataset
+        props.dataset,
       );
 
       let ctrl = createAnalysis(
@@ -588,7 +588,7 @@ export function AnalyzerSidebar(props: {
         endpoint,
         apikey,
         context,
-        props.analyzer.setDebug
+        props.analyzer.setDebug,
       );
       setAbortController(ctrl);
     } catch (error) {
@@ -679,7 +679,7 @@ export function AnalyzerSidebar(props: {
               key={props.traceId + "-" + "issue-" + i + "-" + output.content}
               issue={output}
             />
-          )
+          ),
         )}
       </div>
       {notYetRun && (
