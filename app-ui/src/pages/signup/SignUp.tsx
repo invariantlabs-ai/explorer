@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useTelemetry } from "../../utils/telemetry";
+import { useTelemetry } from "../../utils/Telemetry";
 
 /**
  * Simple screen component for user sign up.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal } from "../../Modal";
+import { Modal } from "../../components/Modal";
 
 window["promptModelAccess"] = function (action: string) {
   // nothing by default

@@ -1,7 +1,7 @@
 import React from "react";
 import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
-import { useTelemetry } from "../utils/telemetry";
+import { useTelemetry } from "../utils/Telemetry";
 
 /**
  * A component to show when there are no traces in the dataset.

@@ -12,7 +12,7 @@ import {
   HAS_CONSENT,
   capture,
   SUPPORTS_TELEMETRY,
-} from "./utils/telemetry";
+} from "./utils/Telemetry";
 
 import { install } from "./lib/permalink-navigator";
 

@@ -24,7 +24,7 @@ import {
 import { useUserInfo } from "../../utils/UserInfo";
 import { Metadata } from "../../lib/metadata";
 import { config } from "../../utils/Config";
-import { useTelemetry } from "../../utils/telemetry";
+import { useTelemetry } from "../../utils/Telemetry";
 import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
 import { Insights } from "./Insights";
@@ -51,7 +51,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`
+      `/api/v1/dataset/byuser/${username}/${datasetname}`,
     );
     //@ts-ignore
     this.username = username;
