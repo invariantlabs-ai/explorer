@@ -69,6 +69,20 @@ function getFullDisplayName(trace: Trace | null) {
 function compareTraces(a: Trace | null, b: Trace | null) {
   const lhs = getFullDisplayName(a);
   const rhs = getFullDisplayName(b);
+
+  // check if the name contains a numebr at the back respectively and compare by that
+  const lhsNumber = lhs.match(/\d+$/);
+  const rhsNumber = rhs.match(/\d+$/);
+
+  if (lhsNumber && rhsNumber) {
+    const lhsNumberInt = parseInt(lhsNumber[0]);
+    const rhsNumberInt = parseInt(rhsNumber[0]);
+
+    if (lhsNumberInt !== rhsNumberInt) {
+      return lhsNumberInt - rhsNumberInt;
+    }
+  }
+
   return lhs.localeCompare(rhs);
 }
 
@@ -727,12 +741,20 @@ export function Traces(props) {
     searching,
     setHighlightMappings,
   ] = useSearch();
+
   // tracks whether the current user owns the dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id;
   // tracks the currently selected trace
   const [activeTrace, setActiveTrace] = React.useState(null as Trace | null);
 
   const [renderNux, setRenderNux] = React.useState(false);
+
+  // if query is set in props, set it as initial search query
+  useEffect(() => {
+    if (props.query) {
+      setSearchQuery(props.query);
+    }
+  }, [props.query]);
 
   // when the trace index changes, update the activeTrace
   useEffect(() => {
@@ -855,6 +877,15 @@ export function Traces(props) {
     }
   }
 
+  // get highlights for a given trace
+  const highlightsFor = (trace: Trace | null) => {
+    if (props.highlightsProvider) {
+      return props.highlightsProvider(trace);
+    }
+
+    return trace ? highlightMappings[trace.index] : null;
+  };
+
   // derive whether this is a testing trace
   const isTest =
     activeTrace?.extra_metadata &&
@@ -905,6 +936,7 @@ export function Traces(props) {
             searching={searching}
             setHighlightMappings={setHighlightMappings}
             datasetMetadata={dataset?.extra_metadata}
+            fixedQuery={props.query}
           />
         )}
         {/* actual trace viewer */}
@@ -914,34 +946,39 @@ export function Traces(props) {
             activeTrace={traceVisible ? activeTrace : null}
             selectedTraceId={activeTrace?.id}
             selectedTraceIndex={activeTrace?.index}
+            hideAnnotations={props.hideAnnotations}
             // shown when no trace is selected
             empty={emptyView}
             collapsed={isTest}
             // current search highlights
-            mappings={activeTrace ? highlightMappings[activeTrace.index] : null}
+            mappings={highlightsFor(activeTrace)}
             // whether we are still loading the dataset's trace data
             loading={!traces}
+            // show the analyzer
+            enableAnalyzer={props.enableAnalyzer}
             // header components to show in the explorer
             header={
-              <h1>
-                <Link to="/"> /</Link>
-                <Link to={`/u/${username}`}>{username}</Link>/
-                <Link to={`/u/${username}/${datasetname}/t`}>
-                  {datasetname}
-                </Link>
-                {activeTrace && (
-                  <>
-                    /{" "}
-                    <Link
-                      to={`/u/${username}/${datasetname}/t/${activeTrace.index}`}
-                    >
-                      <span className="traceid">
-                        {getFullDisplayName(activeTrace)}
-                      </span>
-                    </Link>
-                  </>
-                )}
-              </h1>
+              props.withoutHeader ? null : (
+                <h1>
+                  <Link to="/"> /</Link>
+                  <Link to={`/u/${username}`}>{username}</Link>/
+                  <Link to={`/u/${username}/${datasetname}/t`}>
+                    {datasetname}
+                  </Link>
+                  {activeTrace && (
+                    <>
+                      /{" "}
+                      <Link
+                        to={`/u/${username}/${datasetname}/t/${activeTrace.index}`}
+                      >
+                        <span className="traceid">
+                          {getFullDisplayName(activeTrace)}
+                        </span>
+                      </Link>
+                    </>
+                  )}
+                </h1>
+              )
             }
             is_public={dataset.is_public}
             // callback for when the user presses the 'Share' button
@@ -992,6 +1029,26 @@ function SearchBox(props) {
   const [inputValue, setInputValue] = React.useState(searchQuery || "");
   const [hasChanged, setHasChanged] = React.useState(false);
 
+  const [inputActive, setInputActive] = React.useState(false);
+
+  const ref = React.useRef(null as HTMLInputElement | null);
+
+  useEffect(() => {
+    if (ref && ref.current) {
+      const handlerFocus = () => setInputActive(true);
+      const handlerBlur = () => setInputActive(false);
+
+      ref.current.addEventListener("focus", handlerFocus);
+      ref.current.addEventListener("blur", handlerBlur);
+
+      return () => {
+        if (!ref || !ref.current) return;
+        ref.current.removeEventListener("focus", handlerFocus);
+        ref.current.removeEventListener("blur", handlerBlur);
+      };
+    }
+  }, [ref]);
+
   useEffect(() => {
     setInputValue(searchQuery || "");
     setHasChanged(false);
@@ -1035,12 +1092,21 @@ function SearchBox(props) {
 
   const hasSearch = inputValue == "" || hasChanged;
 
+  let fancy_string = inputValue;
+  // if serach query is filter:<label>:1,2,3,4, set fancy to filter:<label>
+  if (inputValue.startsWith("filter:")) {
+    const filter = inputValue.split(":")[1];
+    fancy_string = `${filter}`;
+  }
+  let fancy_class = inputValue != fancy_string ? "fancy" : "";
+
   return (
-    <div className="search">
+    <div className={"search " + fancy_class}>
       <input
-        className="search-text"
+        ref={ref}
+        className={"search-text " + fancy_class}
         type="text"
-        value={inputValue}
+        value={inputActive ? inputValue : fancy_string}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder="Search"
@@ -1085,6 +1151,8 @@ function Sidebar(props: {
   hierarchyPaths: Record<string, HierarchyPath>;
   setHighlightMappings: (value: any) => void;
   datasetMetadata: any;
+  // whether the query can be edited
+  fixedQuery?: boolean;
 }) {
   const searchQuery = props.searchQuery;
   const setSearchQuery = props.setSearchQuery;
@@ -1262,7 +1330,7 @@ function Sidebar(props: {
         (a, b) =>
           (activeIndices[b].severity || 0) - (activeIndices[a].severity || 0),
       )
-      .forEach((key) => {
+      .forEach((key, kidx) => {
         if (key !== "all" && activeIndices[key].traces.length > 0) {
           // filtered result (e.g. search of analyzer)
           let icon: React.ReactNode = {
@@ -1300,6 +1368,7 @@ function Sidebar(props: {
           viewItems.push(
             <TraceSearchGroupHeader
               name={key}
+              key={kidx + "-" + key}
               count={activeIndices[key].traces.length}
               description={activeIndices[key].description || ""}
               icon={icon || null}
@@ -1430,58 +1499,62 @@ function Sidebar(props: {
 
   return (
     <div className={"sidebar " + (visible ? "visible" : "collapsed")}>
-      <header>
-        <div className="filter-container">
-          <details className="filter-dropdown" ref={filterRef}>
-            <summary className="filter-button" aria-label="filter-dropdown">
-              Filters
-              <span className="dropdown-icon">▼</span>
-            </summary>
-            <div className="filter-options">
-              {filters.map((filter, index) => (
-                <button
-                  key={index}
-                  className={
-                    "filter-option" +
-                    (selectedFilter === filter.value
-                      ? " selected-filter-option"
-                      : "")
-                  }
-                  onClick={(e) => handleFilterSelect(e, filter)}
-                  aria-label={filter.value + "-filter"}
-                >
-                  {filter.label}{" "}
-                  {selectedFilter === filter.value && <BsCheck2 />}
-                </button>
-              ))}
-            </div>
-          </details>
-        </div>
-        <SearchBox
-          setSearchQuery={props.setSearchQuery}
-          searchQuery={props.searchQuery}
-          searchNow={props.searchNow}
-          searching={props.searching}
-          onSave={onSave}
-          setHighlightMappings={props.setHighlightMappings}
-        />
-        <button
-          className="header-short toggle icon"
-          onClick={() => setVisible(!visible)}
-          data-tooltip-id="sidebar-button-tooltip"
-          data-tooltip-content="Fold Sidebar"
-        >
-          <BsLayoutSidebarInset />
-        </button>
-        <SidebarStatus
-          traces={traces}
-          searching={props.searching}
-          activeIndices={activeIndices}
-          searchOrFilterApplied={selectedFilter !== null || searchQuery !== ""}
-          clearFiltersAndSearchQuery={clearFiltersAndSearchQuery}
-          datasetMetadata={props.datasetMetadata}
-        />
-      </header>
+      {!props.fixedQuery && (
+        <header>
+          <div className="filter-container">
+            <details className="filter-dropdown" ref={filterRef}>
+              <summary className="filter-button" aria-label="filter-dropdown">
+                Filters
+                <span className="dropdown-icon">▼</span>
+              </summary>
+              <div className="filter-options">
+                {filters.map((filter, index) => (
+                  <button
+                    key={index}
+                    className={
+                      "filter-option" +
+                      (selectedFilter === filter.value
+                        ? " selected-filter-option"
+                        : "")
+                    }
+                    onClick={(e) => handleFilterSelect(e, filter)}
+                    aria-label={filter.value + "-filter"}
+                  >
+                    {filter.label}{" "}
+                    {selectedFilter === filter.value && <BsCheck2 />}
+                  </button>
+                ))}
+              </div>
+            </details>
+          </div>
+          <SearchBox
+            setSearchQuery={props.setSearchQuery}
+            searchQuery={props.searchQuery}
+            searchNow={props.searchNow}
+            searching={props.searching}
+            onSave={onSave}
+            setHighlightMappings={props.setHighlightMappings}
+          />
+          <button
+            className="header-short toggle icon"
+            onClick={() => setVisible(!visible)}
+            data-tooltip-id="sidebar-button-tooltip"
+            data-tooltip-content="Fold Sidebar"
+          >
+            <BsLayoutSidebarInset />
+          </button>
+          <SidebarStatus
+            traces={traces}
+            searching={props.searching}
+            activeIndices={activeIndices}
+            searchOrFilterApplied={
+              selectedFilter !== null || searchQuery !== ""
+            }
+            clearFiltersAndSearchQuery={clearFiltersAndSearchQuery}
+            datasetMetadata={props.datasetMetadata}
+          />
+        </header>
+      )}
       <ul ref={viewportContainerRef}>
         <ViewportList
           items={!props.searching ? [...viewItems.keys()] : []}
@@ -1603,7 +1676,7 @@ function TraceRow(props: {
     };
   });
 
-  if (!trace) return <span>...</span>;
+  if (!trace) return null;
 
   // if there is a hierarchy path, show it
   let path = (props?.path?.path || []).join(pathSeparator);
@@ -1712,6 +1785,7 @@ function TraceHierarchy(props: {
 
 function TraceSearchGroupHeader(props: {
   name: string;
+  key: string;
   count: number;
   description: string;
   icon: React.ReactNode | null;
@@ -1723,7 +1797,7 @@ function TraceSearchGroupHeader(props: {
       {icon && <span className="icon">{icon}</span>}
       <div className="details">
         <h1>
-          {name} ({count})
+          <b>{name}</b> ({count})
         </h1>
         {description && <h2>{description}</h2>}
       </div>

@@ -1,5 +1,4 @@
 import posthog from "posthog-js";
-import { Plugins } from "../lib/traceview/plugins";
 import { usePostHog } from "posthog-js/react";
 import { config } from "./Config";
 

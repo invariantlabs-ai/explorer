@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from keycloak import KeycloakOpenID  # pip require python-keycloak
+from keycloak import KeycloakOpenID
 from util.config import config
 
 is_preview_deployment = os.getenv("PREVIEW") == "1"
@@ -26,14 +26,15 @@ DEVELOPER_USER = {
     "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ce",
     "email": "dev@mail.com",
     "username": "developer",
-    "name": "Developer"
+    "name": "Developer",
 }
 DEVELOPER_USER2 = {
     "sub": "3752ff38-da1a-4fa5-84a2-9e44a4b167ca",
     "email": "dev2@mail.com",
     "username": "developer2",
-    "name": "Developer2"
+    "name": "Developer2",
 }
+
 
 def install_authorization_endpoints(app):
     """
@@ -113,7 +114,7 @@ async def UserIdentity(request: Request) -> UUID | None:
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh"
+            "refresh_token": "dev-refresh",
         }
 
         return UUID(request.state.userinfo["sub"])
@@ -126,7 +127,7 @@ async def UserIdentity(request: Request) -> UUID | None:
         # set jwt cookie for dev mode
         request.state.refreshed_token = {
             "access_token": "dev-access",
-            "refresh_token": "dev-refresh"
+            "refresh_token": "dev-refresh",
         }
 
         return UUID(request.state.userinfo["sub"])
@@ -164,7 +165,9 @@ async def UserIdentity(request: Request) -> UUID | None:
         return None
 
 
-async def AuthenticatedUserIdentity(identity: Annotated[UUID | None, Depends(UserIdentity)]) -> UUID:
+async def AuthenticatedUserIdentity(
+    identity: Annotated[UUID | None, Depends(UserIdentity)],
+) -> UUID:
     if identity is None:
         raise HTTPException(status_code=401, detail="Unauthorized request")
     return identity

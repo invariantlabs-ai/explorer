@@ -97,6 +97,7 @@ export class Annotations extends RemoteResource {
  * @param {React.Component} props.empty - the empty component to show if no trace is selected/specified (default: "No trace selected")
  * @param {boolean} props.isUserOwned - whether the trace is owned by the user
  * @param {boolean} props.enableNux - callback to enable the NUX
+ * @param {boolean} props.enableAnalyzer - whether to enable the analyzer
  * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
  */
 
@@ -228,7 +229,10 @@ export function AnnotationAugmentedTraceView(props) {
   // whenever annotations change, update mappings
   useEffect(() => {
     let { highlights, errors, filtered_annotations, top_level_annotations } =
-      AnnotationsParser.parse_annotations(annotations, props.mappings);
+      AnnotationsParser.parse_annotations(
+        !props.hideAnnotations ? annotations : [],
+        props.mappings,
+      );
 
     setHighlights({
       highlights: HighlightedJSON.from_entries(highlights),
@@ -434,38 +438,46 @@ export function AnnotationAugmentedTraceView(props) {
           onUpvoteDownvoteCreate={onAnnotationCreate}
           onUpvoteDownvoteDelete={onAnnotationDelete}
           prelude={
-            <AnalyzerPreview
-              analyzer={analyzer}
-              open={analyzerOpen}
-              setAnalyzerOpen={setAnalyzerOpen}
-              output={analyzer.output}
-              running={analyzer.running}
-              storedOutput={top_level_annotations.filter(
-                (a) => a.source == "analyzer-model",
+            <>
+              {props.enableAnalyzer && (
+                <AnalyzerPreview
+                  analyzer={analyzer}
+                  open={analyzerOpen}
+                  setAnalyzerOpen={setAnalyzerOpen}
+                  output={analyzer.output}
+                  running={analyzer.running}
+                  storedOutput={top_level_annotations.filter(
+                    (a) => a.source == "analyzer-model",
+                  )}
+                  onRunAnalyzer={onRunAnalyzerEvent}
+                />
               )}
-              onRunAnalyzer={onRunAnalyzerEvent}
-            />
+            </>
           }
-          padding={{ right: analyzerOpen ? "370pt" : "0pt" }}
+          padding={{
+            right: props.enableAnalyzer && analyzerOpen ? "370pt" : "65pt",
+          }}
         />
-        <AnalyzerSidebar
-          open={analyzerOpen}
-          output={analyzer.output}
-          analyzer={analyzer}
-          running={analyzer.running}
-          debugInfo={analyzer.debugInfo}
-          storedOutput={top_level_annotations.filter(
-            (a) => a.source == "analyzer-model",
-          )}
-          traceId={activeTraceId}
-          datasetId={props.datasetId}
-          username={props.username}
-          onDiscardAnalysisResult={
-            props.isUserOwned ? onDiscardAnalysisResult : null
-          }
-          dataset={props.dataset}
-          onAnalyzeEvent={onRunAnalyzerEvent}
-        />
+        {props.enableAnalyzer && (
+          <AnalyzerSidebar
+            open={analyzerOpen}
+            output={analyzer.output}
+            analyzer={analyzer}
+            running={analyzer.running}
+            debugInfo={analyzer.debugInfo}
+            storedOutput={top_level_annotations.filter(
+              (a) => a.source == "analyzer-model",
+            )}
+            traceId={activeTraceId}
+            datasetId={props.datasetId}
+            username={props.username}
+            onDiscardAnalysisResult={
+              props.isUserOwned ? onDiscardAnalysisResult : null
+            }
+            dataset={props.dataset}
+            onAnalyzeEvent={onRunAnalyzerEvent}
+          />
+        )}
       </div>
       <Tooltip
         id="highlight-tooltip"
