@@ -236,7 +236,7 @@ async def on_analysis_result(job: DatasetJob, results: Any):
 
         # go over analysis results (trace results and report parts)
         for result in results:
-            trace_id = result.get("id")
+            trace_id = result.get("trace_id")
 
             # handle trace ID results
             if trace_id is not None:
