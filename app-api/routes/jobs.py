@@ -236,12 +236,12 @@ async def on_analysis_result(job: DatasetJob, results: Any):
 
         # go over analysis results (trace results and report parts)
         for result in results:
-            trace_id = result.get("id")
+            trace_id = result.get("trace_id")
 
             # handle trace ID results
             if trace_id is not None:
-                analyzer_results = result.get("result")
-                report["num_results"] += len(analyzer_results)
+                issues = result.get("issues")
+                report["num_results"] += len(issues)
 
                 source = "analyzer-model"
 
@@ -252,7 +252,7 @@ async def on_analysis_result(job: DatasetJob, results: Any):
                     source,
                     [
                         {
-                            "content": json.dumps(analyzer_results),
+                            "content": json.dumps(issues),
                             "address": "<root>",
                             "extra_metadata": {"source": source},
                         }
