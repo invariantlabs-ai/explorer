@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal } from "../../Modal";
+import { Modal } from "../../components/Modal";
 import { Link } from "react-router-dom";
 
 window["promptSignup"] = function (action: string) {

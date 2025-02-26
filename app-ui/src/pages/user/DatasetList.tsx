@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 
 import { useUserInfo } from "../../utils/UserInfo";
 import { Link } from "react-router-dom";
-import { EntityList } from "../../EntityList";
-import { Modal } from "../../Modal";
+import { EntityList } from "../../components/EntityList";
+import { Modal } from "../../components/Modal";
 import { useDatasetList } from "../../service/DatasetOperations";
 import {
   DeleteDatasetModalContent,

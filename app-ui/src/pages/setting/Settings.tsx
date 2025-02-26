@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUserInfo } from "../../utils/UserInfo";
 import { BsKey, BsTrash } from "react-icons/bs";
 import { sharedFetch } from "../../service/SharedFetch";
-import { Modal } from "../../Modal";
+import { Modal } from "../../components/Modal";
 
 // fetch the user's API keys from the server
 const useApiKeys = () => {
