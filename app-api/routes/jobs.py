@@ -240,7 +240,7 @@ async def on_analysis_result(job: DatasetJob, results: Any):
 
             # handle trace ID results
             if trace_id is not None:
-                analyzer_results = result.get("result")
+                analyzer_results = result.get("issues")
                 report["num_results"] += len(analyzer_results)
 
                 source = "analyzer-model"
