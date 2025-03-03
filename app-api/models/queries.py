@@ -1,7 +1,7 @@
 import datetime
 import json
 import re
-from typing import List
+from typing import List, AsyncGenerator
 from uuid import UUID, uuid4
 
 import aiofiles
@@ -17,6 +17,11 @@ from models.datasets_and_traces import (
     SharedLinks,
     Trace,
     User,
+)
+from models.analyzer_model import (
+    Annotation as AnalyzerAnnotation,
+    Sample as AnalyzerSample,
+    InputSample as AnalyzerInputSample,
 )
 from models.importers import import_jsonl
 from sqlalchemy import and_
@@ -61,6 +66,52 @@ class DBJSONEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
+
+
+class AnalyzerTraceExporter:
+    def __init__(self, user_id: str, dataset_id: str):
+        self.user_id = user_id
+        self.dataset_id = dataset_id
+
+    async def analyzer_model_input(self, session: Session) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
+        try:
+            results = (
+                session.query(Trace, Annotation)
+                .outerjoin(Annotation, (Trace.id == Annotation.trace_id) & (Annotation.user_id == self.user_id))
+                .filter(Trace.dataset_id == self.dataset_id)
+                .all()
+            )
+            # Group the results by trace
+            samples_by_id: dict[str, AnalyzerSample] = {}
+
+            
+            for row in results:
+                trace, annotation = row.tuple()
+                samples_by_id.setdefault(str(trace.id), AnalyzerSample(
+                    trace=json.dumps(trace.content),
+                    id=str(trace.id),
+                    annotations=[]
+                ))
+                if annotation is not None:
+                    samples_by_id[str(trace.id)].annotations.append(
+                        AnalyzerAnnotation(
+                            content=annotation.content,
+                            location=annotation.address,
+                            severity=float(annotation.extra_metadata.get('severity', 0.0) if annotation.extra_metadata else 0.0)
+                        )
+                    )
+
+            analyser_input_samples = [AnalyzerInputSample(
+                    trace=sample.trace, id=sample.id,
+                ) for sample in samples_by_id.values()
+            ]
+
+            # only send context with annotated samples
+            analyser_context_samples = [sample for sample in samples_by_id.values() if sample.annotations]
+        except Exception as e:
+            import traceback
+            print("Error handling job", e, traceback.format_exc(), flush=True)
+        return analyser_input_samples, analyser_context_samples
 
 
 class TraceExporter:
@@ -121,6 +172,10 @@ class TraceExporter:
                 # NOTE: if this operation becomes blocking, we can use asyncio.sleep(0) to yield control back to the event loop
 
         return user, dataset_info, trace_generator
+
+    async def prepare_analyzer(self, session: Session):
+        pass
+
 
     async def traces(self, session: Session):
         """

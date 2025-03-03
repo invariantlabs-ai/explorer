@@ -19,6 +19,7 @@ import json
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from models.datasets_and_traces import db, DatasetJob
+from models.analyzer_model import JobStatus, JobProgress, JobResponse
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
@@ -53,10 +54,10 @@ class AnalysisClient:
         headers = {"Authorization": f"Bearer {apikey}"} if apikey else {}
         self.session = aiohttp.ClientSession(base_url=base_url, headers=headers)
 
-    async def status(self, job_id: str) -> Dict[str, Any]:
-        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
+    async def status(self, job_id: str) -> JobProgress:
+        async with self.session.get(f"/api/v1/analysis/job/{job_id}/progress") as resp:
             resp.raise_for_status()
-            return await resp.json()
+            return JobProgress.model_validate(await resp.json())
 
     async def cancel(self, job_id: str) -> Optional[Dict[str, Any]]:
         async with self.session.put(f"/api/v1/analysis/job/{job_id}/cancel") as resp:
@@ -67,6 +68,11 @@ class AnalysisClient:
         async with self.session.delete(f"/api/v1/analysis/job/{job_id}") as resp:
             resp.raise_for_status()
             return await resp.json() if resp.content_length else None
+
+    async def results(self, job_id: str) -> JobResponse:
+        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
+            resp.raise_for_status()
+            return JobResponse.model_validate(await resp.json())
 
     async def queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         async with self.session.post("/api/v1/analysis/job", json=payload) as resp:
@@ -148,26 +154,26 @@ async def check_job(session: Session, job: DatasetJob):
 
     try:
         async with AnalysisClient(endpoint, apikey) as client:
-            status_response = await client.status(job_id)
-            job_status = status_response.get("status")
+            job_progress = await client.status(job_id)
+            print(f"Job {job_id} has status {job_progress.status}", flush=True)
 
             # update job metadata with status
-            job.extra_metadata["status"] = job_status
+            job.extra_metadata["status"] = job_progress.status
 
             # if given, update number of processed items
-            num_processed = status_response.get("num_processed")
+            num_processed = job_progress.num_processed
             if num_processed is not None:
                 job.extra_metadata["num_processed"] = num_processed
 
             # if given, update number of total items
-            num_total = status_response.get("num_total")
+            num_total = job_progress.total
             if num_total is not None:
                 job.extra_metadata["num_total"] = num_total
 
             # if job status is cancelled, delete job
-            if job_status == "done":
+            if job_progress.status == JobStatus.COMPLETED:
                 # if otherwise 'results' are available, handle them
-                results = status_response.get("results")
+                results = await client.results(job_id)
                 if results is not None:
                     # handle job result
                     await handle_job_result(job, results)
@@ -178,14 +184,15 @@ async def check_job(session: Session, job: DatasetJob):
                 # delete job with analysis service
                 await client.delete(job_id)
 
-            elif job_status == "running":
+            elif job_progress.status == JobStatus.RUNNING:
                 # nothing to do, we wait for completion
                 pass
-            elif job_status == "cancelled":
+            elif job_progress.status == JobStatus.CANCELLED:
+                await client.delete(job_id)
                 session.delete(job)
                 return
             else:
-                print("Job has status", job_status, flush=True)
+                print("Job has status", job_progress.status, flush=True)
     except aiohttp.ClientResponseError as e:
         if e.status == 404:
             # job not found, delete it from local records (nothing to track here anymore)
@@ -205,7 +212,7 @@ async def check_job(session: Session, job: DatasetJob):
         session.commit()
 
 
-async def handle_job_result(job: DatasetJob, results: Any):
+async def handle_job_result(job: DatasetJob, results: JobResponse):
     """
     Process the results of a job and update the database accordingly.
     """
@@ -218,7 +225,7 @@ async def handle_job_result(job: DatasetJob, results: Any):
 
 
 @on_job_result("analysis")
-async def on_analysis_result(job: DatasetJob, results: Any):
+async def on_analysis_result(job: DatasetJob, results: JobResponse):
     """
     Handles the outcome of 'analysis' jobs.
 
@@ -229,38 +236,27 @@ async def on_analysis_result(job: DatasetJob, results: Any):
             session, {"id": job.dataset_id}, job.user_id, allow_public=False
         )
 
-        report = {
-            "last_updated": datetime.datetime.now().isoformat(),
-            "num_results": 0,
-        }
-
+        source = "analyzer-model"
         # go over analysis results (trace results and report parts)
-        for result in results:
-            trace_id = result.get("trace_id")
+        for analysis in results.analysis:
+            
+            _ = await replace_annotations(
+                session,
+                analysis.id,
+                job.user_id,
+                source,
+                [
+                    {
+                        "content": json.dumps(analysis.model_dump(exclude={"cost", "id"})["annotations"]),
+                        "address": "<root>",
+                        "extra_metadata": {"source": source},
+                    }
+                ],
+            )
+        cost = sum(a.cost for a in results.analysis if a.cost is not None)
+        report = results.model_dump()
+        report["cost"] = cost
 
-            # handle trace ID results
-            if trace_id is not None:
-                issues = result.get("issues")
-                report["num_results"] += len(issues)
-
-                source = "analyzer-model"
-
-                result = await replace_annotations(
-                    session,
-                    trace_id,
-                    job.user_id,
-                    source,
-                    [
-                        {
-                            "content": json.dumps(issues),
-                            "address": "<root>",
-                            "extra_metadata": {"source": source},
-                        }
-                    ],
-                )
-            elif "report" in result:
-                # assign everything in the report to the report
-                report.update(result["report"])
 
         # update analysis report
         await update_dataset_metadata(

@@ -44,7 +44,9 @@ from models.queries import (
     trace_to_json,
     ExportConfig,
     TraceExporter,
+    AnalyzerTraceExporter,
 )
+from models.analyzer_model import JobRequest, DebugOptions
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
@@ -759,6 +761,20 @@ async def queue_analysis(
     Queue an analysis job for a dataset.
     """
     with Session(db()) as session:
+        # Check if the user has access to the dataset
+        with Session(db()) as session:
+            dataset = session.query(Dataset).filter(Dataset.id == id).first()
+            if not dataset:
+                raise HTTPException(status_code=404, detail="Dataset not found")
+            if dataset.user_id != user_id:
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            user = session.query(User).filter(User.id == dataset.user_id).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            dataset_name = dataset.name
+            username = user.username
         # first check for pending dataset jobs of type 'analysis'
         pending_jobs = [
             job
@@ -773,76 +789,44 @@ async def queue_analysis(
                 detail="There is already an analysis job pending for this dataset.",
             )
 
-        # get all traces to include in analysis context
-        context_exporter = TraceExporter(
-            user_id=user_id,
+        trace_exporter = AnalyzerTraceExporter(
+            user_id=str(user_id),
             dataset_id=id,
-            export_config=ExportConfig(only_annotated=True, include_trace_ids=True),
         )
-
-        user, dataset_info, trace_generator = await context_exporter.prepare(session)
-
-        # ensure user owns this dataset
-        if dataset_info["user_id"] != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Not allowed to queue analysis for this dataset, if you are not the owner.",
+        analyser_input_samples, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
+        print("hhhh")
+        job_request = JobRequest(
+            input=analyser_input_samples,
+            annotated_samples=analyser_context_samples,
+            model_params=analysis_request.options,
+            owner=username,
+            debug_options=DebugOptions(
+                dataset=dataset_name,
             )
-
-        # get trace data
-        tracedata = "".join([trace_json async for trace_json in trace_generator()])
-
-        # get all other dataset traces
-        traces_exporter = TraceExporter(
-            user_id=user_id,
-            dataset_id=id,
-            export_config=ExportConfig(
-                only_annotated=False,
-                include_trace_ids=True,
-                include_annotations=False,
-            ),
         )
-
-        # construct analysis input
-        analysis_input = [
-            trace_json async for trace_json in traces_exporter.traces(session)
-        ]
-
-        # construct analysis context (retrieval examples + some metadata)
-        context = {
-            "explorer_tracedata": tracedata,
-            "dataset": dataset_info["name"],
-            "user": user.username,
-        }
-
+        json.dump(job_request.model_dump(), open("job_request.json", "w"))
         # keep api key as secret metadata in the DB, so we can check and
         # retrieve the job status later (deleted once job is done)
         secret_metadata = {
             "apikey": analysis_request.apikey,
         }
-
         try:
             async with aiohttp.ClientSession() as client:
                 # queue job with analysis service
                 async with client.post(
                     f"{analysis_request.endpoint}/api/v1/analysis/job",
-                    json={
-                        "input": analysis_input,
-                        "context": context,
-                        "options": analysis_request.options,
-                    },
+                    json=job_request.model_dump(),
                     headers={"Authorization": f"Bearer {analysis_request.apikey}"},
                 ) as response:
                     # if status is bad, raise exception
+                    print(f"{analysis_request.endpoint}/api/v1/analysis/job")
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
                             detail="Analysis service returned an error.",
                         )
-
                     result = await response.json()
-                    job_id = result["job_id"]
-                    status = result.get("status", "queued")
+                    job_id = UUID(result)
 
                     # create DatasetJob object to keep track of this job
 
@@ -854,8 +838,8 @@ async def queue_analysis(
                             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         ),
                         "endpoint": analysis_request.endpoint,
-                        "status": status,
-                        "job_id": job_id,
+                        "status": "pending",
+                        "job_id": str(job_id),
                     }
 
                     job = DatasetJob(
