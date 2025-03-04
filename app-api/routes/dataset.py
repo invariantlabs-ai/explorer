@@ -47,7 +47,7 @@ from models.queries import (
     TraceExporter,
     AnalyzerTraceExporter,
 )
-from models.analyzer_model import JobRequest, DebugOptions, AnalysisRequest, DEBUG_DATASET_SUFFIX, ModelParams
+from models.analyzer_model import JobRequest, AnalysisRequest
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
@@ -61,7 +61,6 @@ from util.util import delete_images, validate_dataset_name
 from routes.dataset_metadata import update_dataset_metadata
 from routes.jobs import cancel_job, check_all_jobs
 
-from pydantic import BaseModel
 import aiohttp
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
