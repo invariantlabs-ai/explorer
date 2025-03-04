@@ -32,6 +32,7 @@ from models.datasets_and_traces import (
     User,
     db,
 )
+
 from models.importers import import_jsonl
 from models.queries import (
     dataset_to_json,
@@ -46,7 +47,7 @@ from models.queries import (
     TraceExporter,
     AnalyzerTraceExporter,
 )
-from models.analyzer_model import JobRequest, DebugOptions
+from models.analyzer_model import JobRequest, DebugOptions, AnalysisRequest, DEBUG_DATASET_SUFFIX, ModelParams
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
@@ -663,16 +664,8 @@ async def download_traces_by_id(
         )
         # streams out trace data
         return await exporter.stream(session)
-
-
-class AnalysisRequest(BaseModel):
-    # model service
-    endpoint: str
-    apikey: str
-
-    # analysis arguments
-    options: dict
-
+import logging
+logger = logging.getLogger(__name__)
 
 @dataset.get("/byid/{id}/jobs")
 async def get_dataset_jobs(
@@ -755,26 +748,24 @@ async def queue_analysis(
     id: str,
     analysis_request: AnalysisRequest,
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
-    request: Request,
 ):
     """
     Queue an analysis job for a dataset.
     """
+
     with Session(db()) as session:
         # Check if the user has access to the dataset
-        with Session(db()) as session:
-            dataset = session.query(Dataset).filter(Dataset.id == id).first()
-            if not dataset:
-                raise HTTPException(status_code=404, detail="Dataset not found")
-            if dataset.user_id != user_id:
-                raise HTTPException(status_code=403, detail="Access denied")
+        dataset = session.query(Dataset).filter(Dataset.id == id).first()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        if dataset.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
 
-            user = session.query(User).filter(User.id == dataset.user_id).first()
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+        user = session.query(User).filter(User.id == dataset.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-            dataset_name = dataset.name
-            username = user.username
+        username = user.username
         # first check for pending dataset jobs of type 'analysis'
         pending_jobs = [
             job
@@ -794,15 +785,12 @@ async def queue_analysis(
             dataset_id=id,
         )
         analyser_input_samples, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
-        print("hhhh")
         job_request = JobRequest(
             input=analyser_input_samples,
             annotated_samples=analyser_context_samples,
-            model_params=analysis_request.options,
+            model_params=analysis_request.options.model_params,
             owner=username,
-            debug_options=DebugOptions(
-                dataset=dataset_name,
-            )
+            debug_options=analysis_request.options.debug_options
         )
         json.dump(job_request.model_dump(), open("job_request.json", "w"))
         # keep api key as secret metadata in the DB, so we can check and
@@ -814,12 +802,12 @@ async def queue_analysis(
             async with aiohttp.ClientSession() as client:
                 # queue job with analysis service
                 async with client.post(
-                    f"{analysis_request.endpoint}/api/v1/analysis/job",
+                    f"{analysis_request.apiurl}/api/v1/analysis/job",
                     json=job_request.model_dump(),
                     headers={"Authorization": f"Bearer {analysis_request.apikey}"},
                 ) as response:
                     # if status is bad, raise exception
-                    print(f"{analysis_request.endpoint}/api/v1/analysis/job")
+                    print(f"{analysis_request.apiurl}/api/v1/analysis/job")
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
@@ -837,7 +825,7 @@ async def queue_analysis(
                         "created_on": str(
                             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         ),
-                        "endpoint": analysis_request.endpoint,
+                        "endpoint": analysis_request.apiurl,
                         "status": "pending",
                         "job_id": str(job_id),
                     }

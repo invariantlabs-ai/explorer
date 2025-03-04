@@ -77,3 +77,16 @@ class JobProgress(BaseModel):
     status: JobStatus
     num_processed: int
     total: int
+
+
+class AnalysisRequestOptions(BaseModel):
+    model_params: ModelParams
+    debug_options: DebugOptions | None = None
+
+class AnalysisRequest(BaseModel):
+    # model service
+    apiurl: str
+    apikey: str
+
+    # analysis arguments
+    options: AnalysisRequestOptions

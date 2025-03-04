@@ -4,6 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
 from uuid import UUID
+from fastapi.responses import StreamingResponse
+
+import httpx
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
@@ -18,7 +21,9 @@ from models.queries import (
     trace_to_exported_json,
     trace_to_json,
     DBJSONEncoder,
+    AnalyzerTraceExporter,
 )
+from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
@@ -234,6 +239,42 @@ async def annotate_trace(
         session.commit()
         return annotation_to_json(annotation)
 
+
+@trace.post("/{id}/analysis")
+async def analyze_trace(
+    id: str,
+    analysis_request: AnalysisRequest,
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
+):
+    with Session(db()) as session:
+        trace, user = load_trace(
+            session, id, user_id, allow_public=True, allow_shared=True, return_user=True
+        )
+        trace_exporter = AnalyzerTraceExporter(
+            user_id=str(user_id),
+            dataset_id=str(trace.dataset_id),
+        )
+        input_sample, annotated_samples = await trace_exporter.analyzer_model_input(
+            session=session,
+            input_trace_id=id,
+        )
+    sar = SingleAnalysisRequest(
+        input=input_sample[0].trace,
+        annotated_samples=annotated_samples,
+        model_params=analysis_request.options.model_params,
+        debug_options=analysis_request.options.debug_options,
+    )
+    async def stream_response():
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                    method="POST",
+                    url=f"{analysis_request.apiurl}/api/v1/analysis/create",
+                    json=sar.model_dump(),
+                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                ) as streaming_response:
+                async for chunk in streaming_response.aiter_text():
+                    yield chunk
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 async def replace_annotations(
     session: Session,

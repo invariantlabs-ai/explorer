@@ -73,7 +73,21 @@ class AnalyzerTraceExporter:
         self.user_id = user_id
         self.dataset_id = dataset_id
 
-    async def analyzer_model_input(self, session: Session) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
+    async def analyzer_model_input(self, session: Session, input_trace_id: UUID | None = None) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
+        """
+        Retrieves trace data and annotations for the analyzer model input.
+
+        Args:
+            session (Session): The database session used for querying.
+            input_trace_id (UUID | None): The ID of a specific trace to fetch. 
+                - If None, includes all traces in the input samples and only annotated traces in the context samples.
+                - If provided, includes only the specified trace as a single-element list in the input samples, with all annotated traces in the context.
+
+        Returns:
+            tuple[list[AnalyzerInputSample], list[AnalyzerSample]]: 
+                - A list of `AnalyzerInputSample` representing the input traces.
+                - A list of `AnalyzerSample` representing the annotated traces (context).
+        """
         try:
             results = (
                 session.query(Trace, Annotation)
@@ -92,7 +106,7 @@ class AnalyzerTraceExporter:
                     id=str(trace.id),
                     annotations=[]
                 ))
-                if annotation is not None:
+                if annotation is not None and annotation.extra_metadata and annotation.extra_metadata.get('source') != 'analyzer-model':
                     samples_by_id[str(trace.id)].annotations.append(
                         AnalyzerAnnotation(
                             content=annotation.content,
@@ -100,11 +114,17 @@ class AnalyzerTraceExporter:
                             severity=float(annotation.extra_metadata.get('severity', 0.0) if annotation.extra_metadata else 0.0)
                         )
                     )
-
-            analyser_input_samples = [AnalyzerInputSample(
-                    trace=sample.trace, id=sample.id,
-                ) for sample in samples_by_id.values()
-            ]
+            if input_trace_id:
+                if str(input_trace_id) not in samples_by_id:
+                    raise HTTPException(status_code=404, detail="Trace not found within dataset")
+                analyser_input_samples = [AnalyzerInputSample(
+                    trace=samples_by_id[str(input_trace_id)].trace, id=str(input_trace_id),
+                )]
+            else:
+                analyser_input_samples = [AnalyzerInputSample(
+                        trace=sample.trace, id=sample.id,
+                    ) for sample in samples_by_id.values()
+                ]
 
             # only send context with annotated samples
             analyser_context_samples = [sample for sample in samples_by_id.values() if sample.annotations]

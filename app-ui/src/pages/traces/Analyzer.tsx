@@ -145,64 +145,6 @@ function Loading(props) {
  * @param username Username of the current dataset.
  * @param dataset The current dataset name.
  */
-async function prepareAnalysisInputs(
-  traceId: string,
-  dataset_id?: string,
-  username?: string,
-  dataset?: string,
-) {
-  try {
-    // get trace data
-    const traceRes = fetch(
-      `/api/v1/trace/${traceId}/download?include_trace_ids=true`,
-    );
-    // get additional context from dataset (if available)
-    const contextRes = dataset_id
-      ? fetch(
-          `/api/v1/dataset/byid/${dataset_id}/download/annotated?include_trace_ids=true`,
-        )
-      : Promise.resolve(null);
-
-    // wait for both to load
-    const [traceResponse, contextResponse] = await Promise.all([
-      traceRes,
-      contextRes,
-    ]);
-
-    // check that they ar eok
-    if (!traceResponse.ok) {
-      throw new Error(
-        `Failed to fetch trace data: HTTP ${traceResponse.status}`,
-      );
-    }
-
-    const traceData = await traceResponse.json();
-    const trace = traceData.messages;
-
-    let context = "";
-    if (contextResponse) {
-      if (!contextResponse.ok) {
-        throw new Error(
-          `Failed to fetch dataset context: HTTP ${contextResponse.status}`,
-        );
-      }
-      context = await contextResponse.text();
-    }
-
-    return {
-      trace,
-      context: {
-        index: traceData.index,
-        explorer_tracedata: context,
-        user: username,
-        dataset: dataset,
-      },
-    };
-  } catch (error) {
-    console.error("prepareAnalysis error:", error);
-    throw error;
-  }
-}
 
 const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
@@ -218,23 +160,21 @@ const TEMPLATE_API_KEY = "<api key on the Explorer above>";
  * @returns AbortController to cancel the analysis
  */
 function createAnalysis(
-  config: string | undefined,
-  traceData: string,
+  trace_id: string,
+  options: string,
+  apiurl: string,
+  apikey: string,
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
-  baseurl: string,
-  apikey: string,
-  context: any,
   setDebug?: (debug: any) => void,
 ): AbortController {
   const abortController = new AbortController();
-  const endpoint = baseurl + "/api/v1/analysis/create";
 
   const body = JSON.stringify({
-    input: traceData,
-    options: config,
-    context: context,
+    apiurl: apiurl,
+    apikey: apikey,
+    options: options,
   });
 
   async function startAnalysis() {
@@ -242,9 +182,9 @@ function createAnalysis(
       if (apikey == TEMPLATE_API_KEY) {
         throw new Error("Unauthorized: Please provide a valid API key.");
       }
-
+      const url = `/api/v1/trace/${trace_id}/analysis`;
       setRunning(true);
-      const response = await fetch(endpoint, {
+      const response = await fetch(url, {
         method: "POST",
         body,
         headers: {
@@ -455,10 +395,8 @@ function parseConfig(analyzerConfig: string | undefined): {
   let endpoint =
     config.endpoint || "https://preview-explorer.invariantlabs.ai/";
   let apikey = config.apikey || "";
-  if (!apikey) {
-    delete config.apikey;
-  }
-
+  delete config.apikey;
+  delete config.endpoint;
   return { config, endpoint, apikey };
 }
 
@@ -565,29 +503,23 @@ export function AnalyzerSidebar(props: {
     ]);
 
     const { config, endpoint, apikey } = clientAnalyzerConfig("single");
-
+    console.log("Analyzer options", config);
+    console.log("Analyzer endpoint", endpoint);
+    console.log("Analyzer apikey", apikey);
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
       return;
     }
 
     try {
-      const { trace, context } = await prepareAnalysisInputs(
-        props.traceId,
-        props.datasetId,
-        props.username,
-        props.dataset,
-      );
-
       let ctrl = createAnalysis(
+        props.traceId,
         config,
-        JSON.stringify(trace, null, 2),
+        endpoint,
+        apikey,
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
-        endpoint,
-        apikey,
-        context,
         props.analyzer.setDebug,
       );
       setAbortController(ctrl);

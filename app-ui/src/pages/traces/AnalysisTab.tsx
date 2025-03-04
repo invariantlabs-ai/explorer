@@ -93,7 +93,7 @@ export function AnalysisReport(props: {
         Authorization: `Bearer ${apikey}`,
       },
       body: JSON.stringify({
-        endpoint: endpoint,
+        apiurl: endpoint,
         apikey: apikey,
         options: config,
       }),

@@ -148,9 +148,9 @@ async def check_job(session: Session, job: DatasetJob):
     status = job.extra_metadata.get("status")
 
     # keep track of how many times we checked this job
-    num_checked = job.extra_metadata.get("num_checked_when_done", 0)
-    if status == "done":
-        job.extra_metadata["num_checked_when_done"] = num_checked + 1
+    num_checked = job.extra_metadata.get("num_checked_when_done_or_failed", 0)
+    if status in [JobStatus.COMPLETED.value, JobStatus.FAILED.value]:
+        job.extra_metadata["num_checked_when_done_or_failed"] = num_checked + 1
 
     try:
         async with AnalysisClient(endpoint, apikey) as client:
@@ -169,7 +169,6 @@ async def check_job(session: Session, job: DatasetJob):
             num_total = job_progress.total
             if num_total is not None:
                 job.extra_metadata["num_total"] = num_total
-
             # if job status is cancelled, delete job
             if job_progress.status == JobStatus.COMPLETED:
                 # if otherwise 'results' are available, handle them
@@ -183,7 +182,7 @@ async def check_job(session: Session, job: DatasetJob):
 
                 # delete job with analysis service
                 await client.delete(job_id)
-
+                return
             elif job_progress.status == JobStatus.RUNNING:
                 # nothing to do, we wait for completion
                 pass
@@ -207,8 +206,13 @@ async def check_job(session: Session, job: DatasetJob):
 
         print("Error handling job", job_id, e, traceback.format_exc(), flush=True)
     finally:
-        # update job 'extra_metadata' in the database (for status and num_checked)
-        flag_modified(job, "extra_metadata")
+        try:
+            # update job 'extra_metadata' in the database (for status and num_checked)
+            flag_modified(job, "extra_metadata")
+        except Exception as e:
+            import traceback
+
+            print("Error updating job (x)", job_id, e, traceback.format_exc(), flush=True)
         session.commit()
 
 
