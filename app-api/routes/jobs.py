@@ -19,7 +19,7 @@ import json
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from models.datasets_and_traces import db, DatasetJob
-from models.analyzer_model import JobStatus, JobProgress, JobResponse
+from models.analyzer_model import JobStatus, JobResponseUnion, JobResponseParser, CompleatedJobResponse
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
@@ -54,10 +54,10 @@ class AnalysisClient:
         headers = {"Authorization": f"Bearer {apikey}"} if apikey else {}
         self.session = aiohttp.ClientSession(base_url=base_url, headers=headers)
 
-    async def status(self, job_id: str) -> JobProgress:
-        async with self.session.get(f"/api/v1/analysis/job/{job_id}/progress") as resp:
+    async def status(self, job_id: str) -> JobResponseUnion:
+        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
             resp.raise_for_status()
-            return JobProgress.model_validate(await resp.json())
+            return JobResponseParser.model_validate(await resp.json()).root
 
     async def cancel(self, job_id: str) -> Optional[Dict[str, Any]]:
         async with self.session.put(f"/api/v1/analysis/job/{job_id}/cancel") as resp:
@@ -68,11 +68,6 @@ class AnalysisClient:
         async with self.session.delete(f"/api/v1/analysis/job/{job_id}") as resp:
             resp.raise_for_status()
             return await resp.json() if resp.content_length else None
-
-    async def results(self, job_id: str) -> JobResponse:
-        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
-            resp.raise_for_status()
-            return JobResponse.model_validate(await resp.json())
 
     async def queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         async with self.session.post("/api/v1/analysis/job", json=payload) as resp:
@@ -156,42 +151,29 @@ async def check_job(session: Session, job: DatasetJob):
         async with AnalysisClient(endpoint, apikey) as client:
             job_progress = await client.status(job_id)
             print(f"Job {job_id} has status {job_progress.status}", flush=True)
+            job.extra_metadata["status"] = job_progress.status.value
 
-            # update job metadata with status
-            job.extra_metadata["status"] = job_progress.status
-
-            # if given, update number of processed items
-            num_processed = job_progress.num_processed
-            if num_processed is not None:
-                job.extra_metadata["num_processed"] = num_processed
-
-            # if given, update number of total items
-            num_total = job_progress.total
-            if num_total is not None:
-                job.extra_metadata["num_total"] = num_total
-            # if job status is cancelled, delete job
-            if job_progress.status == JobStatus.COMPLETED:
-                # if otherwise 'results' are available, handle them
-                results = await client.results(job_id)
-                if results is not None:
-                    # handle job result
-                    await handle_job_result(job, results)
-
+            if job_progress.status == JobStatus.FAILED:
+                pass
+            elif job_progress.status == JobStatus.CANCELLED:
+                # delete cancelled jobs
+                await client.delete(job_id)
+                session.delete(job)
+            elif job_progress.status == JobStatus.COMPLETED:
+                if "num_total" in job.extra_metadata:
+                    job.extra_metadata["num_processed"] = job.extra_metadata["num_total"]
+                await handle_job_result(job, job_progress)
                 # delete job (so we don't handle the results again)
+                await client.delete(job_id)
                 session.delete(job)
 
                 # delete job with analysis service
-                await client.delete(job_id)
-                return
             elif job_progress.status == JobStatus.RUNNING:
-                # nothing to do, we wait for completion
+                job.extra_metadata["num_processed"] = job_progress.num_processed
+                job.extra_metadata["num_total"] = job_progress.total
+            elif job_progress.status == JobStatus.PENDING:
                 pass
-            elif job_progress.status == JobStatus.CANCELLED:
-                await client.delete(job_id)
-                session.delete(job)
-                return
-            else:
-                print("Job has status", job_progress.status, flush=True)
+
     except aiohttp.ClientResponseError as e:
         if e.status == 404:
             # job not found, delete it from local records (nothing to track here anymore)
@@ -216,7 +198,7 @@ async def check_job(session: Session, job: DatasetJob):
         session.commit()
 
 
-async def handle_job_result(job: DatasetJob, results: JobResponse):
+async def handle_job_result(job: DatasetJob, results: CompleatedJobResponse):
     """
     Process the results of a job and update the database accordingly.
     """
@@ -229,7 +211,7 @@ async def handle_job_result(job: DatasetJob, results: JobResponse):
 
 
 @on_job_result("analysis")
-async def on_analysis_result(job: DatasetJob, results: JobResponse):
+async def on_analysis_result(job: DatasetJob, results: CompleatedJobResponse):
     """
     Handles the outcome of 'analysis' jobs.
 

@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel, Field
 from enum import Enum
+from typing import Literal
 
 class Cluster(BaseModel):
     name: str | None = None
@@ -73,11 +74,44 @@ class JobStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class JobProgress(BaseModel):
-    status: JobStatus
+class CompleatedJobResponse(BaseModel):
+    status: Literal[JobStatus.COMPLETED] = JobStatus.COMPLETED
+    analysis: list[TraceAnalysis]
+    clustering: list[Cluster]
+
+
+class ErrorStep(BaseModel):
+    step_kind: Literal["error_step"] = "error_step"
+    trace_id: str
+    error: str
+    traceback: str
+
+
+class FailedJobResponse(BaseModel):
+    status: Literal[JobStatus.FAILED] = JobStatus.FAILED
+    errors: list[ErrorStep]
+
+
+class RunningJobResponse(BaseModel):
+    status: Literal[JobStatus.RUNNING] = JobStatus.RUNNING
     num_processed: int
     total: int
 
+
+class CancelledJobResponse(BaseModel):
+    status: Literal[JobStatus.CANCELLED] = JobStatus.CANCELLED
+
+
+class PendingJobResponse(BaseModel):
+    status: Literal[JobStatus.PENDING] = JobStatus.PENDING
+
+
+JobResponseUnion = (
+    CompleatedJobResponse | FailedJobResponse | RunningJobResponse | CancelledJobResponse | PendingJobResponse
+)
+
+class JobResponseParser(RootModel):
+    root: JobResponseUnion = Field(discriminator="status")
 
 class AnalysisRequestOptions(BaseModel):
     model_params: ModelParams

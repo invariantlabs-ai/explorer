@@ -268,7 +268,7 @@ async def analyze_trace(
         async with httpx.AsyncClient() as client:
             async with client.stream(
                     method="POST",
-                    url=f"{analysis_request.apiurl}/api/v1/analysis/create",
+                    url=f"{analysis_request.apiurl}/api/v1/analysis/stream",
                     json=sar.model_dump(),
                     headers={"Authorization": f"Bearer {analysis_request.apikey}"},
                 ) as streaming_response:

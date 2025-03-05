@@ -791,7 +791,6 @@ async def queue_analysis(
             owner=username,
             debug_options=analysis_request.options.debug_options
         )
-        json.dump(job_request.model_dump(), open("job_request.json", "w"))
         # keep api key as secret metadata in the DB, so we can check and
         # retrieve the job status later (deleted once job is done)
         secret_metadata = {

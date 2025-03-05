@@ -106,14 +106,17 @@ class AnalyzerTraceExporter:
                     id=str(trace.id),
                     annotations=[]
                 ))
-                if annotation is not None and annotation.extra_metadata and annotation.extra_metadata.get('source') != 'analyzer-model':
-                    samples_by_id[str(trace.id)].annotations.append(
-                        AnalyzerAnnotation(
-                            content=annotation.content,
-                            location=annotation.address,
-                            severity=float(annotation.extra_metadata.get('severity', 0.0) if annotation.extra_metadata else 0.0)
-                        )
+                if not annotation:
+                    continue
+                if annotation.extra_metadata and annotation.extra_metadata.get('source') == 'analyzer-model':
+                    continue
+                samples_by_id[str(trace.id)].annotations.append(
+                    AnalyzerAnnotation(
+                        content=annotation.content,
+                        location=annotation.address,
+                        severity=float(annotation.extra_metadata.get('severity', 0.0) if annotation.extra_metadata else 0.0)
                     )
+                )
             if input_trace_id:
                 if str(input_trace_id) not in samples_by_id:
                     raise HTTPException(status_code=404, detail="Trace not found within dataset")
