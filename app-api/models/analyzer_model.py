@@ -1,3 +1,4 @@
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, RootModel, Field
@@ -18,12 +19,14 @@ class Annotation(BaseModel):
 class Sample(BaseModel):
     trace: str
     id: str
+    domain: list[str] = Field(default_factory=list) # hierarchical domain of the trace
     annotations: list[Annotation]
 
 
 class InputSample(BaseModel):
     trace: str
     id: str
+    domain: list[str] = Field(default_factory=list) # hierarchical domain of the trace
 
 
 class TraceAnalysis(BaseModel):
@@ -41,10 +44,20 @@ class DebugOptions(BaseModel):
     dataset: str  # dataset name to use to push to the explorer
 
 
+class ContaminationPolicyDefault(Enum):
+    ID = "id"
+    LAST = "last"
+    ALL = "all"
+
+
+ContaminationPolicy = ContaminationPolicyDefault | int    
+
+
 class JobRequest(BaseModel):
     input: list[InputSample]
     annotated_samples: list[Sample]
     model_params: ModelParams
+    contamination_policy: ContaminationPolicy = ContaminationPolicyDefault.ID
     owner: str | None = None
     debug_options: DebugOptions | None = None
 

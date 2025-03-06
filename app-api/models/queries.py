@@ -52,7 +52,9 @@ class ExportConfig(BaseModel):
         include_trace_ids = (
             request.query_params.get("include_trace_ids", "false") == "true"
         )
-        return ExportConfig(include_trace_ids=include_trace_ids)
+        only_annotated = request.query_params.get("only_annotated", "false") == "true"
+        
+        return ExportConfig(include_trace_ids=include_trace_ids, only_annotated=only_annotated)
 
 
 class DBJSONEncoder(json.JSONEncoder):
@@ -69,9 +71,10 @@ class DBJSONEncoder(json.JSONEncoder):
 
 
 class AnalyzerTraceExporter:
-    def __init__(self, user_id: str, dataset_id: str):
+    def __init__(self, user_id: str, dataset_id: str, dataset_name: str | None = None):
         self.user_id = user_id
         self.dataset_id = dataset_id
+        self.dataset_name = dataset_name
 
     async def analyzer_model_input(self, session: Session, input_trace_id: UUID | None = None) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
         """
@@ -97,14 +100,15 @@ class AnalyzerTraceExporter:
             )
             # Group the results by trace
             samples_by_id: dict[str, AnalyzerSample] = {}
-
+            push_ds_name = self.dataset_name if self.dataset_name else "unknown_dataset"
             
             for row in results:
                 trace, annotation = row.tuple()
                 samples_by_id.setdefault(str(trace.id), AnalyzerSample(
                     trace=json.dumps(trace.content),
                     id=str(trace.id),
-                    annotations=[]
+                    annotations=[],
+                    domain=[push_ds_name] + trace.hierarchy_path,
                 ))
                 if not annotation:
                     continue
@@ -121,11 +125,13 @@ class AnalyzerTraceExporter:
                 if str(input_trace_id) not in samples_by_id:
                     raise HTTPException(status_code=404, detail="Trace not found within dataset")
                 analyser_input_samples = [AnalyzerInputSample(
-                    trace=samples_by_id[str(input_trace_id)].trace, id=str(input_trace_id),
+                    trace=samples_by_id[str(input_trace_id)].trace,
+                    id=str(input_trace_id),
+                    domain=samples_by_id[str(input_trace_id)].domain
                 )]
             else:
                 analyser_input_samples = [AnalyzerInputSample(
-                        trace=sample.trace, id=sample.id,
+                        trace=sample.trace, id=sample.id, domain=sample.domain
                     ) for sample in samples_by_id.values()
                 ]
 

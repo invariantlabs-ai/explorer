@@ -663,8 +663,6 @@ async def download_traces_by_id(
         )
         # streams out trace data
         return await exporter.stream(session)
-import logging
-logger = logging.getLogger(__name__)
 
 @dataset.get("/byid/{id}/jobs")
 async def get_dataset_jobs(
@@ -782,6 +780,7 @@ async def queue_analysis(
         trace_exporter = AnalyzerTraceExporter(
             user_id=str(user_id),
             dataset_id=id,
+            dataset_name=dataset.name,
         )
         analyser_input_samples, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
         job_request = JobRequest(
@@ -801,11 +800,13 @@ async def queue_analysis(
                 # queue job with analysis service
                 async with client.post(
                     f"{analysis_request.apiurl}/api/v1/analysis/job",
-                    json=job_request.model_dump(),
-                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                    data=job_request.model_dump_json(),
+                    headers={
+                        "Authorization": f"Bearer {analysis_request.apikey}",
+                        "Content-Type": "application/json"
+                    },
                 ) as response:
                     # if status is bad, raise exception
-                    print(f"{analysis_request.apiurl}/api/v1/analysis/job")
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
