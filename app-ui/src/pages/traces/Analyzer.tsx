@@ -404,9 +404,15 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
   const [analyzerConfig, _setAnalyzerConfig] = React.useState(
     localStorage.getItem("analyzerConfig-" + props.configType) ||
       (`{
-  "model": "i01",
   "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}"
+  "apikey": "${TEMPLATE_API_KEY}",
+  "model_params": {
+    "model": "litellm",
+    "options":{
+      "lite_llm_model": "openai/gpt-4o",
+      "retriever": {"k" : 1}
+    }
+  }
 }` as string | undefined),
   );
 
@@ -653,18 +659,30 @@ function onMountConfigEditor(editor, monaco) {
             label: "local",
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: `{
-"model": "i01",
-"endpoint": "http://localhost:8000",
-"apikey": "<not needed>"
+  "endpoint": "http://host.docker.internal:8000",
+  "apikey": "<api key on the Eplorer above>",
+  "model_params": {
+    "model": "litellm",
+    "options":{
+      "lite_llm_model": "openai/gpt-4o",
+      "retriever": {"k" : 1}
+    }
+  }
 }`,
           },
           {
             label: "preview",
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: `{
-"model": "i01",
-"endpoint": "https://preview-explorer.invariantlabs.ai",
-"apikey": "${TEMPLATE_API_KEY}"
+  "endpoint": "https://preview-explorer.invariantlabs.ai",
+  "apikey": "${TEMPLATE_API_KEY}",
+  "model_params": {
+    "model": "litellm",
+    "options":{
+      "lite_llm_model": "openai/gpt-4o",
+      "retriever": {"k" : 1}
+    }
+  }
 }`,
           },
         ],
