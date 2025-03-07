@@ -202,10 +202,6 @@ class TraceExporter:
 
         return user, dataset_info, trace_generator
 
-    async def prepare_analyzer(self, session: Session):
-        pass
-
-
     async def traces(self, session: Session):
         """
         Async generator that yields JSON strings for each trace in the dataset according to the export configuration.
