@@ -664,6 +664,51 @@ async def download_traces_by_id(
         # streams out trace data
         return await exporter.stream(session)
 
+
+@dataset.get("/byid/{id}/download-analyzer")
+async def download_traces_as_analyzer_input(
+    request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
+):
+    """
+    Download the dataset in JSONL format.
+    """
+    with Session(db()) as session:
+        print("akuwerwergdf")
+        # Check if the user has access to the dataset
+        try:
+            id = UUID(id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid dataset ID")
+        dataset = session.query(Dataset).filter(Dataset.id == id).first()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        if dataset.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        print("there")
+        user = session.query(User).filter(User.id == dataset.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        trace_exporter = AnalyzerTraceExporter(
+            user_id=str(user_id),
+            dataset_id=id,
+            dataset_name=dataset.name,
+        )
+        _, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
+        async def stream_analyzer_input():
+            for sample in analyser_context_samples:
+                yield sample.model_dump_json() + "\n"
+        return StreamingResponse(
+            content=stream_analyzer_input(),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={dataset.name}_analyzer_input.json"
+            },
+        )
+
+
+
 @dataset.get("/byid/{id}/jobs")
 async def get_dataset_jobs(
     id: str,
