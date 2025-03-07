@@ -91,7 +91,7 @@ class Trace(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
 
     # hierarchy path of the trace
-    hierarchy_path: Mapped[str] = mapped_column(ARRAY(String), nullable=False)
+    hierarchy_path: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False)
 
     content = mapped_column(JSON, nullable=False)
     extra_metadata = mapped_column(JSON, nullable=False)

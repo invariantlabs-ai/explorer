@@ -89,6 +89,11 @@ down() {
   docker compose -f docker-compose.local.yml down
 }
 
+restart() {
+  down
+  up
+}
+
 setup-venv() {
   python -m venv venv
   source venv/bin/activate
@@ -138,6 +143,9 @@ case "$1" in
   "down")
     down
     ;;
+  "restart")
+    restart
+    ;;
   "logs")
     docker compose -f docker-compose.local.yml logs -f
     ;;
@@ -145,7 +153,7 @@ case "$1" in
     compile_requirements
     ;;
   *)
-    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down|compile-requirements|logs]"
+    echo "Usage: $0 [test-env|build-tester|tests|tests-local|up|build|down|restart|compile-requirements|logs]"
     exit 1
     ;;
 esac
