@@ -52,6 +52,8 @@ class ModelParams(BaseModel):
 
 class DebugOptions(BaseModel):
     dataset: str  # dataset name to use to push to the explorer
+    api_url: str  # the URL of the API to push to
+    api_key: str  # the API key to use to push to the explorer
 
 
 class ContaminationPolicyDefault(Enum):
