@@ -215,7 +215,11 @@ function ClusterSummary({ clustering }: { clustering: any }) {
 //  * Component to show the most important metadata of an analysis run based on the report JSON.
 //  */
 // function ReportMetadata({ report }: { report: ReportFormat }) {
-//   const numResults = report.num_results;
+//   // total number of issues
+//   const numResults = report.clustering?.reduce(
+//     (acc: number, cluster: Cluster) => acc + cluster.issues_indexes.length,
+//     0
+//   );
 //   const guardrailSuggestions = report["guardrail-suggestions"];
 
 //   return (
@@ -227,52 +231,6 @@ function ClusterSummary({ clustering }: { clustering: any }) {
 //             <pre>{numResults} issues</pre>
 //           </td>
 //         </tr>
-//         {guardrailSuggestions && (
-//           <tr>
-//             <th>Guardrail Suggestions</th>
-//             <td>
-//               <pre>
-//                 {guardrailSuggestions.length} suggestion
-//                 {guardrailSuggestions.length !== 1 && "s"}
-//               </pre>
-//             </td>
-//           </tr>
-//         )}
-//         {report.options && report.options.model && (
-//           <tr>
-//             <th>Model</th>
-//             <td>
-//               <pre>{report.options.model}</pre>
-//             </td>
-//           </tr>
-//         )}
-
-//         {report.options && report.options.temperature && (
-//           <tr>
-//             <th>Temperature</th>
-//             <td>
-//               <pre>{report.options.temperature}</pre>
-//             </td>
-//           </tr>
-//         )}
-
-//         {report.options && report.options.k && (
-//           <tr>
-//             <th>K</th>
-//             <td>
-//               <pre>{report.options.k}</pre>
-//             </td>
-//           </tr>
-//         )}
-
-//         {report.options && (
-//           <tr>
-//             <th>Other Options</th>
-//             <td>
-//               <pre>{JSON.stringify(report.options, null, 2)}</pre>
-//             </td>
-//           </tr>
-//         )}
 //       </tbody>
 //     </table>
 //   );

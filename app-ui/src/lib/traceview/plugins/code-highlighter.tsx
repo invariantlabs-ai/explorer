@@ -1,5 +1,4 @@
 import { register_plugin } from "../plugins";
-
 import { createHighlighter } from "shiki/bundle/web";
 
 import React from "react";
@@ -126,7 +125,7 @@ class StyledContent {
  *
  * @returns a promise that resolves with the shared highlighter instance
  */
-function createSharedHighlighter(): Promise<any> {
+export function createSharedHighlighter(): Promise<any> {
   // create a window-scoped handle to a single shared highlighter instance (to avoid multiple instances)
   return new Promise((resolve, reject) => {
     const handle = window["HIGHLIGHTER_INSTANCES"];

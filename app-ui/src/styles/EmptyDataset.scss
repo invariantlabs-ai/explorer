@@ -1,0 +1,192 @@
+@use "./Colors.scss" as *;
+
+.options-tabs {
+  display: flex;
+  flex-direction: row;
+  margin: 5pt;
+  padding: 0pt;
+  width: 100%;
+
+  .tab {
+    border-radius: 5pt;
+    padding: 1pt 7pt;
+    margin-right: 3pt;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &.active {
+      background-color: $color-button-primary;
+      border: 0pt solid $color-primary;
+      color: white;
+    }
+  }
+}
+
+.traceview .empty.instructions {
+  h3 {
+    margin-top: -2pt !important;
+  }
+}
+
+.box.full.setting .options {
+  margin-left: -5pt;
+  margin-right: -15pt;
+
+  input[type="file"] {
+    opacity: 0;
+    width: 100%;
+    height: 120pt;
+  }
+
+  .options-tabs {
+    margin-top: 5pt;
+
+    .tab {
+      flex: 0;
+      margin-left: 0pt;
+      margin-right: 4pt;
+    }
+  }
+
+  .jsonl-upload {
+    display: block;
+    padding-left: 15pt;
+
+    button {
+      width: calc(100% - 10pt);
+    }
+  }
+}
+
+.empty .options {
+  border: 1pt solid $border-color;
+  padding: 0pt;
+  flex-direction: column;
+  background-color: $color-secondary-background;
+  border-radius: 4pt;
+  margin-top: 20pt !important;
+  width: 100%;
+
+  display: flex;
+  margin: 0pt;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  .options-content {
+    border-radius: 5pt;
+    height: auto;
+    width: 100%;
+    text-align: left;
+
+    button:not(.copy) {
+      margin-top: 20pt !important;
+      display: block;
+      margin: auto;
+    }
+
+    h2 {
+      border: none;
+      font-weight: bold;
+      text-align: left;
+      font-size: 14pt;
+    }
+
+    p {
+      color: $text-color;
+      opacity: 0.9;
+      font-size: 12pt;
+    }
+  }
+
+  input[type="file"] {
+    opacity: 0;
+    width: 100%;
+    height: 100pt;
+  }
+
+  button {
+    width: 70%;
+  }
+}
+
+.code-with-copy {
+  position: relative;
+  background-color: white;
+  margin: 5pt;
+  border-radius: 5pt;
+  border: 1pt solid $border-color;
+  padding: 10pt;
+  min-height: 120pt;
+  display: block;
+
+  .rendered-tokens {
+    overflow-x: scroll;
+  }
+
+  // best monospace
+  font-family: monospace;
+
+  button.copy {
+    position: absolute;
+    right: -5pt;
+    border-radius: 3pt;
+    top: 0pt;
+    margin-top: 0pt !important;
+    width: 40pt;
+    height: 40pt;
+    transform: scale(0.8);
+    background: none;
+    opacity: 0.4;
+    text-overflow: hidden;
+    overflow: hidden;
+    border: 0pt;
+
+    &:hover {
+      background-color: rgb(234, 234, 234);
+      opacity: 0.8;
+    }
+
+    &.copied {
+      background-color: rgb(234, 234, 234);
+      opacity: 1;
+    }
+
+    svg {
+      width: 15pt;
+      height: 15pt;
+    }
+  }
+}
+
+.jsonl-upload {
+  margin: 5pt;
+  background-color: white;
+  padding: 5pt;
+  border-radius: 5pt;
+  border: 1pt solid $border-color;
+  padding-bottom: 15pt;
+}
+
+.rendered-tokens {
+  white-space: pre;
+}
+
+.options-content {
+  .description {
+    padding-left: 7.5pt;
+    padding-right: 7.5pt;
+    font-style: italic;
+    opacity: 0.8;
+    font-size: 10pt;
+  }
+}
+
+.file-upload-mask {
+  background-color: red;
+  opacity: 1 !important;
+}
