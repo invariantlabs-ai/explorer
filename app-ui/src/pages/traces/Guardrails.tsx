@@ -186,7 +186,7 @@ function MutatePolicyModalContent(props) {
           <>
             {action == "update" && (
               <button
-                aria-label="cancel"
+                aria-label="delete guardrail"
                 className="inline icon secondary danger"
                 disabled={loading}
                 onClick={props.onDelete}
@@ -198,7 +198,7 @@ function MutatePolicyModalContent(props) {
               Cancel
             </button>
             <button
-              aria-label={action}
+              aria-label={"modal " + action}
               className="primary inline"
               disabled={loading || !name || !policyCode || !policyCode.trim()}
               onClick={onMutate}
@@ -506,6 +506,7 @@ export function Guardrails(props: {
         </h1>
         <div className="spacer" />
         <button
+          aria-label="create guardrail"
           className="button primary inline create-guardrail"
           onClick={() => setShowCreatePolicyModal(true)}
         >

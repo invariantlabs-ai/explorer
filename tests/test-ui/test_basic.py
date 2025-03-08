@@ -192,7 +192,7 @@ async def test_create_empty_dataset_and_then_upload_file(
         await file_chooser.set_files(fn)
         await screenshot(page)
         await page.get_by_label("Upload").click()
-    
+
     # verify that the traces are shown
     await page.wait_for_selector("text=Run 1")
     await page.wait_for_selector("text=Run 2")
@@ -338,16 +338,16 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
         await page.locator(f"text={dataset['name']}").click()
 
         # View policies.
-        await page.locator("text=Metadata").click()
+        await page.locator("text=Guardrails").click()
         await page.wait_for_selector("div.no-policies")
         no_policies_found_text = await page.locator("div.no-policies").inner_text()
-        assert "No policies found for the dataset" in no_policies_found_text
+        assert "No Guardrails Configured" in no_policies_found_text
         await screenshot(page)
 
         # Create policy.
-        await page.get_by_role("button", name="New Policy").click()
+        await page.get_by_role("button", name="create guardrail").click()
         # Wait for the monaco editor to load.
-        policy_name_input = await page.get_by_placeholder("Policy Name").all()
+        policy_name_input = await page.get_by_placeholder("Guardrail Name").all()
         await policy_name_input[0].fill("Test Policy")
         policy_code_input = await retry_fetch(
             lambda: page.locator("div.view-lines").all()
@@ -361,11 +361,12 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
                 any(secrets(msg))
             """)
         await screenshot(page)
-        await page.get_by_role("button", name="Create").click()
+        # click button with aria label 'create'
+        await page.get_by_label("modal create").click()
         await screenshot(page)
 
         # Edit policy.
-        await page.get_by_role("button", name="Edit").click()
+        await page.get_by_label("edit").click()
         # Wait for the monaco editor to load.
         await screenshot(page)
         policy_name_input = await page.locator('input[value="Test Policy"]').all()
@@ -376,11 +377,14 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
             # Updated policy code.
             """)
         await screenshot(page)
-        await page.get_by_role("button", name="Update").click()
+        await page.get_by_label("modal update").click()
         await screenshot(page)
 
-        # Delete policy.
-        await page.get_by_label("delete").click()
+        # re-open policy (only then we have the delete button)
+        await page.get_by_label("edit").click()
+
+        # delete policy.
+        await page.get_by_label("delete guardrail").click()
         await screenshot(page)
         await page.get_by_label("confirm delete").click()
 
