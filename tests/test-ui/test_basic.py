@@ -392,7 +392,7 @@ async def test_policy(context, url, data_webarena_with_metadata, screenshot):
         await page.wait_for_selector("div.no-policies")
         await screenshot(page)
         no_policies_found_text = await page.locator("div.no-policies").inner_text()
-        assert "No policies found for the dataset" in no_policies_found_text
+        assert "No Guardrails Configured" in no_policies_found_text
 
 
 async def test_thumbs_up_down(context, url, data_abc, screenshot):
