@@ -43,7 +43,7 @@ export function UploadDatasetModalContent(props) {
         })
         .catch((err) => {
           setError(
-            err.detail || "An unknown error occurred, please try again.",
+            err.detail || "An unknown error occurred, please try again."
           );
           telemetry.capture("dataset-create-failed", {
             name: name,
@@ -282,7 +282,7 @@ export function DeleteDatasetModalContent(props) {
           .then((data) => {
             setLoading(false);
             setError(
-              data.detail || "An unknown error occurred, please try again.",
+              data.detail || "An unknown error occurred, please try again."
             );
           })
           .catch(() => {

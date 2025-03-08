@@ -31,6 +31,7 @@ import { DatasetNotFound, isClientError } from "../notfound/NotFound";
 import { Traces } from "./Traces";
 import { AnalysisReport } from "./AnalysisTab";
 import { Guardrails } from "./Guardrails";
+import { UploadOptions } from "../../components/EmptyDataset";
 
 interface Query {
   id: string;
@@ -270,6 +271,11 @@ function DatasetView() {
             url.searchParams.delete("query");
             window.history.pushState({}, "", url);
             setSelectedTab("traces");
+            // set active tab again, after traceview initialized (as that may mess with the URL as well)
+            setTimeout(() => {
+              // scroll to top of page
+              setSelectedTab("traces");
+            }, 200);
           }}
         >
           <div className="inner">
@@ -435,6 +441,16 @@ function DatasetView() {
                     <BsDownload /> Download
                   </>
                 </button>
+              </div>
+              <div className="box full setting">
+                <div>
+                  <h3>Import More Trace Data</h3>
+                  <UploadOptions
+                    dataset={dataset.name}
+                    // active tab is traces
+                    onSuccess={() => setSelectedTab("traces")}
+                  />
+                </div>
               </div>
             </div>
           </div>

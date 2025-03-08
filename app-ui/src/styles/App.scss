@@ -2270,14 +2270,38 @@ table.api-keys {
 }
 
 // shown when an empty dataset is opened
-div.empty.instructions {
-  width: calc(100% - 10pt);
+.empty.instructions,
+.traceview div.empty.instructions {
   height: auto;
-  margin: auto;
-  margin-top: -45pt !important;
   color: $text-color;
   opacity: 1;
+  display: flex;
+  flex-direction: column;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
+
+  margin-top: 20pt !important;
+  padding: 20pt;
+  max-width: calc(100vw - 80pt);
+  width: 420pt;
   text-align: center;
+  align-items: center;
+  margin: auto;
+
+  &.wide {
+    width: calc(min(800pt, 100vw - 80pt));
+  }
 
   .error {
     color: #ed707b;
@@ -2285,67 +2309,63 @@ div.empty.instructions {
     padding-left: 3pt;
   }
 
-  h3 {
-    opacity: 1;
-    font-weight: bold;
+  h2 {
+    font-size: 14pt;
     color: $text-color;
-    font-size: 22pt;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif !important;
+    text-align: center;
+    border-bottom: none;
+    margin-bottom: 0pt;
+
+    .badge {
+      margin-left: 15pt;
+      background-color: $color-primary;
+      color: white;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+    }
+
+    svg {
+      position: relative;
+      top: 1.5pt;
+      margin-right: 5pt;
+    }
+  }
+
+  h3 {
+    font-size: 12pt;
+    color: rgb(59, 59, 59);
+    font-weight: normal;
+    display: block;
+    margin: 0pt;
+    margin-top: 10pt;
+
+    i {
+      font-size: inherit;
+      opacity: 0.9;
+    }
   }
 
   > p {
-    margin: 0pt 30pt;
+    margin: 0pt 0pt;
+    font-size: 14pt;
+    padding: 0pt;
   }
 
   .push-api-option {
     margin-top: 8pt;
-  }
-
-  .options {
-    display: flex;
-    margin-top: 15pt;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-
-    > div {
-      background-color: white;
-      border-radius: 5pt;
-      height: auto;
-      border: 1pt solid $border-color;
-      margin: 10pt;
-      padding: 15pt 10pt 10pt 10pt;
-      width: 400pt;
-      text-align: left;
-
-      button {
-        margin-top: 20pt !important;
-        display: block;
-        margin: auto;
-      }
-
-      h2 {
-        border: none;
-        font-weight: bold;
-        text-align: left;
-        font-size: 14pt;
-      }
-
-      p {
-        color: $text-color;
-        opacity: 0.9;
-        font-size: 12pt;
-      }
-    }
-
-    input[type="file"] {
-      opacity: 0;
-      height: 100pt;
-    }
-
-    button {
-      width: 70%;
-    }
   }
 }
 
@@ -3046,10 +3066,6 @@ span.highlight-dot {
         overflow: auto;
       }
     }
-  }
-
-  .empty {
-    opacity: 0.8;
   }
 }
 

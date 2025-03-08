@@ -192,45 +192,6 @@ button.policy-action {
   min-height: 220pt;
   position: relative;
   padding-top: 10pt;
-
-  .empty.instructions {
-    margin-top: 20pt !important;
-    padding: 20pt;
-    max-width: calc(100vw - 80pt);
-    width: 420pt;
-
-    h2 {
-      font-size: 14pt;
-      margin-bottom: 10pt;
-
-      .badge {
-        margin-left: 15pt;
-        background-color: $color-primary;
-        color: white;
-        user-select: none;
-        -webkit-user-select: none;
-        cursor: default;
-      }
-
-      svg {
-        top: 2.5pt;
-        margin-right: 5pt;
-      }
-    }
-
-    h3 {
-      font-size: 12pt;
-      color: grey;
-      font-weight: normal;
-
-      display: block;
-
-      i {
-        font-size: inherit;
-        opacity: 0.9;
-      }
-    }
-  }
 }
 
 .guardrail-action-select {
