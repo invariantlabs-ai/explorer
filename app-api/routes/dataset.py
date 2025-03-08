@@ -448,6 +448,25 @@ def search_dataset_by_name(
                 "traces": indices,
                 "description": "filtered selection",
             }
+        elif query.strip().startswith("idfilter"):
+            # e.g. query=filter:some message:16,21,25,26,35
+            try:
+                filter_query = query.strip()[len("idfilter:") :].strip()
+                filter_message, indices = filter_query.split(":", 1)
+                trace_ids = [str(i) for i in indices.split(",")]
+                trace_ids = [UUID(i) for i in trace_ids]  # Convert to UUID objects
+                # query traces that match the given IDs
+                traces = session.query(Trace).filter(Trace.id.in_(trace_ids)).all()
+                result[filter_message] = {
+                    "traces": [trace.index for trace in traces],
+                    "description": "filtered selection",
+                }
+            except Exception as e:
+                import traceback
+
+                print("error", e, flush=True)
+                traceback.print_exception()
+                raise e
         else:
             selected_traces, search_term, filter_terms = query_traces(
                 session, dataset, query

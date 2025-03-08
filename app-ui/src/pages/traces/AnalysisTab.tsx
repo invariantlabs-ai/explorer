@@ -27,11 +27,18 @@ export function useJSONParse<T>(json: string | null): T | null {
   return data;
 }
 
+export interface Cluster {
+  // name of the cluster
+  name: string;
+  // issues in the cluster (pair of trace ID the issue comes from, and the index the issue is in the trace)
+  issues_indexes: [string, number][];
+}
+
 export interface ReportFormat {
   last_updated?: string;
-  num_results?: number;
-  clustering?: any;
-  options?: any;
+  cost?: number;
+  clustering?: Cluster[];
+  status?: string;
 }
 
 /**
@@ -143,7 +150,7 @@ export function AnalysisReport(props: {
             {report && (
               <div className="tile wide">
                 <h1>Issue Types</h1>
-                <ClusterSummary clustering={report?.clustering?.clusters} />
+                <ClusterSummary clustering={report?.clustering} />
               </div>
             )}
             {report && (
@@ -350,7 +357,7 @@ function CancelButton({
         `/api/v1/dataset/byid/${datasetId}/analysis`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (response.ok) {
