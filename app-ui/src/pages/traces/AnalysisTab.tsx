@@ -153,12 +153,12 @@ export function AnalysisReport(props: {
                 <ClusterSummary clustering={report?.clustering} />
               </div>
             )}
-            {report && (
+            {/* {report && (
               <div className="tile scroll wide">
                 <h1>Metadata</h1>
                 <ReportMetadata report={report} />
               </div>
-            )}
+            )} */}
             {report && (
               <div className="tile wide">
                 <h1>Raw Report</h1>
@@ -211,72 +211,72 @@ export function AnalysisReport(props: {
 function ClusterSummary({ clustering }: { clustering: any }) {
   return clustering && <IssuePieChart data={clustering} />;
 }
-/**
- * Component to show the most important metadata of an analysis run based on the report JSON.
- */
-function ReportMetadata({ report }: { report: ReportFormat }) {
-  const numResults = report.num_results;
-  const guardrailSuggestions = report["guardrail-suggestions"];
+// /**
+//  * Component to show the most important metadata of an analysis run based on the report JSON.
+//  */
+// function ReportMetadata({ report }: { report: ReportFormat }) {
+//   const numResults = report.num_results;
+//   const guardrailSuggestions = report["guardrail-suggestions"];
 
-  return (
-    <table className="metadata">
-      <tbody>
-        <tr>
-          <th>Results</th>
-          <td>
-            <pre>{numResults} issues</pre>
-          </td>
-        </tr>
-        {guardrailSuggestions && (
-          <tr>
-            <th>Guardrail Suggestions</th>
-            <td>
-              <pre>
-                {guardrailSuggestions.length} suggestion
-                {guardrailSuggestions.length !== 1 && "s"}
-              </pre>
-            </td>
-          </tr>
-        )}
-        {report.options && report.options.model && (
-          <tr>
-            <th>Model</th>
-            <td>
-              <pre>{report.options.model}</pre>
-            </td>
-          </tr>
-        )}
+//   return (
+//     <table className="metadata">
+//       <tbody>
+//         <tr>
+//           <th>Results</th>
+//           <td>
+//             <pre>{numResults} issues</pre>
+//           </td>
+//         </tr>
+//         {guardrailSuggestions && (
+//           <tr>
+//             <th>Guardrail Suggestions</th>
+//             <td>
+//               <pre>
+//                 {guardrailSuggestions.length} suggestion
+//                 {guardrailSuggestions.length !== 1 && "s"}
+//               </pre>
+//             </td>
+//           </tr>
+//         )}
+//         {report.options && report.options.model && (
+//           <tr>
+//             <th>Model</th>
+//             <td>
+//               <pre>{report.options.model}</pre>
+//             </td>
+//           </tr>
+//         )}
 
-        {report.options && report.options.temperature && (
-          <tr>
-            <th>Temperature</th>
-            <td>
-              <pre>{report.options.temperature}</pre>
-            </td>
-          </tr>
-        )}
+//         {report.options && report.options.temperature && (
+//           <tr>
+//             <th>Temperature</th>
+//             <td>
+//               <pre>{report.options.temperature}</pre>
+//             </td>
+//           </tr>
+//         )}
 
-        {report.options && report.options.k && (
-          <tr>
-            <th>K</th>
-            <td>
-              <pre>{report.options.k}</pre>
-            </td>
-          </tr>
-        )}
+//         {report.options && report.options.k && (
+//           <tr>
+//             <th>K</th>
+//             <td>
+//               <pre>{report.options.k}</pre>
+//             </td>
+//           </tr>
+//         )}
 
-        {report.options && (
-          <tr>
-            <th>Other Options</th>
-            <td>
-              <pre>{JSON.stringify(report.options, null, 2)}</pre>
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  );
-}
+//         {report.options && (
+//           <tr>
+//             <th>Other Options</th>
+//             <td>
+//               <pre>{JSON.stringify(report.options, null, 2)}</pre>
+//             </td>
+//           </tr>
+//         )}
+//       </tbody>
+//     </table>
+//   );
+// }
 
 /**
  * Component to show running analysis jobs.
