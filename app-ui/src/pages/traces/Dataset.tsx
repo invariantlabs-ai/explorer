@@ -18,7 +18,7 @@ import {
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { DeleteDatasetModalContent } from "../home/NewDataset";
 import { Modal } from "../../components/Modal";
-import { PoliciesView } from "./Policies";
+import { PoliciesView } from "./Guardrails";
 import {
   RemoteResource,
   useRemoteResource,
@@ -54,7 +54,7 @@ class Dataset extends RemoteResource {
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
       `/api/v1/dataset/byuser/${username}/${datasetname}`,
-      `/api/v1/dataset/byuser/${username}/${datasetname}`,
+      `/api/v1/dataset/byuser/${username}/${datasetname}`
     );
     //@ts-ignore
     this.username = username;
@@ -168,7 +168,7 @@ function DatasetView() {
   const [selectedTab, _setSelectedTab] = React.useState(
     new URLSearchParams(window.location.search).get("tab") ||
       props.tab ||
-      "traces",
+      "traces"
   );
 
   const setSelectedTab = (tab) => {
@@ -291,6 +291,16 @@ function DatasetView() {
           </button>
         )}
         <button
+          key="guardrails"
+          className={`tab ${"guardrails" === selectedTab ? "active" : ""}`}
+          onClick={() => setSelectedTab("guardrails")}
+        >
+          <div className="inner">
+            <BsDatabaseLock />
+            Guardrails
+          </div>
+        </button>
+        <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
           onClick={() => setSelectedTab("metadata")}
@@ -349,10 +359,17 @@ function DatasetView() {
               />
             </div>
           </div>
-          <div className="metadata-policies">
-            <PoliciesView dataset={dataset} datasetLoader={datasetLoader} />
-          </div>
         </>
+      )}
+
+      {selectedTab === "guardrails" && (
+        <Guardrails
+          dataset={dataset}
+          datasetLoader={datasetLoader}
+          datasetLoadingError={datasetError}
+          username={props.username}
+          datasetname={props.datasetname}
+        />
       )}
 
       {selectedTab === "settings" && (

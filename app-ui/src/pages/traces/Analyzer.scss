@@ -345,6 +345,10 @@ span.secondary-flashing {
   -webkit-user-select: none;
   height: 30pt;
 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   svg.arrow {
     margin-left: 4pt;
   }
@@ -543,7 +547,7 @@ span.secondary-flashing {
 }
 
 .tile.wide {
-  min-width: 500pt !important;
+  min-width: 300pt !important;
   width: auto !important;
   flex-grow: 1;
 }

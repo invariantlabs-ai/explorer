@@ -1059,6 +1059,8 @@ async def create_policy(
                     id=str(uuid.uuid4()),
                     name=payload.get("name"),
                     content=payload.get("policy"),
+                    enabled=payload.get("enabled", True),
+                    action=payload.get("action", "log"),
                 ).to_dict()
             )
         except ValidationError as e:
@@ -1107,12 +1109,16 @@ async def update_policy(
         if not existing_policy:
             raise HTTPException(status_code=404, detail="Policy to update not found")
 
+        print(payload)
+
         try:
             # Update the name and policy content if provided in the payload.
             updated_policy = DatasetPolicy(
                 id=existing_policy["id"],
                 name=payload.get("name", existing_policy["name"]),
                 content=payload.get("policy", existing_policy["content"]),
+                enabled=payload.get("enabled", existing_policy["enabled"]),
+                action=payload.get("action", existing_policy["action"]),
             ).to_dict()
             policies.append(updated_policy)
             policies.remove(existing_policy)

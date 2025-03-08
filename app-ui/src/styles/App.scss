@@ -1,3 +1,5 @@
+@use "./Colors.scss" as *;
+
 @use "sass:color";
 
 $scale: 1;
@@ -536,6 +538,90 @@ button {
     position: relative;
     top: 2pt;
     margin-right: 5pt;
+  }
+}
+
+.editor-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0pt;
+  z-index: 1000;
+  width: 100%;
+  height: calc(100vh);
+
+  header {
+    b {
+      margin-left: 5pt;
+    }
+  }
+
+  .modal-content {
+    background-color: white;
+    width: 90%;
+    height: calc(100% - 20pt);
+    position: absolute;
+    top: 10pt;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1pt solid $border-color;
+    box-shadow: 0pt 0pt 10pt 0pt rgba(0, 0, 0, 0.1);
+    border-left: 1pt solid $color-secondary-background;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overflow-y: auto;
+
+    border-radius: 10pt;
+  }
+
+  header {
+    height: 40pt;
+    background-color: $color-secondary-background;
+    padding-top: 5pt;
+    padding-bottom: 5pt;
+
+    button.inline.cancel {
+      background: none;
+      border: none;
+      margin-left: 4pt;
+      margin-right: 0pt;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .policy-name {
+      margin-left: 4pt;
+      height: 26pt;
+      background-color: transparent;
+      border: 1pt solid $border-color;
+      font-size: 14pt;
+      font-style: italic;
+      padding-left: 10pt;
+      border-radius: 4pt;
+      flex: 1;
+      background-color: white;
+      margin-right: 4pt;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    button.inline {
+      height: 30pt;
+      border-radius: 4pt;
+    }
+  }
+}
+
+@keyframes sidepane-slide-in {
+  0% {
+    right: -70%;
+  }
+  100% {
+    right: 0%;
   }
 }
 
@@ -2112,47 +2198,6 @@ table.api-keys {
     float: right;
   }
 
-  .policy-editor-form {
-    height: 400pt;
-    width: 550pt;
-
-    input {
-      background-color: #ebebeb;
-      display: block;
-      padding: 5pt;
-      font-size: 24pt;
-      border-radius: 5pt;
-      border: none;
-      margin-bottom: 5pt;
-      width: 535pt;
-    }
-
-    label {
-      font-size: 16pt;
-      opacity: 0.5;
-      margin-top: 1lvh;
-      margin-bottom: 5pt;
-    }
-
-    .error {
-      color: #ed707b;
-      font-size: 18pt;
-      border-left: 2pt solid #ed707b;
-      padding-left: 10pt;
-      display: block;
-      margin-bottom: 15pt;
-      margin-top: 0pt;
-    }
-
-    button {
-      width: 100%;
-    }
-  }
-
-  .policy-editor {
-    margin-bottom: 20pt;
-  }
-
   .policies-list {
     height: 1000px;
     overflow-y: auto;
@@ -2865,6 +2910,7 @@ span.highlight-dot {
   }
 }
 
+.tab-content,
 .insights {
   margin-top: 20pt !important;
   margin: auto;
