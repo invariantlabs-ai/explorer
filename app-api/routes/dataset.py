@@ -696,9 +696,11 @@ async def download_traces_as_analyzer_input(
             dataset_name=dataset.name,
         )
         _, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
+
         async def stream_analyzer_input():
             for sample in analyser_context_samples:
                 yield sample.model_dump_json() + "\n"
+
         return StreamingResponse(
             content=stream_analyzer_input(),
             media_type="application/json",
@@ -706,7 +708,6 @@ async def download_traces_as_analyzer_input(
                 "Content-Disposition": f"attachment; filename={dataset.name}_analyzer_input.json"
             },
         )
-
 
 
 @dataset.get("/byid/{id}/jobs")
@@ -822,19 +823,26 @@ async def queue_analysis(
                 detail="There is already an analysis job pending for this dataset.",
             )
 
+        # trace exporter to transform Explorer traces to analysis model input format
         trace_exporter = AnalyzerTraceExporter(
             user_id=str(user_id),
             dataset_id=id,
             dataset_name=dataset.name,
         )
-        analyser_input_samples, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
+        # prepare the input for the analysis job
+        (
+            analyser_input_samples,
+            analyser_context_samples,
+        ) = await trace_exporter.analyzer_model_input(session)
+
+        # job request
         job_request = JobRequest(
             input=analyser_input_samples,
             annotated_samples=analyser_context_samples,
             model_params=analysis_request.options.model_params,
-            owner=username,
-            debug_options=analysis_request.options.debug_options
+            debug_options=analysis_request.options.debug_options,
         )
+
         # keep api key as secret metadata in the DB, so we can check and
         # retrieve the job status later (deleted once job is done)
         secret_metadata = {
@@ -842,13 +850,13 @@ async def queue_analysis(
         }
         try:
             async with aiohttp.ClientSession() as client:
-                # queue job with analysis service
+                # print the following request as curl
                 async with client.post(
-                    f"{analysis_request.apiurl}/api/v1/analysis/job",
+                    f"{analysis_request.apiurl.rstrip('/')}/api/v1/analysis/job",
                     data=job_request.model_dump_json(),
                     headers={
                         "Authorization": f"Bearer {analysis_request.apikey}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
                     },
                 ) as response:
                     # if status is bad, raise exception
