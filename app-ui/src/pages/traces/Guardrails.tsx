@@ -7,11 +7,14 @@ import {
   BsBan,
   BsCardList,
   BsCode,
+  BsDatabaseAdd,
   BsDatabaseLock,
   BsFileEarmarkBreak,
+  BsPauseCircle,
   BsPencilFill,
   BsPlus,
   BsPlusCircle,
+  BsShieldFillCheck,
   BsStars,
   BsTerminal,
   BsTrash,
@@ -161,15 +164,15 @@ function MutatePolicyModalContent(props) {
     });
   };
 
-  console.log(props);
-
   return (
-    <div className="modal-content policy-editor-form">
+    <div className="modal-content policy-editor-form ">
       <header className={editMode ? "edit-mode" : ""}>
         <b>
           {!editMode && (
             <>
               <BsDatabaseLock /> Guardrail Details
+              {guardrailEnabled && <span className="badge live">LIVE</span>}
+              {error && <span className="error">Error: {error}</span>}
             </>
           )}
           {editMode && (
@@ -213,7 +216,7 @@ function MutatePolicyModalContent(props) {
         {editMode && (
           <>
             <button
-              className="inline icon secondary"
+              className="inline icon secondary editmode"
               onClick={() => setEditMode(!editMode)}
               data-tooltip-id="edit-mode"
               data-tooltip-content="Smaller Rule Editor"
@@ -247,12 +250,14 @@ function MutatePolicyModalContent(props) {
                   description:
                     "The guardrail is enabled and will be checked during agent execution.",
                   value: true,
+                  icon: <BsShieldFillCheck />,
                 },
                 {
                   title: "Paused",
                   description:
                     "The guardrail is paused and is currently not checked.",
                   value: false,
+                  icon: <BsPauseCircle />,
                 },
               ]}
               onChange={(value) => setGuardrailEnabled(value)}
@@ -273,7 +278,7 @@ function MutatePolicyModalContent(props) {
             Guardrailing Rule
             <i>The rules to check for this guardrail to be triggered.</i>
             <button
-              className="icon inline"
+              className="icon inline editmode"
               onClick={() => setEditMode(!editMode)}
               data-tooltip-id="edit-mode"
               data-tooltip-content="Larger Rule Editor"
@@ -363,7 +368,6 @@ function MutatePolicyModalContent(props) {
           className="tooltip"
         />
       </div>
-      {error && <span className="error">{error}</span>}
     </div>
   );
 }
@@ -502,11 +506,12 @@ export function Guardrails(props: {
         </h1>
         <div className="spacer" />
         <button
-          className="button primary inline"
+          className="button primary inline create-guardrail"
           onClick={() => setShowCreatePolicyModal(true)}
         >
           {" "}
-          <BsPlus /> New Guardrail
+          <BsDatabaseLock />
+          Create Guardrail
         </button>
       </header>
       <div className="tab-content guardrails">
@@ -524,12 +529,8 @@ export function Guardrails(props: {
                 <BsDatabaseLock /> No Guardrails Configured
               </h2>
               <h3>
-                Guardrails are rules to steer and secure the actions of your
+                Guardrails are rules to secure and steer the actions of your
                 agent, and to avoid unintended behavior during operation.
-                <br />
-                <br />
-                To get started, press <i>New Guardrail</i> above or select a
-                guardrail suggestion below.
               </h3>
             </div>
           )}
@@ -538,14 +539,23 @@ export function Guardrails(props: {
               return (
                 <div key={policy.id}>
                   <div className="box full setting guardrail-item">
-                    <h1 className="policy-label">{policy.name}</h1>
-                    <button
-                      aria-label="edit"
-                      className="policy-action inline"
-                      onClick={() => setSelectedPolicyForUpdation(policy)}
-                    >
-                      <BsPencilFill /> Edit
-                    </button>
+                    <h1 className="policy-label">
+                      {policy.enabled ? (
+                        <span className="badge live">LIVE</span>
+                      ) : (
+                        <BsPauseCircle />
+                      )}
+                      {policy.name}
+                    </h1>
+                    <div className="guardrail-actions">
+                      <button
+                        aria-label="edit"
+                        className="policy-action inline"
+                        onClick={() => setSelectedPolicyForUpdation(policy)}
+                      >
+                        <BsPencilFill /> Edit
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
