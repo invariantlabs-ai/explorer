@@ -220,6 +220,7 @@ function ClusterSummary({ clustering }: { clustering: any }) {
 //     (acc: number, cluster: Cluster) => acc + cluster.issues_indexes.length,
 //     0
 //   );
+//   const guardrailSuggestions = report["guardrail-suggestions"];
 
 //   return (
 //     <table className="metadata">

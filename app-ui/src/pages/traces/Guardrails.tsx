@@ -524,7 +524,7 @@ export function Guardrails(props: {
         <div className="guardrail-list">
           {(!dataset.extra_metadata?.policies ||
             dataset.extra_metadata.policies.length === 0) && (
-            <div className="empty instructions box">
+            <div className="empty instructions box no-policies">
               <h2>
                 <BsDatabaseLock /> No Guardrails Configured
               </h2>
