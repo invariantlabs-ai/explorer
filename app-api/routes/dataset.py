@@ -1072,6 +1072,31 @@ async def create_policy(
         return dataset_to_json(dataset)
 
 
+@dataset.get("/byuser/{username}/{dataset_name}/policy")
+async def get_policy(
+    username: str,
+    dataset_name: str,
+    user_id: Annotated[UUID, Depends(UserOrAPIIdentity)],
+):
+    """Gets all policies for a dataset."""
+
+    with Session(db()) as session:
+        dataset = load_dataset(
+            session,
+            {"User.username": username, "name": dataset_name},
+            user_id,
+            allow_public=True,
+            return_user=False,
+        )
+        # Only the owner of the dataset can get policies for the dataset.
+        if dataset.user_id != user_id:
+            raise HTTPException(
+                status_code=403, detail="Not allowed to get policy for this dataset"
+            )
+        policies = dataset.extra_metadata.get("policies", [])
+        return {"policies": policies}
+
+
 @dataset.put("/{dataset_id}/policy/{policy_id}")
 async def update_policy(
     request: Request,
