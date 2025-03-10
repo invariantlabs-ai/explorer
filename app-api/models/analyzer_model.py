@@ -69,6 +69,7 @@ class JobRequest(BaseModel):
     input: list[InputSample]
     annotated_samples: list[Sample]
     model_params: ModelParams
+    concurrency: int | None = 10
     contamination_policy: ContaminationPolicy = ContaminationPolicyDefault.ID
     owner: str | None = None
     debug_options: DebugOptions | None = None
@@ -140,6 +141,7 @@ class JobResponseParser(RootModel):
 
 class AnalysisRequestOptions(BaseModel):
     model_params: ModelParams
+    concurrency: int | None = 10
     debug_options: DebugOptions | None = None
 
 class AnalysisRequest(BaseModel):
