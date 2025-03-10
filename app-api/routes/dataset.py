@@ -859,7 +859,9 @@ async def queue_analysis(
             input=analyser_input_samples,
             annotated_samples=analyser_context_samples,
             model_params=analysis_request.options.model_params,
+            owner=username,
             debug_options=analysis_request.options.debug_options,
+            concurrency=analysis_request.options.concurrency,
         )
 
         # keep api key as secret metadata in the DB, so we can check and
