@@ -793,6 +793,13 @@ function string_color(s: string) {
 function CompactView(props: { message: any }) {
   // get first tool call or use message as tool call
   const message = props.message.message;
+  if (message.role === "tool" && message.tool_name) {
+    return (
+      <span className="badge" style={{ backgroundColor: string_color(message.tool_name) }}>
+        {message.tool_name}
+      </span>
+    );
+  }
   let tool_call = message.tool_calls ? message.tool_calls[0] : null;
   if (!message.role && message.type == "function") tool_call = message;
 
@@ -1003,12 +1010,14 @@ class MessageView extends React.Component<
                           this.props.onUpvoteDownvoteDelete
                         }
                       >
-                        {message.content.startsWith("local_base64_img:")
-                          ? message.content
-                          : truncate_content(
-                              message.content,
-                              config("truncation_limit")
-                            )}
+                        {typeof message.content === "string"
+                          ? message.content.startsWith("local_base64_img:")
+                            ? message.content
+                            : truncate_content(
+                                message.content,
+                                config("truncation_limit")
+                              )
+                          : message.content}
                       </Annotated>
                     )}
                   </div>
@@ -1092,17 +1101,9 @@ function formatJSONArray(props: {
 
       default:
         return (
-          <MessageJSONContent
-            content={item}
-            highlights={props.highlights.for_path("content")}
-            address={props.address + ".content"}
-            highlightContext={props.highlightContext}
-            message={props.message}
-            messages={props.messages}
-            traceIndex={props.traceIndex}
-            onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
-            onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
-          />
+          <Annotated {...props} address={address}>
+            {typeof item == "object" ? JSON.stringify(item) : item}
+          </Annotated>
         );
     }
   });
