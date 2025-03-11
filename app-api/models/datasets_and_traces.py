@@ -213,6 +213,11 @@ class DatasetPolicy(BaseModel):
     id: str
     name: str
     content: str
+    # whether this policy is enabled
+    enabled: bool
+    # the mode of this policy (e.g. block, log, etc.)
+    action: str
+
     # The timestamp when the policy was created or last updated (whichever is later).
     last_updated_time: str = Field(
         default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
