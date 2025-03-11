@@ -176,8 +176,7 @@ async def import_jsonl(
             )
             trace = Trace(
                 id=trace_id,
-                index=i,
-                name=trace_metadata.get("name", f"Run {i}"),
+                name=trace_metadata.get("name"),
                 hierarchy_path=trace_metadata.get("hierarchy_path", []),
                 user_id=user_id,
                 dataset_id=dataset.id,
@@ -187,21 +186,13 @@ async def import_jsonl(
             session.add(trace)
         elif validation_result["has_annotated_event_lists_format"]:
             trace_metadata = parsed_line.get("metadata", {})
-            index = (
-                parsed_line.get("index")
-                if validation_result["are_indices_present"]
-                else i
-            )
             trace_id = uuid.uuid4()
             parsed_messages = await parse_and_update_messages(
                 name, trace_id, parsed_line["messages"]
             )
             trace = Trace(
                 id=trace_id,
-                index=index,
-                name=parsed_line.get(
-                    "name", trace_metadata.get("name", f"Run {index}")
-                ),
+                name=parsed_line.get("name", trace_metadata.get("name")),
                 hierarchy_path=parsed_line.get(
                     "hierarchy_path", trace_metadata.get("hierarchy_path", [])
                 ),
@@ -210,6 +201,16 @@ async def import_jsonl(
                 content=parsed_messages,
                 extra_metadata=trace_metadata,
             )
+            # If indices are present, in the jsonl file
+            # use them directly instead of relying on the Postgres sequence
+            # If indices are present - it has already been verified that
+            # they should be unique and all traces should have them
+            if validation_result["are_indices_present"]:
+                index = parsed_line.get("index")
+                trace.index = index
+                trace.name = parsed_line.get(
+                    "name", trace_metadata.get("name", f"Run {index}")
+                )
             session.add(trace)
 
             # Required, so we can add annotations below, otherwise a foreign key constraint will fail.

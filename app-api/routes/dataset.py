@@ -51,7 +51,7 @@ from models.analyzer_model import JobRequest, AnalysisRequest
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -321,6 +321,10 @@ async def delete_dataset(
 
         # delete dataset
         session.delete(dataset)
+
+        # delete the trace index sequence for the dataset (if it exists)
+        sequence_name = f"dataset_seq_{str(dataset.id).replace('-', '_')}"
+        session.execute(text(f"DROP SEQUENCE IF EXISTS {sequence_name}"))
 
         session.commit()
 
