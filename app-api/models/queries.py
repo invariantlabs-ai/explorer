@@ -1,14 +1,18 @@
+import asyncio
+import base64
 import datetime
 import json
 import re
-from typing import List, AsyncGenerator
+import uuid
+from typing import List
 from uuid import UUID, uuid4
 
 import aiofiles
-import asyncio
-
 import sqlalchemy.sql.sqltypes as sqltypes
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
+from models.analyzer_model import Annotation as AnalyzerAnnotation
+from models.analyzer_model import InputSample as AnalyzerInputSample
+from models.analyzer_model import Sample as AnalyzerSample
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
@@ -18,26 +22,15 @@ from models.datasets_and_traces import (
     Trace,
     User,
 )
-from models.analyzer_model import (
-    Annotation as AnalyzerAnnotation,
-    Sample as AnalyzerSample,
-    InputSample as AnalyzerInputSample,
-)
 from models.importers import import_jsonl
+from pydantic import BaseModel
 from sqlalchemy import and_
 from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
-from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import cast
 from util.config import config
 from util.util import get_gravatar_hash, truncate_trace_content
-
-import base64
-from fastapi import Request
-from pydantic import BaseModel
-import uuid
-
-from .datasets_and_traces import db
 
 
 class ExportConfig(BaseModel):
@@ -53,8 +46,10 @@ class ExportConfig(BaseModel):
             request.query_params.get("include_trace_ids", "false") == "true"
         )
         only_annotated = request.query_params.get("only_annotated", "false") == "true"
-        
-        return ExportConfig(include_trace_ids=include_trace_ids, only_annotated=only_annotated)
+
+        return ExportConfig(
+            include_trace_ids=include_trace_ids, only_annotated=only_annotated
+        )
 
 
 class DBJSONEncoder(json.JSONEncoder):
@@ -76,69 +71,94 @@ class AnalyzerTraceExporter:
         self.dataset_id = dataset_id
         self.dataset_name = dataset_name
 
-    async def analyzer_model_input(self, session: Session, input_trace_id: UUID | None = None) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
+    async def analyzer_model_input(
+        self, session: Session, input_trace_id: UUID | None = None
+    ) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
         """
         Retrieves trace data and annotations for the analyzer model input.
 
         Args:
             session (Session): The database session used for querying.
-            input_trace_id (UUID | None): The ID of a specific trace to fetch. 
+            input_trace_id (UUID | None): The ID of a specific trace to fetch.
                 - If None, includes all traces in the input samples and only annotated traces in the context samples.
                 - If provided, includes only the specified trace as a single-element list in the input samples, with all annotated traces in the context.
 
         Returns:
-            tuple[list[AnalyzerInputSample], list[AnalyzerSample]]: 
+            tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
                 - A list of `AnalyzerInputSample` representing the input traces.
                 - A list of `AnalyzerSample` representing the annotated traces (context).
         """
         try:
             results = (
                 session.query(Trace, Annotation)
-                .outerjoin(Annotation, (Trace.id == Annotation.trace_id) & (Annotation.user_id == self.user_id))
+                .outerjoin(
+                    Annotation,
+                    (Trace.id == Annotation.trace_id)
+                    & (Annotation.user_id == self.user_id),
+                )
                 .filter(Trace.dataset_id == self.dataset_id)
                 .all()
             )
             # Group the results by trace
             samples_by_id: dict[str, AnalyzerSample] = {}
             push_ds_name = self.dataset_name if self.dataset_name else "unknown_dataset"
-            
+
             for row in results:
                 trace, annotation = row.tuple()
-                samples_by_id.setdefault(str(trace.id), AnalyzerSample(
-                    trace=json.dumps(trace.content),
-                    id=str(trace.id),
-                    annotations=[],
-                    domain=[push_ds_name] + trace.hierarchy_path,
-                ))
+                samples_by_id.setdefault(
+                    str(trace.id),
+                    AnalyzerSample(
+                        trace=json.dumps(trace.content),
+                        id=str(trace.id),
+                        annotations=[],
+                        domain=[push_ds_name] + trace.hierarchy_path,
+                    ),
+                )
                 if not annotation:
                     continue
-                if annotation.extra_metadata and annotation.extra_metadata.get('source') == 'analyzer-model':
+                if (
+                    annotation.extra_metadata
+                    and annotation.extra_metadata.get("source") == "analyzer-model"
+                ):
                     continue
                 samples_by_id[str(trace.id)].annotations.append(
                     AnalyzerAnnotation(
                         content=annotation.content,
                         location=annotation.address,
-                        severity=float(annotation.extra_metadata.get('severity', 0.0) if annotation.extra_metadata else 0.0)
+                        severity=float(
+                            annotation.extra_metadata.get("severity", 0.0)
+                            if annotation.extra_metadata
+                            else 0.0
+                        ),
                     )
                 )
             if input_trace_id:
                 if str(input_trace_id) not in samples_by_id:
-                    raise HTTPException(status_code=404, detail="Trace not found within dataset")
-                analyser_input_samples = [AnalyzerInputSample(
-                    trace=samples_by_id[str(input_trace_id)].trace,
-                    id=str(input_trace_id),
-                    domain=samples_by_id[str(input_trace_id)].domain
-                )]
+                    raise HTTPException(
+                        status_code=404, detail="Trace not found within dataset"
+                    )
+                analyser_input_samples = [
+                    AnalyzerInputSample(
+                        trace=samples_by_id[str(input_trace_id)].trace,
+                        id=str(input_trace_id),
+                        domain=samples_by_id[str(input_trace_id)].domain,
+                    )
+                ]
             else:
-                analyser_input_samples = [AnalyzerInputSample(
+                analyser_input_samples = [
+                    AnalyzerInputSample(
                         trace=sample.trace, id=sample.id, domain=sample.domain
-                    ) for sample in samples_by_id.values()
+                    )
+                    for sample in samples_by_id.values()
                 ]
 
             # only send context with annotated samples
-            analyser_context_samples = [sample for sample in samples_by_id.values() if sample.annotations]
+            analyser_context_samples = [
+                sample for sample in samples_by_id.values() if sample.annotations
+            ]
         except Exception as e:
             import traceback
+
             print("Error handling job", e, traceback.format_exc(), flush=True)
         return analyser_input_samples, analyser_context_samples
 
@@ -512,16 +532,20 @@ def annotation_to_json(annotation, user=None, **kwargs):
 ###
 
 
-async def convert_local_image_link_to_base64(image_link):
-    """Given an image link of the format: `local_img_link: /path/to/image.png`,
+async def convert_local_image_link_to_base64(image_link, use_data_prefix=False):
+    """Given an image link of the format: `local_img_link: /path/to/image.png` or `/path/to/image.png`,
     find the image from the local path and convert it to base64.
     """
-    image_path = image_link.split(":")[1].strip()
+    image_path = image_link
+    if image_link.startswith("local_img_link:"):
+        image_path = image_link.split(":")[1].strip()
     try:
         async with aiofiles.open(image_path, "rb") as image_file:
             file_content = await image_file.read()
             base64_image = base64.b64encode(file_content).decode("utf-8")
-        return "local_base64_img: " + base64_image
+        if not use_data_prefix:
+            return "local_base64_img: " + base64_image
+        return f"data:image/png;base64,{base64_image}"
     except FileNotFoundError:
         print(f"Image not found at path: {image_path}")
         return None
@@ -535,6 +559,7 @@ async def images_to_base64(trace):
     image_tasks = []
 
     for i, message in enumerate(trace.content):
+        # Either the message content is a string and starts with "local_img_link"
         if (
             isinstance(message, dict)
             and "content" in message
@@ -544,12 +569,43 @@ async def images_to_base64(trace):
             image_tasks.append(
                 (convert_local_image_link_to_base64(message.get("content")), i)
             )
+        # Or the message content is a list of content objects, and one of them is
+        # an image_url type object with a local image link
+        elif (
+            isinstance(message, dict)
+            and "content" in message
+            and isinstance(message.get("content"), list)
+        ):
+            for j, content in enumerate(message.get("content")):
+                if (
+                    isinstance(content, dict)
+                    and content.get("type") == "image_url"
+                    and isinstance(content.get("image_url"), dict)
+                    and content.get("image_url").get("url", "")
+                ):
+                    image_tasks.append(
+                        (
+                            convert_local_image_link_to_base64(
+                                content.get("image_url").get("url"),
+                                use_data_prefix=True,
+                            ),
+                            i,
+                            j,
+                        )
+                    )
 
     images = await asyncio.gather(*[task[0] for task in image_tasks])
 
     for i, image in enumerate(images):
         if image is not None:
-            trace.content[image_tasks[i][1]]["content"] = image
+            message_index = image_tasks[i][1]
+            if len(image_tasks[i]) == 2:
+                trace.content[message_index]["content"] = image
+            elif len(image_tasks[i]) == 3:
+                content_index = image_tasks[i][2]
+                trace.content[message_index]["content"][content_index]["image_url"][
+                    "url"
+                ] = image
 
 
 async def trace_to_exported_json(trace, annotations=None, config: ExportConfig = None):

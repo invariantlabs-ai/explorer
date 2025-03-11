@@ -1093,11 +1093,21 @@ function formatJSONArray(props: {
         );
 
       case "image_url":
-        return (
-          <Annotated {...props} address={address}>
-            {`local_base64_img: ${extractBase64(item.image_url.url)}`}
-          </Annotated>
-        );
+        // For older messages item.image_url.url is a base64 representation of the image.
+        // For the newer messages it is a URL to a file.
+        if (item.image_url.url.startsWith("data:image/")) {
+          return (
+            <Annotated {...props} address={address}>
+              {`local_base64_img: ${extractBase64(item.image_url.url)}`}
+            </Annotated>
+          );
+        } else {
+          return (
+            <Annotated {...props} address={address}>
+              {`local_img_link: ${item.image_url.url}`}
+            </Annotated>
+          );
+        }
 
       default:
         return (
