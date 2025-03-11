@@ -582,6 +582,9 @@ async def images_to_base64(trace):
                     and content.get("type") == "image_url"
                     and isinstance(content.get("image_url"), dict)
                     and content.get("image_url").get("url", "")
+                    # Check if the image URL is a local image link
+                    # Some older images are stored as base64 strings, so we skip those here
+                    and not content.get("image_url").get("url").startswith("data:image/")
                 ):
                     image_tasks.append(
                         (
