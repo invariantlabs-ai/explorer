@@ -43,6 +43,23 @@ anthropic_client = Anthropic(
 )`,
   },
   {
+    name: "Gemini",
+    description: "Upload via Gateway and the Gemini Python SDK.",
+    link: "https://explorer.invariantlabs.ai/docs/gateway/llm-provider-integrations/gemini/",
+    snippet: (dataset) => `from google import genai
+import os
+
+client = genai.Client(
+    api_key=os.environ["GEMINI_API_KEY"],
+    http_options={
+        "base_url": "https://explorer.invariantlabs.ai/api/v1/gateway/${dataset}/gemini",
+        "headers": {
+            "Invariant-Authorization": "Bearer " + os.getenv("INVARIANT_API_KEY"),
+        },
+    },
+)`,
+  },
+  {
     name: "Swarm",
     description: "Upload via Gateway from within the Swarm framework.",
     link: "https://explorer.invariantlabs.ai/docs/gateway/agent-integrations/openai-swarm/",
