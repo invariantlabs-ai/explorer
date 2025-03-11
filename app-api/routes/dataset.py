@@ -1136,8 +1136,6 @@ async def update_policy(
         if not existing_policy:
             raise HTTPException(status_code=404, detail="Policy to update not found")
 
-        print(payload)
-
         try:
             # Update the name and policy content if provided in the payload.
             updated_policy = DatasetPolicy(

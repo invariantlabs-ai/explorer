@@ -57,7 +57,7 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotations`,
       `/api/v1/trace/${traceId}/annotation`,
       `/api/v1/trace/${traceId}/annotation`,
-      `/api/v1/trace/${traceId}/annotate`,
+      `/api/v1/trace/${traceId}/annotate`
     );
     this.traceId = traceId;
   }
@@ -231,7 +231,7 @@ export function AnnotationAugmentedTraceView(props) {
     let { highlights, errors, filtered_annotations, top_level_annotations } =
       AnnotationsParser.parse_annotations(
         !props.hideAnnotations ? annotations : [],
-        props.mappings,
+        props.mappings
       );
 
     setHighlights({
@@ -320,7 +320,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [analyzerOpen, _setAnalyzerOpen] = useState(
-    localStorage.getItem("analyzerOpen") == "true",
+    localStorage.getItem("analyzerOpen") == "true"
   );
   const setAnalyzerOpen = (open) => {
     _setAnalyzerOpen(open);
@@ -328,7 +328,7 @@ export function AnnotationAugmentedTraceView(props) {
   };
 
   const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
-    new BroadcastEvent(),
+    new BroadcastEvent()
   );
 
   return (
@@ -447,7 +447,7 @@ export function AnnotationAugmentedTraceView(props) {
                   output={analyzer.output}
                   running={analyzer.running}
                   storedOutput={top_level_annotations.filter(
-                    (a) => a.source == "analyzer-model",
+                    (a) => a.source == "analyzer-model"
                   )}
                   onRunAnalyzer={onRunAnalyzerEvent}
                 />
@@ -458,7 +458,7 @@ export function AnnotationAugmentedTraceView(props) {
             right: props.enableAnalyzer && analyzerOpen ? "370pt" : "65pt",
           }}
         />
-        {props.enableAnalyzer && (
+        {props.enableAnalyzer && activeTraceId && (
           <AnalyzerSidebar
             open={analyzerOpen}
             output={analyzer.output}
@@ -466,7 +466,7 @@ export function AnnotationAugmentedTraceView(props) {
             running={analyzer.running}
             debugInfo={analyzer.debugInfo}
             storedOutput={top_level_annotations.filter(
-              (a) => a.source == "analyzer-model",
+              (a) => a.source == "analyzer-model"
             )}
             traceId={activeTraceId}
             datasetId={props.datasetId}
