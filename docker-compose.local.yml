@@ -78,6 +78,25 @@ services:
       - "traefik.http.services.explorer-test-ui.loadbalancer.server.port=5173"
       - "traefik.docker.network=invariant-explorer-web"
 
+  # launches an instance of Invariant Gateway as part of the Explorer stack (this allows to upload
+  # traces by using Gateway's transparent LLM proxy)
+  gateway:
+    image: ghcr.io/invariantlabs-ai/invariant-gateway/gateway:ghcr-testing
+    platform: linux/amd64
+    container_name: "explorer-local-gateway"
+    networks:
+      - invariant-explorer-web
+      - internal
+    environment:
+      - INVARIANT_API_URL=http://app-api:8000
+      - PORT=8002
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.explorer-local-gateway.rule=(Host(`localhost`) && PathPrefix(`/api/v1/gateway/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/v1/gateway/`)) || (Host(`host.docker.internal`) && PathPrefix(`/api/v1/gateway/`))"
+      - "traefik.http.routers.explorer-local-gateway.entrypoints=invariant-explorer-web"
+      - "traefik.http.services.explorer-local-gateway.loadbalancer.server.port=8002"
+      - "traefik.docker.network=invariant-explorer-web"
+
   database:
     image: postgres:16
     env_file:

@@ -208,7 +208,9 @@ export function UploadOptions({
   let snippet: any = activeOption?.snippet;
   // if snippet is a function, call it with datasetname (it is a template based on the dataset name)
   if (typeof snippet === "function") {
-    snippet = snippet(dataset);
+    // instance url is location.protocol + "//" + location.host
+    const instance = `${location.protocol}//${location.host}`;
+    snippet = snippet(dataset, instance);
   }
 
   const link = activeOption?.link ? (
