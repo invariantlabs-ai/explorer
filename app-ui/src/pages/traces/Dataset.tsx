@@ -195,12 +195,9 @@ function DatasetView() {
   }, []);
 
   // track whether the dataset has analysis results
-  const [hasAnalysis, setHasAnalysis] = React.useState(false);
-
-  // on dataset updates, check if the dataset has analysis results
-  useEffect(() => {
-    setHasAnalysis(dataset?.extra_metadata?.analysis_report || true);
-  }, [dataset]);
+  const currentUserOwnsDataset = dataset?.user?.id == userInfo?.id;
+  const hasAnalysis = currentUserOwnsDataset;
+  const hasGuardrails = currentUserOwnsDataset;
 
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
@@ -258,6 +255,8 @@ function DatasetView() {
     return filteredMetadata;
   };
 
+  const isUserOwned = dataset?.user?.id == userInfo?.id;
+
   // if the dataset is not found, display a message
   return (
     <div className="dataset-view">
@@ -296,16 +295,18 @@ function DatasetView() {
             </div>
           </button>
         )}
-        <button
-          key="guardrails"
-          className={`tab ${"guardrails" === selectedTab ? "active" : ""}`}
-          onClick={() => setSelectedTab("guardrails")}
-        >
-          <div className="inner">
-            <BsDatabaseLock />
-            Guardrails
-          </div>
-        </button>
+        {hasGuardrails && (
+          <button
+            key="guardrails"
+            className={`tab ${"guardrails" === selectedTab ? "active" : ""}`}
+            onClick={() => setSelectedTab("guardrails")}
+          >
+            <div className="inner">
+              <BsDatabaseLock />
+              Guardrails
+            </div>
+          </button>
+        )}
         <button
           key="metadata"
           className={`tab ${"metadata" === selectedTab ? "active" : ""}`}
@@ -403,7 +404,7 @@ function DatasetView() {
               </h1>
             </header>
             <div className="settings-actions">
-              {dataset?.user?.id == userInfo?.id && (
+              {isUserOwned && (
                 <div className="box full setting">
                   <div>
                     <h3>Delete Entire Dataset</h3>
@@ -442,17 +443,19 @@ function DatasetView() {
                   </>
                 </button>
               </div>
-              <div className="box full setting import-more">
-                <div>
-                  <h3>Import More Trace Data</h3>
-                  <UploadOptions
-                    dataset={dataset.name}
-                    excluded={["JSON Upload"]}
-                    // active tab is traces
-                    onSuccess={() => setSelectedTab("traces")}
-                  />
+              {isUserOwned && (
+                <div className="box full setting import-more">
+                  <div>
+                    <h3>Import More Trace Data</h3>
+                    <UploadOptions
+                      dataset={dataset.name}
+                      excluded={["JSON Upload"]}
+                      // active tab is traces
+                      onSuccess={() => setSelectedTab("traces")}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </>

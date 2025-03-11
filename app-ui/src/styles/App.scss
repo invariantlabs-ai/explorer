@@ -557,7 +557,8 @@ button {
 
   .modal-content {
     background-color: white;
-    width: 90%;
+    max-width: 90%;
+    width: 800pt;
     height: calc(100% - 20pt);
     position: absolute;
     top: 10pt;
@@ -571,13 +572,13 @@ button {
     overflow: hidden;
     overflow-y: auto;
 
-    border-radius: 10pt;
+    border-radius: 5pt;
   }
 
   header {
     height: 40pt;
     background-color: $color-secondary-background;
-    padding-top: 5pt;
+    padding-top: 2.5pt;
     padding-bottom: 5pt;
 
     button.inline.cancel {
