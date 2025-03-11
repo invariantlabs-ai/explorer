@@ -1895,6 +1895,13 @@ header.top .sidebar {
       white-space: pre-wrap;
       margin-right: 10pt;
     }
+
+    &.import-more {
+      h3 {
+        padding-top: 5pt;
+        padding-bottom: 10pt;
+      }
+    }
   }
 }
 

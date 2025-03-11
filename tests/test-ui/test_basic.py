@@ -181,6 +181,9 @@ async def test_create_empty_dataset_and_then_upload_file(
     await page.goto(url)
     await page.locator(f"text={dataset_name}").click()
 
+    # go to the 'JSON Upload' tab
+    await page.get_by_text("JSON Upload").click()
+
     # upload traces via file upload
     async with page.expect_file_chooser() as fc_info:
         await page.get_by_label("file-input").click()

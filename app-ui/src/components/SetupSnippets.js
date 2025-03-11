@@ -1,3 +1,10 @@
+/**
+ * A collection of code snippets for setting up the Invariant SDK or Gateway for uploading
+ * traces to the explorer.
+ *
+ * Needs to be updated if the API changes or new integrations are added.
+ */
+
 export const SETUP_SNIPPETS = [
   {
     name: "OpenAI",

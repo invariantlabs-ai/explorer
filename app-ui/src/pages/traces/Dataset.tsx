@@ -442,11 +442,12 @@ function DatasetView() {
                   </>
                 </button>
               </div>
-              <div className="box full setting">
+              <div className="box full setting import-more">
                 <div>
                   <h3>Import More Trace Data</h3>
                   <UploadOptions
                     dataset={dataset.name}
+                    excluded={["JSON Upload"]}
                     // active tab is traces
                     onSuccess={() => setSelectedTab("traces")}
                   />

@@ -152,9 +152,14 @@ export function EmptyDatasetInstructions(props: {
 export function UploadOptions({
   dataset,
   onSuccess,
+  excluded,
 }: {
+  // the name of the dataset
   dataset: string;
+  // function to call on success (e.g. when file upload is complete)
   onSuccess: () => void;
+  // list of excluded options
+  excluded?: string[];
 }) {
   const telemetry = useTelemetry();
   const [loading, setLoading] = React.useState(false);
@@ -186,10 +191,18 @@ export function UploadOptions({
       });
   };
 
-  const [activeTab, setActiveTab] = React.useState(SETUP_SNIPPETS[0].name);
+  const SNIPPETS = SETUP_SNIPPETS.filter((s) => {
+    // filter out the excluded options
+    if (excluded) {
+      return !excluded?.includes(s.name);
+    }
+    return true;
+  });
+
+  const [activeTab, setActiveTab] = React.useState(SNIPPETS[0].name);
 
   // active option
-  const activeOption = SETUP_SNIPPETS.find((o) => o.name === activeTab);
+  const activeOption = SNIPPETS.find((o) => o.name === activeTab);
 
   // get the control
   let snippet: any = activeOption?.snippet;
@@ -205,7 +218,7 @@ export function UploadOptions({
   return (
     <div className="options">
       <div className="options-tabs">
-        {SETUP_SNIPPETS.map((option) => (
+        {SNIPPETS.map((option) => (
           <div
             key={option.name}
             className={`tab ${activeTab === option.name ? "active" : ""}`}
