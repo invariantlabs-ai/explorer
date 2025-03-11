@@ -859,7 +859,9 @@ async def queue_analysis(
             input=analyser_input_samples,
             annotated_samples=analyser_context_samples,
             model_params=analysis_request.options.model_params,
+            owner=username,
             debug_options=analysis_request.options.debug_options,
+            concurrency=analysis_request.options.concurrency,
         )
 
         # keep api key as secret metadata in the DB, so we can check and
@@ -1059,6 +1061,8 @@ async def create_policy(
                     id=str(uuid.uuid4()),
                     name=payload.get("name"),
                     content=payload.get("policy"),
+                    enabled=payload.get("enabled", True),
+                    action=payload.get("action", "log"),
                 ).to_dict()
             )
         except ValidationError as e:
@@ -1068,6 +1072,31 @@ async def create_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         return dataset_to_json(dataset)
+
+
+@dataset.get("/byuser/{username}/{dataset_name}/policy")
+async def get_policy(
+    username: str,
+    dataset_name: str,
+    user_id: Annotated[UUID, Depends(UserOrAPIIdentity)],
+):
+    """Gets all policies for a dataset."""
+
+    with Session(db()) as session:
+        dataset = load_dataset(
+            session,
+            {"User.username": username, "name": dataset_name},
+            user_id,
+            allow_public=True,
+            return_user=False,
+        )
+        # Only the owner of the dataset can get policies for the dataset.
+        if dataset.user_id != user_id:
+            raise HTTPException(
+                status_code=403, detail="Not allowed to get policy for this dataset"
+            )
+        policies = dataset.extra_metadata.get("policies", [])
+        return {"policies": policies}
 
 
 @dataset.put("/{dataset_id}/policy/{policy_id}")
@@ -1113,6 +1142,8 @@ async def update_policy(
                 id=existing_policy["id"],
                 name=payload.get("name", existing_policy["name"]),
                 content=payload.get("policy", existing_policy["content"]),
+                enabled=payload.get("enabled", existing_policy["enabled"]),
+                action=payload.get("action", existing_policy["action"]),
             ).to_dict()
             policies.append(updated_policy)
             policies.remove(existing_policy)

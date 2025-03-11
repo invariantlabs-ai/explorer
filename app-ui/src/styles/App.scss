@@ -1,3 +1,5 @@
+@use "./Colors.scss" as *;
+
 @use "sass:color";
 
 $scale: 1;
@@ -536,6 +538,91 @@ button {
     position: relative;
     top: 2pt;
     margin-right: 5pt;
+  }
+}
+
+.editor-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0pt;
+  z-index: 1000;
+  width: 100%;
+  height: calc(100vh);
+
+  header {
+    b {
+      margin-left: 5pt;
+    }
+  }
+
+  .modal-content {
+    background-color: white;
+    max-width: 90%;
+    width: 800pt;
+    height: calc(100% - 20pt);
+    position: absolute;
+    top: 10pt;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1pt solid $border-color;
+    box-shadow: 0pt 0pt 10pt 0pt rgba(0, 0, 0, 0.1);
+    border-left: 1pt solid $color-secondary-background;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overflow-y: auto;
+
+    border-radius: 5pt;
+  }
+
+  header {
+    height: 40pt;
+    background-color: $color-secondary-background;
+    padding-top: 2.5pt;
+    padding-bottom: 5pt;
+
+    button.inline.cancel {
+      background: none;
+      border: none;
+      margin-left: 4pt;
+      margin-right: 0pt;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .policy-name {
+      margin-left: 4pt;
+      height: 26pt;
+      background-color: transparent;
+      border: 1pt solid $border-color;
+      font-size: 14pt;
+      font-style: italic;
+      padding-left: 10pt;
+      border-radius: 4pt;
+      flex: 1;
+      background-color: white;
+      margin-right: 4pt;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    button.inline {
+      height: 30pt;
+      border-radius: 4pt;
+    }
+  }
+}
+
+@keyframes sidepane-slide-in {
+  0% {
+    right: -70%;
+  }
+  100% {
+    right: 0%;
   }
 }
 
@@ -1809,6 +1896,13 @@ header.top .sidebar {
       white-space: pre-wrap;
       margin-right: 10pt;
     }
+
+    &.import-more {
+      h3 {
+        padding-top: 5pt;
+        padding-bottom: 10pt;
+      }
+    }
   }
 }
 
@@ -2112,47 +2206,6 @@ table.api-keys {
     float: right;
   }
 
-  .policy-editor-form {
-    height: 400pt;
-    width: 550pt;
-
-    input {
-      background-color: #ebebeb;
-      display: block;
-      padding: 5pt;
-      font-size: 24pt;
-      border-radius: 5pt;
-      border: none;
-      margin-bottom: 5pt;
-      width: 535pt;
-    }
-
-    label {
-      font-size: 16pt;
-      opacity: 0.5;
-      margin-top: 1lvh;
-      margin-bottom: 5pt;
-    }
-
-    .error {
-      color: #ed707b;
-      font-size: 18pt;
-      border-left: 2pt solid #ed707b;
-      padding-left: 10pt;
-      display: block;
-      margin-bottom: 15pt;
-      margin-top: 0pt;
-    }
-
-    button {
-      width: 100%;
-    }
-  }
-
-  .policy-editor {
-    margin-bottom: 20pt;
-  }
-
   .policies-list {
     height: 1000px;
     overflow-y: auto;
@@ -2179,7 +2232,6 @@ table.api-keys {
 
   header.toolbar {
     height: 40pt;
-    opacity: 0.8;
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   }
 }
@@ -2226,14 +2278,38 @@ table.api-keys {
 }
 
 // shown when an empty dataset is opened
-div.empty.instructions {
-  width: calc(100% - 10pt);
+.empty.instructions,
+.traceview div.empty.instructions {
   height: auto;
-  margin: auto;
-  margin-top: -45pt !important;
   color: $text-color;
   opacity: 1;
+  display: flex;
+  flex-direction: column;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
+
+  margin-top: 20pt !important;
+  padding: 20pt;
+  max-width: calc(100vw - 80pt);
+  width: 420pt;
   text-align: center;
+  align-items: center;
+  margin: auto;
+
+  &.wide {
+    width: calc(min(800pt, 100vw - 80pt));
+  }
 
   .error {
     color: #ed707b;
@@ -2241,67 +2317,63 @@ div.empty.instructions {
     padding-left: 3pt;
   }
 
-  h3 {
-    opacity: 1;
-    font-weight: bold;
+  h2 {
+    font-size: 14pt;
     color: $text-color;
-    font-size: 22pt;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif !important;
+    text-align: center;
+    border-bottom: none;
+    margin-bottom: 0pt;
+
+    .badge {
+      margin-left: 15pt;
+      background-color: $color-primary;
+      color: white;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+    }
+
+    svg {
+      position: relative;
+      top: 1.5pt;
+      margin-right: 5pt;
+    }
+  }
+
+  h3 {
+    font-size: 12pt;
+    color: rgb(59, 59, 59);
+    font-weight: normal;
+    display: block;
+    margin: 0pt;
+    margin-top: 10pt;
+
+    i {
+      font-size: inherit;
+      opacity: 0.9;
+    }
   }
 
   > p {
-    margin: 0pt 30pt;
+    margin: 0pt 0pt;
+    font-size: 14pt;
+    padding: 0pt;
   }
 
   .push-api-option {
     margin-top: 8pt;
-  }
-
-  .options {
-    display: flex;
-    margin-top: 15pt;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-
-    > div {
-      background-color: white;
-      border-radius: 5pt;
-      height: auto;
-      border: 1pt solid $border-color;
-      margin: 10pt;
-      padding: 15pt 10pt 10pt 10pt;
-      width: 400pt;
-      text-align: left;
-
-      button {
-        margin-top: 20pt !important;
-        display: block;
-        margin: auto;
-      }
-
-      h2 {
-        border: none;
-        font-weight: bold;
-        text-align: left;
-        font-size: 14pt;
-      }
-
-      p {
-        color: $text-color;
-        opacity: 0.9;
-        font-size: 12pt;
-      }
-    }
-
-    input[type="file"] {
-      opacity: 0;
-      height: 100pt;
-    }
-
-    button {
-      width: 70%;
-    }
   }
 }
 
@@ -2865,6 +2937,7 @@ span.highlight-dot {
   }
 }
 
+.tab-content,
 .insights {
   margin-top: 20pt !important;
   margin: auto;
@@ -3001,10 +3074,6 @@ span.highlight-dot {
         overflow: auto;
       }
     }
-  }
-
-  .empty {
-    opacity: 0.8;
   }
 }
 

@@ -28,7 +28,6 @@ from routes.trace import replace_annotations
 
 # job logger
 logger = get_logger(__name__)
-
 JOB_HANDLERS = {}
 
 
@@ -225,7 +224,6 @@ async def on_analysis_result(job: DatasetJob, results: CompleatedJobResponse):
         source = "analyzer-model"
         # go over analysis results (trace results and report parts)
         for analysis in results.analysis:
-            
             _ = await replace_annotations(
                 session,
                 analysis.id,

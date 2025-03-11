@@ -6,6 +6,7 @@
   border-radius: 5pt;
   padding: 10pt;
   margin-bottom: 20pt;
+  padding-top: 30pt;
 
   h3 {
     font-size: 12pt;
@@ -28,6 +29,13 @@
     justify-content: space-between;
     line-height: 20pt;
     margin-right: -7pt;
+    margin-bottom: 5pt;
+
+    svg {
+      position: relative;
+      top: 1pt;
+      margin-right: 3pt;
+    }
 
     .secondary {
       font-weight: 500;
@@ -43,43 +51,7 @@
   }
 
   .box {
-    max-width: 320pt;
-
-    .badge {
-      font-size: 8pt;
-      background-color: #f5f5f5;
-      position: relative;
-      top: 0pt;
-      right: 5pt;
-      border-radius: 10pt;
-
-      font-size: 8pt;
-      padding: 0pt 10pt;
-      font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Oxygen,
-        Ubuntu,
-        Cantarell,
-        "Open Sans",
-        "Helvetica Neue",
-        sans-serif;
-    }
-
-    .badge.live {
-      background-color: #f5f5f5;
-      color: white;
-      text-transform: uppercase;
-      position: relative;
-      background-color: red;
-      border-radius: 10pt;
-
-      animation: pulse-color 2s infinite;
-    }
-
+    // max-width: calc(min(620pt, 100vw - 10pt));
     h2 {
       justify-content: flex-start;
 
@@ -147,212 +119,6 @@
   }
 }
 
-.sidepane {
-  position: fixed;
-  position: -webkit-sticky;
-  position: fixed;
-  top: 75.5pt;
-  left: 0pt;
-  bottom: 0pt;
-  background-color: rgba(0, 0, 0, 0);
-  right: 0pt;
-  z-index: 1000;
-  animation: slide-in 0.1s ease-in-out;
-  animation-fill-mode: forwards;
-
-  .sidepane-content {
-    position: absolute;
-    right: 0pt;
-    border-left: 1pt solid #c7c7c7;
-
-    width: calc(max(70%, 70vw));
-    background-color: $color-secondary-background;
-    padding-top: 0pt;
-    height: calc(100vh - 75pt);
-    animation: slide-in-content 0.1s ease-in-out;
-  }
-
-  .policy-editor {
-    border-top: 1pt solid #e0e0e0;
-    border-bottom: 1pt solid #e0e0e0;
-    margin-bottom: 10pt;
-    height: 300pt;
-
-    .policy {
-      height: 300pt;
-    }
-  }
-
-  header.sidep {
-    position: static;
-    top: 0pt;
-    width: 100%;
-    background-color: $color-secondary-background;
-    height: 50pt;
-    padding-left: 5pt;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-start !important;
-    padding-top: 5pt;
-
-    button.test {
-      position: absolute;
-      top: 315pt;
-    }
-
-    button.close {
-      border: none;
-      background-color: transparent;
-      width: 34pt;
-      height: 34pt;
-      text-overflow: clip;
-
-      &:hover {
-        background-color: rgb(236, 236, 236);
-      }
-    }
-
-    button {
-      border-radius: 4pt;
-      height: 30pt;
-      margin-top: 5pt;
-
-      &:last-of-type {
-        margin-right: 10pt;
-      }
-    }
-
-    h1 {
-      font-size: 12pt !important;
-    }
-
-    .guardrail-editor {
-      flex: 1;
-      padding-right: 10pt;
-
-      .box {
-        background-color: transparent;
-        border: none;
-        padding: 0pt;
-        margin: 0pt;
-        height: 120pt;
-        overflow: hidden;
-
-        h2 {
-          margin-top: 3pt;
-
-          input {
-            width: 100%;
-            border: none;
-            background-color: transparent;
-            font-size: 12pt;
-            font-weight: bold;
-            font-family:
-              system-ui,
-              -apple-system,
-              BlinkMacSystemFont,
-              "Segoe UI",
-              Roboto,
-              Oxygen,
-              Ubuntu,
-              Cantarell,
-              "Open Sans",
-              "Helvetica Neue",
-              sans-serif;
-
-            outline: none;
-          }
-        }
-
-        i {
-          font-size: 10pt;
-          opacity: 0.5;
-          font-weight: 500;
-          font-style: italic !important;
-          font-family:
-            system-ui,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            Oxygen,
-            Ubuntu,
-            Cantarell,
-            "Open Sans",
-            "Helvetica Neue",
-            sans-serif;
-
-          white-space: nowrap;
-          text-overflow: ellipsis;
-
-          input {
-            width: 100%;
-            border: none;
-            background-color: transparent;
-            font-size: 10pt;
-            font-weight: 500;
-            font-style: italic !important;
-
-            outline: none;
-          }
-        }
-      }
-    }
-  }
-
-  .traces-container {
-    position: relative;
-    height: calc(100% - 327pt);
-    margin-top: -40pt;
-
-    .panel {
-      height: 100%;
-    }
-
-    .sidebyside {
-      height: 100%;
-    }
-
-    .explorer {
-      height: 100%;
-    }
-
-    .panel .sidebyside .sidebar {
-      height: calc(100% - 47.5pt);
-      overflow-x: hidden;
-    }
-
-    .panel .sidebyside .explorer.panel.traceview {
-      height: calc(100% - 41pt) !important;
-    }
-
-    .empty {
-      color: #999;
-      font-size: 12pt;
-      position: relative;
-      top: -100pt;
-      display: flex;
-      flex-direction: row;
-
-      button.test {
-        display: inline-block;
-        margin-left: 5pt;
-        margin-right: 5pt;
-      }
-    }
-  }
-}
-
-@keyframes slide-in {
-  from {
-    background-color: rgba(0, 0, 0, 0);
-  }
-  to {
-    background-color: rgba(0, 0, 0, 0.174);
-  }
-}
-
 @keyframes pulse-color {
   0% {
     color: rgb(251, 151, 151);
@@ -384,4 +150,387 @@
   to {
     transform: translateX(0%);
   }
+}
+
+button.policy-action {
+  svg {
+    width: 6pt;
+  }
+}
+
+.box.full.setting.guardrail-item {
+  padding-right: 5pt;
+
+  h1 {
+    font-size: 12pt;
+    line-height: 12pt;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-style: italic;
+    font-weight: normal;
+
+    svg {
+      margin-right: 8pt;
+      position: relative;
+      top: 1.5pt;
+    }
+  }
+
+  .guardrail-actions {
+    button {
+      border-radius: 4pt;
+    }
+  }
+}
+
+.guardrails .suggestions {
+  display: flex;
+  flex-direction: column;
+}
+
+.guardrail-list {
+  min-height: 220pt;
+  position: relative;
+  padding-top: 10pt;
+}
+
+.guardrail-action-select {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+
+  > div {
+    border: 1pt solid #e0e0e0;
+    border-radius: 4pt;
+    margin: 5pt;
+    max-width: 220pt;
+    padding: 5pt;
+    font-size: 10pt;
+    cursor: pointer;
+    overflow: hidden;
+
+    &:hover {
+      background-color: #ebebeb;
+      border: 1pt solid $color-primary;
+    }
+
+    .icon {
+      float: left;
+      height: 100%;
+
+      svg {
+        height: 15pt;
+        width: 15pt;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-right: 10pt;
+        margin-left: 5pt;
+      }
+    }
+
+    b {
+      display: inline-block;
+      font-size: 10pt;
+      margin: 0pt;
+      margin-right: 5pt;
+      padding: 0pt;
+    }
+
+    &.selected {
+      border: 1pt solid $color-primary;
+    }
+  }
+}
+
+.policy-editor {
+  height: 100%;
+}
+
+.policy-editor-form {
+  .policy-name {
+    width: calc(100% - 22pt) !important;
+    height: 20pt !important;
+  }
+
+  .two-pane {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: 10pt;
+
+    > div {
+      border-right: 1pt solid #e0e0e0;
+      padding-left: 5pt;
+      padding-right: 5pt;
+
+      &:last-of-type {
+        border-right: none;
+      }
+    }
+  }
+
+  header {
+    position: sticky;
+    top: 0pt;
+
+    .error {
+      opacity: 0.8;
+      background-color: red;
+      color: white;
+      padding: 4pt;
+      border-radius: 4pt;
+      font-size: 10pt;
+    }
+
+    b {
+      svg {
+        margin-right: 4pt;
+        margin-left: 4pt;
+        position: relative;
+        top: 1pt;
+      }
+
+      .badge {
+        margin-left: 10pt;
+      }
+    }
+  }
+
+  .main {
+    text-align: left;
+    width: 100%;
+    align-items: flex-start;
+    padding: 0pt;
+    padding-left: 5pt;
+    width: calc(100% - 5pt);
+    height: calc(100% - 30pt);
+
+    background-color: $color-secondary-background;
+    border-top: 1pt solid #e0e0e0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
+
+    input {
+      margin-left: 5pt;
+      height: 20pt;
+      border-radius: 4pt;
+      border: 1pt solid $border-color;
+      padding: 5pt;
+      width: calc(100%);
+    }
+
+    h3 {
+      margin: 0pt;
+      padding: 0pt;
+      font-size: 10pt;
+      font-weight: bold;
+      margin-left: 5pt;
+      margin-top: 10pt;
+      margin-bottom: 5pt;
+      width: 100%;
+
+      i {
+        font-weight: 500;
+        opacity: 0.6;
+        margin-left: 5pt;
+        font-size: 1em;
+        font-style: normal;
+      }
+
+      button {
+        float: right;
+        border-radius: 4pt;
+        margin-left: auto;
+        margin-right: 10pt;
+        height: 25pt;
+
+        svg {
+          height: 10pt !important;
+          width: 10pt !important;
+        }
+      }
+    }
+
+    p {
+      margin: 0pt;
+      padding: 0pt;
+      font-size: 12pt;
+      margin-left: 5pt;
+    }
+
+    label {
+      text-align: left;
+    }
+  }
+}
+
+// <div className="toggle-button">
+//   <div className={"slider " + (props.value ? "on" : "off")} />
+// </div>
+.toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40pt;
+  height: 20pt;
+  border-radius: 12pt;
+  background-color: white;
+  border-radius: 12pt;
+  border: 2pt solid #e0e0e0;
+  cursor: pointer;
+  position: relative;
+  margin-left: 5pt;
+  margin-top: -2pt;
+  transition: background-color 0.1s ease-in-out;
+
+  &:hover {
+    background-color: #ebebeb;
+  }
+
+  &:active {
+    background-color: #e0e0e0;
+  }
+
+  .slider {
+    width: 20pt;
+    height: 20pt;
+    border-radius: 50%;
+    background-color: #a6a6a6;
+    border: 0.5pt solid #e0e0e0;
+    transition:
+      transform 0.1s ease-in-out,
+      background-color 0.3s ease-in-out;
+    position: absolute;
+    top: 0pt;
+    left: 0pt;
+
+    &.on {
+      transform: translateX(20pt);
+      background-color: $color-primary;
+    }
+  }
+}
+
+.editor-container {
+  height: 800pt;
+}
+
+.editor-container.full {
+  width: 100%;
+  // height: 300pt;
+  flex: 0;
+  border-bottom: 1pt solid #e0e0e0;
+  position: relative;
+
+  button.evaluate {
+    position: absolute;
+    right: 10pt;
+    padding: 8pt;
+    top: auto;
+    z-index: 100;
+    height: 30pt;
+    border-radius: 4pt;
+    bottom: 10pt;
+  }
+}
+
+.policy-traces {
+  height: calc(50vh) !important;
+
+  .sidebar {
+    height: calc(50vh) !important;
+    margin-top: 5pt !important;
+  }
+
+  .traceview {
+    height: calc(50vh) !important;
+    margin-top: 5pt !important;
+  }
+
+  .toolbar {
+    display: none;
+  }
+}
+
+button.inline.icon-text {
+  svg {
+    margin-right: 10pt;
+  }
+}
+
+.guardrails,
+.policy-editor-form {
+  .badge {
+    font-size: 8pt;
+    background-color: #f5f5f5;
+    position: relative;
+    top: 0pt;
+    right: 5pt;
+    border-radius: 10pt;
+
+    font-size: 8pt;
+    padding: 0pt 10pt;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
+  }
+
+  .badge.live {
+    background-color: #f5f5f5;
+    color: white;
+    text-transform: uppercase;
+    position: relative;
+    background-color: red;
+    border-radius: 10pt;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      "Open Sans",
+      "Helvetica Neue",
+      sans-serif;
+    padding: 2pt 5pt;
+    top: -1pt;
+    font-weight: 600;
+    margin-right: 5pt;
+
+    animation: pulse-color 2s infinite;
+  }
+}
+
+button.create-guardrail {
+  border-radius: 4pt;
+  opacity: 1;
+  height: 30pt;
 }
