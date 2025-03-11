@@ -200,7 +200,7 @@ async def parse_and_update_messages(dataset: str, trace_id: str, messages: list[
     """
     # TODO: Consider adding semaphore to limit the number of concurrent file writes.
     async def parse_and_update_message(msg):
-        if msg.get("role") == "tool" and isinstance(msg.get("content"), str):
+        if isinstance(msg.get("content"), str):
             msg = await _handle_base64_image(dataset, trace_id, msg)
         if msg.get("role") == "assistant" and msg.get("tool_calls", []):
             msg = await _handle_tool_call_arguments(msg)
