@@ -1,4 +1,4 @@
-@import "../../styles/Colors.scss";
+@use "../../styles/Colors.scss" as *;
 
 .output-running {
   background-color: #f9f9f9;

@@ -26,9 +26,9 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]):
-
-
+async def push_trace(
+    request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]
+):
     # extract payload
     payload = await request.json()
     user = user_by_id(user_id)
@@ -80,7 +80,7 @@ async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(API
     )
     # mark API key id that was used to upload the trace
     for md in metadata:
-        md["uploader"] = "Via API " + str(apikey)
+        md["uploader"] = "Via API " + "..." + str(apikey[4:])
 
     traces = []
     with Session(db()) as session:

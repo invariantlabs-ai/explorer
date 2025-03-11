@@ -1,4 +1,4 @@
-@import "../../Colors.scss";
+@use "../../styles/Colors.scss" as *;
 
 .guardrails {
   margin-top: 20px !important;
