@@ -3,17 +3,19 @@ The push API is used to upload traces to the server programmatically (API key au
 """
 
 import asyncio
+import json
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
+import sqlalchemy as sa
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
 from logging_config import get_logger
-from models.datasets_and_traces import Annotation, Dataset, Trace, db
-from models.queries import load_dataset
+from models.datasets_and_traces import Annotation, Trace, db
 from routes.apikeys import APIIdentity
-from sqlalchemy.orm import Session
 from routes.user import user_by_id
+from sqlalchemy.orm import Session
 from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
 
@@ -26,9 +28,9 @@ Write-only API endpoint to push traces to the server.
 
 
 @push.post("/trace")
-async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]):
-
-
+async def push_trace(
+    request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]
+):
     # extract payload
     payload = await request.json()
     user = user_by_id(user_id)
@@ -83,100 +85,105 @@ async def push_trace(request: Request, user_id: Annotated[uuid.UUID, Depends(API
         md["uploader"] = "Via API " + str(apikey)
 
     traces = []
-    with Session(db()) as session:
-        next_index = 0
-        dataset_id = None
-        result_ids = []
-
-        if dataset_name is not None:
-            # Resolve dataset by name and user.
+    try:
+        with Session(db()) as session:
+            dataset_id = None
+            result_ids = []
             try:
-                dataset = load_dataset(
-                    session,
-                    {"User.username": user.username, "name": dataset_name},
-                    user_id,
-                    allow_public=False,
-                    return_user=False,
-                )
-                # Determine the next index for the traces.
-                next_index = (
-                    session.query(Trace.index)
-                    .filter(Trace.dataset_id == dataset.id)
-                    .order_by(Trace.index.desc())
-                    .first()
-                    or (0,)
-                )[0] + 1
+                if dataset_name is not None:
+                    # Utilize Postgres's RETURNING clause to handle race conditions
+                    # to handle concurrent dataset creation attempts
+                    dataset_id = session.execute(
+                        sa.text("""
+                            INSERT INTO datasets (id, user_id, name, is_public, time_created, extra_metadata)
+                            VALUES (:id, :user_id, :name, :is_public, :time_created, :extra_metadata)
+                            ON CONFLICT (user_id, name)
+                            DO UPDATE SET id = datasets.id
+                            RETURNING id
+                        """),
+                        {
+                            "id": str(uuid.uuid4()),
+                            "user_id": str(user_id),
+                            "name": dataset_name,
+                            "is_public": False,
+                            "time_created": datetime.now(timezone.utc),
+                            "extra_metadata": json.dumps({}),
+                        },
+                    ).scalar()
 
-            except HTTPException as e:
-                # If the dataset is not found, create the dataset.
-                if e.status_code == 404 and e.detail == "Dataset not found":
-                    dataset = Dataset(
-                        id=uuid.uuid4(),
-                        user_id=user_id,
-                        name=dataset_name,
-                        extra_metadata=dict(),
+                    session.commit()
+
+                    if dataset_id is None:
+                        dataset_id = session.execute(
+                            sa.text("""
+                                SELECT id FROM datasets WHERE user_id = :user_id AND name = :name
+                            """),
+                            {"user_id": str(user_id), "name": dataset_name},
+                        ).scalar()
+
+                async def parse_single_message_to_trace(message, i):
+                    trace_id = uuid.uuid4()
+                    message_content = await parse_and_update_messages(
+                        dataset_name, trace_id, message
                     )
-                    session.add(dataset)
-                    next_index = 1
-                else:
-                    raise e
-            dataset_id = dataset.id
-
-        async def parse_single_message_to_trace(message, i):
-            trace_id = uuid.uuid4()
-            message_content = await parse_and_update_messages(
-                dataset_name, trace_id, message
-            )
-            message_metadata = metadata[i]
-            trace = Trace(
-                id=trace_id,
-                dataset_id=dataset_id,
-                index=(next_index + i) if dataset_id else 0,
-                name=message_metadata.get("name", f"Run {next_index + i}"),
-                hierarchy_path=message_metadata.get("hierarchy_path", []),
-                user_id=user_id,
-                content=message_content,
-                extra_metadata=message_metadata,
-            )
-            try:
-                validate_trace(trace)
-            except Exception as e:
-                # TODO: For now we just warn instead of throwing an error
-                logger.warning(f"Error validating trace {i}: {str(e)}")
-            return trace
-
-        parse_messages_to_traces = [
-            parse_single_message_to_trace(message, i)
-            for i, message in enumerate(messages)
-        ]
-        traces = await asyncio.gather(*parse_messages_to_traces)
-
-        for trace in traces:
-            session.add(trace)
-            result_ids.append(str(trace.id))
-
-        session.commit()
-
-        if annotations is not None:
-            for i, trace_annotations in enumerate(annotations):
-                for ann in trace_annotations:
-                    new_annotation = Annotation(
-                        trace_id=result_ids[i],
+                    message_metadata = metadata[i]
+                    trace = Trace(
+                        id=trace_id,
+                        dataset_id=dataset_id,
+                        name=message_metadata.get("name"),
+                        hierarchy_path=message_metadata.get("hierarchy_path", []),
                         user_id=user_id,
-                        content=ann["content"],
-                        address=ann["address"],
-                        extra_metadata=ann.get("extra_metadata", None),
+                        content=message_content,
+                        extra_metadata=message_metadata,
                     )
                     try:
-                        validate_annotation(new_annotation, traces[i])
+                        validate_trace(trace)
                     except Exception as e:
                         # TODO: For now we just warn instead of throwing an error
-                        logger.warning(f"Error validating annotation {i}: {str(e)}")
-                    session.add(new_annotation)
+                        logger.warning(f"Error validating trace {i}: {str(e)}")
+                    return trace
 
-        session.commit()
-        return {
-            "id": result_ids,
-            **({"dataset": dataset.name} if dataset_id else {}),
-            "username": user.username,
-        }
+                parse_messages_to_traces = [
+                    parse_single_message_to_trace(message, i)
+                    for i, message in enumerate(messages)
+                ]
+                traces = await asyncio.gather(*parse_messages_to_traces)
+
+                for trace in traces:
+                    session.add(trace)
+                    result_ids.append(str(trace.id))
+
+                session.commit()
+
+                if annotations is not None:
+                    for i, trace_annotations in enumerate(annotations):
+                        for ann in trace_annotations:
+                            new_annotation = Annotation(
+                                trace_id=result_ids[i],
+                                user_id=user_id,
+                                content=ann["content"],
+                                address=ann["address"],
+                                extra_metadata=ann.get("extra_metadata", None),
+                            )
+                            try:
+                                validate_annotation(new_annotation, traces[i])
+                            except Exception as e:
+                                # TODO: For now we just warn instead of throwing an error
+                                logger.warning(
+                                    f"Error validating annotation {i}: {str(e)}"
+                                )
+                            session.add(new_annotation)
+
+                session.commit()
+                return {
+                    "id": result_ids,
+                    **({"dataset": dataset_name} if dataset_id else {}),
+                    "username": user.username,
+                }
+            except Exception:
+                # Explicit rollback in case of any exceptions during the transaction
+                session.rollback()
+                raise
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

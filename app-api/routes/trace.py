@@ -445,7 +445,6 @@ async def upload_new_single_trace(
         trace = Trace(
             id=trace_id,
             dataset_id=None,
-            index=0,
             user_id=user_id,
             content=message_content,
             extra_metadata=extra_metadata,
