@@ -113,21 +113,24 @@ function MutatePolicyModalContent(props) {
     {
       title: "Block Agent",
       description: "The agent is blocked from executing any further actions.",
-      value: "block",
+      value: "block-enabled",
+      actionValue: "block",
       icon: <BsBan />,
       enabled: true,
     },
     {
       title: "Log Failure",
       description: "The agent continues to execute but a failure is logged.",
-      value: "log",
+      value: "log-enabled",
+      actionValue: "log",
       icon: <BsCardList />,
       enabled: true,
     },
     {
       title: "Paused",
       description: "The guardrail is paused and is currently not checked.",
-      value: "log",
+      value: "log-paused",
+      actionValue: "log",
       icon: <BsPauseCircle />,
       enabled: false,
     },
@@ -251,14 +254,12 @@ function MutatePolicyModalContent(props) {
               <i>What to do when the guardrail is triggered.</i>
             </h3>
             <LabelSelect
-              value={guardrailEnabled ? guardrailAction : "paused"}
+              value={guardrailEnabled ? `${guardrailAction}-enabled` : "log-paused"}
               options={guardrailActions}
               onChange={(value) => {
-                const selectedAction = guardrailActions.find(a => 
-                  (value === "paused" && !a.enabled) || (value === a.value && a.enabled)
-                );
+                const selectedAction = guardrailActions.find(a => a.value === value);
                 if (selectedAction) {
-                  setGuardrailAction(selectedAction.value);
+                  setGuardrailAction(selectedAction.actionValue);
                   setGuardrailEnabled(selectedAction.enabled);
                 }
               }}
