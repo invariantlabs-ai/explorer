@@ -115,12 +115,21 @@ function MutatePolicyModalContent(props) {
       description: "The agent is blocked from executing any further actions.",
       value: "block",
       icon: <BsBan />,
+      enabled: true,
     },
     {
       title: "Log Failure",
       description: "The agent continues to execute but a failure is logged.",
       value: "log",
       icon: <BsCardList />,
+      enabled: true,
+    },
+    {
+      title: "Paused",
+      description: "The guardrail is paused and is currently not checked.",
+      value: "log",
+      icon: <BsPauseCircle />,
+      enabled: false,
     },
   ];
 
@@ -171,7 +180,6 @@ function MutatePolicyModalContent(props) {
           {!editMode && (
             <>
               <BsDatabaseLock /> Guardrail Details
-              {guardrailEnabled && <span className="badge live">LIVE</span>}
               {error && <span className="error">Error: {error}</span>}
             </>
           )}
@@ -239,37 +247,21 @@ function MutatePolicyModalContent(props) {
               className="policy-name"
             />
             <h3>
-              Status
-              <i>Paused guardrails will not be checked.</i>
-            </h3>
-            <LabelSelect
-              value={guardrailEnabled}
-              options={[
-                {
-                  title: "Enabled",
-                  description:
-                    "The guardrail is enabled and will be checked during agent execution.",
-                  value: true,
-                  icon: <BsShieldFillCheck />,
-                },
-                {
-                  title: "Paused",
-                  description:
-                    "The guardrail is paused and is currently not checked.",
-                  value: false,
-                  icon: <BsPauseCircle />,
-                },
-              ]}
-              onChange={(value) => setGuardrailEnabled(value)}
-            />
-            <h3>
               Action
               <i>What to do when the guardrail is triggered.</i>
             </h3>
             <LabelSelect
-              value={guardrailAction}
+              value={guardrailEnabled ? guardrailAction : "paused"}
               options={guardrailActions}
-              onChange={(value) => setGuardrailAction(value)}
+              onChange={(value) => {
+                const selectedAction = guardrailActions.find(a => 
+                  (value === "paused" && !a.enabled) || (value === a.value && a.enabled)
+                );
+                if (selectedAction) {
+                  setGuardrailAction(selectedAction.value);
+                  setGuardrailEnabled(selectedAction.enabled);
+                }
+              }}
             />
           </div>
         )}
