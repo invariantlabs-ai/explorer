@@ -60,6 +60,29 @@ client = genai.Client(
 )`,
   },
   {
+    name: "Agents SDK",
+    description: "Upload via Gateway and the OpenAI Agents SDK.",
+    link: "https://explorer.invariantlabs.ai/docs/gateway/agent-integrations/openai-agents-sdk/",
+    snippet: (
+      dataset,
+      instance
+    ) => `from agents import Agent, OpenAIChatCompletionsModel
+from openai import AsyncOpenAI
+import os
+
+external_client = AsyncOpenAI(
+    base_url="${instance}/api/v1/gateway/${dataset}/openai",
+    default_headers={
+        "Invariant-Authorization": "Bearer " + os.getenv("INVARIANT_API_KEY"),
+    },
+)
+
+agent = Agent(
+    name="Assistant", instructions="You are a helpful assistant",
+    model=OpenAIChatCompletionsModel(model="gpt-4o", openai_client=external_client),
+)`,
+  },
+  {
     name: "Swarm",
     description: "Upload via Gateway from within the Swarm framework.",
     link: "https://explorer.invariantlabs.ai/docs/gateway/agent-integrations/openai-swarm/",
@@ -76,7 +99,7 @@ client = Swarm(
 )`,
   },
   {
-    name: "SDK",
+    name: "Invariant SDK",
     description: "Use the Invariant SDK to manually upload traces.",
     link: "https://explorer.invariantlabs.ai/docs/explorer/api/uploading-traces/push-api/",
     snippet: (dataset, instance) => `from invariant_sdk.client import Client
