@@ -128,7 +128,7 @@ function MutatePolicyModalContent(props) {
     },
     {
       title: "Paused",
-      description: "The guardrail is paused and is currently not checked.",
+      description: "The guardrail is paused and will not be checked.",
       value: "log-paused",
       actionValue: "log",
       icon: <BsPauseCircle />,
