@@ -114,7 +114,7 @@ def truncate_trace_content(messages: list[dict], max_length: Optional[int] = Non
     return messages
 
 
-async def _handle_base64_image(dataset: str, trace_id: str, msg: dict):
+async def _handle_base64_image_in_content(dataset: str, trace_id: str, msg: dict):
     """
     Handles base64 image processing:
     - Decodes the image
@@ -129,17 +129,8 @@ async def _handle_base64_image(dataset: str, trace_id: str, msg: dict):
     Returns:
         dict: Updated message.
     """
-    # If the message is a base64 image, save it to disk and update the message
-    if msg.get("content").startswith("base64_img: ") or msg.get("content").startswith(
-        "local_base64_img: "
-    ):
-        prefix = (
-            "base64_img: "
-            if msg.get("content").startswith("base64_img: ")
-            else "local_base64_img: "
-        )
-        img_base64 = msg.get("content")[len(prefix) :]
 
+    async def write_image(dataset: str, trace_id: str, img_base64: str) -> str:
         try:
             img_data = base64.b64decode(img_base64)
         except Exception as e:
@@ -148,16 +139,41 @@ async def _handle_base64_image(dataset: str, trace_id: str, msg: dict):
         # Generate a unique filename for the image
         img_filename = f"{dataset}/{trace_id}/{uuid.uuid4()}.png"
 
-        # Save the image as a temporary file
+        # Save the image as a file
         img_path = f"/srv/images/{img_filename}"
         os.makedirs(os.path.dirname(img_path), exist_ok=True)
         try:
             async with aiofiles.open(img_path, "wb") as f:
                 await f.write(img_data)
+                return img_path
         except Exception as e:
-            print("exception: ", e)
+            print("Exception while saving image to disk: ", e)
             raise IOError("Failed to save image to disk") from e
-        msg["content"] = "local_img_link: " + img_path
+
+    def extract_base64_data(data_uri: str) -> str:
+        match = re.match(r"^data:image/[^;]+;base64,(.+)$", data_uri)
+        return match.group(1) if match else data_uri
+
+    # If the message is a base64 image, save it to disk and update the message
+    if isinstance(msg.get("content"), str) and (
+        msg.get("content").startswith("base64_img: ")
+        or msg.get("content").startswith("local_base64_img: ")
+    ):
+        prefix = (
+            "base64_img: "
+            if msg.get("content").startswith("base64_img: ")
+            else "local_base64_img: "
+        )
+        img_base64 = msg.get("content")[len(prefix) :]
+        msg["content"] = "local_img_link: " + await write_image(
+            dataset, trace_id, img_base64
+        )
+    if isinstance(msg.get("content"), list):
+        for i, content in enumerate(msg["content"]):
+            if content.get("type") == "image_url":
+                img_base64 = extract_base64_data(content.get("image_url").get("url"))
+                img_path = await write_image(dataset, trace_id, img_base64)
+                msg["content"][i]["image_url"]["url"] = img_path
     return msg
 
 
@@ -198,10 +214,11 @@ async def parse_and_update_messages(dataset: str, trace_id: str, messages: list[
     Returns:
         list: Updated messages.
     """
+
     # TODO: Consider adding semaphore to limit the number of concurrent file writes.
     async def parse_and_update_message(msg):
-        if msg.get("role") == "tool" and isinstance(msg.get("content"), str):
-            msg = await _handle_base64_image(dataset, trace_id, msg)
+        if isinstance(msg.get("content"), (list, str)):
+            msg = await _handle_base64_image_in_content(dataset, trace_id, msg)
         if msg.get("role") == "assistant" and msg.get("tool_calls", []):
             msg = await _handle_tool_call_arguments(msg)
 
