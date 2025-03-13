@@ -32,6 +32,12 @@ def api_server_http_endpoint():
 def name():
     return f"test-{str(uuid4())}"
 
+# helper function to get an API key
+async def get_apikey(url, context):
+    response = await context.request.post(url + "/api/v1/keys/create")
+    await expect(response).to_be_ok()
+    out = await response.json()
+    return out["key"]
 
 @pytest.fixture
 async def playwright(scope="session"):
