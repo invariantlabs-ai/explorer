@@ -13,14 +13,6 @@ from util import *  # needed for pytest fixtures
 pytest_plugins = ("pytest_asyncio",)
 
 
-# helper function to get an API key
-async def get_apikey(url, context):
-    response = await context.request.post(url + "/api/v1/keys/create")
-    await expect(response).to_be_ok()
-    out = await response.json()
-    return out["key"]
-
-
 async def test_create_apikey(url, context):
     key = await get_apikey(url, context)
 
@@ -236,7 +228,11 @@ async def test_push_trace_with_tool_call_arguments_parsed_successfully(
             "dataset": dataset["name"],
         }
 
-        response = await context.request.post(url + "/api/v1/push/trace", data=data)
+        key = await get_apikey(url, context)
+        headers = {"Authorization": "Bearer " + key}
+        response = await context.request.post(
+            url + "/api/v1/push/trace", data=data, headers=headers
+        )
         await expect(response).to_be_ok()
         trace_id = (await response.json())["id"][0]
 
@@ -268,7 +264,11 @@ async def test_push_trace_with_tool_call_arguments_not_parsed_successfully(
             "dataset": dataset["name"],
         }
 
-        response = await context.request.post(url + "/api/v1/push/trace", data=data)
+        key = await get_apikey(url, context)
+        headers = {"Authorization": "Bearer " + key}
+        response = await context.request.post(
+            url + "/api/v1/push/trace", data=data, headers=headers
+        )
         await expect(response).to_be_ok()
         trace_id = (await response.json())["id"][0]
 

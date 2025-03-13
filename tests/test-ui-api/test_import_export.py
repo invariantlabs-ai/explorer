@@ -279,6 +279,8 @@ async def test_upload_dataset_where_correct_indices_are_present(
     assert trace_2["extra_metadata"]["task_id"] == 812
 
     # Push another trace to this dataset
+    key = await get_apikey(url, context)
+    headers = {"Authorization": "Bearer " + key}
     trace_creation_response = await context.request.post(
         url + "/api/v1/push/trace",
         data={
@@ -290,6 +292,7 @@ async def test_upload_dataset_where_correct_indices_are_present(
             ],
             "dataset": dataset_created["name"],
         },
+        headers=headers,
     )
 
     await expect(trace_creation_response).to_be_ok()

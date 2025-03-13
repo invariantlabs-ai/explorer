@@ -46,9 +46,19 @@ tests() {
     sleep 2
   done
   echo "Container explorer-test-app-api-1 is healthy!"
-  
-  # Simple test call to your app
-  curl -k -X POST http://127.0.0.1:"${PORT_HTTP}"/api/v1/user/signup
+
+  while true; do
+    echo "Attempting to create test user in app-api"
+    RESPONSE=$(curl -ks -X POST http://127.0.0.1:"${PORT_HTTP}"/api/v1/user/signup)
+    if echo "$RESPONSE" | jq -e '.success == true' >/dev/null 2>&1; then
+        echo "Created test user app-api"
+        break
+    fi
+    echo "$RESPONSE"
+    sleep 2
+  done
+
+  echo "Running integration tests..."
   
   # Run tests in the 'explorer-test' container
   docker run \
