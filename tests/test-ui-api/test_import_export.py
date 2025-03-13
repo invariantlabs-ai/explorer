@@ -8,8 +8,12 @@ import pytest
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
-from util import *  # needed for pytest fixtures
+from util import (
+    TemporaryExplorerDataset,
+    async_delete_dataset_by_id,
+    async_delete_trace_by_id,
+    get_apikey,
+)
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -125,7 +129,7 @@ async def test_upload_data(dataset_name, url, context, data_webarena_with_metada
     assert trace_1 is not None
     assert trace_2 is not None
 
-    await util.async_delete_dataset_by_id(url, context, dataset["id"])
+    await async_delete_dataset_by_id(url, context, dataset["id"])
 
 
 async def test_reupload_dataset_with_same_name_fails(
@@ -147,7 +151,7 @@ async def test_reupload_dataset_with_same_name_fails(
     assert response.status == 400
     assert "Dataset with the same name already exists" in await response.text()
 
-    await util.async_delete_dataset_by_id(url, context, returned_object["id"])
+    await async_delete_dataset_by_id(url, context, returned_object["id"])
 
 
 async def test_upload_dataset_with_two_metadata_rows_fails(context, url, dataset_name):
@@ -311,11 +315,11 @@ async def test_upload_dataset_where_correct_indices_are_present(
     ]
 
     # Delete the dataset.
-    await util.async_delete_dataset_by_id(url, context, dataset_created["id"])
+    await async_delete_dataset_by_id(url, context, dataset_created["id"])
 
 
 async def test_reupload_api(url, context, dataset_name, data_webarena_with_metadata):
-    async with util.TemporaryExplorerDataset(
+    async with TemporaryExplorerDataset(
         url, context, data_webarena_with_metadata
     ) as dataset:
         dataset_id = dataset["id"]
@@ -329,7 +333,7 @@ async def test_reupload_api(url, context, dataset_name, data_webarena_with_metad
             json.loads(line) for line in jsonl_data.split("\n") if line
         ]
 
-        async with util.TemporaryExplorerDataset(
+        async with TemporaryExplorerDataset(
             url, context, "\n".join(jsonl_data.split("\n"))
         ) as dataset:
             pass
@@ -357,4 +361,4 @@ async def test_snippet(url, context):
     trace_response = await trace_get_response.json()
     assert trace_response["messages"] == messages
 
-    await util.async_delete_trace_by_id(url, context, response["id"])
+    await async_delete_trace_by_id(url, context, response["id"])

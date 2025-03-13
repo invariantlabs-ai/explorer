@@ -7,9 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # for local testing
 # os.chdir(os.path.dirname(os.getcwd()))
 
-
-import util
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -34,7 +32,7 @@ async def test_home_page(context, url, screenshot):
 
 @pytest.mark.skip(reason="Requires nux to be enabled")
 async def test_trace_view(context, url, data_abc, screenshot):
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)

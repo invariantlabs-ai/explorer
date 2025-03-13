@@ -7,8 +7,7 @@ import pytest
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -64,7 +63,7 @@ async def update_dataset(context, url, dataset_id, is_dataset_public=True):
 @pytest.mark.parametrize("is_dataset_public", [True, False])
 async def test_create_policy(context, url, data_abc, is_dataset_public):
     """Tests that creating policies is successful."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         if is_dataset_public:
             # Make the dataset public.
             await update_dataset(context, url, dataset["id"], is_dataset_public=True)
@@ -121,7 +120,7 @@ async def test_create_policy_for_non_existent_dataset_fails(context, url):
 
 async def test_create_policy_without_required_fields_fails(context, url, data_abc):
     """Tests that creating a policy without the necessary fields results in a 400."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create a policy without a name.
         create_policy_response_1 = await context.request.post(
             f'{url}/api/v1/dataset/{dataset["id"]}/policy',
@@ -160,7 +159,7 @@ async def test_create_policy_for_dataset_not_owned_by_caller_fails(
     context, url, data_abc
 ):
     """Tests that creating a policy not owned by the current user results in an error."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # A different user tries to create a policy for the dataset.
         create_policy_response_1 = await context.request.post(
             f'{url}/api/v1/dataset/{dataset["id"]}/policy',
@@ -186,7 +185,7 @@ async def test_update_policy_fields_successful(
     data_abc, url, context, is_dataset_public
 ):
     """Tests that updating an existing policy is successful."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         if is_dataset_public:
             # Make the dataset public.
             await update_dataset(context, url, dataset["id"], is_dataset_public=True)
@@ -302,7 +301,7 @@ async def test_update_policy_for_non_existent_dataset_fails(context, url):
 
 async def test_update_policy_with_invalid_request_payload_fails(data_abc, url, context):
     """Tests that updating an existing policy with an invalid request payload results in a 400."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create policy for the dataset.
         dataset = await create_policy(
             context, url, dataset["id"], SECRETS_POLICY, "test-policy"
@@ -333,7 +332,7 @@ async def test_update_policy_with_invalid_request_payload_fails(data_abc, url, c
 
 async def test_update_non_existent_policy_fails(data_abc, url, context):
     """Tests that updating a non existent policy results in a 404."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Update a non-existent policy.
         update_policy_response = await context.request.put(
             f'{url}/api/v1/dataset/{dataset["id"]}/policy/1234',
@@ -349,7 +348,7 @@ async def test_update_policy_for_dataset_not_owned_by_caller_fails(
 ):
     """Tests that updating a policy not owned by the current user results in an error."""
     # Create a private dataset.
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create policy for the dataset.
         dataset = await create_policy(
             context, url, dataset["id"], SECRETS_POLICY, "test-policy"
@@ -377,7 +376,7 @@ async def test_update_policy_for_dataset_not_owned_by_caller_fails(
 @pytest.mark.parametrize("is_dataset_public", [True, False])
 async def test_delete_policy_successful(data_abc, url, context, is_dataset_public):
     """Tests that deleting policies is successful."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         if is_dataset_public:
             # Make the dataset public.
             await update_dataset(context, url, dataset["id"], is_dataset_public=True)
@@ -435,7 +434,7 @@ async def test_delete_policy_for_non_existent_dataset_fails(context, url):
 
 async def test_delete_non_existent_policy_fails(data_abc, url, context):
     """Tests that deleting a non existent policy results in a 404."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Delete a non-existent policy.
         delete_policy_response = await context.request.delete(
             f'{url}/api/v1/dataset/{dataset["id"]}/policy/1234'
@@ -449,7 +448,7 @@ async def test_delete_policy_for_dataset_not_owned_by_caller_fails(
     context, url, data_abc
 ):
     """Tests that deleting a policy not owned by the current user results in an error."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create policy for the dataset.
         dataset = await create_policy(
             context, url, dataset["id"], SECRETS_POLICY, "test-policy"
@@ -476,7 +475,7 @@ async def test_delete_policy_for_dataset_not_owned_by_caller_fails(
 
 async def test_get_public_dataset_with_policies(data_abc, url, context):
     """Tests that fetching a public dataset includes policies only for the owner user."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create policy for the dataset.
         dataset = await create_policy(
             context, url, dataset["id"], SECRETS_POLICY, "test-policy"

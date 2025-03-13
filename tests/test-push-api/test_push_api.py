@@ -8,7 +8,7 @@ from playwright.async_api import expect
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset, get_apikey
 
 pytest_plugins = ("pytest_asyncio",)
 
