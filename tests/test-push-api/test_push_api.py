@@ -109,6 +109,7 @@ async def test_push_trace_with_invalid_dataset_name(context, url):
                 "metadata": None,
                 "dataset": dataset_name,
             },
+            headers={"Authorization": "Bearer " + await get_apikey(url, context)},
         )
 
         assert response.status == 400
