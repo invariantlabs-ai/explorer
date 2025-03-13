@@ -1,6 +1,6 @@
 from typing import Annotated
 from uuid import UUID
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from models.datasets_and_traces import Dataset, User, db, Annotation, Trace, SharedLinks
 from models.queries import (
     save_user,
@@ -68,6 +68,10 @@ def signup(
 @user.get("/identity")
 def identity(user_id: Annotated[UUID, Depends(UserOrAPIIdentity)]):
     user = user_by_id(user_id)
+
+    if user is None:
+        raise HTTPException(status_code=403, detail="not authorized")
+
     return {
         "username": user.username,
     }
