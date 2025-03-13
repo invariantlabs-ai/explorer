@@ -9,9 +9,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import uuid
 
-import util
 from deepdiff import DeepDiff
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -102,7 +101,7 @@ async def test_append_messages_fails_on_non_existing_trace(url, context):
 
 async def test_append_messages_fails_when_caller_is_not_owner(url, context, data_abc):
     """Test that appending messages to a trace fails when the caller is not the owner."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
@@ -134,7 +133,7 @@ async def test_append_messages_succeeds_on_dataset_trace_with_consecutive_calls(
     url, context, data_abc
 ):
     """Test that consecutive calls to append_messages succeeds."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
@@ -198,7 +197,7 @@ async def test_append_messages_timestamp_with_invalid_format_fails(
     url, context, data_abc
 ):
     """Test that appending messages with invalid timestamp format fails."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
@@ -229,7 +228,7 @@ async def test_append_messages_succeeds_on_dataset_trace_with_order_by_timestamp
     older timestamps than the existing messages in the trace.
     In that case the new messages should be inserted before the existing messages.
     """
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
@@ -351,15 +350,18 @@ async def test_append_messages_succeeds_starting_with_empty_snippet_trace(contex
     deletion_response = await context.request.delete(f"{url}/api/v1/trace/{snippet_id}")
     assert deletion_response.status == 200
 
+
 #
 async def test_add_and_get_simple_annotation(url, context, data_abc):
     """Test that adding and getting a simple annotation works."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
         # get all annotations of a trace
-        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
 
         assert response.status == 200
         annotations = await response.json()
@@ -382,14 +384,18 @@ async def test_add_and_get_simple_annotation(url, context, data_abc):
         assert annotation["extra_metadata"] == {"source": "test"}
 
 
-async def test_add_annotation_without_source_then_with_then_replace_but_only_source(url, context, data_abc):
+async def test_add_annotation_without_source_then_with_then_replace_but_only_source(
+    url, context, data_abc
+):
     """Test that adding an annotation without a source, then with a source, then replacing only the source works."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
         # get all annotations of a trace
-        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
         assert response.status == 200
         annotations = await response.json()
         assert len(annotations) == 0
@@ -417,7 +423,9 @@ async def test_add_annotation_without_source_then_with_then_replace_but_only_sou
         assert response.status == 200
 
         # get all annotations of a trace
-        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
         assert response.status == 200
         annotations = await response.json()
         assert len(annotations) == 2
@@ -425,16 +433,23 @@ async def test_add_annotation_without_source_then_with_then_replace_but_only_sou
         # replace all annotations of a certain source
         response = await context.request.post(
             f"{url}/api/v1/trace/{trace_id}/annotations/update",
-            data={"source": "test", "annotations": [{
-                "content": "replaced annotation",
-                "address": "messages[0]:L0",
-                "extra_metadata": {"source": "test"},
-            }]},
+            data={
+                "source": "test",
+                "annotations": [
+                    {
+                        "content": "replaced annotation",
+                        "address": "messages[0]:L0",
+                        "extra_metadata": {"source": "test"},
+                    }
+                ],
+            },
         )
         assert response.status == 200
 
         # get all annotations of a trace
-        response = await context.request.get(f"{url}/api/v1/trace/{trace_id}/annotations")
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
         assert response.status == 200
         annotations = await response.json()
         assert len(annotations) == 2

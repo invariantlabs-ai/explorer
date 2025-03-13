@@ -5,15 +5,14 @@ import re
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
 from PIL import Image
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
 
 async def test_highlighted_tool_arg(context, url, data_code, screenshot):
-    async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)
@@ -50,7 +49,7 @@ async def test_highlighted_tool_arg(context, url, data_code, screenshot):
 
 
 async def test_highlighted_user_msg(context, url, data_code, screenshot):
-    async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)
@@ -87,9 +86,7 @@ async def test_highlighted_user_msg(context, url, data_code, screenshot):
 
 
 async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
-    async with util.TemporaryExplorerDataset(
-        url, context, data_line_numbers
-    ) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)
@@ -128,9 +125,7 @@ async def test_remove_line_numbers(context, url, data_line_numbers, screenshot):
 async def test_line_numbers_are_not_removed_from_non_code(
     context, url, data_line_numbers, screenshot
 ):
-    async with util.TemporaryExplorerDataset(
-        url, context, data_line_numbers
-    ) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)
@@ -152,9 +147,7 @@ async def test_line_numbers_are_not_removed_from_non_code(
 
 
 async def test_highlights_python_correctly(context, url, data_line_numbers, screenshot):
-    async with util.TemporaryExplorerDataset(
-        url, context, data_line_numbers
-    ) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_line_numbers) as dataset:
         page = await context.new_page()
         # go to home page
         await page.goto(url)

@@ -14,7 +14,6 @@ import tempfile
 
 import util
 from pytest_lazy_fixtures import lf
-from util import *  # needed for pytest fixtures
 
 pytest_plugins = ("pytest_asyncio",)
 
