@@ -43,6 +43,7 @@ async def push_trace(
     metadata = payload.get("metadata")
 
     try:
+        assert apikey is not None, "API key must be provided in the headers"
         # check messages
         assert isinstance(messages, list), "messages must be a list of traces"
         assert len(messages) > 0, "messages must not be empty"
