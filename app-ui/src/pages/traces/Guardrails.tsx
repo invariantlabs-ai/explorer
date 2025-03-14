@@ -254,10 +254,14 @@ function MutatePolicyModalContent(props) {
               <i>What to do when the guardrail is triggered.</i>
             </h3>
             <LabelSelect
-              value={guardrailEnabled ? `${guardrailAction}-enabled` : "log-paused"}
+              value={
+                guardrailEnabled ? `${guardrailAction}-enabled` : "log-paused"
+              }
               options={guardrailActions}
               onChange={(value) => {
-                const selectedAction = guardrailActions.find(a => a.value === value);
+                const selectedAction = guardrailActions.find(
+                  (a) => a.value === value
+                );
                 if (selectedAction) {
                   setGuardrailAction(selectedAction.actionValue);
                   setGuardrailEnabled(selectedAction.enabled);
