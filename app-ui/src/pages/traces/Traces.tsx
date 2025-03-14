@@ -727,8 +727,8 @@ export function Traces(props) {
 
   // view options
   const {
-    viewOptionsEditor,
     viewOptions,
+    viewOptionsEditor,
     showViewOptionsModal,
     setShowViewOptionsModal,
   } = useViewOptions();
