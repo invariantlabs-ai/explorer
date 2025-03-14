@@ -8,6 +8,7 @@ import React from "react";
  * @param {boolean} hasFooter - Whether the modal dialog has a footer.
  * @param {string} cancelText - The text to display on the cancel button.
  * @param {function} onClose - The function to call when the modal dialog is closed.
+ * @param {string} className - The class name to apply to the modal dialog.
  *
  * @param {React.ReactNode} children - The content of the modal dialog.
  *
@@ -32,7 +33,7 @@ export function Modal(props) {
   return (
     <div className="app-modal">
       <div className="modal-background" onClick={props.onClose} />
-      <div className="modal-content">
+      <div className={"modal-content " + (props.className || "")}>
         {props.hasWindowControls && (
           <header className="window-controls">
             <button onClick={props.onClose}>

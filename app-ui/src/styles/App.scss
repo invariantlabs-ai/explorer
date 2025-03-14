@@ -718,6 +718,54 @@ button {
   }
 }
 
+.modal-content.view-options {
+  display: block;
+
+  .options {
+    display: block;
+    max-width: 320pt;
+
+    label {
+      margin-left: 5pt;
+      font-size: 12pt;
+      color: $text-color !important;
+      opacity: 0.95;
+    }
+
+    p {
+      margin: 0pt;
+      padding: 0pt;
+      font-size: 10pt;
+      margin-left: 17pt;
+      color: $text-color;
+      padding-bottom: 15pt;
+      border-bottom: 1pt solid rgb(234, 234, 234);
+    }
+
+    input {
+      position: relative;
+      top: -2pt;
+    }
+  }
+
+  h1 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 0pt;
+    padding: 0pt;
+    margin-top: -12.5pt;
+  }
+
+  label {
+    font-size: 12pt;
+    margin-top: 0pt;
+    margin-bottom: 5pt;
+    opacity: 0.5;
+    font-weight: 500;
+    display: inline;
+  }
+}
+
 label {
   display: block;
   margin-bottom: 5pt;
