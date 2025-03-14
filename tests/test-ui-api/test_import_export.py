@@ -8,8 +8,12 @@ import pytest
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
-from util import *  # needed for pytest fixtures
+from util import (
+    TemporaryExplorerDataset,
+    async_delete_dataset_by_id,
+    async_delete_trace_by_id,
+    get_apikey,
+)
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -86,13 +90,46 @@ async def test_upload_and_delete_dataset(dataset_name, url, context, delete_by):
 
 
 async def test_upload_data(dataset_name, url, context, data_webarena_with_metadata):
-    response = await upload_dataset_file(
+    dataset_upload_response = await upload_dataset_file(
         context, url, dataset_name, data_webarena_with_metadata.encode("utf-8")
     )
-    await expect(response).to_be_ok()
-    returned_object = await response.json()
-    assert returned_object["name"] == dataset_name
-    await util.async_delete_dataset_by_id(url, context, returned_object["id"])
+    await expect(dataset_upload_response).to_be_ok()
+    dataset = await dataset_upload_response.json()
+    assert dataset["name"] == dataset_name
+
+    # Verify metadata.
+    assert (
+        dataset["extra_metadata"]["description"]
+        == "Traces collected from WebArena Step agent"
+    )
+
+    # Verify the traces.
+    traces_lookup_response = await context.request.get(
+        url + f'/api/v1/dataset/byid/{dataset["id"]}/traces'
+    )
+    await expect(traces_lookup_response).to_be_ok()
+    traces_created = await traces_lookup_response.json()
+    assert len(traces_created) == 2
+    trace_1 = next(
+        (
+            trace
+            for trace in traces_created
+            if trace["index"] == 0 and trace["name"] == "Run 0"
+        ),
+        None,
+    )
+    trace_2 = next(
+        (
+            trace
+            for trace in traces_created
+            if trace["index"] == 1 and trace["name"] == "Run 1"
+        ),
+        None,
+    )
+    assert trace_1 is not None
+    assert trace_2 is not None
+
+    await async_delete_dataset_by_id(url, context, dataset["id"])
 
 
 async def test_reupload_dataset_with_same_name_fails(
@@ -114,7 +151,7 @@ async def test_reupload_dataset_with_same_name_fails(
     assert response.status == 400
     assert "Dataset with the same name already exists" in await response.text()
 
-    await util.async_delete_dataset_by_id(url, context, returned_object["id"])
+    await async_delete_dataset_by_id(url, context, returned_object["id"])
 
 
 async def test_upload_dataset_with_two_metadata_rows_fails(context, url, dataset_name):
@@ -245,12 +282,44 @@ async def test_upload_dataset_where_correct_indices_are_present(
     assert trace_1["extra_metadata"]["task_id"] == 5
     assert trace_2["extra_metadata"]["task_id"] == 812
 
+    # Push another trace to this dataset
+    key = await get_apikey(url, context)
+    headers = {"Authorization": "Bearer " + key}
+    trace_creation_response = await context.request.post(
+        url + "/api/v1/push/trace",
+        data={
+            "messages": [
+                [
+                    {"role": "user", "content": "Hello!"},
+                    {"role": "assistant", "content": "hello back to you"},
+                ]
+            ],
+            "dataset": dataset_created["name"],
+        },
+        headers=headers,
+    )
+
+    await expect(trace_creation_response).to_be_ok()
+    trace_id = (await trace_creation_response.json())["id"][0]
+
+    # Lookup the new trace
+    trace_lookup_response = await context.request.get(url + f"/api/v1/trace/{trace_id}")
+    await expect(trace_lookup_response).to_be_ok()
+    trace_response = await trace_lookup_response.json()
+    # The index should be 812 + 1 = 813
+    assert trace_response["index"] == 813
+    assert trace_response["name"] == "Run 813"
+    assert trace_response["messages"] == [
+        {"role": "user", "content": "Hello!"},
+        {"role": "assistant", "content": "hello back to you"},
+    ]
+
     # Delete the dataset.
-    await util.async_delete_dataset_by_id(url, context, dataset_created["id"])
+    await async_delete_dataset_by_id(url, context, dataset_created["id"])
 
 
 async def test_reupload_api(url, context, dataset_name, data_webarena_with_metadata):
-    async with util.TemporaryExplorerDataset(
+    async with TemporaryExplorerDataset(
         url, context, data_webarena_with_metadata
     ) as dataset:
         dataset_id = dataset["id"]
@@ -264,7 +333,7 @@ async def test_reupload_api(url, context, dataset_name, data_webarena_with_metad
             json.loads(line) for line in jsonl_data.split("\n") if line
         ]
 
-        async with util.TemporaryExplorerDataset(
+        async with TemporaryExplorerDataset(
             url, context, "\n".join(jsonl_data.split("\n"))
         ) as dataset:
             pass
@@ -292,4 +361,4 @@ async def test_snippet(url, context):
     trace_response = await trace_get_response.json()
     assert trace_response["messages"] == messages
 
-    await util.async_delete_trace_by_id(url, context, response["id"])
+    await async_delete_trace_by_id(url, context, response["id"])

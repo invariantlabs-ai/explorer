@@ -659,7 +659,7 @@ function onMountConfigEditor(editor, monaco) {
             label: "local",
             kind: monaco.languages.CompletionItemKind.Text,
             insertText: `{
-  "endpoint": "http://host.docker.internal:8000",
+  "endpoint": "http://host.docker.internal:8010",
   "apikey": "<api key on the Eplorer above>",
   "model_params": {
     "model": "litellm",

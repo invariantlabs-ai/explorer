@@ -1,7 +1,7 @@
 """Tests for dataset API endpoints."""
 
-import os
 import json
+import os
 
 # add tests folder (parent) to sys.path
 import sys
@@ -11,8 +11,7 @@ import pytest
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -66,7 +65,7 @@ async def update_metadata(context, url, dataset_name, data):
 
 async def test_recreate_dataset_with_same_name_fails(context, url, data_abc):
     """Tests that creating a dataset with the same name as an existing dataset fails."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Create another dataset with the same name.
         response = await context.request.post(
             f"{url}/api/v1/dataset/create", data={"name": dataset["name"]}
@@ -79,7 +78,7 @@ async def test_recreate_dataset_with_same_name_fails(context, url, data_abc):
 
 async def test_get_own_metadata(context, url, data_abc):
     """Tests that getting metadata of a dataset works (both public and private)."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # The dataset is private.
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
@@ -88,7 +87,7 @@ async def test_get_own_metadata(context, url, data_abc):
         metadata = await get_metadata(context, url, dataset["name"])
         assert metadata == dataset.get("extra_metadata")
         assert "policies" not in metadata
-        assert metadata == dataset['extra_metadata']
+        assert metadata == dataset["extra_metadata"]
 
         # Query the metadata with the owner_username parameter set to the dataset owner.
         get_metadata_response = await context.request.get(
@@ -105,7 +104,7 @@ async def test_get_own_metadata(context, url, data_abc):
         metadata = await get_metadata(context, url, dataset["name"])
         assert metadata == dataset.get("extra_metadata")
         assert "policies" not in metadata
-        assert dataset['extra_metadata'] == metadata
+        assert dataset["extra_metadata"] == metadata
 
         # Query the metadata with the owner_username parameter set to the dataset owner user_id.
         get_metadata_response = await context.request.get(
@@ -123,7 +122,7 @@ async def test_get_metadata_for_non_existent_dataset_fails(context, url):
         f"{url}/api/v1/dataset/metadata/some_dataset"
     )
     assert get_metadata_response.status == 404
-    
+
     # Get metadata for a non-existent dataset for a user.
     get_metadata_response = await context.request.get(
         f"{url}/api/v1/dataset/metadata/some_dataset?owner_username=developer"
@@ -133,7 +132,7 @@ async def test_get_metadata_for_non_existent_dataset_fails(context, url):
 
 async def test_get_metadata_created_by_different_user(context, url, data_abc):
     """Tests that getting metadata of a dataset created by a different user fails for private datasets."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -179,7 +178,7 @@ async def test_get_metadata_created_by_different_user(context, url, data_abc):
 
 async def test_update_metadata_own_dataset(context, url, data_abc):
     """Tests that updating metadata of a dataset works (both public and private) when the caller is the owner."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -221,7 +220,7 @@ async def test_update_metadata_own_dataset(context, url, data_abc):
 
 async def test_update_metadata_without_replace_all(context, url, data_abc):
     """Tests that updating metadata of a dataset works using replace_all set to False (Default)."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -373,7 +372,7 @@ async def test_update_metadata_without_replace_all(context, url, data_abc):
 
 async def test_update_metadata_with_replace_all(context, url, data_abc):
     """Tests that updating metadata of a dataset works using replace_all."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -518,7 +517,7 @@ async def test_update_metadata_with_replace_all_to_clear_all_metadata(
     context, url, data_abc
 ):
     """Tests updating metadata of a dataset works using replace_all to clear all metadata."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # Add some policy for the dataset.
         await create_policy(context, url, dataset["id"], SECRETS_POLICY, "test_policy")
 
@@ -574,7 +573,7 @@ async def test_update_metadata_for_non_existent_dataset_fails(context, url):
 
 async def test_update_metadata_created_by_different_user_fails(url, context, data_abc):
     """Tests that updating metadata of a dataset created by a different user fails."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         # A different user tries to update the metadata for the dataset.
         update_metadata_response = await context.request.put(
             f"{url}/api/v1/dataset/metadata/{dataset['name']}",
@@ -604,8 +603,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "benchmark must be a non-empty string"
-        in await update_metadata_response.text()
+        "benchmark must be a non-empty string" in await update_metadata_response.text()
     )
 
     # Update metadata with invalid benchmark type.
@@ -614,10 +612,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         data={"metadata": {"benchmark": 500}},
     )
     assert update_metadata_response.status == 400
-    assert (
-        "benchmark must be of type str"
-        in await update_metadata_response.text()
-    )
+    assert "benchmark must be of type str" in await update_metadata_response.text()
 
     # Update metadata with empy name.
     update_metadata_response = await context.request.put(
@@ -625,10 +620,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         data={"metadata": {"name": ""}},
     )
     assert update_metadata_response.status == 400
-    assert (
-        "name must be a non-empty string"
-        in await update_metadata_response.text()
-    )
+    assert "name must be a non-empty string" in await update_metadata_response.text()
 
     # Update metadata with invalid name type.
     update_metadata_response = await context.request.put(
@@ -636,10 +628,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
         data={"metadata": {"name": 5}},
     )
     assert update_metadata_response.status == 400
-    assert (
-        "name must be of type str"
-        in await update_metadata_response.text()
-    )
+    assert "name must be of type str" in await update_metadata_response.text()
 
     # Update metadata with invalid accuracy type.
     update_metadata_response = await context.request.put(
@@ -648,8 +637,7 @@ async def test_update_metadata_with_invalid_field_fails(context, url):
     )
     assert update_metadata_response.status == 400
     assert (
-        "accuracy must be of type int, float"
-        in await update_metadata_response.text()
+        "accuracy must be of type int, float" in await update_metadata_response.text()
     )
 
     # Update metadata with negative accuracy.
@@ -863,7 +851,7 @@ async def test_upload_dataset_validate_field_types(context, url, data_abc):
     ],
 )
 async def test_400_messages(context, url, data_abc, endpoint: str, valid: bool):
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         endpoint_formatted = endpoint.format(
             url=url,
             valid_user="developer",
@@ -912,7 +900,7 @@ async def test_create_empty_dataset_and_upload_traces(context, url, data_abc):
 
 async def test_upload_traces_fails_for_non_empty_dataset(context, url, data_abc):
     """Tests that uploading traces to a non-empty dataset fails."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         response = await context.request.post(
             f"{url}/api/v1/dataset/upload",
             multipart={
@@ -931,9 +919,11 @@ async def test_upload_traces_fails_for_non_empty_dataset(context, url, data_abc)
         )
 
 
-async def test_download_traces_annotated_is_empty_for_non_annotated_dataset(context, url, data_abc):
+async def test_download_traces_annotated_is_empty_for_non_annotated_dataset(
+    context, url, data_abc
+):
     """Tests that downloading annotated traces for a non-annotated dataset is empty."""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         response = await context.request.get(
             f"{url}/api/v1/dataset/byid/{dataset['id']}/download/annotated"
         )
@@ -941,14 +931,17 @@ async def test_download_traces_annotated_is_empty_for_non_annotated_dataset(cont
         content = await response.text()
         props = jsonl_properties(content)
         num_lines = props["num_lines"]
-        
+
         assert num_lines == 0, "Expected 0 trace lines"
+
 
 # same with data_with_annotations, but this time there should be one trace in the output
 # the data file contains two traces, but only one with annotations
-async def test_download_traces_annotated_has_one_trace(context, url, data_with_annotations):
+async def test_download_traces_annotated_has_one_trace(
+    context, url, data_with_annotations
+):
     """Tests that downloading annotated traces for a dataset with annotations has one trace."""
-    async with util.TemporaryExplorerDataset(url, context, data_with_annotations) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_with_annotations) as dataset:
         response = await context.request.get(
             f"{url}/api/v1/dataset/byid/{dataset['id']}/download/annotated"
         )
@@ -957,6 +950,7 @@ async def test_download_traces_annotated_has_one_trace(context, url, data_with_a
         props = jsonl_properties(content)
         num_lines = props["num_lines"]
         assert num_lines == 1, "Expected 1 trace line"
+
 
 def jsonl_properties(jsonl: str) -> dict:
     num_lines = 0
@@ -969,7 +963,5 @@ def jsonl_properties(jsonl: str) -> dict:
         # ignore the dataset metadata
         if "messages" in data.keys():
             num_lines += 1
-    
-    return {
-        "num_lines": num_lines
-    }
+
+    return {"num_lines": num_lines}

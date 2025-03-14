@@ -1,13 +1,19 @@
 from typing import Annotated
 from uuid import UUID
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from models.datasets_and_traces import Dataset, User, db, Annotation, Trace, SharedLinks
-from models.queries import save_user, user_to_json, dataset_to_json, annotation_to_json, trace_to_json
+from models.queries import (
+    save_user,
+    user_to_json,
+    dataset_to_json,
+    annotation_to_json,
+    trace_to_json,
+)
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from util.util import get_gravatar_hash
-from routes.apikeys import APIIdentity
+from routes.apikeys import APIIdentity, UserOrAPIIdentity
 
 user = FastAPI()
 
@@ -56,20 +62,27 @@ def signup(
         session.commit()
     return {"success": True}
 
+
 # to get the user identity for an API key, run
 # curl <INSTANCE_URL>/api/v1/user/identity -H "Authorization: Bearer <API_KEY>"
 @user.get("/identity")
-def identity(user_id: Annotated[UUID, Depends(APIIdentity)]):
+def identity(user_id: Annotated[UUID, Depends(UserOrAPIIdentity)]):
     user = user_by_id(user_id)
+
+    if user is None:
+        raise HTTPException(status_code=403, detail="not authorized")
+
     return {
         "username": user.username,
     }
 
+
 @user.get("/events")
 def events(
-    request: Request, user_id: Annotated[UUID | None, Depends(UserIdentity)], limit: int = 20
+    request: Request,
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    limit: int = 20,
 ):
-
     # events are:
     # - public dataset is created
     # - new comment on a trace

@@ -1,6 +1,5 @@
 import asyncio
 import os
-import time
 
 # add tests folder (parent) to sys.path
 import sys
@@ -15,7 +14,6 @@ import tempfile
 
 import util
 from pytest_lazy_fixtures import lf
-from util import *  # needed for pytest fixtures
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -197,8 +195,8 @@ async def test_create_empty_dataset_and_then_upload_file(
         await page.get_by_label("Upload").click()
 
     # verify that the traces are shown
+    await page.wait_for_selector("text=Run 0")
     await page.wait_for_selector("text=Run 1")
-    await page.wait_for_selector("text=Run 2")
     await screenshot(page)
 
     # delete dataset

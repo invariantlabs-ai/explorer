@@ -1,5 +1,6 @@
 """Tests for the push trace API via SDK."""
 
+import asyncio
 import os
 import sys
 import uuid
@@ -10,7 +11,7 @@ from invariant_sdk.types.push_traces import PushTracesResponse
 from playwright.async_api import expect
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -321,6 +322,69 @@ async def test_create_request_and_push_trace_while_creating_dataset(
 
     # Clean up the dataset created.
     dataset_id = trace_1["dataset"]
+    dataset_delete_response = await context.request.delete(
+        f"{url}/api/v1/dataset/byid/{dataset_id}"
+    )
+    await expect(dataset_delete_response).to_be_ok()
+
+
+async def test_push_multiple_traces_in_parallel_to_same_dataset(
+    context, url, async_invariant_client
+):
+    """Test that push_traces works correctly when we push multiple traces in parallel."""
+    dataset_name = "test_dataset" + str(uuid.uuid4())
+    number_requests = 50  # Number of traces to push in parallel
+
+    async def push_trace(i):
+        try:
+            response = await async_invariant_client.create_request_and_push_trace(
+                messages=[
+                    [
+                        {"role": "user", "content": f"request: {str(i)}"},
+                        {"role": "assistant", "content": f"response: {str(i)}"},
+                    ]
+                ],
+                dataset=dataset_name,
+            )
+            return response.id[0]
+        except Exception as _:
+            return None
+
+    # Run all tasks in parallel
+    trace_ids = await asyncio.gather(*[push_trace(i) for i in range(number_requests)])
+
+    trace_ids = [t for t in trace_ids if t is not None]
+    assert len(trace_ids) == number_requests, "Some push trace requests failed"
+
+    trace_indices = []
+    trace_names = []
+    trace_user_contents = []
+    trace_assistant_contents = []
+
+    dataset_id = None
+    for trace_id in trace_ids:
+        trace_response = await context.request.get(f"{url}/api/v1/trace/{trace_id}")
+        await expect(trace_response).to_be_ok()
+        trace = await trace_response.json()
+        trace_indices.append(trace["index"])
+        trace_names.append(trace["name"])
+        trace_user_contents.append(trace["messages"][0]["content"])
+        trace_assistant_contents.append(trace["messages"][1]["content"])
+        if dataset_id is None:
+            dataset_id = trace["dataset"]
+        else:
+            assert (
+                dataset_id == trace["dataset"]
+            ), "All traces should belong to same dataset"
+
+    assert set(trace_indices) == set(range(number_requests))
+    assert set(trace_names) == {f"Run {i}" for i in range(number_requests)}
+    assert set(trace_user_contents) == {f"request: {i}" for i in range(number_requests)}
+    assert set(trace_assistant_contents) == {
+        f"response: {i}" for i in range(number_requests)
+    }
+
+    # Clean up the dataset created.
     dataset_delete_response = await context.request.delete(
         f"{url}/api/v1/dataset/byid/{dataset_id}"
     )

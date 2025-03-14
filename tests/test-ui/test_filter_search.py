@@ -5,16 +5,15 @@ import sys
 import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import util
 from test_basic import trace_shown_in_sidebar
-from util import *  # needed for pytest fixtures
+from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
 
 
 async def test_navigate_with_search_query(context, url, data_code, screenshot):
     """Test that navigating to a dataset with a search query in the url works"""
-    async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query=foo")
         await page.locator("div.filter-container").wait_for(state="attached")
@@ -42,7 +41,7 @@ async def test_navigate_with_search_query_which_is_a_filter(
     context, url, data_code, search_query, filter_option_text, screenshot
 ):
     """Test that navigation to a dataset with a search query in the url that is a filter works"""
-    async with util.TemporaryExplorerDataset(url, context, data_code) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query={search_query}")
         await page.locator("div.filter-container").wait_for(state="attached")
@@ -72,7 +71,7 @@ async def test_navigate_with_search_query_which_is_a_filter(
 
 async def test_changing_filter_changes_search_query(context, url, data_abc, screenshot):
     """Test that changing a filter changes the search query"""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1")
         await page.locator("div.filter-container").wait_for(state="attached")
@@ -102,7 +101,7 @@ async def test_changing_filter_changes_search_query(context, url, data_abc, scre
 
 async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot):
     """Test that the is:annotated filter works and shows only annotated traces"""
-    async with util.TemporaryExplorerDataset(url, context, data_abc) as dataset:
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1")
         await page.locator("div.filter-container").wait_for(state="attached")
@@ -117,7 +116,12 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
 
         # add an annotation to Run 1
         await page.locator("div.plugin.code-highlighter").nth(1).click()
-        await page.locator("div.plugin.code-highlighter").nth(1).locator("textarea").fill("Annotation added here.")
+        await (
+            page.locator("div.plugin.code-highlighter")
+            .nth(1)
+            .locator("textarea")
+            .fill("Annotation added here.")
+        )
         await screenshot(page)
         await page.locator('button[aria-label="save-annotation"]').click()
         await screenshot(page)
