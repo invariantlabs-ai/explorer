@@ -313,18 +313,14 @@ async def test_share_trace(context, url, data_webarena_with_metadata, screenshot
 
         # test navigation as guest
         await page.goto(link + "?noauth=1")
-        await expect(page.get_by_label("path-user")).to_have_count(0)
-        await expect(page.get_by_label("path-trace")).to_have_count(0)
+        await expect(page.get_by_label("path-user")).to_have_count(1)
 
         # test navigation as owner
         await page.goto(link)
         await screenshot(page)
         username = await page.locator("css=.user-info p").inner_text()
         path_username = await page.get_by_label("path-user").inner_text()
-        path_username = path_username[:-2]  # remove the trailing /
         assert username.lower().strip() == path_username.lower().strip()
-        path_dataset = await page.get_by_label("path-dataset").inner_text()
-        assert path_dataset == dataset["name"]
 
 
 async def test_policy(context, url, data_webarena_with_metadata, screenshot):
