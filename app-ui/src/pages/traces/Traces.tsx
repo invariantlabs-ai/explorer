@@ -1856,10 +1856,7 @@ export function SingleTrace() {
   );
   const [showShareModal, setShowShareModal] = React.useState(false);
   // only set if we are showing a snippet trace (a trace without dataset)
-  const [snippetData, setSnippetData] = React.useState({
-    isSnippet: false,
-    user: null,
-  } as { isSnippet: boolean; user: string | null });
+  const [isSnippet, setIsSnippet] = React.useState(false);
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   // used to navigate to a different trace
@@ -1875,6 +1872,10 @@ export function SingleTrace() {
     sharedFetch(`/api/v1/trace/${props.traceId}`)
       .then((data) => {
         setTrace(data);
+        if (!data.dataset) {
+          // It is a snippet if the trace doesn't contain a dataset.
+          setIsSnippet(true);
+        }
       })
       .catch((e) => {
         console.error(e);
@@ -1884,26 +1885,6 @@ export function SingleTrace() {
         }
       });
   }, [props.traceId]);
-
-  // fetch dataset metadata
-  React.useEffect(() => {
-    if (!trace) {
-      return;
-    }
-
-    if (trace.dataset) {
-      // depending on permissions, this may not be available
-      sharedFetch(`/api/v1/dataset/byid/${trace?.dataset}`)
-        .then((data) => {
-          setDataset(data);
-        })
-        .catch((e) => {});
-    } else {
-      // otherwise use trace.user, if available and hide index
-      setDataset({ name: trace?.user || "" });
-      setSnippetData({ isSnippet: true, user: trace?.user || "" });
-    }
-  }, [trace]);
 
   // construct header depending on whether we are showing a dataset trace or a snippet trace
   let header = <></>;
@@ -1917,38 +1898,20 @@ export function SingleTrace() {
         </div>
       );
     }
-  } else if (!dataset) {
-    return (
-      <div className="empty">
-        <h3>Loading...</h3>
-      </div>
-    );
   }
-  header = snippetData.isSnippet ? (
+  header = isSnippet ? (
     <h1>
-      <Link aria-label="path-user" to={`/u/${snippetData.user}`}>
-        {snippetData.user}
+      <Link aria-label="path-user" to={`/u/${trace?.user}`}>
+        {trace?.user}
       </Link>
       <span className="traceid"># {props.traceId}</span>
       <Time className="time">{trace?.time_created || ""}</Time>
     </h1>
   ) : (
     <h1>
-      {dataset ? (
-        <>
-          <Link aria-label="path-user" to={`/u/${trace?.user}`}>
-            {trace?.user} /{" "}
-          </Link>
-          <Link
-            aria-label="path-dataset"
-            to={`/u/${trace?.user}/${dataset.name}/t`}
-          >
-            {dataset.name}
-          </Link>
-        </>
-      ) : (
-        ""
-      )}{" "}
+      <Link aria-label="path-user" to={`/u/${trace?.user}`}>
+        {trace?.user}
+      </Link>
       /{" "}
       <span className="traceid">
         {getFullDisplayName(trace)} {props.traceId}
