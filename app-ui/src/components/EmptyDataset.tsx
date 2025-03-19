@@ -141,6 +141,8 @@ export function EmptyDatasetInstructions(props: {
       <h3>
         To start using Invariant, you need to connect your agent and capture
         traces.
+        <br />
+        To generate a new Invariant API key, go <a href="/settings">here</a>.
       </h3>
       <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
     </div>
