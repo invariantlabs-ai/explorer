@@ -135,7 +135,7 @@ class AnalyzerTraceExporter:
                     and annotation.extra_metadata.get("source") == "analyzer-model"
                 ):
                     continue
-                if AnalyzerTraceExporter.is_annotation_for_analyzer(annotation.content):
+                if not AnalyzerTraceExporter.is_annotation_for_analyzer(annotation.content):
                     continue
                 content, severity = AnalyzerTraceExporter.get_content_severity(annotation.content)
                 samples_by_id[str(trace.id)].annotations.append(
