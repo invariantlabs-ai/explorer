@@ -289,12 +289,26 @@ function Layout(props: {
         <DeploymentInfo />
         <div className="spacer" />
         {!userInfo?.loggedIn && (
-          <button
-            className="inline"
-            onClick={() => (window.location.href = "/login")}
-          >
-            Sign In
-          </button>
+          <>
+            <a
+              href="https://explorer.invariantlabs.ai/docs/"
+              className="nav-link"
+            >
+              Documentation
+            </a>
+            <button
+              className="inline secondary"
+              onClick={() => (window.location.href = "/login")}
+            >
+              Log in
+            </button>
+            <button
+              className="inline primary"
+              onClick={() => (window.location.href = "/login")}
+            >
+              Sign up
+            </button>
+          </>
         )}
         <div
           ref={dropdownRef}

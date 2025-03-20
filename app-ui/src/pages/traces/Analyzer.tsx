@@ -84,7 +84,7 @@ function useIssues(analyzerOutput: any, storedOutput?: any) {
             } catch (e) {
               console.error(
                 "Failed to parse stored analyzer output:",
-                storedOutput[i],
+                storedOutput[i]
               );
             }
             break;
@@ -167,7 +167,7 @@ function createAnalysis(
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
-  setDebug?: (debug: any) => void,
+  setDebug?: (debug: any) => void
 ): AbortController {
   const abortController = new AbortController();
 
@@ -258,7 +258,7 @@ function createAnalysis(
         return;
       } else if (error.message.includes("Unauthorized")) {
         alert(
-          "Unauthorized: Please provide a valid API key to use an analysis model.",
+          "Unauthorized: Please provide a valid API key to use an analysis model."
         );
         return;
       } else {
@@ -413,7 +413,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
       "retriever": {"k" : 1}
     }
   }
-}` as string | undefined),
+}` as string | undefined)
   );
 
   const setAnalyzerConfig = (value: string | undefined) => {
@@ -443,7 +443,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
 
 export function clientAnalyzerConfig(configType: string) {
   return parseConfig(
-    localStorage.getItem("analyzerConfig-" + configType) || "{}",
+    localStorage.getItem("analyzerConfig-" + configType) || "{}"
   );
 }
 
@@ -466,7 +466,7 @@ export function AnalyzerSidebar(props: {
   onAnalyzeEvent?: BroadcastEvent;
 }) {
   const [abortController, setAbortController] = React.useState(
-    new AbortController(),
+    new AbortController()
   );
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -526,7 +526,7 @@ export function AnalyzerSidebar(props: {
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
-        props.analyzer.setDebug,
+        props.analyzer.setDebug
       );
       setAbortController(ctrl);
     } catch (error) {
@@ -617,7 +617,7 @@ export function AnalyzerSidebar(props: {
               key={props.traceId + "-" + "issue-" + i + "-" + output.content}
               issue={output}
             />
-          ),
+          )
         )}
       </div>
       {notYetRun && (
