@@ -13,6 +13,15 @@ export interface HighlightData {
   id?: string
 }
 
+/** A single annotation, with a source, content, address, and id. */
+export interface AnalyzerAnnotation {
+  source: "analyzer-model"; // Restricts `source` to only this value
+  content: any;
+  address: string;
+  severity: number | null;
+  id: string;
+}
+
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */
 export interface Highlight extends HighlightData {
   start: number;

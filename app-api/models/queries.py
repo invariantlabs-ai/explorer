@@ -339,7 +339,9 @@ def get_all_jobs(session: Session) -> List[DatasetJob]:
 
 # TODO: Fix typo in the function name
 def load_annotations(session: Session, by):
+    print(by, "by")
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
+    print(query_filter, "query_filter")
     return (
         session.query(Annotation, User)
         .filter(query_filter)
