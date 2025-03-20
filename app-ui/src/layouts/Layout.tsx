@@ -290,7 +290,7 @@ function Layout(props: {
         <div className="spacer" />
         {!userInfo?.loggedIn && (
           <>
-            <a href="/docs" className="nav-link">Documentation</a>
+            <a href="/docs" className="nav-link" style={{ marginRight: '15pt' }}>Documentation</a>
             <button
               className="inline secondary"
               onClick={() => (window.location.href = "/login")}
