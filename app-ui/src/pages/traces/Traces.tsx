@@ -2,7 +2,7 @@
  * Page components for displaying single and all dataset traces.
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BsBookmark,
   BsCaretDownFill,
@@ -296,7 +296,7 @@ class LightweightTraces {
 
   /** Returns the index of the first trace in the dataset */
   first(): number {
-    return Math.min(...this.indices());
+    return Math.min(...this.indices('index'));
   }
 
   /** Updates the trace at the given index with the new trace data (e.g. when loading the messages of a trace) */
@@ -307,11 +307,27 @@ class LightweightTraces {
   }
 
   /** Returns all non-null indices */
-  indices() {
+  indices(sortBy = 'index') {
     // returns all non-null indices
-    return Object.keys(this.data)
-      .map((i) => parseInt(i))
-      .sort((a, b) => a - b);
+    const indices = Object.keys(this.data).map((i) => parseInt(i));
+    
+    switch (sortBy) {
+      case 'newest':
+        return indices.sort((a, b) => {
+          const timeA = this.data[a]?.time_created || 0;
+          const timeB = this.data[b]?.time_created || 0;
+          return timeB - timeA;
+        });
+      case 'oldest':
+        return indices.sort((a, b) => {
+          const timeA = this.data[a]?.time_created || 0;
+          const timeB = this.data[b]?.time_created || 0;
+          return timeA - timeB;
+        });
+      case 'index':
+      default:
+        return indices.sort((a, b) => a - b);
+    }
   }
 
   /** Returns whether the given index is in the dataset */
@@ -326,7 +342,7 @@ class LightweightTraces {
 
   /** Returns the list of traces matching the predicate. */
   filter(predicate: (Trace) => boolean): Trace[] {
-    return this.indices()
+    return this.indices('index')
       .map((i) => this.data[i])
       .filter(predicate);
   }
@@ -596,6 +612,39 @@ function useSearch() {
   const [searchQuery, _setSearchQuery] = React.useState<string | null>(
     searchParams.get("query") || null
   );
+  const [traces, setTraces] = React.useState<LightweightTraces | null>(null);
+  const [selectedSort, setSelectedSort] = React.useState("index");
+
+  const sortOptions = [
+    { label: "By index", value: "index" },
+    { label: "Newest first", value: "newest" },
+    { label: "Oldest first", value: "oldest" },
+  ];
+
+  const sortTraces = (indices: number[]) => {
+    if (!traces) return indices;
+    
+    switch (selectedSort) {
+      case "newest":
+        return indices.sort((a, b) => {
+          const traceA = traces.get(a);
+          const traceB = traces.get(b);
+          if (!traceA || !traceB) return 0;
+          return new Date(traceB.time_created).getTime() - new Date(traceA.time_created).getTime();
+        });
+      case "oldest":
+        return indices.sort((a, b) => {
+          const traceA = traces.get(a);
+          const traceB = traces.get(b);
+          if (!traceA || !traceB) return 0;
+          return new Date(traceA.time_created).getTime() - new Date(traceB.time_created).getTime();
+        });
+      case "index":
+      default:
+        return indices.sort((a, b) => a - b);
+    }
+  };
+
   const [displayedIndices, setDisplayedIndices] =
     React.useState<DisplayedTracesT>({ all: { traces: [] } });
   const [highlightMappings, setHighlightMappings] = React.useState(
@@ -628,7 +677,14 @@ function useSearch() {
           ).length === 0
         ) {
           setHighlightMappings(data.mappings);
-          setDisplayedIndices(data.result);
+          
+          // Apply sorting to the result
+          const sortedResult = { ...data.result };
+          if (sortedResult.all && sortedResult.all.traces) {
+            sortedResult.all.traces = sortTraces(sortedResult.all.traces);
+          }
+          
+          setDisplayedIndices(sortedResult);
           // remove all queries that are older than this
           searchQueue.current = searchQueue.current.filter(
             (q) => q.date >= query.date
@@ -693,7 +749,7 @@ function useSearch() {
 
   useEffect(() => {
     dispatchSearch(searchQuery);
-  }, [searchQuery]);
+  }, [searchQuery, selectedSort]);
 
   return [
     displayedIndices,
@@ -703,6 +759,8 @@ function useSearch() {
     searchNow,
     searching,
     setHighlightMappings,
+    selectedSort,
+    setSelectedSort,
   ] as const;
 }
 
@@ -711,6 +769,7 @@ function useSearch() {
  *
  * Consists of a Sidebar with a list of traces and an Explorer component for viewing the currently selected trace.
  */
+
 export function Traces(props) {
   // extract user and dataset name from loader data (populated by site router)
   const { username, datasetname, traceIndex } = useLoaderData() as any;
@@ -724,7 +783,6 @@ export function Traces(props) {
   const [showShareModal, setShowShareModal] = React.useState(false);
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
-
   // view options
   const {
     viewOptions,
@@ -749,6 +807,8 @@ export function Traces(props) {
     searchNow,
     searching,
     setHighlightMappings,
+    selectedSort,
+    setSelectedSort,
   ] = useSearch();
 
   // tracks whether the current user owns the dataset/trace
@@ -959,6 +1019,8 @@ export function Traces(props) {
             setHighlightMappings={setHighlightMappings}
             datasetMetadata={dataset?.extra_metadata}
             fixedQuery={props.query}
+            selectedSort={selectedSort}
+            setSelectedSort={setSelectedSort}
           />
         )}
         {/* actual trace viewer */}
@@ -1181,6 +1243,8 @@ function Sidebar(props: {
   hierarchyPaths: Record<string, HierarchyPath>;
   setHighlightMappings: (value: any) => void;
   datasetMetadata: any;
+  selectedSort: string;
+  setSelectedSort: (value: string) => void;
   // whether the query can be edited
   fixedQuery?: boolean;
 }) {
@@ -1189,7 +1253,8 @@ function Sidebar(props: {
   const displayedIndices = props.displayedIndices;
   const hierarchyPaths = props.hierarchyPaths;
   const setHighlightMappings = props.setHighlightMappings;
-  const { username, datasetname, traces } = props;
+  const { username, datasetname, traces, selectedSort, setSelectedSort } = props;
+
   const [visible, setVisible] = React.useState(true);
   const [activeIndices, setActiveIndices] = React.useState<DisplayedTracesT>(
     {}
@@ -1220,6 +1285,14 @@ function Sidebar(props: {
   const filters = [
     { label: "Show annotated", value: "show-annotated-traces" },
     { label: "Group by Analysis Result", value: "group-by-analysis-result" },
+    { label: "Last 24 hours", value: "last-24h" },
+    { label: "Last week", value: "last-week" },
+  ];
+
+  const sortOptions = [
+    { label: "By index", value: "index" },
+    { label: "Newest first", value: "newest" },
+    { label: "Oldest first", value: "oldest" },
   ];
 
   useEffect(() => {
@@ -1303,6 +1376,30 @@ function Sidebar(props: {
     }
   };
 
+  const sortTraces = (indices: number[]) => {
+    if (!traces) return indices;
+    
+    switch (selectedSort) {
+      case "newest":
+        return indices.sort((a, b) => {
+          const traceA = traces.get(a);
+          const traceB = traces.get(b);
+          if (!traceA || !traceB) return 0;
+          return new Date(traceB.time_created).getTime() - new Date(traceA.time_created).getTime();
+        });
+      case "oldest":
+        return indices.sort((a, b) => {
+          const traceA = traces.get(a);
+          const traceB = traces.get(b);
+          if (!traceA || !traceB) return 0;
+          return new Date(traceA.time_created).getTime() - new Date(traceB.time_created).getTime();
+        });
+      case "index":
+      default:
+        return indices.sort((a, b) => sortTraces([a, b])[0] === a ? -1 : 1);
+    }
+  };
+
   const handleFilterSelect = (e, filter) => {
     // If the same filter is selected again, deselect it.
     if (selectedFilter === filter.value) {
@@ -1318,6 +1415,12 @@ function Sidebar(props: {
       onTriggerAnnotatedGrouping(e);
     } else if (filter.value === "group-by-analysis-result") {
       onTriggerInvariantGrouping(e);
+    } else if (filter.value === "last-24h") {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      setSearchQuery(`meta:time_created>=${oneDayAgo}`);
+    } else if (filter.value === "last-week") {
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      setSearchQuery(`meta:time_created>=${oneWeekAgo}`);
     }
     if (filterRef.current) filterRef.current.open = false;
   };
@@ -1406,9 +1509,7 @@ function Sidebar(props: {
             />
           );
 
-          const indices = (activeIndices[key].traces || []).sort((a, b) =>
-            compareTraces(traces.get(a), traces.get(b))
-          );
+          const indices = sortTraces(activeIndices[key].traces || []);
           indices.forEach((index) => {
             const trace = traces.get(index) || null;
             const path =
@@ -1442,7 +1543,7 @@ function Sidebar(props: {
             if (path.path.length === 0) return; // skip empty paths
             const indices = path.indices
               .filter((index) => activeIndices[key].traces.includes(index))
-              .sort((a, b) => a - b);
+              .sort((a, b) => sortTraces([a, b])[0] === a ? -1 : 1);
             if (indices.length === 0) return; // skip empty paths
             const toggleVisibility = () => {
               setHierarchyCollapsed({
@@ -1487,7 +1588,7 @@ function Sidebar(props: {
           if (hierarchyPaths[""]?.indices) {
             const indices = hierarchyPaths[""].indices
               .filter((index) => activeIndices[key].traces.includes(index))
-              .sort((a, b) => a - b);
+              .sort((a, b) => sortTraces([a, b])[0] === a ? -1 : 1);
             let first = true;
             indices.forEach((index) => {
               const trace = traces.get(index) || null;
@@ -1552,6 +1653,30 @@ function Sidebar(props: {
                   >
                     {filter.label}{" "}
                     {selectedFilter === filter.value && <BsCheck2 />}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <details className="filter-dropdown">
+              <summary className="filter-button" aria-label="sort-dropdown">
+                Sort
+                <span className="dropdown-icon">▼</span>
+              </summary>
+              <div className="filter-options">
+                {sortOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className={
+                      "filter-option" +
+                      (selectedSort === option.value
+                        ? " selected-filter-option"
+                        : "")
+                    }
+                    onClick={() => setSelectedSort(option.value)}
+                    aria-label={option.value + "-sort"}
+                  >
+                    {option.label}{" "}
+                    {selectedSort === option.value && <BsCheck2 />}
                   </button>
                 ))}
               </div>
