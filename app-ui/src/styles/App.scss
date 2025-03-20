@@ -247,9 +247,25 @@ header.top {
   }
 
   button.inline {
-    margin-right: 3pt;
-    height: 32pt;
+    margin-right: 8pt;
+    height: 25pt;
     border-radius: 6pt;
+
+    &:last-of-type {
+      margin-right: -10pt;
+    }
+  }
+
+  .nav-link {
+    font-size: 10pt;
+    text-decoration: none;
+    opacity: 0.8;
+    color: $text-color;
+    margin-right: 10pt;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 
   .user-info {
