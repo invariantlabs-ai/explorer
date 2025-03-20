@@ -651,13 +651,15 @@ def user_to_json(user: User):
     }
 
 
-def dataset_to_json(dataset, user=None, **kwargs):
+def dataset_to_json(dataset, user=None, latest_trace_time=None, **kwargs):
     out = {
         "id": dataset.id,
         "name": dataset.name,
         "extra_metadata": dataset.extra_metadata,
         "is_public": dataset.is_public,
         "user_id": dataset.user_id,
+        "time_created": dataset.time_created,
+        "latest_trace_time": latest_trace_time if latest_trace_time is not None else dataset.time_created
     }
     out = {**out, **kwargs}
     if user:
