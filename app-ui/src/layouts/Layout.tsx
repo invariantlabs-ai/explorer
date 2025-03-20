@@ -304,7 +304,7 @@ function Layout(props: {
             </button>
             <button
               className="inline primary"
-              onClick={() => (window.location.href = "/signup")}
+              onClick={() => (window.location.href = "/login")}
             >
               Sign up
             </button>
