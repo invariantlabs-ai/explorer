@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Dict, List
 from uuid import UUID
 from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 
 import httpx
 
@@ -23,7 +24,7 @@ from models.queries import (
     DBJSONEncoder,
     AnalyzerTraceExporter,
 )
-from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
+from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest, Annotation as AnalyzerAnnotation
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
@@ -240,6 +241,20 @@ async def annotate_trace(
         return annotation_to_json(annotation)
 
 
+def annotation_from_chunk(chunk: str) -> AnalyzerAnnotation:
+    """
+    Parse an annotation from a chunk of text.
+    """
+    if not chunk.startswith("data:"):
+        raise HTTPException(
+            status_code=500, detail=f"Trying to parse a non-data chunk: {chunk}"
+        )
+    try:
+        return AnalyzerAnnotation.model_validate_json(chunk[6:])
+    except ValidationError:
+        return None
+
+
 @trace.post("/{id}/analysis")
 async def analyze_trace(
     id: str,
@@ -258,6 +273,9 @@ async def analyze_trace(
             session=session,
             input_trace_id=id,
         )
+        # delete existing annotations
+        _ = await replace_annotations(session, id, user_id, "analyzer-model", [],)
+
     sar = SingleAnalysisRequest(
         input=input_sample[0].trace,
         annotated_samples=annotated_samples,
@@ -273,7 +291,26 @@ async def analyze_trace(
                     headers={"Authorization": f"Bearer {analysis_request.apikey}"},
                 ) as streaming_response:
                 async for chunk in streaming_response.aiter_text():
-                    yield chunk
+                    annotation = annotation_from_chunk(chunk)
+                    if isinstance(annotation, AnalyzerAnnotation):
+                        with Session(db()) as session:
+                            print("new_annotation", {
+                                "content": annotation.content,
+                                "location": annotation.location,
+                                "severity": annotation.severity,
+                            })
+                            new_annotation = Annotation(
+                                trace_id=UUID(id),
+                                user_id=user_id,
+                                address=annotation.location,
+                                content=annotation.content,
+                                extra_metadata= {"source": "analyzer-model", "severity": annotation.severity},
+                            )
+                            session.add(new_annotation)
+                            session.commit()
+                        yield "data: update\n\n"
+                    else:
+                        yield chunk
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 async def replace_annotations(
