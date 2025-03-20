@@ -23,6 +23,7 @@ from models.analyzer_model import JobStatus, JobResponseUnion, JobResponseParser
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
+from util.clients.analysis_client import AnalysisClient
 
 from routes.trace import replace_annotations
 
@@ -44,48 +45,6 @@ def on_job_result(job_type: str):
         return f
 
     return decorator
-
-
-class AnalysisClient:
-    """API client for the analysis model service."""
-
-    def __init__(self, base_url: str, apikey: Optional[str] = None) -> None:
-        headers = {"Authorization": f"Bearer {apikey}"} if apikey else {}
-        self.session = aiohttp.ClientSession(base_url=base_url, headers=headers)
-
-    async def status(self, job_id: str) -> JobResponseUnion:
-        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
-            resp.raise_for_status()
-            return JobResponseParser.model_validate(await resp.json()).root
-
-    async def cancel(self, job_id: str) -> Optional[Dict[str, Any]]:
-        async with self.session.put(f"/api/v1/analysis/job/{job_id}/cancel") as resp:
-            resp.raise_for_status()
-            return await resp.json() if resp.content_length else None
-
-    async def delete(self, job_id: str) -> Optional[Dict[str, Any]]:
-        async with self.session.delete(f"/api/v1/analysis/job/{job_id}") as resp:
-            resp.raise_for_status()
-            return await resp.json() if resp.content_length else None
-
-    async def queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        async with self.session.post("/api/v1/analysis/job", json=payload) as resp:
-            resp.raise_for_status()
-            return await resp.json()
-
-    async def jobs(self) -> List[Dict[str, Any]]:
-        async with self.session.get("/api/v1/analysis/job") as resp:
-            resp.raise_for_status()
-            return await resp.json()
-
-    async def close(self) -> None:
-        await self.session.close()
-
-    async def __aenter__(self) -> "AnalysisClient":
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.close()
 
 
 # last job status check

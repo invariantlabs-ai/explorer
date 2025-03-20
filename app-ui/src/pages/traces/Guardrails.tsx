@@ -19,12 +19,21 @@ import {
   BsTerminal,
   BsTrash,
   BsX,
+  BsLightningCharge,
 } from "react-icons/bs";
 import { Modal } from "../../components/Modal";
 import { Link } from "react-router-dom";
 import "./Guardrails.scss";
 import { Tooltip } from "react-tooltip";
 import { Traces } from "./Traces";
+
+// Define interface for policy generation request
+interface PolicyGenerationRequest {
+  problem_description: string;
+  traces: any[];
+  dataset_id: string;
+  config?: any;     // Optional additional configuration
+}
 
 const SUGGETSIONS_ENABLED = false;
 const GUARDRAIL_EVALUATION_ENABLED = false;
@@ -369,6 +378,188 @@ function MutatePolicyModalContent(props) {
   );
 }
 
+/**
+ * Component for generating policies from problem clusters
+ */
+function PolicyGenerationModalContent(props) {
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [selectedCluster, setSelectedCluster] = React.useState("");
+  const [generatedPolicy, setGeneratedPolicy] = React.useState("");
+  const [planning, setPlanning] = React.useState("");
+  const [detectionResults, setDetectionResults] = React.useState([]);
+
+  // Get clusters from the dataset's analysis report, if available
+  const analysisReport = props.dataset.extra_metadata?.analysis_report
+    ? JSON.parse(props.dataset.extra_metadata.analysis_report)
+    : null;
+
+  const clusters = analysisReport?.clustering || [];
+
+  const generatePolicy = async () => {
+    if (!selectedCluster) {
+      setError("Please select a problem cluster");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Find the selected cluster
+    const cluster = clusters.find(c => c.name === selectedCluster);
+    if (!cluster) {
+      setError("Selected cluster not found");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Gather sample traces for this cluster
+      const traceIds = cluster.issues_indexes.map(idx => idx[0]);
+      // Limit to 5 unique trace IDs
+      const uniqueTraceIds = [...new Set(traceIds)].slice(0, 5);
+
+      // Fetch the traces
+      const tracePromises = uniqueTraceIds.map(id =>
+        fetch(`/api/v1/trace/${id}`).then(res => res.json())
+      );
+      const traces = await Promise.all(tracePromises);
+
+      // Build a properly typed request payload
+      const requestPayload: PolicyGenerationRequest = {
+        problem_description: selectedCluster,
+        traces: traces,
+        dataset_id: props.dataset.id,
+      };
+
+      // Make the policy generation request
+      const response = await fetch("/api/v1/trace/generate-policy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.detail || "Failed to generate policy");
+        setLoading(false);
+        return;
+      }
+
+      // Update state with the generated policy
+      setGeneratedPolicy(data.policy_code);
+      setPlanning(data.planning || "");
+      setDetectionResults(data.detection_results || []);
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error generating policy:", err);
+      setError("An error occurred while generating the policy");
+      setLoading(false);
+    }
+  };
+
+  const createGuardrailFromPolicy = () => {
+    // Pre-fill the policy creation modal with the generated policy
+    props.onCreateWithPolicy(generatedPolicy, selectedCluster);
+  };
+
+  return (
+    <div className="modal-content policy-generator-form">
+      <header>
+        <b>
+          <BsLightningCharge /> Generate Guardrail from Problem Cluster
+          {error && <span className="error">Error: {error}</span>}
+        </b>
+        <div className="spacer" />
+        <button className="button inline" onClick={props.onClose}>
+          Cancel
+        </button>
+      </header>
+      <div className="main">
+        <div className="collapsable" style={{ width: "100%" }}>
+          <h3>Select Problem Cluster</h3>
+          <select
+            value={selectedCluster}
+            onChange={(e) => setSelectedCluster(e.target.value)}
+            className="cluster-select"
+            disabled={loading || clusters.length === 0}
+          >
+            <option value="">Select a cluster...</option>
+            {clusters.map((cluster) => (
+              <option key={cluster.name} value={cluster.name}>
+                {cluster.name}
+              </option>
+            ))}
+          </select>
+
+          {clusters.length === 0 && (
+            <div className="info-message">
+              No problem clusters found. Run analysis on your dataset first.
+            </div>
+          )}
+
+          <div className="action-buttons">
+            <button
+              className="primary"
+              onClick={generatePolicy}
+              disabled={loading || !selectedCluster}
+            >
+              {loading ? "Generating..." : "Generate Policy"}
+            </button>
+          </div>
+
+          {generatedPolicy && (
+            <>
+              <h3>Generated Policy</h3>
+              <div className="editor-container">
+                <Editor
+                  width="100%"
+                  className="policy-editor"
+                  defaultLanguage="python"
+                  value={generatedPolicy}
+                  options={{
+                    fontSize: 14,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    lineNumbers: "on",
+                    wordWrap: "on",
+                    wrappingIndent: "same",
+                    readOnly: true,
+                  }}
+                  theme="vs-light"
+                />
+              </div>
+
+              {planning && (
+                <>
+                  <h3>Planning Information</h3>
+                  <div className="planning-info">
+                    <pre>{planning}</pre>
+                  </div>
+                </>
+              )}
+
+              <div className="action-buttons">
+                <button
+                  className="primary"
+                  onClick={createGuardrailFromPolicy}
+                >
+                  Create Guardrail from Policy
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LabelSelect(props: {
   value: string;
   options: {
@@ -426,6 +617,14 @@ export function Guardrails(props: {
   // tracks the policy to be updated.
   const [selectedPolicyForUpdation, setSelectedPolicyForUpdation] =
     React.useState(null);
+  // tracks whether the policy generation modal is open
+  const [showPolicyGenerationModal, setShowPolicyGenerationModal] =
+    React.useState(false);
+  // tracks pre-filled policy code for new policy creation
+  const [prefillPolicyCode, setPrefillPolicyCode] = React.useState("");
+  // tracks pre-filled policy name for new policy creation
+  const [prefillPolicyName, setPrefillPolicyName] = React.useState("");
+
   const dataset = props.dataset;
   const datasetLoader = props.datasetLoader;
 
@@ -434,8 +633,18 @@ export function Guardrails(props: {
     ? dataset.extra_metadata.policies
     : [];
 
+  // check if dataset has analysis report
+  const hasAnalysisReport = !!dataset.extra_metadata?.analysis_report;
+
   // sort them by name
   guadrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
+
+  const handleCreateWithPolicy = (policyCode, clusterName) => {
+    setPrefillPolicyCode(policyCode);
+    setPrefillPolicyName(`Guardrail for ${clusterName}`);
+    setShowPolicyGenerationModal(false);
+    setShowCreatePolicyModal(true);
+  };
 
   return (
     <div className="panel">
@@ -443,18 +652,45 @@ export function Guardrails(props: {
       {showCreatePolicyModal && (
         <SidepaneModal
           title="Create Policy"
-          onClose={() => setShowCreatePolicyModal(false)}
+          onClose={() => {
+            setShowCreatePolicyModal(false);
+            setPrefillPolicyCode("");
+            setPrefillPolicyName("");
+          }}
           hasWindowControls
         >
           <MutatePolicyModalContent
             dataset={props.dataset}
             datasetLoadingError={props.datasetLoadingError}
             dataset_id={dataset.id}
-            policy={null}
+            policy={prefillPolicyCode ? {
+              name: prefillPolicyName,
+              content: prefillPolicyCode,
+              action: "log",
+              enabled: true
+            } : null}
             action="create"
-            onClose={() => setShowCreatePolicyModal(false)}
+            onClose={() => {
+              setShowCreatePolicyModal(false);
+              setPrefillPolicyCode("");
+              setPrefillPolicyName("");
+            }}
             onSuccess={() => datasetLoader.refresh()}
           ></MutatePolicyModalContent>
+        </SidepaneModal>
+      )}
+      {/* policy generation modal */}
+      {showPolicyGenerationModal && (
+        <SidepaneModal
+          title="Generate Policy"
+          onClose={() => setShowPolicyGenerationModal(false)}
+          hasWindowControls
+        >
+          <PolicyGenerationModalContent
+            dataset={props.dataset}
+            onClose={() => setShowPolicyGenerationModal(false)}
+            onCreateWithPolicy={handleCreateWithPolicy}
+          ></PolicyGenerationModalContent>
         </SidepaneModal>
       )}
       {/* delete modal */}
@@ -502,6 +738,16 @@ export function Guardrails(props: {
           <span> </span>
         </h1>
         <div className="spacer" />
+        {hasAnalysisReport && (
+          <button
+            aria-label="generate guardrail from problem"
+            className="button inline generate-guardrail-from-problem"
+            onClick={() => setShowPolicyGenerationModal(true)}
+          >
+            <BsLightningCharge />
+            Generate from Problem
+          </button>
+        )}
         <button
           aria-label="create guardrail"
           className="button primary inline create-guardrail"

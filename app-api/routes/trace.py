@@ -7,11 +7,12 @@ from uuid import UUID
 from fastapi.responses import StreamingResponse
 
 import httpx
+import aiohttp
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from logging_config import get_logger
-from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
+from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, DatasetJob, db
 from models.queries import (
     annotation_to_json,
     has_link_sharing,
@@ -35,6 +36,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from util.util import delete_images, parse_and_update_messages
+from util.clients.analysis_client import AnalysisClient
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -348,6 +350,59 @@ async def update_annotations(
         raise HTTPException(
             status_code=500, detail="An error occurred while updating annotations"
         )
+
+
+@trace.post("/generate-policy")
+async def generate_policy(
+    request: Request,
+    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
+):
+    """
+    Generate a policy based on a problem description and traces.
+
+    This endpoint forwards the request to the trace analyzer service and returns the response.
+    The traces should exhibit the problem described in the problem_description.
+    """
+    try:
+        payload = await request.json()
+
+        # Verify input
+        if not payload.get("problem_description"):
+            raise ValueError("Problem description is required")
+
+        if not isinstance(payload.get("traces"), list) or len(payload.get("traces", [])) == 0:
+            raise ValueError("Traces must be a non-empty list")
+
+        dataset_id = payload.get("dataset_id")
+        if not dataset_id:
+            raise ValueError("Dataset ID is required")
+
+        # Load the dataset
+        with Session(db()) as session:
+            dataset = load_dataset(session, dataset_id, user_id)
+
+            # Initialize API config variable
+            api_config = {"apiurl": "http://host.docker.internal:8010", "apikey": "test"}
+
+            # Forward the request to the trace analyzer service
+            logger.info(f"Sending policy generation request to: {api_config['apiurl']}")
+            async with AnalysisClient(api_config["apiurl"], api_config.get("apikey")) as client:
+                response = await client.generate_policy({
+                    "problem_description": payload.get("problem_description"),
+                    "traces": payload.get("traces"),
+                    "config": payload.get("config")
+                })
+
+            return response
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except aiohttp.ClientResponseError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+    except Exception as e:
+        import traceback
+        logger.error(f"Error generating policy: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 # get all annotations of a trace

@@ -534,3 +534,95 @@ button.create-guardrail {
   opacity: 1;
   height: 30pt;
 }
+
+// Policy Generator Styles
+.policy-generator-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .cluster-select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .api-config-form {
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+
+    .form-group {
+      margin-bottom: 12px;
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+
+        &:focus {
+          border-color: #007bff;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+      }
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin: 16px 0;
+    gap: 8px;
+  }
+
+  .info-message {
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #6c757d;
+    margin: 16px 0;
+    color: #495057;
+  }
+
+  .planning-info {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+  }
+
+  header .error {
+    margin-left: 16px;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: normal;
+  }
+}
+
+.generate-guardrail-from-problem {
+  margin-right: 8px;
+}

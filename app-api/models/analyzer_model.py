@@ -1,5 +1,6 @@
 from enum import Enum
 from uuid import UUID
+from typing import Literal, Optional, List, Any
 
 from pydantic import BaseModel, RootModel, Field
 from enum import Enum
@@ -62,7 +63,7 @@ class ContaminationPolicyDefault(Enum):
     ALL = "all"
 
 
-ContaminationPolicy = ContaminationPolicyDefault | int    
+ContaminationPolicy = ContaminationPolicyDefault | int
 
 
 class JobRequest(BaseModel):
@@ -151,3 +152,41 @@ class AnalysisRequest(BaseModel):
 
     # analysis arguments
     options: AnalysisRequestOptions
+
+
+class TraceAnalyzerConfig(BaseModel):
+    """Configuration for the trace analyzer."""
+    # Add configuration parameters as needed
+
+    @classmethod
+    def from_settings(cls):
+        return cls()
+
+
+class DetectionResult(BaseModel):
+    """Result of policy detection on a trace."""
+    trace_id: str
+    detected: bool
+    explanation: Optional[str] = None
+
+
+class PolicyGenerationRequest(BaseModel):
+    """Request model for policy generation."""
+    problem_description: str = Field(..., description="Description of the problem class to detect")
+    traces: List[Any] = Field(..., description="List of traces exhibiting the problem")
+    config: Optional[TraceAnalyzerConfig] = Field(
+        default_factory=TraceAnalyzerConfig.from_settings,
+        description="Configuration for the trace analyzer"
+    )
+
+
+class PolicyGenerationResponse(BaseModel):
+    """Response model for policy generation."""
+    success: bool = Field(..., description="Whether the policy generation was successful")
+    policy_code: str = Field(..., description="The generated policy code")
+    planning: Optional[str] = Field(None, description="Planning information from the LLM")
+    detection_results: List[DetectionResult] = Field(
+        default_factory=list,
+        description="Detection results for each trace"
+    )
+    error_message: Optional[str] = Field(None, description="Error message if policy generation failed")
