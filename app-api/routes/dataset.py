@@ -32,6 +32,7 @@ from models.datasets_and_traces import (
     User,
     db,
 )
+from sqlalchemy import and_, func
 
 from models.importers import import_jsonl
 from models.queries import (
@@ -617,24 +618,31 @@ def get_traces(
             traces = traces.filter(Trace.index.in_(indices))
 
         # with join, count number of annotations per trace
-        traces = (
-            traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
-            # only count line annotations here (i.e. user annotations), also allow NULL in the annotation column
-            # .filter((Annotation.address.like("%:L%") | (Annotation.address.is_(None))))
-            .group_by(Trace.id)
-            .add_columns(
-                Trace.name,
-                Trace.hierarchy_path,
-                Trace.id,
-                Trace.index,
-                Trace.extra_metadata,
-                func.count(Annotation.id).label("num_annotations"),
-                func.count(Annotation.id)
-                .filter(Annotation.address.like("%:L%"))
-                .label("num_line_annotations"),
-            )
-        )
 
+        try:
+            traces = (
+                traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
+                .group_by(Trace.id)
+                .add_columns(
+                    Trace.name,
+                    Trace.hierarchy_path,
+                    Trace.id,
+                    Trace.index,
+                    Trace.extra_metadata,
+                    func.count(Annotation.id).label("num_annotations"),
+                    func.count(Annotation.id)
+                    .filter(
+                        ~func.coalesce(
+                            Annotation.extra_metadata.op("->>")("source"), ""
+                        ).in_(["analyzer-model", "analyzer", "test-assertion", "test-assertion-passed", "test-expectation", "test-expectation-passed"])
+                    )
+                    .label("num_line_annotations"),
+                )
+            )
+        except Exception as e:
+            import traceback
+            print("error", e, flush=True)
+            traceback.print_exception()
         if limit is not None:
             traces = traces.limit(int(limit))
         if offset is not None:
@@ -696,7 +704,6 @@ async def download_traces_as_analyzer_input(
     Download the dataset in JSONL format.
     """
     with Session(db()) as session:
-        print("akuwerwergdf")
         # Check if the user has access to the dataset
         try:
             id = UUID(id)
@@ -708,7 +715,6 @@ async def download_traces_as_analyzer_input(
         if dataset.user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
-        print("there")
         user = session.query(User).filter(User.id == dataset.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")

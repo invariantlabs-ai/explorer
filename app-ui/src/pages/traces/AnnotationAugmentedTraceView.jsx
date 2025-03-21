@@ -128,6 +128,9 @@ export function AnnotationAugmentedTraceView(props) {
   // top-level annotations (e.g. global errors, assertions)
   const [top_level_annotations, setTopLevelAnnotations] = useState([]);
 
+  // top-level annotations (e.g. global errors, assertions)
+  const [analyzer_annotations, setAnalyzerAnnotations] = useState([]);
+
   // Callback functions to update annotations count on the Sidebad.
   const { onAnnotationCreate, onAnnotationDelete } = props;
 
@@ -184,56 +187,13 @@ export function AnnotationAugmentedTraceView(props) {
     analyzer.reset();
   }, [activeTraceId]);
 
-  // whenever the analyzer finishes, store the result as an annotation
-  useEffect(() => {
-    // do not store anything if the analyzer is not set
-    if (!analyzer) return;
-    // do not store anything yet, if the analyzer is still running
-    if (analyzer.running) return;
-    // only store the analyzer output if the user owns the trace
-    if (!props.isUserOwned) return;
-    if (analyzer.output) {
-      // store the analyzer output in the backend (as an annotation)
-      let analyzer_output = JSON.stringify(analyzer.output);
-
-      // make sure we don't push the same result twice
-      if (analyzer_output == lastPushedAnalyzerResult) return;
-      setLastPushedAnalyzerResult(analyzer_output);
-
-      fetch("/api/v1/trace/" + activeTraceId + "/annotations/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          source: "analyzer-model",
-          annotations: [
-            {
-              content: analyzer_output,
-              address: "<root>",
-              extra_metadata: {
-                source: "analyzer-model",
-              },
-            },
-          ],
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          annotator.refresh();
-        })
-        .catch((error) => console.error(error));
-    }
-  }, [analyzer, analyzer.running, annotator, activeTraceId, props.isUserOwned]);
-
   // whenever annotations change, update mappings
   useEffect(() => {
-    let { highlights, errors, filtered_annotations, top_level_annotations } =
+    let { highlights, errors, filtered_annotations, top_level_annotations, analyzer_annotations } =
       AnnotationsParser.parse_annotations(
         !props.hideAnnotations ? annotations : [],
         props.mappings
       );
-
     setHighlights({
       highlights: HighlightedJSON.from_entries(highlights),
       traceId: activeTraceId,
@@ -241,6 +201,7 @@ export function AnnotationAugmentedTraceView(props) {
     setErrors(errors);
     setFilteredAnnotations(filtered_annotations);
     setTopLevelAnnotations(top_level_annotations);
+    setAnalyzerAnnotations(analyzer_annotations);
   }, [annotations, props.mappings]);
 
   // filter to hide analyzer messages in annotation threads
@@ -446,9 +407,7 @@ export function AnnotationAugmentedTraceView(props) {
                   setAnalyzerOpen={setAnalyzerOpen}
                   output={analyzer.output}
                   running={analyzer.running}
-                  storedOutput={top_level_annotations.filter(
-                    (a) => a.source == "analyzer-model"
-                  )}
+                  annotations={analyzer_annotations}
                   onRunAnalyzer={onRunAnalyzerEvent}
                 />
               )}
@@ -465,9 +424,7 @@ export function AnnotationAugmentedTraceView(props) {
             analyzer={analyzer}
             running={analyzer.running}
             debugInfo={analyzer.debugInfo}
-            storedOutput={top_level_annotations.filter(
-              (a) => a.source == "analyzer-model"
-            )}
+            annotations={analyzer_annotations}
             traceId={activeTraceId}
             datasetId={props.datasetId}
             username={props.username}
@@ -476,6 +433,7 @@ export function AnnotationAugmentedTraceView(props) {
             }
             dataset={props.dataset}
             onAnalyzeEvent={onRunAnalyzerEvent}
+            onAnnotationChange={() => annotator.refresh()}
           />
         )}
       </div>
@@ -590,6 +548,12 @@ function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, props.traceId);
+  // filter out analyzer annotations
+  for (let address in annotations) {
+    annotations[address] = annotations[address].filter(
+      (a) => a.extra_metadata?.source !== "analyzer-model"
+    );
+  }
   const { onAnnotationCreate, onAnnotationDelete } = props;
   let threadAnnotations = (annotations || {})[props.address] || [];
 
