@@ -319,7 +319,6 @@ export function AnnotationAugmentedTraceView(props) {
         !props.hideAnnotations ? annotations : [],
         props.mappings
       );
-
     setHighlights({
       highlights: HighlightedJSON.from_entries(highlights),
       traceId: activeTraceId,
@@ -502,9 +501,7 @@ export function AnnotationAugmentedTraceView(props) {
                   setAnalyzerOpen={setAnalyzerOpen}
                   output={analyzer.output}
                   running={analyzer.running}
-                  storedOutput={top_level_annotations.filter(
-                    (a) => a.source == "analyzer-model"
-                  )}
+                  annotations={analyzer_annotations}
                   onRunAnalyzer={onRunAnalyzerEvent}
                 />
               )}
@@ -645,6 +642,12 @@ function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
   const [annotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, props.traceId);
+  // filter out analyzer annotations
+  for (let address in annotations) {
+    annotations[address] = annotations[address].filter(
+      (a) => a.extra_metadata?.source !== "analyzer-model"
+    );
+  }
   const { onAnnotationCreate, onAnnotationDelete } = props;
   let threadAnnotations = (annotations || {})[props.address] || [];
 

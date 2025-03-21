@@ -32,6 +32,7 @@ from models.datasets_and_traces import (
     User,
     db,
 )
+from sqlalchemy import and_, func
 
 from models.importers import import_jsonl
 from models.queries import (
@@ -635,24 +636,31 @@ def get_traces(
             traces = traces.filter(Trace.index.in_(indices))
 
         # with join, count number of annotations per trace
-        traces = (
-            traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
-            # only count line annotations here (i.e. user annotations), also allow NULL in the annotation column
-            # .filter((Annotation.address.like("%:L%") | (Annotation.address.is_(None))))
-            .group_by(Trace.id)
-            .add_columns(
-                Trace.name,
-                Trace.hierarchy_path,
-                Trace.id,
-                Trace.index,
-                Trace.extra_metadata,
-                func.count(Annotation.id).label("num_annotations"),
-                func.count(Annotation.id)
-                .filter(Annotation.address.like("%:L%"))
-                .label("num_line_annotations"),
-            )
-        )
 
+        try:
+            traces = (
+                traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
+                .group_by(Trace.id)
+                .add_columns(
+                    Trace.name,
+                    Trace.hierarchy_path,
+                    Trace.id,
+                    Trace.index,
+                    Trace.extra_metadata,
+                    func.count(Annotation.id).label("num_annotations"),
+                    func.count(Annotation.id)
+                    .filter(
+                        ~func.coalesce(
+                            Annotation.extra_metadata.op("->>")("source"), ""
+                        ).in_(["analyzer-model", "analyzer"])
+                    )
+                    .label("num_line_annotations"),
+                )
+            )
+        except Exception as e:
+            import traceback
+            print("error", e, flush=True)
+            traceback.print_exception()
         if limit is not None:
             traces = traces.limit(int(limit))
         if offset is not None:

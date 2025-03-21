@@ -6,7 +6,6 @@ from typing import Annotated, Dict, List
 from uuid import UUID
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
-
 import httpx
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -283,29 +282,36 @@ async def analyze_trace(
         debug_options=analysis_request.options.debug_options,
     )
     async def stream_response():
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                    method="POST",
-                    url=f"{analysis_request.apiurl}/api/v1/analysis/stream",
-                    json=sar.model_dump(),
-                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
-                ) as streaming_response:
-                async for chunk in streaming_response.aiter_text():
-                    annotation = annotation_from_chunk(chunk)
-                    if isinstance(annotation, AnalyzerAnnotation):
-                        with Session(db()) as session:
-                            new_annotation = Annotation(
-                                trace_id=UUID(id),
-                                user_id=user_id,
-                                address=annotation.location,
-                                content=annotation.content,
-                                extra_metadata= {"source": "analyzer-model", "severity": annotation.severity},
-                            )
-                            session.add(new_annotation)
-                            session.commit()
-                        yield "data: update\n\n"
-                    else:
-                        yield chunk
+        url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
+        try: 
+            async with httpx.AsyncClient() as client:
+                async with client.stream(
+                        method="POST",
+                        url=url,
+                        json=sar.model_dump(),
+                        headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                    ) as streaming_response:
+                    async for chunk in streaming_response.aiter_text():
+                        annotation = annotation_from_chunk(chunk)
+                        if isinstance(annotation, AnalyzerAnnotation):
+                            with Session(db()) as session:
+                                new_annotation = Annotation(
+                                    trace_id=UUID(id),
+                                    user_id=user_id,
+                                    address=annotation.location or "",
+                                    content=annotation.content,
+                                    extra_metadata= {"source": "analyzer-model", "severity": annotation.severity},
+                                )
+                                session.add(new_annotation)
+                                session.commit()
+                            yield "data: update\n\n"
+                        else:
+                            yield chunk
+        except httpx.ConnectError as e:
+            error_message = f"Failed to connect to analyzer model at: {url}"
+            yield f"data: {json.dumps({'error': error_message})}\n\n".encode('utf-8')
+    print("streaming response")
+
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 async def replace_annotations(

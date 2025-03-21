@@ -190,6 +190,7 @@ function createAnalysis(
         if (event.data) {
           try {
             const chunk_data = JSON.parse(event.data);
+            console.log(chunk_data);
             if (chunk_data.content) {
               if (onAnnotationChange)
                 onAnnotationChange()
@@ -197,6 +198,13 @@ function createAnalysis(
             if (chunk_data.debug) {
               if (setDebug) {
                 setDebug(chunk_data.debug);
+              }
+            }
+            if (chunk_data.error) {
+              receivedError = true;
+              if (setError) {
+                setError(chunk_data.error);
+                alert("Analysis Error: " + chunk_data.error);
               }
             }
 
@@ -250,7 +258,7 @@ export function AnalyzerPreview(props: {
   open: boolean;
   setAnalyzerOpen: (open: boolean) => void;
   output: any;
-  annotations;
+  annotations: AnalyzerAnnotation[];
   analyzer: Analyzer;
   running: boolean;
   onRunAnalyzer?: BroadcastEvent;
@@ -488,9 +496,6 @@ export function AnalyzerSidebar(props: {
     ]);
 
     const { config, endpoint, apikey } = clientAnalyzerConfig("single");
-    console.log("Analyzer options", config);
-    console.log("Analyzer endpoint", endpoint);
-    console.log("Analyzer apikey", apikey);
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
       return;
