@@ -652,7 +652,7 @@ def get_traces(
                     .filter(
                         ~func.coalesce(
                             Annotation.extra_metadata.op("->>")("source"), ""
-                        ).in_(["analyzer-model", "analyzer"])
+                        ).in_(["analyzer-model", "analyzer", "test-assertion", "test-assertion-passed", "test-expectation", "test-expectation-passed"])
                     )
                     .label("num_line_annotations"),
                 )
