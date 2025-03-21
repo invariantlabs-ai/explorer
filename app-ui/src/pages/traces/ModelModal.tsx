@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal } from "../../components/Modal";
+import { BsInfoCircleFill } from "react-icons/bs";
 
 window["promptModelAccess"] = function (action: string) {
   // nothing by default
@@ -28,6 +29,10 @@ export function ModelAccessModal() {
   return (
     <Modal>
       <div className="form analysis">
+        <span className="action">
+          <BsInfoCircleFill />
+          {action}
+        </span>
         <h1 className="big">Analysis Models</h1>
         <p>
           Invariant builds reward and analysis models for agentic applications,

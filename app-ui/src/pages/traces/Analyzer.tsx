@@ -15,6 +15,7 @@ import { capture } from "../../utils/Telemetry";
 import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
+import { useUserInfo } from "../../utils/UserInfo";
 
 interface Analyzer {
   running: boolean;
@@ -253,8 +254,7 @@ function createAnalysis(
         apikey == TEMPLATE_API_KEY
       ) {
         capture("tried-analysis", { error: error.message });
-        // alert("Unauthorized: You do not have access to this resource.");
-        alertModelAccess("You do not have access to this resource.");
+        alertModelAccess("Please provide a valid API key (see settings)");
         return;
       } else if (error.message.includes("Unauthorized")) {
         alert(
@@ -304,7 +304,7 @@ export function AnalyzerPreview(props: {
     content = (
       <div className="secondary">
         <BsStars className="icon" />
-        Analyze this trace to identify issues
+        <span className="empty-msg">Analyze this trace to identify issues</span>
         {props.onRunAnalyzer && (
           <button className="inline primary" onClick={onAnalyze}>
             Analyze
@@ -475,6 +475,8 @@ export function AnalyzerSidebar(props: {
   const issues = useIssues(props.output, props.storedOutput);
   const numIssues = issues.filter((i) => !i.loading).length;
 
+  const userInfo = useUserInfo();
+
   const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
   const outputIsEmpty =
     !props.output ||
@@ -498,7 +500,11 @@ export function AnalyzerSidebar(props: {
   }, [props.traceId]);
 
   const onRun = useCallback(async () => {
-    // props.setAnalyzerOpen(false);
+    if (!userInfo?.loggedIn) {
+      alertModelAccess("Please log in and try again");
+      return;
+    }
+
     props.analyzer.setRunning(true);
     props.analyzer.setError(null);
     props.analyzer.setDebug(null);
