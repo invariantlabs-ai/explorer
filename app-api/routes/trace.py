@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import asyncio
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
 from uuid import UUID
@@ -352,6 +353,60 @@ async def update_annotations(
         )
 
 
+async def process_single_cluster(session, cluster, api_config, user_id, config):
+    """Process a single cluster and generate a policy for it."""
+    try:
+        # Gather sample traces for this cluster
+        traceIds = [idx[0] for idx in cluster.get("issues_indexes", [])]
+        # Limit to 5 unique trace IDs
+        uniqueTraceIds = list(set(traceIds))[:5]
+
+        if not uniqueTraceIds:
+            return None
+
+        # Fetch the traces
+        traces = []
+        for trace_id in uniqueTraceIds:
+            trace = load_trace(session, trace_id, user_id, allow_public=True, allow_shared=True)
+            # Convert trace to JSON and ensure all UUIDs are converted to strings
+            trace_json = trace.content
+
+            traces.append(trace_json)
+
+        # Forward the request to the trace analyzer service
+        logger.info(f"Sending policy generation request for cluster: {cluster.get('name')}")
+
+        async with AnalysisClient(api_config["apiurl"], api_config.get("apikey")) as client:
+            request = {
+                "problem_description": cluster.get("name"),
+                "traces": traces,
+                "config": config
+            }
+            response = await client.generate_policy(request)
+
+        # Filter only successful policies with >50% detection rate
+        logger.info(f"Received policy generation response: {response}")
+        if response.get("success") and response.get("detection_results"):
+            logger.info(f"Detection results: {response.get('detection_results')}")
+            detected_count = sum(1 for result in response.get("detection_results", [])
+                               if result.get("detected", False))
+            total_count = len(response.get("detection_results", []))
+
+            if total_count > 0 and detected_count / total_count > 0.4:
+                logger.info(f"Returning policy for cluster: {cluster.get('name')}")
+                return {
+                    "cluster_name": cluster.get("name"),
+                    "policy_code": response.get("policy_code"),
+                    "planning": response.get("planning"),
+                    "detection_results": response.get("detection_results"),
+                    "detection_rate": detected_count / total_count if total_count > 0 else 0
+                }
+
+        return None
+    except Exception as e:
+        logger.error(f"Error processing cluster {cluster.get('name')}: {e}")
+        return None
+
 @trace.post("/generate-policy")
 async def generate_policy(
     request: Request,
@@ -367,33 +422,48 @@ async def generate_policy(
         payload = await request.json()
 
         # Verify input
-        if not payload.get("problem_description"):
-            raise ValueError("Problem description is required")
-
-        if not isinstance(payload.get("traces"), list) or len(payload.get("traces", [])) == 0:
-            raise ValueError("Traces must be a non-empty list")
+        if not payload.get("dataset_id"):
+            raise ValueError("Dataset ID is required")
 
         dataset_id = payload.get("dataset_id")
-        if not dataset_id:
-            raise ValueError("Dataset ID is required")
 
         # Load the dataset
         with Session(db()) as session:
             dataset = load_dataset(session, dataset_id, user_id)
 
+            # Check if dataset has analysis report
+            if not dataset.extra_metadata or not dataset.extra_metadata.get("analysis_report"):
+                raise ValueError("Dataset doesn't have analysis report. Run analysis first.")
+
+            analysis_report = json.loads(dataset.extra_metadata.get("analysis_report"))
+            clusters = analysis_report.get("clustering", [])
+
+            if not clusters:
+                raise ValueError("No clusters found in analysis report")
+
             # Initialize API config variable
             api_config = {"apiurl": "http://host.docker.internal:8010", "apikey": "test"}
 
-            # Forward the request to the trace analyzer service
-            logger.info(f"Sending policy generation request to: {api_config['apiurl']}")
-            async with AnalysisClient(api_config["apiurl"], api_config.get("apikey")) as client:
-                response = await client.generate_policy({
-                    "problem_description": payload.get("problem_description"),
-                    "traces": payload.get("traces"),
-                    "config": payload.get("config")
-                })
+            # Process clusters concurrently
+            tasks = [
+                process_single_cluster(
+                    session=session,
+                    cluster=cluster,
+                    api_config=api_config,
+                    user_id=user_id,
+                    config=payload.get("config")
+                )
+                for cluster in clusters
+            ]
 
-            return response
+            results = await asyncio.gather(*tasks)
+
+            # Filter out None results and collect successful policies
+            suggested_policies = [result for result in results if result is not None]
+            logger.info(f"Suggested {len(suggested_policies)} policies: {suggested_policies}")
+
+            # Use the custom JSON encoder that handles UUID serialization
+            return {"suggested_policies": json.loads(json.dumps(suggested_policies, cls=DBJSONEncoder))}
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -401,7 +471,7 @@ async def generate_policy(
         raise HTTPException(status_code=e.status, detail=str(e))
     except Exception as e:
         import traceback
-        logger.error(f"Error generating policy: {e}\n{traceback.format_exc()}")
+        logger.error(f"Error generating policies: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 

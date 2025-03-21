@@ -35,7 +35,16 @@ interface PolicyGenerationRequest {
   config?: any;     // Optional additional configuration
 }
 
-const SUGGETSIONS_ENABLED = false;
+// Define interface for suggested policy
+interface SuggestedPolicy {
+  cluster_name: string;
+  policy_code: string;
+  planning?: string;
+  detection_results: any[];
+  detection_rate: number;
+}
+
+const SUGGETSIONS_ENABLED = true;
 const GUARDRAIL_EVALUATION_ENABLED = false;
 
 /**
@@ -378,188 +387,6 @@ function MutatePolicyModalContent(props) {
   );
 }
 
-/**
- * Component for generating policies from problem clusters
- */
-function PolicyGenerationModalContent(props) {
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const [selectedCluster, setSelectedCluster] = React.useState("");
-  const [generatedPolicy, setGeneratedPolicy] = React.useState("");
-  const [planning, setPlanning] = React.useState("");
-  const [detectionResults, setDetectionResults] = React.useState([]);
-
-  // Get clusters from the dataset's analysis report, if available
-  const analysisReport = props.dataset.extra_metadata?.analysis_report
-    ? JSON.parse(props.dataset.extra_metadata.analysis_report)
-    : null;
-
-  const clusters = analysisReport?.clustering || [];
-
-  const generatePolicy = async () => {
-    if (!selectedCluster) {
-      setError("Please select a problem cluster");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    // Find the selected cluster
-    const cluster = clusters.find(c => c.name === selectedCluster);
-    if (!cluster) {
-      setError("Selected cluster not found");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Gather sample traces for this cluster
-      const traceIds = cluster.issues_indexes.map(idx => idx[0]);
-      // Limit to 5 unique trace IDs
-      const uniqueTraceIds = [...new Set(traceIds)].slice(0, 5);
-
-      // Fetch the traces
-      const tracePromises = uniqueTraceIds.map(id =>
-        fetch(`/api/v1/trace/${id}`).then(res => res.json())
-      );
-      const traces = await Promise.all(tracePromises);
-
-      // Build a properly typed request payload
-      const requestPayload: PolicyGenerationRequest = {
-        problem_description: selectedCluster,
-        traces: traces,
-        dataset_id: props.dataset.id,
-      };
-
-      // Make the policy generation request
-      const response = await fetch("/api/v1/trace/generate-policy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestPayload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.detail || "Failed to generate policy");
-        setLoading(false);
-        return;
-      }
-
-      // Update state with the generated policy
-      setGeneratedPolicy(data.policy_code);
-      setPlanning(data.planning || "");
-      setDetectionResults(data.detection_results || []);
-
-      setLoading(false);
-    } catch (err) {
-      console.error("Error generating policy:", err);
-      setError("An error occurred while generating the policy");
-      setLoading(false);
-    }
-  };
-
-  const createGuardrailFromPolicy = () => {
-    // Pre-fill the policy creation modal with the generated policy
-    props.onCreateWithPolicy(generatedPolicy, selectedCluster);
-  };
-
-  return (
-    <div className="modal-content policy-generator-form">
-      <header>
-        <b>
-          <BsLightningCharge /> Generate Guardrail from Problem Cluster
-          {error && <span className="error">Error: {error}</span>}
-        </b>
-        <div className="spacer" />
-        <button className="button inline" onClick={props.onClose}>
-          Cancel
-        </button>
-      </header>
-      <div className="main">
-        <div className="collapsable" style={{ width: "100%" }}>
-          <h3>Select Problem Cluster</h3>
-          <select
-            value={selectedCluster}
-            onChange={(e) => setSelectedCluster(e.target.value)}
-            className="cluster-select"
-            disabled={loading || clusters.length === 0}
-          >
-            <option value="">Select a cluster...</option>
-            {clusters.map((cluster) => (
-              <option key={cluster.name} value={cluster.name}>
-                {cluster.name}
-              </option>
-            ))}
-          </select>
-
-          {clusters.length === 0 && (
-            <div className="info-message">
-              No problem clusters found. Run analysis on your dataset first.
-            </div>
-          )}
-
-          <div className="action-buttons">
-            <button
-              className="primary"
-              onClick={generatePolicy}
-              disabled={loading || !selectedCluster}
-            >
-              {loading ? "Generating..." : "Generate Policy"}
-            </button>
-          </div>
-
-          {generatedPolicy && (
-            <>
-              <h3>Generated Policy</h3>
-              <div className="editor-container">
-                <Editor
-                  width="100%"
-                  className="policy-editor"
-                  defaultLanguage="python"
-                  value={generatedPolicy}
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    lineNumbers: "on",
-                    wordWrap: "on",
-                    wrappingIndent: "same",
-                    readOnly: true,
-                  }}
-                  theme="vs-light"
-                />
-              </div>
-
-              {planning && (
-                <>
-                  <h3>Planning Information</h3>
-                  <div className="planning-info">
-                    <pre>{planning}</pre>
-                  </div>
-                </>
-              )}
-
-              <div className="action-buttons">
-                <button
-                  className="primary"
-                  onClick={createGuardrailFromPolicy}
-                >
-                  Create Guardrail from Policy
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function LabelSelect(props: {
   value: string;
   options: {
@@ -599,6 +426,180 @@ export function SidepaneModal(props: {
 }
 
 /**
+ * Component for viewing a suggested guardrail and optionally activating it
+ */
+function SuggestedGuardrailModalContent(props: {
+  dataset: any;
+  dataset_id: string;
+  suggestedPolicy: SuggestedPolicy;
+  onClose: () => void;
+  onActivate: (policy: any) => void;
+}) {
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [name, setName] = React.useState(`Guardrail for ${props.suggestedPolicy.cluster_name}`);
+  const [policyCode, setPolicyCode] = React.useState(props.suggestedPolicy.policy_code);
+  const [editMode, setEditMode] = React.useState(false);
+
+  const activateGuardrail = () => {
+    // Create a policy object for activation
+    const policy = {
+      name: name,
+      content: policyCode,
+      action: "log",
+      enabled: true
+    };
+
+    props.onActivate(policy);
+  };
+
+  return (
+    <div className="modal-content policy-editor-form">
+      <header className={editMode ? "edit-mode" : ""}>
+        <b>
+          {!editMode && (
+            <>
+              <BsDatabaseLock /> Suggested Guardrail
+              {error && <span className="error">Error: {error}</span>}
+            </>
+          )}
+          {editMode && (
+            <b>
+              <BsCode /> Guardrailing Rule
+            </b>
+          )}
+        </b>
+        <div className="spacer" />
+        {!editMode && (
+          <>
+            <button className="button inline" onClick={props.onClose}>
+              Cancel
+            </button>
+            <button
+              aria-label="activate guardrail"
+              className="primary inline"
+              onClick={activateGuardrail}
+              disabled={loading || !name || !policyCode || !policyCode.trim()}
+            >
+              Make Active
+            </button>
+          </>
+        )}
+        {editMode && (
+          <>
+            <button
+              className="inline icon secondary editmode"
+              onClick={() => setEditMode(!editMode)}
+              data-tooltip-id="edit-mode"
+              data-tooltip-content="Smaller Rule Editor"
+              data-tooltip-place="top"
+            >
+              <BsArrowsAngleContract />
+            </button>
+          </>
+        )}
+      </header>
+      <div className="main">
+        {!editMode && (
+          <div className="collapsable" style={{ width: "100%" }}>
+            <h3>Name</h3>
+            <input
+              type="text"
+              value={name || ""}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Guardrail Name"
+              className="policy-name"
+            />
+
+            <h3>Problem</h3>
+            <div className="problem-description">
+              {props.suggestedPolicy.cluster_name}
+            </div>
+
+            <h3>Detection Rate</h3>
+            <div className="detection-rate">
+              {(props.suggestedPolicy.detection_rate * 100).toFixed(0)}% of traces matched this guardrail
+            </div>
+          </div>
+        )}
+        {!editMode && (
+          <h3>
+            Guardrailing Rule
+            <i>The suggested rule to detect and prevent this issue.</i>
+            <button
+              className="icon inline editmode"
+              onClick={() => setEditMode(!editMode)}
+              data-tooltip-id="edit-mode"
+              data-tooltip-content="Larger Rule Editor"
+              data-tooltip-place="top"
+            >
+              <BsArrowsAngleExpand />
+            </button>
+          </h3>
+        )}
+        {!editMode && (
+          <div className="editor-container">
+            <Editor
+              width="100%"
+              className="policy-editor"
+              defaultLanguage="python"
+              value={policyCode}
+              options={{
+                fontSize: 14,
+                minimap: {
+                  enabled: false,
+                },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                lineNumbers: "on",
+                wordWrap: "on",
+                wrappingIndent: "same",
+              }}
+              onChange={(value?: string) => setPolicyCode(value || "")}
+              theme="vs-light"
+            />
+          </div>
+        )}
+        {editMode && (
+          <>
+            <div
+              className="editor-container full"
+              style={{ flex: GUARDRAIL_EVALUATION_ENABLED ? 0 : 1 }}
+            >
+              <Editor
+                width="100%"
+                className="policy-editor full"
+                defaultLanguage="python"
+                value={policyCode}
+                options={{
+                  fontSize: 14,
+                  minimap: {
+                    enabled: false,
+                  },
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  lineNumbers: "on",
+                  wordWrap: "on",
+                  wrappingIndent: "same",
+                }}
+                onChange={(value?: string) => setPolicyCode(value || "")}
+                theme="vs-light"
+              />
+            </div>
+          </>
+        )}
+        <Tooltip
+          id="edit-mode"
+          place="top"
+          style={{ backgroundColor: "#000", color: "#fff" }}
+          className="tooltip"
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Component for viewing, updating and deleting policies.
  */
 export function Guardrails(props: {
@@ -617,18 +618,24 @@ export function Guardrails(props: {
   // tracks the policy to be updated.
   const [selectedPolicyForUpdation, setSelectedPolicyForUpdation] =
     React.useState(null);
-  // tracks whether the policy generation modal is open
-  const [showPolicyGenerationModal, setShowPolicyGenerationModal] =
-    React.useState(false);
+  // tracks selected suggested guardrail
+  const [selectedSuggestedGuardrail, setSelectedSuggestedGuardrail] =
+    React.useState<SuggestedPolicy | null>(null);
   // tracks pre-filled policy code for new policy creation
   const [prefillPolicyCode, setPrefillPolicyCode] = React.useState("");
   // tracks pre-filled policy name for new policy creation
   const [prefillPolicyName, setPrefillPolicyName] = React.useState("");
+  // tracks suggested policies
+  const [suggestedPolicies, setSuggestedPolicies] = React.useState<SuggestedPolicy[]>([]);
+  // tracks loading state for suggested policies
+  const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
+  // tracks error state for suggested policies
+  const [suggestionsError, setSuggestionsError] = React.useState("");
 
   const dataset = props.dataset;
   const datasetLoader = props.datasetLoader;
 
-  // get guardrails from metadta
+  // get guardrails from metadata
   const guadrails = dataset.extra_metadata?.policies
     ? dataset.extra_metadata.policies
     : [];
@@ -639,11 +646,77 @@ export function Guardrails(props: {
   // sort them by name
   guadrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
 
-  const handleCreateWithPolicy = (policyCode, clusterName) => {
-    setPrefillPolicyCode(policyCode);
-    setPrefillPolicyName(`Guardrail for ${clusterName}`);
-    setShowPolicyGenerationModal(false);
-    setShowCreatePolicyModal(true);
+  // Function to fetch suggested guardrails
+  const fetchSuggestedGuardrails = React.useCallback(() => {
+    if (!hasAnalysisReport) return;
+
+    setLoadingSuggestions(true);
+    setSuggestionsError("");
+
+    fetch("/api/v1/trace/generate-policy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        dataset_id: dataset.id,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.detail || `Error ${response.status}: Failed to load suggestions`);
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setLoadingSuggestions(false);
+        if (data.suggested_policies) {
+          setSuggestedPolicies(data.suggested_policies);
+        } else {
+          setSuggestionsError("No suggested policies were returned from the server.");
+        }
+      })
+      .catch((error) => {
+        setLoadingSuggestions(false);
+        setSuggestionsError(`Failed to load suggested guardrails: ${error.message}`);
+        console.error("Error fetching suggested guardrails:", error);
+      });
+  }, [dataset.id, hasAnalysisReport]);
+
+  // Fetch suggested guardrails on component mount if dataset has analysis report
+  React.useEffect(() => {
+    if (hasAnalysisReport && SUGGETSIONS_ENABLED) {
+      fetchSuggestedGuardrails();
+    }
+  }, [fetchSuggestedGuardrails, hasAnalysisReport]);
+
+  // Handle activating a suggested guardrail
+  const handleActivateGuardrail = (policy) => {
+    fetch(`/api/v1/dataset/${dataset.id}/policy`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: policy.name,
+        policy: policy.content,
+        action: policy.action,
+        enabled: policy.enabled,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          setSelectedSuggestedGuardrail(null);
+          datasetLoader.refresh();
+        } else {
+          throw new Error("Failed to activate guardrail");
+        }
+      })
+      .catch((error) => {
+        console.error("Error activating guardrail:", error);
+      });
   };
 
   return (
@@ -679,18 +752,20 @@ export function Guardrails(props: {
           ></MutatePolicyModalContent>
         </SidepaneModal>
       )}
-      {/* policy generation modal */}
-      {showPolicyGenerationModal && (
+      {/* suggested guardrail modal */}
+      {selectedSuggestedGuardrail && (
         <SidepaneModal
-          title="Generate Policy"
-          onClose={() => setShowPolicyGenerationModal(false)}
+          title="Suggested Guardrail"
+          onClose={() => setSelectedSuggestedGuardrail(null)}
           hasWindowControls
         >
-          <PolicyGenerationModalContent
+          <SuggestedGuardrailModalContent
             dataset={props.dataset}
-            onClose={() => setShowPolicyGenerationModal(false)}
-            onCreateWithPolicy={handleCreateWithPolicy}
-          ></PolicyGenerationModalContent>
+            dataset_id={dataset.id}
+            suggestedPolicy={selectedSuggestedGuardrail}
+            onClose={() => setSelectedSuggestedGuardrail(null)}
+            onActivate={handleActivateGuardrail}
+          ></SuggestedGuardrailModalContent>
         </SidepaneModal>
       )}
       {/* delete modal */}
@@ -738,16 +813,6 @@ export function Guardrails(props: {
           <span> </span>
         </h1>
         <div className="spacer" />
-        {hasAnalysisReport && (
-          <button
-            aria-label="generate guardrail from problem"
-            className="button inline generate-guardrail-from-problem"
-            onClick={() => setShowPolicyGenerationModal(true)}
-          >
-            <BsLightningCharge />
-            Generate from Problem
-          </button>
-        )}
         <button
           aria-label="create guardrail"
           className="button primary inline create-guardrail"
@@ -809,20 +874,73 @@ export function Guardrails(props: {
           <div className="suggestions">
             <h3>
               <span>
-                <BsStars /> Guardrail Suggestions
+                <BsStars /> Suggested Guardrails
               </span>
+              {hasAnalysisReport && loadingSuggestions && (
+                <span className="loading-indicator">Loading suggestions...</span>
+              )}
+              {hasAnalysisReport && !loadingSuggestions && suggestedPolicies.length === 0 && !suggestionsError && (
+                <button
+                  className="refresh-button inline"
+                  onClick={fetchSuggestedGuardrails}
+                >
+                  Generate Suggestions
+                </button>
+              )}
             </h3>
             <div className="guardrail-list">
-              <div className="empty instructions box semi">
-                <h2>
-                  <BsFileEarmarkBreak /> Guardrail Suggestions{" "}
-                  <span className="badge">Beta</span>
-                </h2>
-                <h3>
-                  As you keep using Invariant, new suggestions for guardrailing
-                  rules customized to your agent's behavior will appear here.
-                </h3>
-              </div>
+              {suggestionsError && (
+                <div className="error-message">
+                  {suggestionsError}
+                  <button
+                    className="retry-button"
+                    onClick={fetchSuggestedGuardrails}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {!hasAnalysisReport && (
+                <div className="empty instructions box semi">
+                  <h2>
+                    <BsFileEarmarkBreak /> Run Analysis First
+                  </h2>
+                  <h3>
+                    To get guardrail suggestions, please run analysis on your dataset first.
+                  </h3>
+                </div>
+              )}
+              {hasAnalysisReport && !loadingSuggestions && suggestedPolicies.length === 0 && !suggestionsError && (
+                <div className="empty instructions box semi">
+                  <h2>
+                    <BsFileEarmarkBreak /> No Suggested Guardrails
+                  </h2>
+                  <h3>
+                    We couldn't find any guardrails to suggest based on your dataset analysis.
+                  </h3>
+                </div>
+              )}
+              {suggestedPolicies.length > 0 && (
+                <>
+                  {suggestedPolicies.map((policy, index) => (
+                    <div key={index} className="box full setting guardrail-item suggested">
+                      <h1 className="policy-label">
+                        <span className="badge suggested">SUGGESTED</span>
+                        Guardrail for {policy.cluster_name}
+                      </h1>
+                      <div className="guardrail-actions">
+                        <button
+                          aria-label="view suggested guardrail"
+                          className="policy-action inline"
+                          onClick={() => setSelectedSuggestedGuardrail(policy)}
+                        >
+                          <BsShieldFillCheck /> View & Activate
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         )}

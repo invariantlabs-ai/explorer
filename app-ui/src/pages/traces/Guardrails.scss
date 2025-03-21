@@ -192,6 +192,16 @@ button.policy-action {
   min-height: 220pt;
   position: relative;
   padding-top: 10pt;
+
+  .guardrail-item.suggested {
+    border-left: 4px solid #8a2be2; // Purple color for suggested guardrails
+    background-color: rgba(138, 43, 226, 0.05);
+
+    .badge.suggested {
+      background-color: #8a2be2;
+      color: white;
+    }
+  }
 }
 
 .guardrail-action-select {
@@ -625,4 +635,58 @@ button.create-guardrail {
 
 .generate-guardrail-from-problem {
   margin-right: 8px;
+}
+
+.loading-indicator {
+  font-size: 14px;
+  color: #666;
+  margin-left: 10px;
+}
+
+.refresh-button {
+  margin-left: 10px;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.error-message {
+  color: #d32f2f;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: rgba(211, 47, 47, 0.1);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .retry-button {
+    background-color: #f5f5f5;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(211, 47, 47, 0.1);
+    }
+  }
+}
+
+.problem-description {
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+
+.detection-rate {
+  font-weight: 600;
+  color: #2e7d32;
+  padding: 8px;
+  background-color: rgba(46, 125, 50, 0.1);
+  border-radius: 4px;
+  margin-bottom: 10px;
 }
