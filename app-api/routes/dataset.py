@@ -714,7 +714,6 @@ async def download_traces_as_analyzer_input(
     Download the dataset in JSONL format.
     """
     with Session(db()) as session:
-        print("akuwerwergdf")
         # Check if the user has access to the dataset
         try:
             id = UUID(id)
@@ -726,7 +725,6 @@ async def download_traces_as_analyzer_input(
         if dataset.user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
-        print("there")
         user = session.query(User).filter(User.id == dataset.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")

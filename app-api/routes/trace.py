@@ -294,11 +294,6 @@ async def analyze_trace(
                     annotation = annotation_from_chunk(chunk)
                     if isinstance(annotation, AnalyzerAnnotation):
                         with Session(db()) as session:
-                            print("new_annotation", {
-                                "content": annotation.content,
-                                "location": annotation.location,
-                                "severity": annotation.severity,
-                            })
                             new_annotation = Annotation(
                                 trace_id=UUID(id),
                                 user_id=user_id,
@@ -578,7 +573,6 @@ async def append_messages(
                         "Expected format: ISO 8601, e.g., 2025-01-23T10:30:00+00:00"
                     ),
                 ) from e
-    print("new messages", new_messages)
     try:
         with Session(db()) as session:
             with session.begin():  # Start transaction
@@ -596,7 +590,6 @@ async def append_messages(
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
-                print("here", new_messages)
                 dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
                 if trace_response.dataset_id:
                     dataset_response = (
