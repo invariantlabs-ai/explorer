@@ -349,6 +349,11 @@ span.secondary-flashing {
   overflow: hidden;
   text-overflow: ellipsis;
 
+  .empty-msg {
+    position: relative;
+    top: -1pt;
+  }
+
   svg.arrow {
     margin-left: 4pt;
   }

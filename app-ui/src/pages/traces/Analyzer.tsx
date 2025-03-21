@@ -304,7 +304,7 @@ export function AnalyzerPreview(props: {
     content = (
       <div className="secondary">
         <BsStars className="icon" />
-        Analyze this trace to identify issues
+        <span className="empty-msg">Analyze this trace to identify issues</span>
         {props.onRunAnalyzer && (
           <button className="inline primary" onClick={onAnalyze}>
             Analyze
