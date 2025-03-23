@@ -1,32 +1,35 @@
-from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool
-from openai import AsyncOpenAI
+from swarm import Swarm, Agent
+from openai import OpenAI
+from httpx import Client
 import os
 
-external_client = AsyncOpenAI(
-    base_url="http://localhost/api/v1/gateway/new-agent/openai",
-    default_headers={
-        "Invariant-Authorization": "Bearer " + os.getenv("INVARIANT_API_KEY"),
-    },
+client = Swarm(
+    client=OpenAI(
+        http_client=Client(
+            headers={
+                "Invariant-Authorization": "Bearer "
+                + os.getenv("INVARIANT_API_KEY", "local-does-not-need-api-keys")
+            }
+        ),
+        base_url="http://localhost/api/v1/gateway/sample-agent/openai",
+    )
 )
 
 
-@function_tool
-async def fetch_weather(location: str) -> str:
-    return "sunny"
+def get_weather():
+    return "It's sunny."
 
 
 agent = Agent(
-    name="Assistant",
-    instructions="You are a helpful assistant",
-    model=OpenAIChatCompletionsModel(
-        model="gpt-4o",
-        openai_client=external_client,
-    ),
-    tools=[fetch_weather],
+    name="Agent A",
+    instructions="You are a helpful agent.",
+    functions=[get_weather],
 )
 
-result = Runner.run_sync(
-    agent,
-    "What is the weather like in Paris?",
+response = client.run(
+    agent=agent,
+    messages=[{"role": "user", "content": "What's the weather?"}],
 )
-print(result.final_output)
+
+print(response.messages[-1]["content"])
+# Output: "It seems to be sunny."

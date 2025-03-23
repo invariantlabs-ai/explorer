@@ -350,9 +350,6 @@ body {
       margin: 0pt 3pt;
       margin-bottom: -2pt;
       display: block;
-      // margin-left: -5pt;
-      // margin-right: -5pt;
-      // margin-bottom: -10pt;
       padding: 10pt;
       white-space: pre;
       overflow-x: auto !important;
@@ -385,55 +382,6 @@ body {
     border: 1pt solid var(--highlight-color);
   }
 
-  .content.tool {
-    font-family: monospace;
-    font-size: 1.1em;
-    white-space: pre-wrap;
-    overflow: visible;
-    padding: 0pt;
-
-    .annotated-parent {
-      margin: 5pt;
-      padding-left: 10pt;
-      padding-right: 10pt;
-      width: calc(100% - 20pt);
-      margin-left: 0pt;
-    }
-
-    .line {
-      margin-left: -5pt;
-    }
-
-    table.json {
-      margin-bottom: 0pt;
-    }
-
-    .default-renderer {
-      // padding-top: 5pt;
-      padding-bottom: 0pt;
-      position: relative;
-
-      .inline-line-editor {
-        // negative offset to make the inline line editor
-        // go full width, rather than padded, like the message content
-        margin-left: -7pt;
-        width: calc(100% + 5pt);
-      }
-    }
-
-    .plugin {
-      // margin: 10pt;
-      overflow: visible;
-
-      .inline-line-editor {
-        // negative offset to make the inline line editor
-        // go full width, rather than padded, like the message content
-        margin-left: -7pt;
-        width: calc(100% + 4pt);
-      }
-    }
-  }
-
   .role {
     padding: 4pt 5pt;
     text-transform: uppercase;
@@ -450,7 +398,6 @@ body {
     svg {
       display: inline-block;
       position: relative;
-      top: 1pt;
       margin-right: 2pt;
     }
 
@@ -674,7 +621,7 @@ body {
 
 .traces {
   padding: 2pt 60pt;
-  padding-bottom: 130pt;
+  padding-bottom: 80vh;
   padding-right: 2pt;
   margin-top: -2.5pt;
   overflow-y: auto;
@@ -699,9 +646,11 @@ body {
   }
 }
 
-.tool-call table.json .inline-line-editor {
-  margin-top: 5pt;
+table.json .inline-line-editor {
   padding-top: 10pt;
+
+  margin-top: 10pt;
+  margin-left: -5pt;
 }
 
 span.nl {
@@ -715,20 +664,35 @@ table.json {
   width: 100%;
   border-collapse: collapse;
 
+  tr {
+    border-bottom: 1pt solid var(--border-color);
+    border-top: 1pt solid var(--border-color);
+  }
+
+  pre {
+    height: auto;
+    line-height: 1.5em;
+    margin: 5pt;
+    margin-top: 0pt;
+    white-space: pre-wrap;
+  }
+
   button.plugin-toggle {
     top: 0pt !important;
   }
 
   td {
     padding: 10pt 5pt;
+    padding-right: 0pt;
     background-color: rgba(0, 0, 0, 0.04);
     border-bottom: 1pt solid var(--border-color);
     border-right: 1pt solid var(--border-color);
     vertical-align: top;
   }
 
-  td.value div {
+  td.value div:not(.inline-line-editor) {
     margin-top: 0pt;
+    margin-right: 0pt;
   }
 
   tr td:last-child {
@@ -771,7 +735,6 @@ table.json {
 table.json.content {
   margin: -5pt;
   width: calc(100% + 10pt);
-  margin-bottom: -10pt;
 
   td {
     background-color: transparent !important;
@@ -879,4 +842,70 @@ pre.marked-line {
 .event.top-level-highlights {
   background: transparent;
   border: none;
+}
+
+.annotation-indicator,
+.tool-call-badge {
+  height: 11.5pt;
+  font-weight: 700;
+  margin-top: 0pt;
+  overflow: hidden;
+  white-space: nowrap;
+  margin-left: 5pt;
+  display: inline-block;
+  padding: 0pt 3pt;
+  font-size: 7pt;
+  text-transform: none;
+  line-height: 11.5pt;
+  background-color: rgba(88, 85, 246, 0.2);
+  border: none;
+  border-radius: 2.5pt;
+  color: rgba(37, 36, 99, 0.761);
+  transition: opacity 0.1s;
+
+  &.human {
+    border: none;
+    background-color: rgba(88, 85, 246, 0.2);
+  }
+
+  &.human.circle {
+    border-radius: 30pt;
+    width: 8pt;
+    // border-width: 0pt;
+
+    svg {
+      position: relative;
+      left: 0.5pt !important;
+      top: 1pt;
+      transform: scale(0.8);
+    }
+  }
+}
+
+.tool-call-badge {
+  color: rgba(0, 0, 0, 0.627);
+}
+
+.sidebar {
+  .annotation-indicator {
+    margin-top: 1pt;
+    height: 18pt;
+    line-height: 18pt;
+    min-width: 4pt;
+    border: none;
+    font-size: 10pt;
+    font-weight: bold;
+    text-align: center;
+
+    background-color: rgba(88, 85, 246, 0.2);
+    border-radius: 2.5pt;
+    color: rgba(37, 36, 99, 0.761);
+  }
+}
+
+.message-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
 }

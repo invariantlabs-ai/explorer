@@ -281,6 +281,49 @@ export function AnnotationAugmentedTraceView(props) {
         );
       }
     },
+    annotationIndicators: (address, ...args) => {
+      let counts = [];
+
+      // add highlights
+      if (highlights) {
+        let forAddress = highlights.highlights.for_path(address);
+        // replace address such that messages[4] is transformed to messages.4
+        // this is needed because the traceview uses the address as a key
+        let forAddressKey = address.replace(/\[\d+\]/g, (match) => {
+          return "." + match.slice(1, -1);
+        });
+        console.log("highlights", forAddressKey, highlights.highlights);
+        let n = highlights.highlights
+          .for_path(forAddressKey)
+          .allHighlights().length;
+        if (n > 0) {
+          counts.push({
+            type: "highlight",
+            count: n,
+          });
+        }
+      }
+
+      // add user annotations
+      if (filtered_annotations) {
+        // filter keys by prefix
+        let keys = Object.keys(filtered_annotations).filter((key) =>
+          key.startsWith(address)
+        );
+        let count = 0;
+        keys.forEach((key) => {
+          count += filtered_annotations[key].length;
+        });
+        if (count > 0) {
+          counts.push({
+            type: "human",
+            count: count,
+          });
+        }
+      }
+
+      return counts;
+    },
     extraArgs: [activeTraceId],
   };
 
