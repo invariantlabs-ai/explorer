@@ -1,4 +1,4 @@
-import React, { act, useEffect, useRef, useState } from "react";
+import React, { act, useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 import "./Annotations.scss";
@@ -76,6 +76,131 @@ export class Annotations extends RemoteResource {
     }
     return annotations;
   }
+}
+
+/**
+ * Instantiates a memoized decorator for the traceview to show annotations and annotation thread in the traceview.
+ *
+ * The decorator is an object that configures a trace view's behavior when a user clicks on a line in the trace view.
+ *
+ * It also indicates to the trace view, which lines are considered 'highlighted' because of user annotations or thumbs up/down.
+ *
+ * @param {string} activeTraceId - the trace ID
+ * @param {number} activeTraceIndex - the trace index
+ * @param {Object} highlights - the highlights to show in the traceview (e.g. because of analyzer or search results)
+ * @param {Object} filtered_annotations - the filtered annotations (without analyzer annotations), i.e. the user annotations
+ * @param {Function} onAnnotationCreate - callback to update annotations count on the Sidebar
+ * @param {Function} onAnnotationDelete - callback to update annotations count on the Sidebar
+ *
+ * @return {Object} - the decorator object with the editor component, hasHighlight function, and annotationIndicators function
+ */
+function useHighlightDecorator(
+  activeTraceId,
+  activeTraceIndex,
+  highlights,
+  filtered_annotations,
+  onAnnotationCreate,
+  onAnnotationDelete
+) {
+  // filter to hide analyzer messages in annotation threads
+  const noAnalyzerMessages = (a) =>
+    !a.extra_metadata || a.extra_metadata.source !== "analyzer";
+
+  return useMemo(() => {
+    let indicatorCache = new Map();
+
+    return {
+      editorComponent: (props) => {
+        return (
+          <div className="comment-insertion-point">
+            <HighlightDetails {...props} />
+            <AnnotationThread
+              {...props}
+              filter={noAnalyzerMessages}
+              traceId={activeTraceId}
+              traceIndex={activeTraceIndex}
+              onAnnotationCreate={onAnnotationCreate}
+              onAnnotationDelete={onAnnotationDelete}
+              numHighlights={props.highlights.length}
+            />
+          </div>
+        );
+      },
+      hasHighlight: (address, ...args) => {
+        if (
+          filtered_annotations &&
+          filtered_annotations[address] !== undefined
+        ) {
+          let thumbs = "";
+          if (
+            filtered_annotations[address].some((a) => a.content == THUMBS_UP)
+          ) {
+            thumbs += " thumbs-up";
+          }
+          if (
+            filtered_annotations[address].some((a) => a.content == THUMBS_DOWN)
+          ) {
+            thumbs += " thumbs-down";
+          }
+          return (
+            "highlighted num-" + filtered_annotations[address].length + thumbs
+          );
+        }
+      },
+      annotationIndicators: (address, ...args) => {
+        // make sure, we do not recompute the indicators for the same address
+        if (indicatorCache.has(address)) {
+          return indicatorCache.get(address);
+        }
+
+        let counts = [];
+
+        // add highlights
+        if (highlights) {
+          let forAddress = highlights.highlights.for_path(address);
+          // replace address such that messages[4] is transformed to messages.4
+          // this is needed because the traceview uses the address as a key
+          let forAddressKey = address.replace(/\[\d+\]/g, (match) => {
+            return "." + match.slice(1, -1);
+          });
+          let n = highlights.highlights
+            .for_path(forAddressKey)
+            .allHighlights().length;
+          if (n > 0) {
+            counts.push({
+              type: "highlight",
+              count: n,
+            });
+          }
+        }
+
+        // add user annotations
+        if (filtered_annotations) {
+          // filter keys by prefix
+          let keys = Object.keys(filtered_annotations).filter((key) =>
+            key.startsWith(address)
+          );
+          let first_match = keys.length > 0 ? keys[0] : null;
+          let count = 0;
+          keys.forEach((key) => {
+            count += filtered_annotations[key].length;
+          });
+          if (count > 0) {
+            counts.push({
+              type: "human",
+              count: count,
+              address: first_match,
+            });
+          }
+        }
+
+        indicatorCache.set(address, counts);
+
+        return counts;
+      },
+      extraArgs: [activeTraceId],
+    };
+  }, [activeTraceId, filtered_annotations, highlights]);
 }
 
 /**
@@ -243,89 +368,15 @@ export function AnnotationAugmentedTraceView(props) {
     setTopLevelAnnotations(top_level_annotations);
   }, [annotations, props.mappings]);
 
-  // filter to hide analyzer messages in annotation threads
-  const noAnalyzerMessages = (a) =>
-    !a.extra_metadata || a.extra_metadata.source !== "analyzer";
-
-  // decorator for the traceview, to show annotations and annotation thread in the traceview
-  const decorator = {
-    editorComponent: (props) => {
-      return (
-        <div className="comment-insertion-point">
-          <HighlightDetails {...props} />
-          <AnnotationThread
-            {...props}
-            filter={noAnalyzerMessages}
-            traceId={activeTraceId}
-            traceIndex={activeTraceIndex}
-            onAnnotationCreate={onAnnotationCreate}
-            onAnnotationDelete={onAnnotationDelete}
-            numHighlights={props.highlights.length}
-          />
-        </div>
-      );
-    },
-    hasHighlight: (address, ...args) => {
-      if (filtered_annotations && filtered_annotations[address] !== undefined) {
-        let thumbs = "";
-        if (filtered_annotations[address].some((a) => a.content == THUMBS_UP)) {
-          thumbs += " thumbs-up";
-        }
-        if (
-          filtered_annotations[address].some((a) => a.content == THUMBS_DOWN)
-        ) {
-          thumbs += " thumbs-down";
-        }
-        return (
-          "highlighted num-" + filtered_annotations[address].length + thumbs
-        );
-      }
-    },
-    annotationIndicators: (address, ...args) => {
-      let counts = [];
-
-      // add highlights
-      if (highlights) {
-        let forAddress = highlights.highlights.for_path(address);
-        // replace address such that messages[4] is transformed to messages.4
-        // this is needed because the traceview uses the address as a key
-        let forAddressKey = address.replace(/\[\d+\]/g, (match) => {
-          return "." + match.slice(1, -1);
-        });
-        console.log("highlights", forAddressKey, highlights.highlights);
-        let n = highlights.highlights
-          .for_path(forAddressKey)
-          .allHighlights().length;
-        if (n > 0) {
-          counts.push({
-            type: "highlight",
-            count: n,
-          });
-        }
-      }
-
-      // add user annotations
-      if (filtered_annotations) {
-        // filter keys by prefix
-        let keys = Object.keys(filtered_annotations).filter((key) =>
-          key.startsWith(address)
-        );
-        let count = 0;
-        keys.forEach((key) => {
-          count += filtered_annotations[key].length;
-        });
-        if (count > 0) {
-          counts.push({
-            type: "human",
-            count: count,
-          });
-        }
-      }
-
-      return counts;
-    },
-    extraArgs: [activeTraceId],
-  };
+  // construct decorator for the traceview, to show annotations and annotation thread in the traceview
+  const decorator = useHighlightDecorator(
+    activeTraceId,
+    activeTraceIndex,
+    highlights,
+    filtered_annotations,
+    onAnnotationCreate,
+    onAnnotationDelete
+  );
 
   // wait a bit after the last render of the components to enable the guide
   useEffect(() => {
@@ -380,7 +431,7 @@ export function AnnotationAugmentedTraceView(props) {
         {props.header}
         {
           // Add a box to show if the trace is public or private (if the prop is set)
-          config("sharing") && props.is_public != null && (
+          props.is_public != null && (
             <div
               className={`badge ${props.is_public ? "public-trace" : "private-trace"}`}
             >
@@ -431,12 +482,12 @@ export function AnnotationAugmentedTraceView(props) {
             </button>
             {props.actions}
             <div className="vr" />
-            {config("sharing") && (
+            {
               <button className="inline" onClick={onOpenInPlayground}>
                 {" "}
                 <BsTerminal /> Open In Invariant
               </button>
-            )}
+            }
             {props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={

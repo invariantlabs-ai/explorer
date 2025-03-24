@@ -9,6 +9,7 @@ import {
   BsCheck2,
   BsExclamationCircleFill,
   BsPencilFill,
+  BsFileEarmarkBreak,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -26,6 +27,7 @@ import {
   anchorToAddress,
   copyPermalinkToClipboard,
   permalink,
+  reveal,
 } from "../permalink-navigator";
 
 /**
@@ -777,21 +779,46 @@ function MessageHeader(props: {
   );
 }
 
-const annotationName = (type: string) => {
+/**
+ * The written name of the annotation type, e.g. "human" or "highlight".
+ *
+ * Can be empty if the type should not have a descriptive name in the UI.
+ */
+function annotationName(type: string) {
   if (type === "human") {
-    return "user annotation";
-  } else {
     return "";
+  } else {
+    // other types do not have an explicit name
+    return "highlight";
   }
-};
+}
 
+function annotationIcon(type: string) {
+  if (type === "human") {
+    return <BsPencilFill />;
+  } else {
+    // other types do not have an explicit icon
+    return <BsFileEarmarkBreak />;
+  }
+}
+
+/**
+ * Shows badges in the message header, if the message has highlights or
+ * user annotations. Also visible in the collapsed view.
+ *
+ * 'human', i.e. user, annotations are shown offset to the left of the header, not in the header.
+ *
+ * @param props.highlightContext The context for the highlights.
+ * @param props.address The address of the message.
+ * @param props.message The message object.
+ */
 function MessageHeaderAnnotationIndicator(props: {
   highlightContext?: HighlightContext;
   address: string;
   message: any;
 }) {
   const [annotationTypes, setAnnotationTypes] = useState(
-    [] as { type: string; count: number }[]
+    [] as { type: string; count: number; address?: string }[]
   );
 
   useEffect(() => {
@@ -805,15 +832,19 @@ function MessageHeaderAnnotationIndicator(props: {
   return (
     <>
       {annotationTypes.map((type, index) => {
-        // if (type.type == "human") {
-        //   return (
-        //     <span key={index} className={"annotation-indicator human circle"}>
-        //       <BsPencilFill />
-        //     </span>
-        //   );
-        // }
         return (
-          <span key={index} className={"annotation-indicator " + type.type}>
+          <span
+            key={index}
+            className={"annotation-indicator " + type.type}
+            onClick={() => {
+              if (type.address) {
+                reveal(type.address, "annotations", true, {
+                  setHash: false,
+                });
+              }
+            }}
+          >
+            {annotationIcon(type.type)}
             {type.count} {annotationName(type.type)}
             {annotationName(type.type) != "" && type.count > 1 ? "s" : ""}
           </span>

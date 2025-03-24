@@ -21,7 +21,7 @@ export interface TraceDecorator {
   // returns a number, if the address has an annotation indicator (e.g. a number of annotations)
   annotationIndicators?: (
     address?: string
-  ) => { type: string; count: number }[] | null;
+  ) => { type: string; count: number; address?: string }[] | null;
   // global extra args that are passed to editor and hasHighlight functions
   extraArgs?: any;
 }
@@ -150,10 +150,6 @@ export function Line(props: {
     }
   };
 
-  // console.log("check if expanded on", [props.address, props.highlightContext?.selectedHighlightAnchor], props.highlights);
-
-  // const expanded =
-  //   props.address === props.highlightContext?.selectedHighlightAnchor;
   const expanded = isExpanded(
     props.address || "",
     props.highlightContext?.selectedHighlightAnchor || "",

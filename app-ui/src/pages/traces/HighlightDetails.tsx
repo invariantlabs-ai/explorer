@@ -49,7 +49,7 @@ export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
   return (
     <>
       {(analyzerHighlights.length > 0 || testHighlights.length > 0) && (
-        <div className="role">Issues</div>
+        <div className="highlight-header">Issues</div>
       )}
       {analyzerHighlights.length > 0 && (
         <AnalysisResultDetail highlights={analyzerHighlights} />

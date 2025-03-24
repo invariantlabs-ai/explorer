@@ -1786,7 +1786,7 @@ function TraceRowContents(props: { trace: Trace }) {
       <>
         {name}
         {(trace.num_line_annotations || 0) > 0 ? (
-          <span className="annotation-indicator human">
+          <span className="badge annotation-indicator">
             {trace?.num_line_annotations}
           </span>
         ) : null}
