@@ -15,6 +15,7 @@ import { capture } from "../../utils/Telemetry";
 import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
+import { useUserInfo } from "../../utils/UserInfo";
 
 interface Analyzer {
   running: boolean;
@@ -84,7 +85,7 @@ function useIssues(analyzerOutput: any, storedOutput?: any) {
             } catch (e) {
               console.error(
                 "Failed to parse stored analyzer output:",
-                storedOutput[i],
+                storedOutput[i]
               );
             }
             break;
@@ -167,7 +168,7 @@ function createAnalysis(
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
-  setDebug?: (debug: any) => void,
+  setDebug?: (debug: any) => void
 ): AbortController {
   const abortController = new AbortController();
 
@@ -253,12 +254,11 @@ function createAnalysis(
         apikey == TEMPLATE_API_KEY
       ) {
         capture("tried-analysis", { error: error.message });
-        // alert("Unauthorized: You do not have access to this resource.");
-        alertModelAccess("You do not have access to this resource.");
+        alertModelAccess("Please provide a valid API key (see settings)");
         return;
       } else if (error.message.includes("Unauthorized")) {
         alert(
-          "Unauthorized: Please provide a valid API key to use an analysis model.",
+          "Unauthorized: Please provide a valid API key to use an analysis model."
         );
         return;
       } else {
@@ -304,7 +304,7 @@ export function AnalyzerPreview(props: {
     content = (
       <div className="secondary">
         <BsStars className="icon" />
-        Analyze this trace to identify issues
+        <span className="empty-msg">Analyze this trace to identify issues</span>
         {props.onRunAnalyzer && (
           <button className="inline primary" onClick={onAnalyze}>
             Analyze
@@ -413,7 +413,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
       "retriever": {"k" : 1}
     }
   }
-}` as string | undefined),
+}` as string | undefined)
   );
 
   const setAnalyzerConfig = (value: string | undefined) => {
@@ -443,7 +443,7 @@ export function AnalyzerConfigEditor(props: { configType: string }) {
 
 export function clientAnalyzerConfig(configType: string) {
   return parseConfig(
-    localStorage.getItem("analyzerConfig-" + configType) || "{}",
+    localStorage.getItem("analyzerConfig-" + configType) || "{}"
   );
 }
 
@@ -466,7 +466,7 @@ export function AnalyzerSidebar(props: {
   onAnalyzeEvent?: BroadcastEvent;
 }) {
   const [abortController, setAbortController] = React.useState(
-    new AbortController(),
+    new AbortController()
   );
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -474,6 +474,8 @@ export function AnalyzerSidebar(props: {
 
   const issues = useIssues(props.output, props.storedOutput);
   const numIssues = issues.filter((i) => !i.loading).length;
+
+  const userInfo = useUserInfo();
 
   const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
   const outputIsEmpty =
@@ -498,7 +500,11 @@ export function AnalyzerSidebar(props: {
   }, [props.traceId]);
 
   const onRun = useCallback(async () => {
-    // props.setAnalyzerOpen(false);
+    if (!userInfo?.loggedIn) {
+      alertModelAccess("Please log in and try again");
+      return;
+    }
+
     props.analyzer.setRunning(true);
     props.analyzer.setError(null);
     props.analyzer.setDebug(null);
@@ -526,7 +532,7 @@ export function AnalyzerSidebar(props: {
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
-        props.analyzer.setDebug,
+        props.analyzer.setDebug
       );
       setAbortController(ctrl);
     } catch (error) {
@@ -617,7 +623,7 @@ export function AnalyzerSidebar(props: {
               key={props.traceId + "-" + "issue-" + i + "-" + output.content}
               issue={output}
             />
-          ),
+          )
         )}
       </div>
       {notYetRun && (

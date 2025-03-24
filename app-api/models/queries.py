@@ -71,6 +71,20 @@ class AnalyzerTraceExporter:
         self.dataset_id = dataset_id
         self.dataset_name = dataset_name
 
+    @classmethod
+    def is_annotation_for_analyzer(cls, content: str) -> bool:
+        return bool(re.search(r"\[.*\]", content))
+
+    @classmethod
+    def get_content_severity(cls, content: str) -> tuple[str, float]:
+        match = re.search(r"severity=([0-1](?:\.\d+)?)", content)  # Matches severity values from 0 to 1
+        if match:
+            severity = float(match.group(1))
+            content = re.sub(r",?\s*severity=[0-1](?:\.\d+)?", "", content).strip()
+            return content, severity
+        return content, None # Return original string with severity=None if not found
+            
+
     async def analyzer_model_input(
         self, session: Session, input_trace_id: UUID | None = None
     ) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
@@ -121,15 +135,14 @@ class AnalyzerTraceExporter:
                     and annotation.extra_metadata.get("source") == "analyzer-model"
                 ):
                     continue
+                if not AnalyzerTraceExporter.is_annotation_for_analyzer(annotation.content):
+                    continue
+                content, severity = AnalyzerTraceExporter.get_content_severity(annotation.content)
                 samples_by_id[str(trace.id)].annotations.append(
                     AnalyzerAnnotation(
-                        content=annotation.content,
+                        content=content,
                         location=annotation.address,
-                        severity=float(
-                            annotation.extra_metadata.get("severity", 0.0)
-                            if annotation.extra_metadata
-                            else 0.0
-                        ),
+                        severity=severity,
                     )
                 )
             if input_trace_id:
