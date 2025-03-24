@@ -86,7 +86,7 @@ function Home() {
   // fetch datasets and snippets
   let [featuredDatasets, refreshFeaturedDatasets] = useDatasetList(
     "homepage",
-    8,
+    8
   );
 
   useEffect(() => {
@@ -119,7 +119,7 @@ function Home() {
 
   const [privateDatasets, refreshPrivateDatasets] = useDatasetList(
     "private",
-    8,
+    8
   );
 
   useEffect(() => {
@@ -232,7 +232,7 @@ function Home() {
                       "/u/" + event.user.username + "/" + event.details.name,
                     trace: "/trace/" + event.details.id,
                     annotation: "/trace/" + event.details?.trace?.id,
-                  }[event.type],
+                  }[event.type]
                 )
               }
               key={i}
