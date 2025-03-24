@@ -10,6 +10,7 @@ import {
   UploadDatasetModalContent,
 } from "../home/NewDataset";
 import { BsUpload } from "react-icons/bs";
+import { Time } from "../../components/Time";
 
 /**
  * Compact version of the dataset list (e.g. to use on the home page).
@@ -40,6 +41,11 @@ export function DatasetLinkList(props) {
                 </h3>
                 {dataset.description && (
                   <span className="description">{dataset.description}</span>
+                )}
+                {!dataset.description && dataset.latest_trace_time && (
+                  <span className="description">
+                    <Time>{dataset.latest_trace_time}</Time>
+                  </span>
                 )}
               </li>
             </Link>

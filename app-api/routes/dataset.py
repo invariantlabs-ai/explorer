@@ -236,7 +236,6 @@ def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]
             session.query(Dataset, User)
             .join(User, User.id == Dataset.user_id)
             .filter(and_(Dataset.is_public, Dataset.id.in_(homepage_dataset_ids)))
-            .order_by(Dataset.time_created.desc())
             .limit(limit)
             .all()
         )
@@ -254,7 +253,16 @@ def list_datasets(
             # Use cached results for HOMEPAGE datasets
             return fetch_homepage_datasets(limit)
 
-        query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
+        # Base query joining Dataset with User and getting latest trace time
+        query = (
+            session.query(
+                Dataset, User, func.max(Trace.time_created).label("latest_trace_time")
+            )
+            .join(User, User.id == Dataset.user_id)
+            .outerjoin(Trace, Trace.dataset_id == Dataset.id)
+            .group_by(Dataset.id, User.id)
+        )
+
         if kind == DatasetKind.PRIVATE:
             query = query.filter(Dataset.user_id == user_id)
         elif kind == DatasetKind.PUBLIC:
@@ -262,8 +270,18 @@ def list_datasets(
         elif kind == DatasetKind.ANY:
             query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
 
-        datasets = query.order_by(Dataset.time_created.desc()).limit(limit).all()
-        return [dataset_to_json(dataset, user) for dataset, user in datasets]
+        # Order by latest trace time if exists, otherwise by dataset creation time
+        datasets = (
+            query.order_by(
+                func.coalesce(func.max(Trace.time_created), Dataset.time_created).desc()
+            )
+            .limit(limit)
+            .all()
+        )
+        return [
+            dataset_to_json(dataset, user, latest_trace_time=latest_trace_time)
+            for dataset, user, latest_trace_time in datasets
+        ]
 
 
 @dataset.get("/list/byuser/{user_name}")
