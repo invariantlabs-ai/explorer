@@ -21,6 +21,7 @@
   display: flex;
   flex-direction: column;
   margin-top: 12.5pt;
+  overflow-x: auto;
 
   .annotation {
     display: flex;
@@ -28,9 +29,15 @@
     align-items: flex-start;
     justify-content: flex-start;
 
+    span.time {
+      opacity: 1;
+      margin-left: 2pt;
+    }
+
     .user {
       margin-top: -0.5pt;
       margin-right: 7pt;
+      width: 50px;
 
       img {
         border-radius: 4pt;
@@ -75,6 +82,7 @@
         margin: 0pt;
         position: relative;
         overflow: visible;
+        white-space: nowrap;
 
         b {
           margin-right: 4pt;
@@ -94,6 +102,14 @@
           align-items: center;
           justify-content: flex-start;
           margin-top: -2pt;
+
+          pre {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            font-size: 10pt;
+            margin-top: 8pt;
+          }
 
           button {
             background: none;
@@ -163,12 +179,26 @@
 
         button {
           min-height: auto;
+          border-radius: 4pt;
           font-size: 10pt;
           padding: 4pt 10pt;
           line-height: 15pt;
           height: 25pt;
           margin-left: 4pt;
           color: white;
+          font-family:
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            Oxygen,
+            Ubuntu,
+            Cantarell,
+            "Open Sans",
+            "Helvetica Neue",
+            sans-serif;
+          font-weight: 600;
 
           .shortcut {
             padding: 0pt 5pt;

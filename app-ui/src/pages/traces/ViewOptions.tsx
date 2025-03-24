@@ -6,6 +6,7 @@ import React from "react";
 
 export interface ViewOptions {
   autocollapseTestTraces: boolean;
+  autocollapseAll: boolean;
 }
 
 export function useViewOptions(): {
@@ -25,6 +26,7 @@ export function useViewOptions(): {
   const localStorageOptions = localStorage.getItem(LOCAL_STORAGE_KEY);
   let options = {
     autocollapseTestTraces: false,
+    autocollapseAll: false,
   };
   try {
     options = JSON.parse(localStorageOptions || "{}");
@@ -43,19 +45,69 @@ export function useViewOptions(): {
 
   const viewOptionsEditor = (
     <div className="options">
-      <input
-        type="checkbox"
-        checked={viewOptions.autocollapseTestTraces}
-        id="show-annotations"
-        onChange={(e) =>
-          setViewOptions({ autocollapseTestTraces: e.target.checked })
-        }
-      />
-      <label htmlFor="show-annotations">Auto-Collapse Test Traces</label>
-      <p>
-        Automatically collapses all messages, except for the initial user
-        message, when opening a test trace.
-      </p>
+      <h2>Trace Events</h2>
+
+      <div>
+        <div>
+          <input
+            type="radio"
+            name="viewOption"
+            checked={
+              !viewOptions.autocollapseTestTraces &&
+              !viewOptions.autocollapseAll
+            }
+            id="expanded"
+            onChange={() =>
+              setViewOptions({
+                autocollapseTestTraces: false,
+                autocollapseAll: false,
+              })
+            }
+          />
+          <label htmlFor="expanded">
+            Expanded (default)
+            <p>All events are expanded by default.</p>
+          </label>
+        </div>
+        <div>
+          <input
+            type="radio"
+            name="viewOption"
+            checked={viewOptions.autocollapseAll}
+            id="autocollapse-all"
+            onChange={() =>
+              setViewOptions({
+                autocollapseTestTraces: false,
+                autocollapseAll: true,
+              })
+            }
+          />
+          <label htmlFor="autocollapse-all">
+            Collapsed
+            <p>All events are collapsed by default.</p>
+          </label>
+        </div>
+        <div>
+          <input
+            type="radio"
+            name="viewOption"
+            checked={
+              viewOptions.autocollapseTestTraces && !viewOptions.autocollapseAll
+            }
+            id="autocollapse-test-traces"
+            onChange={() =>
+              setViewOptions({
+                autocollapseTestTraces: true,
+                autocollapseAll: false,
+              })
+            }
+          />
+          <label htmlFor="autocollapse-test-traces">
+            Collapsed for Tests
+            <p>Unit testing traces are collapsed by default.</p>
+          </label>
+        </div>
+      </div>
     </div>
   );
 

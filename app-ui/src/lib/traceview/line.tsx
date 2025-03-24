@@ -18,6 +18,10 @@ export interface TraceDecorator {
   editorComponent: React.ComponentType;
   // returns true, if a given address is highlighted (e.g. hints at highlights being present)
   hasHighlight?: (address?: string, ...args: any) => boolean;
+  // returns a number, if the address has an annotation indicator (e.g. a number of annotations)
+  annotationIndicators?: (
+    address?: string
+  ) => { type: string; count: number; address?: string }[] | null;
   // global extra args that are passed to editor and hasHighlight functions
   extraArgs?: any;
 }
@@ -47,7 +51,7 @@ export interface HighlightContext {
 function isExpanded(
   address: string,
   selectedHighlightAnchor: string | null,
-  highlights: GroupedHighlight[],
+  highlights: GroupedHighlight[]
 ) {
   if (address === selectedHighlightAnchor) {
     return true;
@@ -146,14 +150,10 @@ export function Line(props: {
     }
   };
 
-  // console.log("check if expanded on", [props.address, props.highlightContext?.selectedHighlightAnchor], props.highlights);
-
-  // const expanded =
-  //   props.address === props.highlightContext?.selectedHighlightAnchor;
   const expanded = isExpanded(
     props.address || "",
     props.highlightContext?.selectedHighlightAnchor || "",
-    props.highlights || [],
+    props.highlights || []
   );
   const className =
     "line " +
@@ -170,7 +170,7 @@ export function Line(props: {
   if (decorator.hasHighlight) {
     let highlightResult = decorator.hasHighlight(
       props.address,
-      ...decorator.extraArgs,
+      ...decorator.extraArgs
     );
     if (typeof highlightResult === "boolean") {
       extraClass += "highlighted";
@@ -196,7 +196,7 @@ export function Line(props: {
     const existingThumbAnnotations = threadAnnotations.filter(
       (annotation) =>
         annotation["content"] === THUMBS_UP ||
-        annotation["content"] === THUMBS_DOWN,
+        annotation["content"] === THUMBS_DOWN
     );
 
     if (!userInfo?.loggedIn) {
@@ -255,7 +255,7 @@ export function Line(props: {
     const existingThumbAnnotations = threadAnnotations.filter(
       (annotation) =>
         annotation["content"] === THUMBS_DOWN ||
-        annotation["content"] === THUMBS_UP,
+        annotation["content"] === THUMBS_UP
     );
 
     if (!userInfo?.loggedIn) {

@@ -8,6 +8,8 @@ import {
   BsChatFill,
   BsCheck2,
   BsExclamationCircleFill,
+  BsPencilFill,
+  BsFileEarmarkBreak,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -25,6 +27,7 @@ import {
   anchorToAddress,
   copyPermalinkToClipboard,
   permalink,
+  reveal,
 } from "../permalink-navigator";
 
 /**
@@ -734,6 +737,7 @@ function MessageHeader(props: {
   role: string;
   message: any;
   expanded: boolean;
+  highlightContext?: HighlightContext;
   setExpanded: (state: boolean) => void;
   address: string;
 }) {
@@ -749,13 +753,18 @@ function MessageHeader(props: {
 
   return (
     <div
-      className={"role " + props.className}
+      className={"message-header role " + props.className}
       onClick={() => props.setExpanded(!props.expanded)}
     >
       {props.expanded ? <BsCaretRightFill /> : <BsCaretDownFill />}
       <RoleIcon role={props.role} />
       {props.role}
       <CompactView message={props} />
+      <MessageHeaderAnnotationIndicator
+        highlightContext={props.highlightContext}
+        address={props.address}
+        message={props.message}
+      />
       <div
         className="address"
         onClick={(e) => {
@@ -767,6 +776,81 @@ function MessageHeader(props: {
         {copied ? " (copied)" : ""}
       </div>
     </div>
+  );
+}
+
+/**
+ * The written name of the annotation type, e.g. "human" or "highlight".
+ *
+ * Can be empty if the type should not have a descriptive name in the UI.
+ */
+function annotationName(type: string) {
+  if (type === "human") {
+    return "";
+  } else {
+    // other types do not have an explicit name
+    return "highlight";
+  }
+}
+
+function annotationIcon(type: string) {
+  if (type === "human") {
+    return <BsPencilFill />;
+  } else {
+    // other types do not have an explicit icon
+    return <BsFileEarmarkBreak />;
+  }
+}
+
+/**
+ * Shows badges in the message header, if the message has highlights or
+ * user annotations. Also visible in the collapsed view.
+ *
+ * 'human', i.e. user, annotations are shown offset to the left of the header, not in the header.
+ *
+ * @param props.highlightContext The context for the highlights.
+ * @param props.address The address of the message.
+ * @param props.message The message object.
+ */
+function MessageHeaderAnnotationIndicator(props: {
+  highlightContext?: HighlightContext;
+  address: string;
+  message: any;
+}) {
+  const [annotationTypes, setAnnotationTypes] = useState(
+    [] as { type: string; count: number; address?: string }[]
+  );
+
+  useEffect(() => {
+    setAnnotationTypes(
+      props.highlightContext?.decorator?.annotationIndicators?.(
+        props.address
+      ) || []
+    );
+  }, [props.highlightContext]);
+
+  return (
+    <>
+      {annotationTypes.map((type, index) => {
+        return (
+          <span
+            key={index}
+            className={"annotation-indicator " + type.type}
+            onClick={() => {
+              if (type.address) {
+                reveal(type.address, "annotations", true, {
+                  setHash: false,
+                });
+              }
+            }}
+          >
+            {annotationIcon(type.type)}
+            {type.count} {annotationName(type.type)}
+            {annotationName(type.type) != "" && type.count > 1 ? "s" : ""}
+          </span>
+        );
+      })}
+    </>
   );
 }
 
@@ -789,13 +873,25 @@ function string_color(s: string) {
   return categorical_colors[hash % categorical_colors.length];
 }
 
+function badge_string_style(s: string): React.CSSProperties {
+  const hash = s.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const color = categorical_colors[hash % categorical_colors.length];
+  return {
+    backgroundColor: color + "80",
+    border: "1px solid " + color,
+  };
+}
+
 // component that renders a compact view of a message's content, e.g. the associated tool call
 function CompactView(props: { message: any }) {
   // get first tool call or use message as tool call
   const message = props.message.message;
   if (message.role === "tool" && message.tool_name) {
     return (
-      <span className="badge" style={{ backgroundColor: string_color(message.tool_name) }}>
+      <span
+        className="tool-call-badge"
+        style={badge_string_style(message.tool_name)}
+      >
         {message.tool_name}
       </span>
     );
@@ -824,7 +920,7 @@ function CompactView(props: { message: any }) {
   compact += ")";
 
   return (
-    <span className="badge" style={{ backgroundColor: string_color(f.name) }}>
+    <span className="tool-call-badge" style={badge_string_style(f.name)}>
       {compact}
     </span>
   );
@@ -905,6 +1001,7 @@ class MessageView extends React.Component<
                 className="seamless"
                 role="Assistant"
                 expanded={this.state.collapsed}
+                highlightContext={this.props.highlightContext}
                 setExpanded={(state: boolean) =>
                   this.setState({ collapsed: state })
                 }
@@ -969,6 +1066,7 @@ class MessageView extends React.Component<
                 className="role"
                 role={message.role}
                 expanded={this.state.collapsed}
+                highlightContext={this.props.highlightContext}
                 setExpanded={(state: boolean) =>
                   this.setState({ collapsed: state })
                 }
@@ -1087,7 +1185,11 @@ function formatJSONArray(props: {
     switch (item?.type) {
       case "text":
         return (
-          <Annotated {...props} address={address}>
+          <Annotated
+            {...props}
+            address={address}
+            key={"multi-part-item-" + index}
+          >
             {truncate_content(item.text, config("truncation_limit"))}
           </Annotated>
         );
@@ -1097,13 +1199,21 @@ function formatJSONArray(props: {
         // For the newer messages it is a URL to a file.
         if (item.image_url.url.startsWith("data:image/")) {
           return (
-            <Annotated {...props} address={address}>
+            <Annotated
+              {...props}
+              address={address}
+              key={"multi-part-item-" + index}
+            >
               {`local_base64_img: ${extractBase64(item.image_url.url)}`}
             </Annotated>
           );
         } else {
           return (
-            <Annotated {...props} address={address}>
+            <Annotated
+              {...props}
+              address={address}
+              key={"multi-part-item-" + index}
+            >
               {`local_img_link: ${item.image_url.url}`}
             </Annotated>
           );
@@ -1111,7 +1221,11 @@ function formatJSONArray(props: {
 
       default:
         return (
-          <Annotated {...props} address={address}>
+          <Annotated
+            {...props}
+            address={address}
+            key={"multi-part-item-" + index}
+          >
             {typeof item == "object" ? JSON.stringify(item) : item}
           </Annotated>
         );
@@ -1146,7 +1260,7 @@ function MessageJSONContent(props: {
           return (
             <tr key={index}>
               <td className="key">
-                <div>{key}</div>
+                <pre>{key}</pre>
               </td>
               <td className="value">
                 <AnnotatedStringifiedJSON
@@ -1309,7 +1423,7 @@ function HighlightedJSONTable(props: {
           return (
             <tr key={index}>
               <td className="key">
-                <div>{key}</div>
+                <pre>{key}</pre>
               </td>
               <td className="value">
                 <AnnotatedStringifiedJSON

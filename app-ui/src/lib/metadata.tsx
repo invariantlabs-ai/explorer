@@ -100,7 +100,7 @@ export function InferredKeyIcon(props) {
  * Renders a key-value pair of metadata.
  */
 function Pair(props) {
-  const MAX_LENGTH = 80;
+  const MAX_LENGTH = 40;
   const [truncatedState, setTruncated] = useState(true);
   const value =
     typeof props.value != "string" ? JSON.stringify(props.value) : props.value;

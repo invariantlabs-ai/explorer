@@ -971,7 +971,10 @@ export function Traces(props) {
             hideAnnotations={props.hideAnnotations}
             // shown when no trace is selected
             empty={emptyView}
-            collapsed={isTest && viewOptions.autocollapseTestTraces}
+            collapsed={
+              (isTest && viewOptions.autocollapseTestTraces) ||
+              viewOptions.autocollapseAll
+            }
             // current search highlights
             mappings={highlightsFor(activeTrace)}
             // whether we are still loading the dataset's trace data
@@ -1783,7 +1786,9 @@ function TraceRowContents(props: { trace: Trace }) {
       <>
         {name}
         {(trace.num_line_annotations || 0) > 0 ? (
-          <span className="badge">{trace?.num_line_annotations}</span>
+          <span className="badge annotation-indicator">
+            {trace?.num_line_annotations}
+          </span>
         ) : null}
         <div className="spacer" />
       </>
