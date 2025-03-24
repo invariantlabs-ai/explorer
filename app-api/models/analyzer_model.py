@@ -9,7 +9,7 @@ from typing import Literal
 class Annotation(BaseModel):
     content: str
     location: str | None = None
-    severity: float
+    severity: float | None
 
 
 class Sample(BaseModel):
