@@ -742,17 +742,39 @@ button {
     display: block;
     max-width: 320pt;
 
+    h2 {
+      font-size: 12pt;
+      font-weight: bold;
+      border-top: 1pt solid rgb(234, 234, 234);
+      padding-top: 10pt;
+
+      p {
+        margin: 0pt;
+        font-weight: normal;
+        margin-top: 5pt;
+        margin-bottom: -5pt;
+        border: none;
+        padding-bottom: 0pt;
+      }
+    }
+
     label {
       margin-left: 5pt;
       font-size: 12pt;
       color: $text-color !important;
       opacity: 0.95;
+      font-weight: normal;
+
+      p {
+        font-size: 10pt;
+        padding-bottom: 5pt;
+      }
     }
 
     p {
       margin: 0pt;
       padding: 0pt;
-      font-size: 10pt;
+      font-size: 12pt;
       margin-left: 17pt;
       color: $text-color;
       padding-bottom: 15pt;
@@ -1746,7 +1768,7 @@ button.share {
 }
 
 .traceview span.line.highlighted .selectable {
-  background-color: rgba(204, 204, 204, 0.5);
+  background-color: rgba(88, 85, 246, 0.1);
 }
 
 .traceview span.line {
