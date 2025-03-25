@@ -6,28 +6,102 @@ import {
   BsArrowsCollapse,
   BsBan,
   BsCardList,
+  BsCheck2,
+  BsCheckCircleFill,
   BsCode,
   BsDatabaseAdd,
   BsDatabaseLock,
+  BsExclamationTriangle,
   BsFileEarmarkBreak,
+  BsGearWideConnected,
   BsPauseCircle,
   BsPencilFill,
   BsPlus,
   BsPlusCircle,
+  BsShieldCheck,
   BsShieldFillCheck,
+  BsShieldFillExclamation,
   BsStars,
   BsTerminal,
   BsTrash,
   BsX,
+  BsXCircle,
 } from "react-icons/bs";
 import { Modal } from "../../components/Modal";
 import { Link } from "react-router-dom";
 import "./Guardrails.scss";
 import { Tooltip } from "react-tooltip";
 import { Traces } from "./Traces";
+import { alertModelAccess } from "./ModelModal";
 
-const SUGGETSIONS_ENABLED = false;
+// Enable the suggestions section for policy synthesis
+const SUGGETSIONS_ENABLED = true;
 const GUARDRAIL_EVALUATION_ENABLED = false;
+
+// Poll interval in milliseconds
+const POLL_INTERVAL = 5000;
+
+// Job status values
+const JOB_STATUS = {
+  PENDING: "pending",
+  RUNNING: "running",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+};
+
+// Reuse the same template API key as in Analyzer.tsx
+const TEMPLATE_API_KEY = "<api key on the Explorer above>";
+
+/**
+ * Parse the analyzer configuration from localStorage
+ */
+function parseAnalyzerConfig(configType: string = "single"): {
+  endpoint: string;
+  apikey: string;
+} {
+  try {
+    const storedConfig = localStorage.getItem("analyzerConfig-" + configType) || "{}";
+    const config = JSON.parse(storedConfig);
+    const endpoint = config.endpoint || "https://preview-explorer.invariantlabs.ai/";
+    const apikey = config.apikey || "";
+    return { endpoint, apikey };
+  } catch (e) {
+    console.error("Failed to parse analyzer config:", e);
+    return {
+      endpoint: "https://preview-explorer.invariantlabs.ai/",
+      apikey: ""
+    };
+  }
+}
+
+// Type definitions for policy jobs and suggestions
+interface PolicyJob {
+  id: string;
+  extra_metadata: {
+    type: string;
+    status: string;
+    name: string;
+    job_id: string;
+    endpoint: string;
+    cluster_name: string;
+    num_processed?: number;
+    total?: number;
+  };
+  secret_metadata?: {
+    apikey?: string;
+  };
+}
+
+interface CompletedPolicy {
+  status: string;
+  policy_code: string;
+  success: boolean;
+  detection_rate: number;
+  job_id: string;
+  cluster_name: string;
+  from_metadata?: boolean;
+}
 
 /**
  * Content to show in the modal when deleting a policy.
@@ -80,6 +154,229 @@ function DeletePolicyModalContent(props) {
       >
         {loading ? "Deleting..." : "Delete"}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Content to show in the modal for configuring policy synthesis.
+ */
+function PolicySynthesisModalContent(props) {
+  // Get the API URL and key from the analyzer config
+  const { endpoint, apikey } = parseAnalyzerConfig();
+
+  const [apiUrl, setApiUrl] = React.useState(endpoint);
+  const [apiKey, setApiKey] = React.useState(apikey);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const onGenerate = () => {
+    setLoading(true);
+    setError("");
+
+    if (apiKey === TEMPLATE_API_KEY) {
+      setLoading(false);
+      alertModelAccess("Please provide a valid API key in the Analyzer settings");
+      return;
+    }
+
+    // Prepare the request payload
+    const payload = {
+      apiurl: apiUrl,
+      apikey: apiKey,
+    };
+
+    // Make the API request to start policy synthesis
+    fetch(`/api/v1/dataset/byid/${props.dataset_id}/policy-synthesis`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          setLoading(false);
+          props.onSuccess(data);
+          props.onClose();
+        } else {
+          const data = await response.json();
+          setLoading(false);
+          setError(data.detail || "An error occurred while generating policies");
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        setError("An error occurred: " + error.message);
+      });
+  };
+
+  return (
+    <div className="form policy-synthesis-form">
+      <h2>Generate Guardrail Suggestions</h2>
+      <p>
+        Generate guardrail suggestions based on the clusters identified in your
+        dataset analysis. This will create guardrails tailored to the patterns
+        found in your data.
+      </p>
+
+      <div className="form-group">
+        <label>API URL</label>
+        <input
+          type="text"
+          value={apiUrl}
+          onChange={(e) => setApiUrl(e.target.value)}
+          placeholder="https://api.example.com"
+        />
+        <small className="help-text">Using the same endpoint as configured in Analyzer settings</small>
+      </div>
+
+      <div className="form-group">
+        <label>API Key</label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="Enter your API key"
+        />
+        <small className="help-text">Using the same API key as configured in Analyzer settings</small>
+        {apiKey === TEMPLATE_API_KEY && (
+          <div className="note">
+            Please configure your API key in the Analyzer settings first.
+          </div>
+        )}
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="form-actions">
+        <button className="secondary" onClick={props.onClose}>
+          Cancel
+        </button>
+        <button
+          className="primary"
+          onClick={onGenerate}
+          disabled={loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY}
+        >
+          {loading ? "Generating..." : "Generate Suggestions"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Component for viewing a generated policy and optionally applying it.
+ */
+function PolicySuggestionModalContent(props) {
+  const { policy, onClose, onApply } = props;
+  const [loading, setLoading] = React.useState(false);
+  const [policyName, setPolicyName] = React.useState(
+    policy.cluster_name || "Generated Guardrail"
+  );
+
+  const handleApply = () => {
+    setLoading(true);
+    // Create a new guardrail policy with the generated code
+    fetch(`/api/v1/dataset/${props.dataset_id}/policy`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: policyName,
+        policy: policy.policy_code,
+        action: "log",
+        enabled: true,
+      }),
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          setLoading(false);
+          onApply && onApply();
+          onClose();
+        } else {
+          const data = await response.json();
+          setLoading(false);
+          alert(data.detail || "Failed to create guardrail");
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        alert("Error: " + error.message);
+      });
+  };
+
+  return (
+    <div className="modal-content policy-editor-form">
+      <header>
+        <b>
+          <BsShieldCheck /> Generated Guardrail
+        </b>
+        <div className="spacer" />
+        <button className="button inline" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="primary inline"
+          onClick={handleApply}
+          disabled={loading || !policyName}
+        >
+          {loading ? "Applying..." : "Apply Guardrail"}
+        </button>
+      </header>
+      <div className="main">
+        <div className="collapsable" style={{ width: "100%" }}>
+          <h3>Guardrail Name</h3>
+          <input
+            type="text"
+            value={policyName}
+            onChange={(e) => setPolicyName(e.target.value)}
+            placeholder="Guardrail Name"
+            className="policy-name"
+          />
+
+          {policy.detection_rate !== undefined && (
+            <div className="detection-rate">
+              <h3>Detection Rate</h3>
+              <div className="rate-indicator">
+                <div
+                  className="rate-bar"
+                  style={{ width: `${policy.detection_rate * 100}%` }}
+                ></div>
+                <span>{Math.round(policy.detection_rate * 100)}%</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <h3>
+          Guardrailing Rule
+          <i>The generated policy code.</i>
+        </h3>
+        <div className="editor-container">
+          <Editor
+            width="100%"
+            className="policy-editor"
+            defaultLanguage="python"
+            value={policy.policy_code}
+            options={{
+              fontSize: 14,
+              minimap: {
+                enabled: false,
+              },
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              lineNumbers: "on",
+              wordWrap: "on",
+              wrappingIndent: "same",
+              readOnly: true,
+            }}
+            theme="vs-light"
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -408,6 +705,56 @@ export function SidepaneModal(props: {
 }
 
 /**
+ * Job status component to display the current job status
+ */
+function JobStatus({ status, progress }) {
+  let statusIcon;
+  let statusText;
+  let statusClass;
+
+  switch (status) {
+    case JOB_STATUS.PENDING:
+      statusIcon = <BsGearWideConnected className="spin" />;
+      statusText = "Pending";
+      statusClass = "pending";
+      break;
+    case JOB_STATUS.RUNNING:
+      statusIcon = <BsGearWideConnected className="spin" />;
+      statusText = progress
+        ? `Running (${progress.num_processed}/${progress.total})`
+        : "Running";
+      statusClass = "running";
+      break;
+    case JOB_STATUS.COMPLETED:
+      statusIcon = <BsCheckCircleFill />;
+      statusText = "Completed";
+      statusClass = "completed";
+      break;
+    case JOB_STATUS.FAILED:
+      statusIcon = <BsXCircle />;
+      statusText = "Failed";
+      statusClass = "failed";
+      break;
+    case JOB_STATUS.CANCELLED:
+      statusIcon = <BsXCircle />;
+      statusText = "Cancelled";
+      statusClass = "cancelled";
+      break;
+    default:
+      statusIcon = <BsExclamationTriangle />;
+      statusText = "Unknown";
+      statusClass = "unknown";
+  }
+
+  return (
+    <div className={`job-status ${statusClass}`}>
+      {statusIcon}
+      <span>{statusText}</span>
+    </div>
+  );
+}
+
+/**
  * Component for viewing, updating and deleting policies.
  */
 export function Guardrails(props: {
@@ -426,8 +773,31 @@ export function Guardrails(props: {
   // tracks the policy to be updated.
   const [selectedPolicyForUpdation, setSelectedPolicyForUpdation] =
     React.useState(null);
+
+  // Policy synthesis state
+  const [showPolicySynthesisModal, setShowPolicySynthesisModal] = React.useState(false);
+  const [policyJobs, setPolicyJobs] = React.useState<PolicyJob[]>([]);
+  const [loadingJobs, setLoadingJobs] = React.useState(false);
+  const [selectedPolicySuggestion, setSelectedPolicySuggestion] = React.useState<CompletedPolicy | null>(null);
+  const [completedPolicies, setCompletedPolicies] = React.useState<CompletedPolicy[]>([]);
+
+  // Flag to track if we've loaded the stored policies
+  const [storedPoliciesLoaded, setStoredPoliciesLoaded] = React.useState(false);
+
+  // Refs to avoid dependency issues
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasActiveJobsRef = React.useRef(false);
+  const datasetIdRef = React.useRef<string | null>(null);
+
   const dataset = props.dataset;
   const datasetLoader = props.datasetLoader;
+
+  // Update the dataset ID ref when it changes
+  React.useEffect(() => {
+    if (dataset?.id) {
+      datasetIdRef.current = dataset.id;
+    }
+  }, [dataset?.id]);
 
   // get guardrails from metadta
   const guadrails = dataset.extra_metadata?.policies
@@ -436,6 +806,224 @@ export function Guardrails(props: {
 
   // sort them by name
   guadrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
+
+  // Fetch active jobs
+  const fetchActiveJobs = React.useCallback(async () => {
+    if (!datasetIdRef.current) return;
+
+    try {
+      setLoadingJobs(true);
+      const jobsResponse = await fetch(`/api/v1/dataset/byid/${datasetIdRef.current}/jobs`);
+      if (jobsResponse.ok) {
+        const data = await jobsResponse.json();
+        // Filter for policy synthesis jobs
+        const synthJobs = data.filter(
+          (job: any) => job.extra_metadata.type === "policy_synthesis"
+        ) as PolicyJob[];
+
+        setPolicyJobs(synthJobs);
+
+        // Check if there are any active jobs
+        const activeJobs = synthJobs.some(
+          job => [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
+        );
+
+        hasActiveJobsRef.current = activeJobs;
+
+        // Process completed jobs to get policy details
+        const newCompletedJobs: CompletedPolicy[] = [];
+
+        for (const job of synthJobs) {
+          if (job.extra_metadata.status === JOB_STATUS.COMPLETED &&
+              !completedPolicies.some(p => p.job_id === job.extra_metadata.job_id)) {
+            try {
+              const jobResponse = await fetch(
+                `${job.extra_metadata.endpoint.endsWith("/")
+                  ? job.extra_metadata.endpoint.slice(0, -1)
+                  : job.extra_metadata.endpoint}/api/v1/analysis/job/${job.extra_metadata.job_id}`,
+                {
+                  headers: {
+                    "Authorization": `Bearer ${job.secret_metadata?.apikey || ""}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
+              if (jobResponse.ok) {
+                const jobData = await jobResponse.json();
+                if (jobData.status === JOB_STATUS.COMPLETED) {
+                  newCompletedJobs.push({
+                    ...jobData,
+                    job_id: job.extra_metadata.job_id,
+                    cluster_name: job.extra_metadata.cluster_name,
+                  });
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching job details:", error);
+            }
+          }
+        }
+
+        if (newCompletedJobs.length > 0) {
+          setCompletedPolicies(prev => [...prev, ...newCompletedJobs]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching policy jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [completedPolicies]);
+
+  // Fetch stored policies from dataset metadata
+  const fetchStoredPolicies = React.useCallback(async () => {
+    if (!datasetIdRef.current) return;
+
+    try {
+      console.log("Fetching stored policies...");
+      const storedPoliciesResponse = await fetch(`/api/v1/dataset/byid/${datasetIdRef.current}/generated-policies`);
+      if (storedPoliciesResponse.ok) {
+        const storedPoliciesData = await storedPoliciesResponse.json();
+        const storedPolicies = storedPoliciesData.policies || [];
+
+        console.log("Received stored policies:", storedPolicies);
+
+        // Convert stored policies to the CompletedPolicy format
+        const storedCompletedPolicies = storedPolicies.map(policy => ({
+          status: JOB_STATUS.COMPLETED,
+          policy_code: policy.policy_code,
+          success: policy.success,
+          detection_rate: policy.detection_rate,
+          job_id: policy.id, // Using the policy ID as job_id
+          cluster_name: policy.cluster_name,
+          from_metadata: true, // Flag to indicate this came from metadata
+        }));
+
+        // Filter out policies that are already in the state
+        // Use the job_id/id as the unique identifier
+        const existingIds = completedPolicies.map(p => p.job_id);
+        const newStoredPolicies = storedCompletedPolicies.filter(
+          storedPolicy => !existingIds.includes(storedPolicy.job_id)
+        );
+
+        console.log("New policies to add:", newStoredPolicies);
+
+        if (newStoredPolicies.length > 0) {
+          setCompletedPolicies(prev => [...prev, ...newStoredPolicies]);
+        }
+
+        // Mark that we've loaded the stored policies
+        setStoredPoliciesLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching stored policies:", error);
+    }
+  }, [completedPolicies]);
+
+  // Setup polling for active jobs
+  const setupPolling = React.useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (hasActiveJobsRef.current) {
+      intervalRef.current = setInterval(() => {
+        fetchActiveJobs();
+      }, POLL_INTERVAL);
+    }
+  }, [fetchActiveJobs]);
+
+  // Effect to fetch jobs and set up polling when dataset changes
+  React.useEffect(() => {
+    if (!dataset?.id) return;
+
+    // Initial fetch of both active jobs and stored policies
+    const fetchInitialData = async () => {
+      try {
+        await fetchActiveJobs();
+        await fetchStoredPolicies();
+        setupPolling();
+      } catch (error) {
+        console.error("Error during initial data fetch:", error);
+      }
+    };
+
+    fetchInitialData();
+
+    // Cleanup interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [dataset?.id, fetchActiveJobs, fetchStoredPolicies, setupPolling]);
+
+  // Additional effect to fetch stored policies after a job completes
+  React.useEffect(() => {
+    // If we see a job transition to completed in policyJobs, fetch stored policies
+    const completedJobCount = policyJobs.filter(
+      job => job.extra_metadata.status === JOB_STATUS.COMPLETED
+    ).length;
+
+    if (completedJobCount > 0) {
+      console.log("Detected completed job, fetching stored policies");
+      fetchStoredPolicies();
+    }
+  }, [policyJobs, fetchStoredPolicies]);
+
+  // Effect to update polling when active jobs change
+  React.useEffect(() => {
+    const activeJobs = policyJobs.some(
+      job => [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
+    );
+
+    if (activeJobs !== hasActiveJobsRef.current) {
+      hasActiveJobsRef.current = activeJobs;
+      setupPolling();
+    }
+  }, [policyJobs, setupPolling]);
+
+  // Debug logging for completed policies
+  React.useEffect(() => {
+    console.log("Completed policies updated:", completedPolicies);
+  }, [completedPolicies]);
+
+  // Handle policy synthesis success
+  const handlePolicySynthesisSuccess = (data) => {
+    console.log("Policy synthesis job started successfully:", data);
+    // Immediately fetch active jobs to show the new job
+    fetchActiveJobs();
+
+    // Set a timer to fetch stored policies after a short delay
+    // This gives the backend time to process and store any completed jobs
+    setTimeout(() => {
+      fetchStoredPolicies();
+    }, 2000);
+  };
+
+  // Cancel a policy job
+  const cancelPolicyJob = async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/v1/dataset/byid/${dataset.id}/policy-synthesis`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchActiveJobs();
+      }
+    } catch (error) {
+      console.error("Error canceling policy job:", error);
+    }
+  };
+
+  // Apply a suggested policy
+  const applySuggestedPolicy = () => {
+    datasetLoader.refresh();
+    setSelectedPolicySuggestion(null);
+  };
 
   return (
     <div className="panel">
@@ -492,6 +1080,35 @@ export function Guardrails(props: {
               setSelectedPolicyForUpdation(null);
             }}
           ></MutatePolicyModalContent>
+        </SidepaneModal>
+      )}
+      {/* policy synthesis modal */}
+      {showPolicySynthesisModal && (
+        <Modal
+          title="Generate Guardrail Suggestions"
+          onClose={() => setShowPolicySynthesisModal(false)}
+          hasWindowControls
+        >
+          <PolicySynthesisModalContent
+            dataset_id={dataset.id}
+            onClose={() => setShowPolicySynthesisModal(false)}
+            onSuccess={handlePolicySynthesisSuccess}
+          />
+        </Modal>
+      )}
+      {/* policy suggestion view modal */}
+      {selectedPolicySuggestion && (
+        <SidepaneModal
+          title="Generated Guardrail"
+          onClose={() => setSelectedPolicySuggestion(null)}
+          hasWindowControls
+        >
+          <PolicySuggestionModalContent
+            dataset_id={dataset.id}
+            policy={selectedPolicySuggestion}
+            onClose={() => setSelectedPolicySuggestion(null)}
+            onApply={applySuggestedPolicy}
+          />
         </SidepaneModal>
       )}
       <header className="toolbar">
@@ -565,18 +1182,110 @@ export function Guardrails(props: {
               <span>
                 <BsStars /> Guardrail Suggestions
               </span>
+              <div className="actions">
+                <button
+                  aria-label="generate guardrails"
+                  className="button inline primary"
+                  onClick={() => setShowPolicySynthesisModal(true)}
+                >
+                  <BsShieldFillCheck /> Generate Suggestions
+                </button>
+              </div>
             </h3>
             <div className="guardrail-list">
-              <div className="empty instructions box semi">
-                <h2>
-                  <BsFileEarmarkBreak /> Guardrail Suggestions{" "}
-                  <span className="badge">Beta</span>
-                </h2>
-                <h3>
-                  As you keep using Invariant, new suggestions for guardrailing
-                  rules customized to your agent's behavior will appear here.
-                </h3>
-              </div>
+              {/* Loading state */}
+              {loadingJobs && policyJobs.length === 0 && (
+                <div className="empty instructions box semi">
+                  <h2>
+                    <BsGearWideConnected className="spin" /> Loading...
+                  </h2>
+                </div>
+              )}
+
+              {/* No jobs yet */}
+              {!loadingJobs && policyJobs.length === 0 && completedPolicies.length === 0 && (
+                <div className="empty instructions box semi">
+                  <h2>
+                    <BsShieldFillExclamation /> No Guardrail Suggestions Yet
+                  </h2>
+                  <h3>
+                    Generate guardrail suggestions based on the clusters identified in your dataset analysis.
+                  </h3>
+                </div>
+              )}
+
+              {/* Active jobs */}
+              {policyJobs.filter(job =>
+                [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
+              ).map((job: PolicyJob) => (
+                <div key={job.id} className="box full setting guardrail-item job-item">
+                  <div className="job-info">
+                    <h1>
+                      <BsShieldFillCheck /> {job.extra_metadata.name}
+                    </h1>
+                    <JobStatus
+                      status={job.extra_metadata.status}
+                      progress={
+                        job.extra_metadata.status === JOB_STATUS.RUNNING
+                          ? {
+                              num_processed: job.extra_metadata.num_processed || 0,
+                              total: job.extra_metadata.total || 0
+                            }
+                          : null
+                      }
+                    />
+                  </div>
+                  <div className="guardrail-actions">
+                    <button
+                      aria-label="cancel"
+                      className="policy-action inline secondary"
+                      onClick={() => cancelPolicyJob(job.id)}
+                    >
+                      <BsX /> Cancel
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Completed policies */}
+              {completedPolicies.length > 0 ? (
+                completedPolicies.map((policy: CompletedPolicy) => (
+                  <div key={policy.job_id} className="box full setting guardrail-item suggestion-item">
+                    <div className="job-info">
+                      <h1>
+                        <BsShieldCheck /> Guardrail for: {policy.cluster_name}
+                      </h1>
+                      {policy.detection_rate !== undefined && (
+                        <div className="detection-info">
+                          Detection Rate: {Math.round(policy.detection_rate * 100)}%
+                        </div>
+                      )}
+                    </div>
+                    <div className="guardrail-actions">
+                      <button
+                        aria-label="view"
+                        className="policy-action inline primary"
+                        onClick={() => setSelectedPolicySuggestion(policy)}
+                      >
+                        <BsCheck2 /> View & Apply
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                !policyJobs.some(job =>
+                  [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
+                ) && (
+                  <div className="empty instructions box semi">
+                    <h2>
+                      <BsShieldFillExclamation /> No Guardrail Suggestions Yet
+                    </h2>
+                    <h3>
+                      Generate guardrail suggestions based on the clusters identified in your dataset analysis.
+                    </h3>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}

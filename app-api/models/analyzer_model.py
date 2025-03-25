@@ -1,5 +1,6 @@
 from enum import Enum
 from uuid import UUID
+from typing import List, Any
 
 from pydantic import BaseModel, RootModel, Field
 from enum import Enum
@@ -62,7 +63,7 @@ class ContaminationPolicyDefault(Enum):
     ALL = "all"
 
 
-ContaminationPolicy = ContaminationPolicyDefault | int    
+ContaminationPolicy = ContaminationPolicyDefault | int
 
 
 class JobRequest(BaseModel):
@@ -100,10 +101,27 @@ class JobStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class CompleatedJobResponse(BaseModel):
+class JobType(str, Enum):
+    ANALYSIS = "analysis"
+    POLICY_SYNTHESIS = "policy_synthesis"
+
+
+class CompletedJobResponse(BaseModel):
     status: Literal[JobStatus.COMPLETED] = JobStatus.COMPLETED
+    type: JobType  # Add a type field to discriminate between completed job types
+
+
+class CompletedAnalysisJobResponse(CompletedJobResponse):
+    type: Literal[JobType.ANALYSIS] = JobType.ANALYSIS
     analysis: list[TraceAnalysis]
     clustering: list[Cluster]
+
+
+class CompletedPolicySynthesisJobResponse(CompletedJobResponse):
+    type: Literal[JobType.POLICY_SYNTHESIS] = JobType.POLICY_SYNTHESIS
+    success: bool = Field(..., description="Whether the policy synthesis was successful")
+    policy_code: str = Field(..., description="The generated policy code")
+    detection_rate: float = Field(..., description="The detection rate for the traces from the request")
 
 
 class ErrorStep(BaseModel):
@@ -132,12 +150,96 @@ class PendingJobResponse(BaseModel):
     status: Literal[JobStatus.PENDING] = JobStatus.PENDING
 
 
+class PolicyGenerationRequest(BaseModel):
+    """Request model for policy synthesis."""
+    problem_description: str = Field(..., description="Description of the problem class to detect")
+    traces: List[Any] = Field(..., description="List of traces exhibiting the problem, each trace is a list of dicts, each dict is one message in openai format")
+
+
+class PolicySynthesisRequest(BaseModel):
+    """Request model for policy synthesis API calls."""
+    # model service connection information
+    apiurl: str = Field(..., description="The URL of the API to send policy synthesis requests to")
+    apikey: str = Field(..., description="The API key to use for authentication")
+
+
 JobResponseUnion = (
-    CompleatedJobResponse | FailedJobResponse | RunningJobResponse | CancelledJobResponse | PendingJobResponse
+    CompletedAnalysisJobResponse | CompletedPolicySynthesisJobResponse |
+    FailedJobResponse | RunningJobResponse | CancelledJobResponse | PendingJobResponse
 )
 
 class JobResponseParser(RootModel):
-    root: JobResponseUnion = Field(discriminator="status")
+    """
+    Root model for parsing job responses based on their status and type.
+    Uses a two-level discrimination approach - first by status, then by job type for completed jobs.
+    """
+    root: JobResponseUnion
+
+    @classmethod
+    def validate_request(cls, v):
+        """Custom validator for job responses"""
+        if isinstance(v, dict):
+            status = v.get("status")
+
+            # Handle completed jobs with two-level discrimination
+            if status == JobStatus.COMPLETED:
+                # Add backward compatibility for responses without type
+                job_type = v.get("type")
+
+                # If type is missing, infer it from the fields
+                if not job_type:
+                    if "analysis" in v and "clustering" in v:
+                        job_type = JobType.ANALYSIS
+                        v["type"] = job_type
+                    elif "policy_code" in v and "success" in v:
+                        job_type = JobType.POLICY_SYNTHESIS
+                        v["type"] = job_type
+                    else:
+                        # Default to analysis for legacy responses
+                        job_type = JobType.ANALYSIS
+                        v["type"] = job_type
+
+                # Create appropriate completed job response
+                try:
+                    if job_type == JobType.ANALYSIS:
+                        return CompletedAnalysisJobResponse(**v)
+                    elif job_type == JobType.POLICY_SYNTHESIS:
+                        return CompletedPolicySynthesisJobResponse(**v)
+                except Exception as e:
+                    # If validation fails, try to adapt the response
+                    if job_type == JobType.POLICY_SYNTHESIS:
+                        # Ensure all required fields are present
+                        if "success" not in v:
+                            v["success"] = False
+                        if "policy_code" not in v:
+                            v["policy_code"] = ""
+                        if "detection_rate" not in v:
+                            v["detection_rate"] = 0.0
+                        return CompletedPolicySynthesisJobResponse(**v)
+                    # Re-raise if we can't adapt
+                    raise e
+
+            # Handle other job statuses
+            elif status == JobStatus.FAILED:
+                return FailedJobResponse(**v)
+            elif status == JobStatus.RUNNING:
+                return RunningJobResponse(**v)
+            elif status == JobStatus.CANCELLED:
+                return CancelledJobResponse(**v)
+            elif status == JobStatus.PENDING:
+                return PendingJobResponse(**v)
+
+            raise ValueError(f"Unknown job status: {status}")
+
+        return v
+
+    def __init__(self, **data):
+        if "root" in data:
+            super().__init__(**data)
+        else:
+            # If root isn't provided, treat the data as if it were the root
+            validated_data = self.validate_request(data)
+            super().__init__(root=validated_data)
 
 class AnalysisRequestOptions(BaseModel):
     model_params: ModelParams
