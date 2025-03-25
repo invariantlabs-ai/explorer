@@ -936,6 +936,17 @@ pre.marked-line {
   background-color: rgba(88, 85, 246, 0.2);
   border-radius: 2.5pt;
   color: rgba(37, 36, 99, 0.761);
+  &.user {
+    background-color: rgba(88, 85, 246, 0.2);
+    color: rgba(37, 36, 99, 0.761);
+  } 
+  &.analyzer-model{
+    background-color: rgba(87, 87, 87, 0.2);
+    color: rgba(37, 37, 36, 0.761);
+  }
+  &.guardrails-error{
+    background-color: rgba(249, 137, 0, 0.596);
+  }
 }
 
 .message-header {

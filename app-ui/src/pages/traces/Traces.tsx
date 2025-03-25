@@ -132,7 +132,6 @@ class FeatureSet {
     return this.flags[flag] || true;
   }
 }
-
 /**
  * Metadata for a trace that we receive from the server.
  */
@@ -154,8 +153,8 @@ export interface Trace {
   preloaded?: boolean;
   // number of annotations for this trace
   num_annotations?: number;
-  // number of line annotations
-  num_line_annotations?: number;
+  // annotations_by_source, a map from source to number of annotations, 
+  annotations_by_source: Record<string, number>;
 }
 
 /**
@@ -370,6 +369,7 @@ function useTraces(
           }
           pathMap[path].indices.push(t.index);
         });
+        console.log("traceMap", traceMap);
         setTraces(new LightweightTraces(n, username, datasetname, traceMap));
         setHierarchyPaths(pathMap);
       })
@@ -380,7 +380,7 @@ function useTraces(
         }
       });
   };
-
+  console.log("fetching traces", traces);
   return [traces, hierarchyPaths, refresh];
 }
 
@@ -848,7 +848,7 @@ export function Traces(props) {
   const onAnnotationCreate = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      trace.num_line_annotations = (trace.num_line_annotations ?? 0) + 1;
+      trace.annotations_by_source["user"] = (trace.annotations_by_source["user"] ?? 0) + 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -856,12 +856,9 @@ export function Traces(props) {
   const onAnnotationDelete = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      if (
-        trace.num_line_annotations === undefined ||
-        trace.num_line_annotations === 0
-      )
+      if (trace.annotations_by_source["user"] === 0)
         return;
-      trace.num_line_annotations = trace.num_line_annotations - 1;
+      trace.annotations_by_source["user"] = (trace.annotations_by_source["user"] ?? 0) - 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -1751,6 +1748,14 @@ function TraceRowContents(props: { trace: Trace }) {
   const isTest =
     trace?.extra_metadata &&
     trace?.extra_metadata["invariant.num-failures"] !== undefined;
+  const hasSuccessMetadata = 
+    trace?.extra_metadata &&
+    trace?.extra_metadata["success"] !== undefined;
+  const hasWornings = 
+    trace?.extra_metadata &&
+    trace?.extra_metadata["invariant.num-warnings"] !== undefined;
+  let num_warnings = null;
+  if (hasWornings) {num_warnings = trace?.extra_metadata["invariant.num-warnings"] || 0;}
   // check if name is <something>[<params>]
   let name = <span className="name">{trace.name}</span>;
   if (trace.name?.match(/.*\[.*\]$/)) {
@@ -1763,38 +1768,51 @@ function TraceRowContents(props: { trace: Trace }) {
     );
   }
 
-  if (isTest) {
-    const num_warnings = trace?.extra_metadata["invariant.num-warnings"] || 0;
-    const num_failures = trace?.extra_metadata["invariant.num-failures"] || 0;
-    const fail = num_failures > 0;
-
-    return (
-      <>
-        {name}
-        {/* don't show the annotations badge for test cases */}
-        <div className="spacer" />
-        {num_warnings > 0 && (
-          <span className="warnings">{num_warnings} warnings</span>
-        )}
-        <span className={"test-result " + (fail ? "fail" : "pass")}>
-          {fail ? "FAIL" : "PASS"}
-        </span>
-      </>
-    );
-  } else {
-    return (
-      <>
-        {name}
-        {(trace.num_line_annotations || 0) > 0 ? (
-          <span className="badge annotation-indicator">
-            {trace?.num_line_annotations}
-          </span>
-        ) : null}
-        <div className="spacer" />
-      </>
-    );
+  const showLabel = isTest || hasSuccessMetadata;
+  let label = null;
+  if (showLabel) {
+    label = isTest 
+    ? trace?.extra_metadata["invariant.num-failures"] 
+    : trace?.extra_metadata["success"];
   }
+
+  trace.annotations_by_source = trace.annotations_by_source ?? {}
+  console.log("annotations_by_source", trace.annotations_by_source);
+  return (
+    <>
+      {name}
+      {/* don't show the annotations badge for test cases */}
+      <div className="spacer" />
+      {hasWornings && (
+        <span className="warnings">{num_warnings} warnings</span>
+      )}
+      {(trace.annotations_by_source["user"] ?? 0) > 0 ? (
+        <span className={"badge user"} data-tooltip-id="highlight-tooltip" data-tooltip-content="User annotations">
+          {trace.annotations_by_source["user"]}
+        </span>
+      ) : null}
+      {(trace.annotations_by_source["analyzer-model"] ?? 0) > 0 ? (
+        <span className="badge analyzer-model" data-tooltip-id="highlight-tooltip" data-tooltip-content="Analyzer model annotations">
+          {trace.annotations_by_source["analyzer-model"]}
+        </span>
+      ) : null}
+      {(trace.annotations_by_source["guardrails-error"] ?? 0) > 0 ? (
+        <span className="badge guardrails-error" data-tooltip-id="highlight-tooltip" data-tooltip-content="Guardrails annotations">
+          {trace.annotations_by_source["guardrails-error"]}
+        </span>
+      ) : null}
+      {showLabel && (
+        <div style={{width: "5px"}}></div>
+      )}
+      {showLabel && (
+        <span className={"test-result " + (label ? "pass" : "fail")}>
+          {label ? "✓" : "✗"}
+        </span>
+      )}
+    </>
+  );
 }
+
 
 /**
  * Shows a hierarchy path in the sidebar list of traces.
