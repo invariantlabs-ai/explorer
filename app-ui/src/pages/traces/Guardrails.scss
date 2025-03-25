@@ -192,6 +192,29 @@ button.policy-action {
   min-height: 220pt;
   position: relative;
   padding-top: 10pt;
+
+  .section-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 15px 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #555;
+
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 15px 0;
+    }
+  }
+
+  .note {
+    font-size: 12px;
+    font-style: italic;
+    opacity: 0.8;
+    margin-top: 5px;
+    color: #666;
+  }
 }
 
 .guardrail-action-select {
@@ -542,4 +565,25 @@ button.create-guardrail {
   background-color: #f0f8ff;
   border-left: 4px solid #1e90ff;
   color: #333;
+}
+
+// Add styling for the quality-note in the PolicySynthesisModalContent
+.policy-synthesis-form {
+  .quality-note {
+    background-color: #f0f8ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #333;
+
+    svg {
+      color: #1e90ff;
+      margin-right: 8px;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+  }
 }

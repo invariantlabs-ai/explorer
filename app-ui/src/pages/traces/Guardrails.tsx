@@ -238,32 +238,10 @@ function PolicySynthesisModalContent(props) {
         found in your data.
       </p>
 
-      <div className="form-group">
-        <label>API URL</label>
-        <input
-          type="text"
-          value={apiUrl}
-          onChange={(e) => setApiUrl(e.target.value)}
-          placeholder="https://api.example.com"
-        />
-        <small className="help-text">Using the same endpoint as configured in Analyzer settings</small>
+      <div className="quality-note">
+        <BsShieldCheck /> Only high-quality guardrail suggestions (success rate ≥70%) will be shown.
       </div>
 
-      <div className="form-group">
-        <label>API Key</label>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="Enter your API key"
-        />
-        <small className="help-text">Using the same API key as configured in Analyzer settings</small>
-        {apiKey === TEMPLATE_API_KEY && (
-          <div className="note">
-            Please configure your API key in the Analyzer settings first.
-          </div>
-        )}
-      </div>
 
       {loading && loadingStatus && <div className="status-message">{loadingStatus}</div>}
       {error && <div className="error">{error}</div>}
@@ -884,7 +862,24 @@ export function Guardrails(props: {
         }
 
         if (newCompletedJobs.length > 0) {
-          setCompletedPolicies(prev => [...prev, ...newCompletedJobs]);
+          // Using a Map to ensure we have only unique policies by job_id
+          const uniquePoliciesMap = new Map();
+
+          // First add existing policies from state
+          completedPolicies.forEach(policy => {
+            uniquePoliciesMap.set(policy.job_id, policy);
+          });
+
+          // Then add new policies, overwriting any duplicates
+          newCompletedJobs.forEach(policy => {
+            uniquePoliciesMap.set(policy.job_id, policy);
+          });
+
+          // Convert back to array
+          const uniquePolicies = Array.from(uniquePoliciesMap.values());
+
+          console.log("Updating policies with unique set:", uniquePolicies);
+          setCompletedPolicies(uniquePolicies);
         }
       }
     } catch (error) {
@@ -935,17 +930,31 @@ export function Guardrails(props: {
         from_metadata: true, // Flag to indicate this came from metadata
       }));
 
-      // Filter out policies that are already in the state
-      // Use the job_id/id as the unique identifier
-      const existingIds = completedPolicies.map(p => p.job_id);
-      const newStoredPolicies = storedCompletedPolicies.filter(
-        storedPolicy => !existingIds.includes(storedPolicy.job_id)
-      );
+      // Using a Map to ensure we have only unique policies by job_id
+      const uniquePoliciesMap = new Map();
 
-      console.log("New policies to add:", newStoredPolicies);
+      // First add existing policies from state
+      completedPolicies.forEach(policy => {
+        uniquePoliciesMap.set(policy.job_id, policy);
+      });
 
-      if (newStoredPolicies.length > 0) {
-        setCompletedPolicies(prev => [...prev, ...newStoredPolicies]);
+      // Then add new policies, overwriting any duplicates
+      storedCompletedPolicies.forEach(policy => {
+        uniquePoliciesMap.set(policy.job_id, policy);
+      });
+
+      // Convert back to array
+      const uniquePolicies = Array.from(uniquePoliciesMap.values());
+
+      // Only update state if the policies have changed
+      const currentIds = completedPolicies.map(p => p.job_id).sort().join(',');
+      const newIds = uniquePolicies.map(p => p.job_id).sort().join(',');
+
+      if (currentIds !== newIds || completedPolicies.length !== uniquePolicies.length) {
+        console.log("Updating policies state with unique policies:", uniquePolicies);
+        setCompletedPolicies(uniquePolicies);
+      } else {
+        console.log("No new unique policies to add");
       }
 
       // Mark that we've loaded the stored policies
@@ -1219,7 +1228,7 @@ export function Guardrails(props: {
             })}
         </div>
         {SUGGETSIONS_ENABLED && (
-          <div className="suggestions">
+          <>
             <h3>
               <span>
                 <BsStars /> Guardrail Suggestions
@@ -1235,8 +1244,8 @@ export function Guardrails(props: {
               </div>
             </h3>
             <div className="guardrail-list">
-              {/* Loading state */}
-              {loadingJobs && policyJobs.length === 0 && (
+              {/* Show loading state */}
+              {loadingJobs && (
                 <div className="empty instructions box semi">
                   <h2>
                     <BsGearWideConnected className="spin" /> Loading...
@@ -1244,7 +1253,7 @@ export function Guardrails(props: {
                 </div>
               )}
 
-              {/* No jobs yet */}
+              {/* Show no suggestions yet state */}
               {!loadingJobs && policyJobs.length === 0 && completedPolicies.length === 0 && (
                 <div className="empty instructions box semi">
                   <h2>
@@ -1252,84 +1261,87 @@ export function Guardrails(props: {
                   </h2>
                   <h3>
                     Generate guardrail suggestions based on the clusters identified in your dataset analysis.
+                    <p className="note">Only high-quality policies (success=true, detection rate ≥70%) will be shown.</p>
                   </h3>
                 </div>
               )}
 
-              {/* Active jobs */}
+              {/* Show active jobs (if any) */}
               {policyJobs.filter(job =>
                 [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
-              ).map((job: PolicyJob) => (
-                <div key={job.id} className="box full setting guardrail-item job-item">
-                  <div className="job-info">
-                    <h1>
-                      <BsShieldFillCheck /> {job.extra_metadata.name}
-                    </h1>
-                    <JobStatus
-                      status={job.extra_metadata.status}
-                      progress={
-                        job.extra_metadata.status === JOB_STATUS.RUNNING
-                          ? {
-                              num_processed: job.extra_metadata.num_processed || 0,
-                              total: job.extra_metadata.total || 0
-                            }
-                          : null
-                      }
-                    />
-                  </div>
-                  <div className="guardrail-actions">
-                    <button
-                      aria-label="cancel"
-                      className="policy-action inline secondary"
-                      onClick={() => cancelPolicyJob(job.id)}
-                    >
-                      <BsX /> Cancel
-                    </button>
-                  </div>
-                </div>
-              ))}
+              ).length > 0 && (
+                <>
+                  <div className="section-label">Active Jobs</div>
+                  {policyJobs.filter(job =>
+                    [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
+                  ).map((job: PolicyJob) => (
+                    <div key={job.id} className="box full setting guardrail-item job-item">
+                      <div className="job-info">
+                        <h1>
+                          <BsShieldFillCheck /> {job.extra_metadata.name}
+                        </h1>
+                        <JobStatus
+                          status={job.extra_metadata.status}
+                          progress={
+                            job.extra_metadata.status === JOB_STATUS.RUNNING
+                              ? {
+                                  num_processed: job.extra_metadata.num_processed || 0,
+                                  total: job.extra_metadata.total || 0
+                                }
+                              : null
+                          }
+                        />
+                      </div>
+                      <div className="guardrail-actions">
+                        <button
+                          aria-label="cancel"
+                          className="policy-action inline secondary"
+                          onClick={() => cancelPolicyJob(job.id)}
+                        >
+                          <BsX /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
-              {/* Completed policies */}
-              {completedPolicies.length > 0 ? (
-                completedPolicies.map((policy: CompletedPolicy) => (
-                  <div key={policy.job_id} className="box full setting guardrail-item suggestion-item">
-                    <div className="job-info">
-                      <h1>
-                        <BsShieldCheck /> Guardrail for: {policy.cluster_name}
-                      </h1>
-                      {policy.detection_rate !== undefined && (
-                        <div className="detection-info">
-                          Detection Rate: {Math.round(policy.detection_rate * 100)}%
-                        </div>
-                      )}
-                    </div>
-                    <div className="guardrail-actions">
-                      <button
-                        aria-label="view"
-                        className="policy-action inline primary"
-                        onClick={() => setSelectedPolicySuggestion(policy)}
-                      >
-                        <BsCheck2 /> View & Apply
-                      </button>
-                    </div>
+              {/* Show completed policies (if any) */}
+              {completedPolicies.length > 0 && (
+                <>
+                  <div className="section-label">
+                    {policyJobs.filter(job => [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)).length > 0 &&
+                      <div className="divider"></div>
+                    }
+                    Completed Guardrail Suggestions
                   </div>
-                ))
-              ) : (
-                !policyJobs.some(job =>
-                  [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
-                ) && (
-                  <div className="empty instructions box semi">
-                    <h2>
-                      <BsShieldFillExclamation /> No Guardrail Suggestions Yet
-                    </h2>
-                    <h3>
-                      Generate guardrail suggestions based on the clusters identified in your dataset analysis.
-                    </h3>
-                  </div>
-                )
+                  {completedPolicies.map((policy: CompletedPolicy) => (
+                    <div key={policy.job_id} className="box full setting guardrail-item suggestion-item">
+                      <div className="job-info">
+                        <h1>
+                          <BsShieldCheck /> Guardrail for: {policy.cluster_name}
+                        </h1>
+                        {policy.detection_rate !== undefined && (
+                          <div className="detection-info">
+                            Detection Rate: {Math.round(policy.detection_rate * 100)}%
+                          </div>
+                        )}
+                      </div>
+                      <div className="guardrail-actions">
+                        <button
+                          aria-label="view"
+                          className="policy-action inline primary"
+                          onClick={() => setSelectedPolicySuggestion(policy)}
+                        >
+                          <BsCheck2 /> View & Apply
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
