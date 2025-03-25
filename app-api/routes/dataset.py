@@ -1396,8 +1396,9 @@ async def queue_policy_synthesis(
 
             # Extract traces for this cluster from the dataset
             try:
+                limit_traces_per_cluster = 10
                 cluster_traces = await trace_exporter.get_traces_by_ids(session, trace_ids)
-                cluster_traces = cluster_traces[:5] # limit to 5 traces for now
+                cluster_traces = cluster_traces[:limit_traces_per_cluster]
 
                 if not cluster_traces:
                     continue
@@ -1405,7 +1406,7 @@ async def queue_policy_synthesis(
                 # Create the policy generation request
                 problem_description = f"Generate a policy to detect: {cluster_name}\n"
                 if annotations:
-                    for annotation in annotations[:5]:
+                    for annotation in annotations[:limit_traces_per_cluster]:
                         problem_description += f" - {annotation.get('content', '')}\n"
 
                 policy_request = PolicyGenerationRequest(
