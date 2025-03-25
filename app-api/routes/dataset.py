@@ -723,13 +723,13 @@ async def download_traces_as_analyzer_input(
         user = session.query(User).filter(User.id == dataset.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-
+        print(f"Exporting dataset {dataset.name} for user {user.username}")
         trace_exporter = AnalyzerTraceExporter(
             user_id=str(user_id),
             dataset_id=id,
             dataset_name=dataset.name,
         )
-        _, analyser_context_samples = await trace_exporter.analyzer_model_input(session)
+        _, analyser_context_samples = await trace_exporter.analyzer_model_input(session, include_success=True, only_annotated=False)
 
         async def stream_analyzer_input():
             for sample in analyser_context_samples:

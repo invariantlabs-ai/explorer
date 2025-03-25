@@ -86,7 +86,7 @@ class AnalyzerTraceExporter:
             
 
     async def analyzer_model_input(
-        self, session: Session, input_trace_id: UUID | None = None
+        self, session: Session, input_trace_id: UUID | None = None, include_success: bool = False, only_annotated: bool = True
     ) -> tuple[list[AnalyzerInputSample], list[AnalyzerSample]]:
         """
         Retrieves trace data and annotations for the analyzer model input.
@@ -116,9 +116,9 @@ class AnalyzerTraceExporter:
             # Group the results by trace
             samples_by_id: dict[str, AnalyzerSample] = {}
             push_ds_name = self.dataset_name if self.dataset_name else "unknown_dataset"
-
             for row in results:
                 trace, annotation = row.tuple()
+                success = trace.extra_metadata.get("success", None)
                 samples_by_id.setdefault(
                     str(trace.id),
                     AnalyzerSample(
@@ -126,6 +126,7 @@ class AnalyzerTraceExporter:
                         id=str(trace.id),
                         annotations=[],
                         domain=[push_ds_name] + trace.hierarchy_path,
+                        success=success if include_success else None,
                     ),
                 )
                 if not annotation:
@@ -167,7 +168,7 @@ class AnalyzerTraceExporter:
 
             # only send context with annotated samples
             analyser_context_samples = [
-                sample for sample in samples_by_id.values() if sample.annotations
+                sample for sample in samples_by_id.values() if sample.annotations or (not only_annotated)
             ]
         except Exception as e:
             import traceback

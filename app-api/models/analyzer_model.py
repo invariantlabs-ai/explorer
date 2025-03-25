@@ -17,6 +17,7 @@ class Sample(BaseModel):
     id: str
     domain: list[str] = Field(default_factory=list) # hierarchical domain of the trace
     annotations: list[Annotation]
+    success: bool | None = None
 
 
 class InputSample(BaseModel):

@@ -18,8 +18,8 @@ import json
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from models.datasets_and_traces import db, DatasetJob
-from models.analyzer_model import JobStatus, JobResponseUnion, JobResponseParser, CompleatedJobResponse
+from models.datasets_and_traces import db, DatasetJob, Trace
+from models.analyzer_model import JobStatus, JobResponseUnion, JobResponseParser, CompleatedJobResponse, TraceAnalysis
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
@@ -241,10 +241,51 @@ async def on_analysis_result(job: DatasetJob, results: CompleatedJobResponse):
         report = results.model_dump()
         report["cost"] = cost
 
-
+        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id)
+        trace_id_to_label: dict[str, bool | None] = {
+            str(trace.id): trace.extra_metadata.get("success", None) for trace in traces
+        }
+        success_prediction_report = get_success_prediction(results.analysis, trace_id_to_label)
+        try:
+            report["success_prediction"] = success_prediction_report
+        except ValueError as e:
+            print(f"Error calculating success prediction: {e}", flush=True) 
         # update analysis report
         await update_dataset_metadata(
             job.user_id,
             dataset.name,
             {"analysis_report": json.dumps(report, indent=2)},
         )
+
+def get_success_prediction(predictions: list[TraceAnalysis],real_labels: dict[str, bool | None], severity_threshold: float = 0.5) -> dict:
+    predicted_labels: dict[str, bool] = {}
+    for pred in predictions:
+        predicted_labels[pred.id] = bool(
+            [n for n in pred.annotations if n.severity > severity_threshold]
+        )
+    if set(predicted_labels.keys()) != set(real_labels.keys()):
+        for k in set(predicted_labels.keys()):
+            # print(f"PL {k} {' ' if k in real_labels else 'X'}")
+            pass
+        for k in set(real_labels.keys()):
+            # print(f"RL {k} {' ' if k in predicted_labels else 'X'}")
+            pass
+        raise ValueError("Predicted and real labels have different keys.")
+    success_prediction = {
+        "success_predict_success": 0,
+        "failure_predict_failure": 0,
+        "success_predict_failure": 0,
+        "failure_predict_success": 0
+    }
+    for key in predicted_labels.keys():
+        if real_labels[key] is None:
+            continue
+        if predicted_labels[key] and real_labels[key]:
+            success_prediction["success_predict_success"] += 1
+        elif not predicted_labels[key] and not real_labels[key]:
+            success_prediction["failure_predict_failure"] += 1
+        elif predicted_labels[key] and not real_labels[key]:
+            success_prediction["success_predict_failure"] += 1
+        else:
+            success_prediction["failure_predict_success"] += 1
+    return success_prediction
