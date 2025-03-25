@@ -803,7 +803,10 @@ export function Guardrails(props: {
   // sort them by name
   guadrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
 
-  // Fetch active jobs
+  // Track previous job statuses to detect state changes
+  const prevJobStatusesRef = React.useRef<Record<string, string>>({});
+
+  // Define fetchActiveJobs first before it's used
   const fetchActiveJobs = React.useCallback(async () => {
     if (!datasetIdRef.current) return;
 
@@ -824,11 +827,22 @@ export function Guardrails(props: {
           job => [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
         );
 
+        // If no active jobs found and we thought we had some, stop polling
+        if (!activeJobs && hasActiveJobsRef.current) {
+          console.log("No active jobs found, stopping polling");
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          // Fetch stored policies one final time
+          await fetchStoredPolicies();
+        }
+
+        // Update the active jobs ref
         hasActiveJobsRef.current = activeJobs;
 
-        // Process completed jobs to get policy details
+        // Only fetch policy details for newly completed jobs
         const newCompletedJobs: CompletedPolicy[] = [];
-
         for (const job of synthJobs) {
           if (job.extra_metadata.status === JOB_STATUS.COMPLETED &&
               !completedPolicies.some(p => p.job_id === job.extra_metadata.job_id)) {
@@ -892,9 +906,9 @@ export function Guardrails(props: {
     }
   }, [completedPolicies]);
 
-  // Fetch stored policies from dataset metadata
+  // Define fetchStoredPolicies next
   const fetchStoredPolicies = React.useCallback(async () => {
-    if (!datasetIdRef.current) return;
+    if (!datasetIdRef.current || storedPoliciesLoaded) return;
 
     try {
       console.log("Fetching stored policies...");
@@ -981,94 +995,59 @@ export function Guardrails(props: {
       // Set loading to false on error
       setLoadingJobs(false);
     }
-  }, [completedPolicies]);
+  }, [completedPolicies, storedPoliciesLoaded]);
 
-  // Track previous job statuses to detect state changes
-  const prevJobStatusesRef = React.useRef<Record<string, string>>({});
-
-  // Additional effect to fetch stored policies after a job completes
-  React.useEffect(() => {
-    // Create a map of current job statuses
-    const currentJobStatuses: Record<string, string> = {};
-    policyJobs.forEach(job => {
-      currentJobStatuses[job.extra_metadata.job_id] = job.extra_metadata.status;
-    });
-
-    // Check for jobs that have transitioned to completed
-    let jobsCompleted = false;
-    Object.entries(currentJobStatuses).forEach(([jobId, status]) => {
-      const prevStatus = prevJobStatusesRef.current[jobId];
-      if (prevStatus &&
-          [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(prevStatus) &&
-          status === JOB_STATUS.COMPLETED) {
-        jobsCompleted = true;
-      }
-    });
-
-    // Update previous status reference
-    prevJobStatusesRef.current = currentJobStatuses;
-
-    // If any job completed, immediately fetch stored policies
-    if (jobsCompleted) {
-      console.log("Detected job completion, fetching stored policies");
-      fetchStoredPolicies();
-    }
-  }, [policyJobs, fetchStoredPolicies]);
-
-  // Modify the setupPolling function to also poll for completed policies
+  // Define setupPolling last
   const setupPolling = React.useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    // If we have active jobs, poll for updates
+    // Only set up polling if we have active jobs
     if (hasActiveJobsRef.current) {
       // Set loading to true if we have active jobs but no completed policies
       if (completedPolicies.length === 0) {
         setLoadingJobs(true);
       }
 
+      console.log("Setting up polling for active jobs");
       intervalRef.current = setInterval(() => {
         // Fetch active jobs and check for completed policies if any jobs are running
-        fetchActiveJobs().then(() => {
-          // Check if any jobs have completed
-          const activeJobs = policyJobs.some(
-            job => [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
-          );
-
-          // If no more active jobs but we previously had some, fetch stored policies
-          if (!activeJobs && hasActiveJobsRef.current) {
-            console.log("All jobs completed, fetching stored policies");
-            fetchStoredPolicies();
-          }
-
-          // If there are no active jobs and we have completed policies, ensure loading is false
-          if (!activeJobs && completedPolicies.length > 0) {
-            setLoadingJobs(false);
-          }
-
-          hasActiveJobsRef.current = activeJobs;
-        });
+        fetchActiveJobs();
+        // Note: We removed the then() promise chain here since fetchActiveJobs now handles
+        // stopping the interval and fetching stored policies when jobs complete
       }, POLL_INTERVAL);
     } else {
+      console.log("No active jobs, not setting up polling");
       // No active jobs, ensure loading is false if we have completed policies
       if (completedPolicies.length > 0) {
         setLoadingJobs(false);
       }
     }
-  }, [fetchActiveJobs, fetchStoredPolicies, policyJobs, completedPolicies]);
+  }, [fetchActiveJobs, completedPolicies]);
 
-  // Effect to fetch jobs and set up polling when dataset changes
+  // Effect to fetch jobs and set up polling when dataset changes - optimize to avoid unnecessary polls
   React.useEffect(() => {
     if (!dataset?.id) return;
 
     // Initial fetch of both active jobs and stored policies
     const fetchInitialData = async () => {
       try {
+        // First check if there are active jobs
         await fetchActiveJobs();
-        await fetchStoredPolicies();
-        setupPolling();
+
+        // Then fetch stored policies only if we haven't already
+        if (!storedPoliciesLoaded) {
+          await fetchStoredPolicies();
+        }
+
+        // Only set up polling if we have active jobs
+        if (hasActiveJobsRef.current) {
+          setupPolling();
+        } else {
+          console.log("No active jobs found during initial load, not setting up polling");
+        }
       } catch (error) {
         console.error("Error during initial data fetch:", error);
       }
@@ -1083,7 +1062,7 @@ export function Guardrails(props: {
         intervalRef.current = null;
       }
     };
-  }, [dataset?.id, fetchActiveJobs, fetchStoredPolicies, setupPolling]);
+  }, [dataset?.id, fetchActiveJobs, fetchStoredPolicies, setupPolling, storedPoliciesLoaded]);
 
   // Debug logging for completed policies
   React.useEffect(() => {
@@ -1097,6 +1076,9 @@ export function Guardrails(props: {
     // Clear existing completed policies and active jobs from state
     setCompletedPolicies([]);
     setPolicyJobs([]);
+
+    // Reset stored policies loaded state
+    setStoredPoliciesLoaded(false);
 
     // Set loading state to true since we're starting a new job and have no completed policies
     setLoadingJobs(true);
