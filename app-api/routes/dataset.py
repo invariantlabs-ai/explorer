@@ -1585,9 +1585,15 @@ async def cleanup_jobs(
 async def get_generated_policies(
     id: str,
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    min_detection_rate: float = 0.0,
+    success_only: bool = False,
 ):
     """
     Get all generated policies for a dataset that have been stored in metadata.
+
+    Parameters:
+    - min_detection_rate: Minimum detection rate (0.0 to 1.0) to include policy
+    - success_only: If True, only include policies where success=True
     """
     with Session(db()) as session:
         # Check if the user has access to the dataset
@@ -1597,9 +1603,67 @@ async def get_generated_policies(
         if dataset.user_id != user_id and not dataset.is_public:
             raise HTTPException(status_code=403, detail="Access denied")
 
-        # Return the generated policies from dataset metadata
-        generated_policies = dataset.extra_metadata.get("generated_policies", [])
+        # Get generated policies from metadata
+        all_policies = dataset.extra_metadata.get("generated_policies", [])
+
+        # Apply filters
+        filtered_policies = []
+        for policy in all_policies:
+            # Skip policies that didn't succeed if success_only is True
+            if success_only and not policy.get("success", False):
+                continue
+
+            # Skip policies with detection_rate below min_detection_rate
+            detection_rate = policy.get("detection_rate", 0.0)
+            if detection_rate < min_detection_rate:
+                continue
+
+            filtered_policies.append(policy)
 
         return {
-            "policies": generated_policies
+            "policies": filtered_policies,
+            "total_count": len(all_policies),
+            "filtered_count": len(filtered_policies)
+        }
+
+
+@dataset.delete("/byid/{id}/generated-policies")
+async def delete_generated_policies(
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
+):
+    """
+    Delete all generated policies from a dataset's metadata.
+    """
+    with Session(db()) as session:
+        # Check if the user has access to the dataset
+        dataset = session.query(Dataset).filter(Dataset.id == id).first()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        if dataset.user_id != user_id and not dataset.is_public:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        # Remove generated_policies from metadata
+        if "generated_policies" in dataset.extra_metadata:
+            # Store the count of deleted policies for the response
+            deleted_count = len(dataset.extra_metadata.get("generated_policies", []))
+
+            # Remove the generated_policies list
+            dataset.extra_metadata["generated_policies"] = []
+
+            # Mark the metadata as modified so SQLAlchemy knows to update it
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(dataset, "extra_metadata")
+
+            # Commit the changes
+            session.commit()
+
+            return {
+                "message": f"Deleted {deleted_count} generated policies",
+                "deleted_count": deleted_count
+            }
+
+        return {
+            "message": "No generated policies to delete",
+            "deleted_count": 0
         }

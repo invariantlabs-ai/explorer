@@ -168,9 +168,10 @@ function PolicySynthesisModalContent(props) {
   const [apiUrl, setApiUrl] = React.useState(endpoint);
   const [apiKey, setApiKey] = React.useState(apikey);
   const [loading, setLoading] = React.useState(false);
+  const [loadingStatus, setLoadingStatus] = React.useState("");
   const [error, setError] = React.useState("");
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
     setLoading(true);
     setError("");
 
@@ -180,36 +181,52 @@ function PolicySynthesisModalContent(props) {
       return;
     }
 
-    // Prepare the request payload
-    const payload = {
-      apiurl: apiUrl,
-      apikey: apiKey,
-    };
-
-    // Make the API request to start policy synthesis
-    fetch(`/api/v1/dataset/byid/${props.dataset_id}/policy-synthesis`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-      .then(async (response) => {
-        if (response.ok) {
-          const data = await response.json();
-          setLoading(false);
-          props.onSuccess(data);
-          props.onClose();
-        } else {
-          const data = await response.json();
-          setLoading(false);
-          setError(data.detail || "An error occurred while generating policies");
-        }
-      })
-      .catch((error) => {
-        setLoading(false);
-        setError("An error occurred: " + error.message);
+    try {
+      // First, cancel any in-progress policy synthesis jobs
+      setLoadingStatus("Canceling any active jobs...");
+      await fetch(`/api/v1/dataset/byid/${props.dataset_id}/policy-synthesis`, {
+        method: "DELETE",
       });
+
+      // Next, delete any existing generated policies from metadata
+      setLoadingStatus("Clearing previous suggestions...");
+      await fetch(`/api/v1/dataset/byid/${props.dataset_id}/generated-policies`, {
+        method: "DELETE",
+      });
+
+      // Then, prepare the request payload for new policy synthesis
+      setLoadingStatus("Starting policy generation...");
+      const payload = {
+        apiurl: apiUrl,
+        apikey: apiKey,
+      };
+
+      // Make the API request to start policy synthesis
+      const response = await fetch(`/api/v1/dataset/byid/${props.dataset_id}/policy-synthesis`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLoading(false);
+        setLoadingStatus("");
+        props.onSuccess(data);
+        props.onClose();
+      } else {
+        const data = await response.json();
+        setLoading(false);
+        setLoadingStatus("");
+        setError(data.detail || "An error occurred while generating policies");
+      }
+    } catch (error) {
+      setLoading(false);
+      setLoadingStatus("");
+      setError("An error occurred: " + (error as Error).message);
+    }
   };
 
   return (
@@ -248,6 +265,7 @@ function PolicySynthesisModalContent(props) {
         )}
       </div>
 
+      {loading && loadingStatus && <div className="status-message">{loadingStatus}</div>}
       {error && <div className="error">{error}</div>}
 
       <div className="form-actions">
@@ -259,7 +277,7 @@ function PolicySynthesisModalContent(props) {
           onClick={onGenerate}
           disabled={loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY}
         >
-          {loading ? "Generating..." : "Generate Suggestions"}
+          {loading ? (loadingStatus || "Generating...") : "Generate Suggestions"}
         </button>
       </div>
     </div>
@@ -882,40 +900,56 @@ export function Guardrails(props: {
 
     try {
       console.log("Fetching stored policies...");
-      const storedPoliciesResponse = await fetch(`/api/v1/dataset/byid/${datasetIdRef.current}/generated-policies`);
-      if (storedPoliciesResponse.ok) {
-        const storedPoliciesData = await storedPoliciesResponse.json();
-        const storedPolicies = storedPoliciesData.policies || [];
+      // Use query parameters to filter policies on the server side
+      const minDetectionRate = 0.7; // Filter out policies with detection rate below 70%
+      const successOnly = true;     // Only include successful policies
 
-        console.log("Received stored policies:", storedPolicies);
+      const storedPoliciesResponse = await fetch(
+        `/api/v1/dataset/byid/${datasetIdRef.current}/generated-policies?min_detection_rate=${minDetectionRate}&success_only=${successOnly}`
+      );
 
-        // Convert stored policies to the CompletedPolicy format
-        const storedCompletedPolicies = storedPolicies.map(policy => ({
-          status: JOB_STATUS.COMPLETED,
-          policy_code: policy.policy_code,
-          success: policy.success,
-          detection_rate: policy.detection_rate,
-          job_id: policy.id, // Using the policy ID as job_id
-          cluster_name: policy.cluster_name,
-          from_metadata: true, // Flag to indicate this came from metadata
-        }));
-
-        // Filter out policies that are already in the state
-        // Use the job_id/id as the unique identifier
-        const existingIds = completedPolicies.map(p => p.job_id);
-        const newStoredPolicies = storedCompletedPolicies.filter(
-          storedPolicy => !existingIds.includes(storedPolicy.job_id)
-        );
-
-        console.log("New policies to add:", newStoredPolicies);
-
-        if (newStoredPolicies.length > 0) {
-          setCompletedPolicies(prev => [...prev, ...newStoredPolicies]);
-        }
-
-        // Mark that we've loaded the stored policies
-        setStoredPoliciesLoaded(true);
+      if (!storedPoliciesResponse.ok) {
+        console.error("Failed to fetch stored policies:", storedPoliciesResponse.status);
+        return;
       }
+
+      const storedPoliciesData = await storedPoliciesResponse.json();
+      const storedPolicies = storedPoliciesData.policies || [];
+
+      console.log("Received stored policies:", storedPolicies);
+      console.log(`Filtered out ${storedPoliciesData.total_count - storedPoliciesData.filtered_count} low-quality policies`);
+
+      // If we have no stored policies and no completed policies in state, just return
+      if (storedPolicies.length === 0 && completedPolicies.length === 0) {
+        return;
+      }
+
+      // Convert stored policies to the CompletedPolicy format
+      const storedCompletedPolicies = storedPolicies.map(policy => ({
+        status: JOB_STATUS.COMPLETED,
+        policy_code: policy.policy_code,
+        success: policy.success,
+        detection_rate: policy.detection_rate,
+        job_id: policy.id, // Using the policy ID as job_id
+        cluster_name: policy.cluster_name,
+        from_metadata: true, // Flag to indicate this came from metadata
+      }));
+
+      // Filter out policies that are already in the state
+      // Use the job_id/id as the unique identifier
+      const existingIds = completedPolicies.map(p => p.job_id);
+      const newStoredPolicies = storedCompletedPolicies.filter(
+        storedPolicy => !existingIds.includes(storedPolicy.job_id)
+      );
+
+      console.log("New policies to add:", newStoredPolicies);
+
+      if (newStoredPolicies.length > 0) {
+        setCompletedPolicies(prev => [...prev, ...newStoredPolicies]);
+      }
+
+      // Mark that we've loaded the stored policies
+      setStoredPoliciesLoaded(true);
     } catch (error) {
       console.error("Error fetching stored policies:", error);
     }
@@ -994,14 +1028,22 @@ export function Guardrails(props: {
   // Handle policy synthesis success
   const handlePolicySynthesisSuccess = (data) => {
     console.log("Policy synthesis job started successfully:", data);
-    // Immediately fetch active jobs to show the new job
-    fetchActiveJobs();
 
-    // Set a timer to fetch stored policies after a short delay
-    // This gives the backend time to process and store any completed jobs
+    // Clear existing completed policies and active jobs from state
+    setCompletedPolicies([]);
+    setPolicyJobs([]); // Clear jobs to immediately remove canceled ones from UI
+
+    // Set a short timeout to ensure UI is cleared before fetching new data
     setTimeout(() => {
-      fetchStoredPolicies();
-    }, 2000);
+      // Fetch active jobs to show the new job
+      fetchActiveJobs();
+
+      // Set another timer to fetch stored policies after a short delay
+      // This gives the backend time to process and store any completed jobs
+      setTimeout(() => {
+        fetchStoredPolicies();
+      }, 2000);
+    }, 100);
   };
 
   // Cancel a policy job
