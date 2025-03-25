@@ -285,7 +285,7 @@ def get_success_prediction(predictions: list[TraceAnalysis],real_labels: dict[st
         elif not predicted_labels[key] and not real_labels[key]:
             success_prediction["failure_predict_failure"] += 1
         elif predicted_labels[key] and not real_labels[key]:
-            success_prediction["success_predict_failure"] += 1
-        else:
             success_prediction["failure_predict_success"] += 1
+        else:
+            success_prediction["success_predict_failure"] += 1
     return success_prediction

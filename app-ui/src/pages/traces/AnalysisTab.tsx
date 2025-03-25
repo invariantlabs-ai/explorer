@@ -34,10 +34,18 @@ export interface Cluster {
   issues_indexes: [string, number][];
 }
 
+export interface SuccessPrediction {
+  success_predict_success: number,
+  failure_predict_failure: number,
+  success_predict_failure: number,
+  failure_predict_success: number
+}
+
 export interface ReportFormat {
   last_updated?: string;
   cost?: number;
   clustering?: Cluster[];
+  success_prediction?: SuccessPrediction;
   status?: string;
 }
 
@@ -165,6 +173,13 @@ export function AnalysisReport(props: {
                 <pre>{rawReport}</pre>
               </div>
             )}
+            {report && (
+              <div className="tile wide">
+                <h1>Success prediction</h1>
+                <SuccessPredictionSummary success_prediction={report?.success_prediction} />
+              </div>
+            )}
+
             <div className="tile analysis-job-controls">
               <h1>
                 Analysis
@@ -207,6 +222,54 @@ export function AnalysisReport(props: {
     </>
   );
 }
+
+function SuccessPredictionSummary({ success_prediction }: { success_prediction: SuccessPrediction | undefined}) {
+  if (!success_prediction) {
+    return <div>No success prediction data available</div>;
+  }
+  const sp_precision = success_prediction.success_predict_success / (success_prediction.success_predict_success + success_prediction.failure_predict_success);
+  const sp_recall = success_prediction.success_predict_success / (success_prediction.success_predict_success + success_prediction.success_predict_failure);
+  const sp_f1 = 2 * (sp_precision * sp_recall) / (sp_precision + sp_recall);
+
+  const fp_precision = success_prediction.failure_predict_failure / (success_prediction.failure_predict_failure + success_prediction.success_predict_failure);
+  const fp_recall = success_prediction.failure_predict_failure / (success_prediction.failure_predict_failure + success_prediction.failure_predict_success);
+  const fp_f1 = 2 * (fp_precision * fp_recall) / (fp_precision + fp_recall);
+  
+  return (
+    <div>
+      <table style={{ borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={cellStyle}><b>label\prediction</b></th>
+            <th style={cellStyle}><b>SUCC</b></th>
+            <th style={cellStyle}><b>FAIL</b></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th style={cellStyle}><b>SUCC</b></th>
+            <td style={cellStyle}>{success_prediction.success_predict_success}</td>
+            <td style={cellStyle}>{success_prediction.success_predict_failure}</td>
+          </tr>
+          <tr>
+            <th style={cellStyle}><b>FAIL</b></th>
+            <td style={cellStyle}>{success_prediction.failure_predict_success}</td>
+            <td style={cellStyle}>{success_prediction.failure_predict_failure}</td>
+          </tr>
+        </tbody>
+      </table>
+      <b>Success = Positive</b>
+      <p>F1={sp_f1}, Precision={sp_precision}, Recall={sp_recall}</p>
+      <b>Failure = Positive</b>
+      <p>F1={fp_f1}, Precision={fp_precision}, Recall={fp_recall}</p>
+    </div>
+  );
+};
+const cellStyle: React.CSSProperties = {
+  border: '1px solid black',
+  padding: '6px 10px',
+  textAlign: 'center',
+};
 
 function ClusterSummary({ clustering }: { clustering: any }) {
   return clustering && <IssuePieChart data={clustering} />;
