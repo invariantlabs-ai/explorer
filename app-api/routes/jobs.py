@@ -260,7 +260,7 @@ async def on_analysis_result(job: DatasetJob, results: CompleatedJobResponse):
 def get_success_prediction(predictions: list[TraceAnalysis],real_labels: dict[str, bool | None], severity_threshold: float = 0.5) -> dict:
     predicted_labels: dict[str, bool] = {}
     for pred in predictions:
-        predicted_labels[pred.id] = bool(
+        predicted_labels[pred.id] = not bool(
             [n for n in pred.annotations if n.severity > severity_threshold]
         )
     if set(predicted_labels.keys()) != set(real_labels.keys()):
