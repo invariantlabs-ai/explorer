@@ -800,7 +800,7 @@ function annotationIcon(type: string) {
   if (type === "guardrails-error" || type === "analyzer") {
     return <BsDatabaseLock />;
   }
-  return "ciao"
+  return type;
 }
 
 /**
