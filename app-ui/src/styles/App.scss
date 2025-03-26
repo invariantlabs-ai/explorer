@@ -1314,15 +1314,13 @@ button.primary .shortcut {
         }
 
         .test-result {
-          display: inline-block;
+          height: 19pt;
+          width: 19pt;
+          line-height: 18pt;
+          font-size: 15pt;
           text-align: center;
-          padding: 2pt 4pt;
-          font-size: 13pt;
-          line-height: 16pt;
+          border-radius: 2.5pt;
           color: white;
-          border-radius: 2pt;
-          width: 12pt;
-          min-width: 12pt;
 
           &.pass {
             background-color: #1e883e;

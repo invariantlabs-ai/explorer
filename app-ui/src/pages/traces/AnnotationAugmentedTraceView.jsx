@@ -163,15 +163,24 @@ function useHighlightDecorator(
           let forAddressKey = address.replace(/\[\d+\]/g, (match) => {
             return "." + match.slice(1, -1);
           });
-          let n = highlights.highlights
+          let importantHighlights = highlights.highlights
             .for_path(forAddressKey)
-            .allHighlights().length;
-          if (n > 0) {
-            counts.push({
-              type: "highlight",
-              count: n,
-            });
+            .allHighlights();
+          const sources = importantHighlights.map(importantHighlight => 
+            importantHighlight[1].content?.source ?? "unknown"
+          );
+          let counts_map = new Map();
+          for (const source of sources) {
+             counts_map.set(source, (counts_map.get(source) || 0) + 1);
           }
+          
+          for (const [s, c] of counts_map.entries()) {
+             counts.push({
+                 type: s,
+                 count: c,
+             });
+          }
+          
         }
 
         // add user annotations
@@ -187,7 +196,7 @@ function useHighlightDecorator(
           });
           if (count > 0) {
             counts.push({
-              type: "human",
+              type: "user",
               count: count,
               address: first_match,
             });

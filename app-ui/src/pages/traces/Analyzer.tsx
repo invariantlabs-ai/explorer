@@ -190,7 +190,6 @@ function createAnalysis(
         if (event.data) {
           try {
             const chunk_data = JSON.parse(event.data);
-            console.log(chunk_data);
             if (chunk_data.content) {
               if (onAnnotationChange)
                 onAnnotationChange()

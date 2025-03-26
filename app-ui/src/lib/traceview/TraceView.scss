@@ -395,13 +395,13 @@ body {
     position: relative;
     cursor: pointer;
 
-    svg {
+    >svg {
       display: inline-block;
       position: relative;
       margin-right: 2pt;
     }
 
-    svg:last-of-type {
+    >svg:last-of-type {
       margin-right: 3pt;
     }
 
@@ -863,7 +863,6 @@ pre.marked-line {
   margin-left: 5pt;
 }
 
-.annotation-indicator,
 .tool-call-badge,
 .badge {
   font-family:
@@ -895,19 +894,6 @@ pre.marked-line {
   color: rgba(37, 36, 99, 0.761);
   transition: opacity 0.1s;
 
-  &.human {
-    border: 1pt solid rgba(88, 85, 246, 0.2);
-    background-color: rgba(88, 85, 246, 0.2);
-    position: absolute;
-    left: -12.5pt;
-    transform: translateX(-100%) scale(1);
-    opacity: 0.8;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
   svg {
     position: relative;
     left: 0.5pt !important;
@@ -916,12 +902,33 @@ pre.marked-line {
     overflow: visible;
   }
 }
-
+.annotation-indicator{
+  height: 18pt;
+  line-height: 18pt;
+  padding-left: 4pt;
+  padding-right: 4pt;
+  padding-top: 1pt;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: center;
+  align-items: bottom;
+  margin-left: 4pt;
+  background-color: rgba(88, 85, 246, 0.2);
+  border-radius: 2.5pt;
+  color: rgba(37, 36, 99, 0.761);
+}
+.message-header.role .annotation-indicator{
+  font-size: 7pt;
+  height: 12pt;
+  padding-top: 0pt;
+  line-height: 12pt;
+  padding-left: 3pt;
+  padding-right: 3pt;
+}
 .tool-call-badge {
   color: rgba(0, 0, 0, 0.627);
 }
 
-.sidebar .annotation-indicator,
 .badge {
   margin-top: 1pt;
   height: 18pt;
@@ -936,17 +943,6 @@ pre.marked-line {
   background-color: rgba(88, 85, 246, 0.2);
   border-radius: 2.5pt;
   color: rgba(37, 36, 99, 0.761);
-  &.user {
-    background-color: rgba(88, 85, 246, 0.2);
-    color: rgba(37, 36, 99, 0.761);
-  } 
-  &.analyzer-model{
-    background-color: rgba(87, 87, 87, 0.2);
-    color: rgba(37, 37, 36, 0.761);
-  }
-  &.guardrails-error{
-    background-color: rgba(249, 137, 0, 0.596);
-  }
 }
 
 .message-header {

@@ -94,7 +94,7 @@ export class HighlightedJSON {
       return EMPTY_ANNOTATIONS;
     }
 
-    if (this.cachedSubs[path]) {
+    if (this.cachedSubs[path]) {  
       return this.cachedSubs[path];
     }
 

@@ -40,6 +40,7 @@ import { useTelemetry } from "../../utils/Telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
+import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
 import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
@@ -369,7 +370,6 @@ function useTraces(
           }
           pathMap[path].indices.push(t.index);
         });
-        console.log("traceMap", traceMap);
         setTraces(new LightweightTraces(n, username, datasetname, traceMap));
         setHierarchyPaths(pathMap);
       })
@@ -380,7 +380,6 @@ function useTraces(
         }
       });
   };
-  console.log("fetching traces", traces);
   return [traces, hierarchyPaths, refresh];
 }
 
@@ -1777,7 +1776,6 @@ function TraceRowContents(props: { trace: Trace }) {
   }
 
   trace.annotations_by_source = trace.annotations_by_source ?? {}
-  console.log("annotations_by_source", trace.annotations_by_source);
   return (
     <>
       {name}
@@ -1787,19 +1785,13 @@ function TraceRowContents(props: { trace: Trace }) {
         <span className="warnings">{num_warnings} warnings</span>
       )}
       {(trace.annotations_by_source["user"] ?? 0) > 0 ? (
-        <span className={"badge user"} data-tooltip-id="highlight-tooltip" data-tooltip-content="User annotations">
-          {trace.annotations_by_source["user"]}
-        </span>
+        <AnnotationCounterBadge count={trace.annotations_by_source["user"]} type="user"/>
       ) : null}
       {(trace.annotations_by_source["analyzer-model"] ?? 0) > 0 ? (
-        <span className="badge analyzer-model" data-tooltip-id="highlight-tooltip" data-tooltip-content="Analyzer model annotations">
-          {trace.annotations_by_source["analyzer-model"]}
-        </span>
+        <AnnotationCounterBadge count={trace.annotations_by_source["analyzer-model"]} type="analyzer-model"/>
       ) : null}
       {(trace.annotations_by_source["guardrails-error"] ?? 0) > 0 ? (
-        <span className="badge guardrails-error" data-tooltip-id="highlight-tooltip" data-tooltip-content="Guardrails annotations">
-          {trace.annotations_by_source["guardrails-error"]}
-        </span>
+        <AnnotationCounterBadge count={trace.annotations_by_source["guardrails-error"]} type="guardrails-error"/>
       ) : null}
       {showLabel && (
         <div style={{width: "5px"}}></div>

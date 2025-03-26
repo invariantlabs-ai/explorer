@@ -147,6 +147,6 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
         assert trace_result_badge.strip() == "1"
 
         # verify that the annotation indicator batch is shown on screen (.annotation-indicator.human)
-        annotation_indicator = page.locator(".annotation-indicator.human")
+        annotation_indicator = page.locator(".annotation-indicator")
         assert await annotation_indicator.count() == 1
         await screenshot(page)
