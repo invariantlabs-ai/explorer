@@ -3,10 +3,14 @@
  */
 
 import React from "react";
+import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
 
 export interface ViewOptions {
   autocollapseTestTraces: boolean;
   autocollapseAll: boolean;
+  showUserBadges: boolean;
+  showAnalyzerModelBedge: boolean;
+  showGuardrailsErrorBadge: boolean;
 }
 
 export function useViewOptions(): {
@@ -27,6 +31,9 @@ export function useViewOptions(): {
   let options = {
     autocollapseTestTraces: false,
     autocollapseAll: false,
+    showUserBadges: true,
+    showAnalyzerModelBedge: true,
+    showGuardrailsErrorBadge: true,
   };
   try {
     options = JSON.parse(localStorageOptions || "{}");
@@ -48,7 +55,7 @@ export function useViewOptions(): {
       <h2>Trace Events</h2>
 
       <div>
-        <div>
+        <div className="radio-block">
           <input
             type="radio"
             name="viewOption"
@@ -69,7 +76,7 @@ export function useViewOptions(): {
             <p>All events are expanded by default.</p>
           </label>
         </div>
-        <div>
+        <div className="radio-block">
           <input
             type="radio"
             name="viewOption"
@@ -87,7 +94,7 @@ export function useViewOptions(): {
             <p>All events are collapsed by default.</p>
           </label>
         </div>
-        <div>
+        <div className="radio-block">
           <input
             type="radio"
             name="viewOption"
@@ -106,6 +113,57 @@ export function useViewOptions(): {
             Collapsed for Tests
             <p>Unit testing traces are collapsed by default.</p>
           </label>
+        </div>
+      </div>
+      <h2>Trace Badges</h2>
+      <h3>Choose which annotations bedges to display.</h3>
+      <div>
+        <div>
+          <input
+            type="checkbox"
+            name="viewOption"
+            checked={viewOptions.showUserBadges}
+            id="expanded"
+            onChange={(e) =>
+              setViewOptions({
+                showUserBadges: e.target.checked  // Use the actual checkbox state
+              })
+            }
+          />
+          <AnnotationCounterBadge count={1} type="user" />
+          <label>User annotations.</label>
+        </div>
+
+        <div>
+          <input
+            type="checkbox"
+            name="viewOption"
+            checked={viewOptions.showAnalyzerModelBedge}
+            id="autocollapse-all"
+            onChange={(e) =>
+              setViewOptions({
+                showAnalyzerModelBedge: e.target.checked  // Use the actual checkbox state
+              })
+            }
+          />
+          <AnnotationCounterBadge count={1} type="analyzer-model" />
+          <label>Analyzer Model annotations.</label>
+        </div>
+
+        <div className="badge-checkbox-group">
+          <input
+            type="checkbox"
+            name="viewOption"
+            checked={viewOptions.showGuardrailsErrorBadge}
+            id="autocollapse-test-traces"
+            onChange={(e) =>
+              setViewOptions({
+                showGuardrailsErrorBadge: e.target.checked  // Use the actual checkbox state
+              })
+            }
+          />
+          <AnnotationCounterBadge count={1} type="guardrails-error" />
+          <label>Guardrails annotations.</label>
         </div>
       </div>
     </div>

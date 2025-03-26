@@ -925,6 +925,17 @@ pre.marked-line {
   padding-left: 3pt;
   padding-right: 3pt;
 }
+.options .annotation-indicator{
+  padding-left: 4pt;
+  padding-right: 4pt;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
+  font-size: 14pt;
+}
+.options .radio-block{
+  border-bottom: 1pt solid rgb(234, 234, 234);
+
+}
 .tool-call-badge {
   color: rgba(0, 0, 0, 0.627);
 }

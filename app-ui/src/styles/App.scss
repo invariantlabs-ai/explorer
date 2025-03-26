@@ -741,12 +741,12 @@ button {
   .options {
     display: block;
     max-width: 320pt;
+    border-top: 1pt solid rgb(234, 234, 234);
 
     h2 {
       font-size: 12pt;
       font-weight: bold;
-      border-top: 1pt solid rgb(234, 234, 234);
-      padding-top: 10pt;
+      padding-top: 20pt;
 
       p {
         margin: 0pt;
@@ -757,7 +757,11 @@ button {
         padding-bottom: 0pt;
       }
     }
-
+    h3 {
+      font-size: 10pt;
+      margin-top: 0pt;
+      margin-bottom: 3pt;
+    }
     label {
       margin-left: 5pt;
       font-size: 12pt;
@@ -778,7 +782,6 @@ button {
       margin-left: 17pt;
       color: $text-color;
       padding-bottom: 15pt;
-      border-bottom: 1pt solid rgb(234, 234, 234);
     }
 
     input {

@@ -1766,7 +1766,12 @@ function TraceRowContents(props: { trace: Trace }) {
       </>
     );
   }
-
+  const {
+    viewOptions,
+    viewOptionsEditor,
+    showViewOptionsModal,
+    setShowViewOptionsModal,
+  } = useViewOptions();
   const showLabel = isTest || hasSuccessMetadata;
   let label = null;
   if (showLabel) {
@@ -1774,7 +1779,6 @@ function TraceRowContents(props: { trace: Trace }) {
     ? trace?.extra_metadata["invariant.num-failures"] 
     : trace?.extra_metadata["success"];
   }
-
   trace.annotations_by_source = trace.annotations_by_source ?? {}
   return (
     <>
@@ -1784,13 +1788,13 @@ function TraceRowContents(props: { trace: Trace }) {
       {hasWornings && (
         <span className="warnings">{num_warnings} warnings</span>
       )}
-      {(trace.annotations_by_source["user"] ?? 0) > 0 ? (
+      {(viewOptions.showUserBadges && (trace.annotations_by_source["user"] ?? 0) > 0) ? (
         <AnnotationCounterBadge count={trace.annotations_by_source["user"]} type="user"/>
       ) : null}
-      {(trace.annotations_by_source["analyzer-model"] ?? 0) > 0 ? (
+      {(viewOptions.showAnalyzerModelBedge && (trace.annotations_by_source["analyzer-model"] ?? 0) > 0) ? (
         <AnnotationCounterBadge count={trace.annotations_by_source["analyzer-model"]} type="analyzer-model"/>
       ) : null}
-      {(trace.annotations_by_source["guardrails-error"] ?? 0) > 0 ? (
+      {(viewOptions.showGuardrailsErrorBadge && (trace.annotations_by_source["guardrails-error"] ?? 0) > 0) ? (
         <AnnotationCounterBadge count={trace.annotations_by_source["guardrails-error"]} type="guardrails-error"/>
       ) : null}
       {showLabel && (
