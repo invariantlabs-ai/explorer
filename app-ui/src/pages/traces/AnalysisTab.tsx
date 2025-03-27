@@ -7,6 +7,7 @@ import {
   BsExclamationCircle,
   BsExclamationCircleFill,
   BsGearFill,
+  BsInfoCircle,
 } from "react-icons/bs";
 
 import "./Analyzer.scss";
@@ -209,7 +210,28 @@ export function AnalysisReport(props: {
 }
 
 function ClusterSummary({ clustering }: { clustering: any }) {
-  return clustering && <IssuePieChart data={clustering} />;
+  if (!clustering || clustering.length === 0) {
+    return (
+      <div className="empty-clustering" style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "160px",
+        height: "calc(100% - 40px)",
+        width: "100%",
+        color: "#6c757d",
+        fontSize: "1rem",
+        textAlign: "center",
+        flexDirection: "column",
+        gap: "0.75rem",
+        marginTop: "-20px"
+      }}>
+        <BsInfoCircle size={28} />
+        <span>No issue patterns were found.</span>
+      </div>
+    );
+  }
+  return <IssuePieChart data={clustering} />;
 }
 // /**
 //  * Component to show the most important metadata of an analysis run based on the report JSON.
