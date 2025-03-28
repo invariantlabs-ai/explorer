@@ -1,4 +1,4 @@
-import { HighlightData } from "./traceview/highlights";
+import { HighlightData, AnalyzerAnnotation } from "./traceview/highlights";
 
 /**
  * Root key to identify top-level annotations by.
@@ -9,6 +9,7 @@ interface ParsedAnnotationOutput {
   filtered_annotations: { [key: string]: HighlightData[] };
   errors: { type: string; count: number }[];
   top_level_annotations: HighlightData[];
+  analyzer_annotations: AnalyzerAnnotation[];
 }
 
 /**
@@ -52,7 +53,6 @@ export class AnnotationsParser {
           }
         }
       }
-
       // mappings
       let substr = key.substring(key.indexOf(":"));
       // Match either a character range or a bounding box
@@ -93,11 +93,30 @@ export class AnnotationsParser {
         (annotation) =>
           !(
             annotation.extra_metadata &&
-            annotation.extra_metadata["source"] === "analyzer"
+            annotation.extra_metadata["source"] === "analyzer-model"
           ),
       );
       if (new_annotations.length > 0) {
         filtered_annotations[key] = new_annotations;
+      }
+    }
+
+    let analyzer_annotations = [] as AnalyzerAnnotation[];
+    for (let key in annotations) {
+      for (let annotation of annotations[key]) {
+        if (
+          annotation.extra_metadata &&
+          annotation.extra_metadata["source"] === "analyzer-model"
+        ) {
+          let analyzer_annotation: AnalyzerAnnotation = {
+            source: "analyzer-model",
+            content: annotation.content,
+            address: annotation.address,
+            severity: annotation.extra_metadata.severity,
+            id: annotation.id,
+          };
+          analyzer_annotations.push(analyzer_annotation);
+        }
       }
     }
 
@@ -134,6 +153,7 @@ export class AnnotationsParser {
       highlights: highlights,
       filtered_annotations,
       errors,
+      analyzer_annotations,
       top_level_annotations,
     };
   }

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Dict, List
 from uuid import UUID
 from fastapi.responses import StreamingResponse
-
+from pydantic import ValidationError
 import httpx
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -23,7 +23,7 @@ from models.queries import (
     DBJSONEncoder,
     AnalyzerTraceExporter,
 )
-from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
+from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest, Annotation as AnalyzerAnnotation
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
@@ -240,6 +240,20 @@ async def annotate_trace(
         return annotation_to_json(annotation)
 
 
+def annotation_from_chunk(chunk: str) -> AnalyzerAnnotation:
+    """
+    Parse an annotation from a chunk of text.
+    """
+    if not chunk.startswith("data:"):
+        raise HTTPException(
+            status_code=500, detail=f"Trying to parse a non-data chunk: {chunk}"
+        )
+    try:
+        return AnalyzerAnnotation.model_validate_json(chunk[6:])
+    except ValidationError:
+        return None
+
+
 @trace.post("/{id}/analysis")
 async def analyze_trace(
     id: str,
@@ -258,6 +272,9 @@ async def analyze_trace(
             session=session,
             input_trace_id=id,
         )
+        # delete existing annotations
+        _ = await replace_annotations(session, id, user_id, "analyzer-model", [],)
+
     sar = SingleAnalysisRequest(
         input=input_sample[0].trace,
         annotated_samples=annotated_samples,
@@ -265,15 +282,36 @@ async def analyze_trace(
         debug_options=analysis_request.options.debug_options,
     )
     async def stream_response():
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                    method="POST",
-                    url=f"{analysis_request.apiurl}/api/v1/analysis/stream",
-                    json=sar.model_dump(),
-                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
-                ) as streaming_response:
-                async for chunk in streaming_response.aiter_text():
-                    yield chunk
+        url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
+        try: 
+            async with httpx.AsyncClient() as client:
+                async with client.stream(
+                        method="POST",
+                        url=url,
+                        json=sar.model_dump(),
+                        headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                    ) as streaming_response:
+                    async for chunk in streaming_response.aiter_text():
+                        annotation = annotation_from_chunk(chunk)
+                        if isinstance(annotation, AnalyzerAnnotation):
+                            with Session(db()) as session:
+                                new_annotation = Annotation(
+                                    trace_id=UUID(id),
+                                    user_id=user_id,
+                                    address=annotation.location or "",
+                                    content=annotation.content,
+                                    extra_metadata= {"source": "analyzer-model", "severity": annotation.severity},
+                                )
+                                session.add(new_annotation)
+                                session.commit()
+                            yield "data: update\n\n"
+                        else:
+                            yield chunk
+        except httpx.ConnectError as e:
+            error_message = f"Failed to connect to analyzer model at: {url}"
+            yield f"data: {json.dumps({'error': error_message})}\n\n".encode('utf-8')
+    print("streaming response")
+
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 async def replace_annotations(
@@ -541,7 +579,6 @@ async def append_messages(
                         "Expected format: ISO 8601, e.g., 2025-01-23T10:30:00+00:00"
                     ),
                 ) from e
-    print("new messages", new_messages)
     try:
         with Session(db()) as session:
             with session.begin():  # Start transaction
@@ -559,7 +596,6 @@ async def append_messages(
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
-                print("here", new_messages)
                 dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
                 if trace_response.dataset_id:
                     dataset_response = (
