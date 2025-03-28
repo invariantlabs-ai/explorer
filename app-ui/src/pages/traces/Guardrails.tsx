@@ -271,6 +271,7 @@ function PolicySuggestionModalContent(props) {
   const [policyName, setPolicyName] = React.useState(
     policy.cluster_name || "Generated Guardrail"
   );
+  const [policyCode, setPolicyCode] = React.useState(policy.policy_code);
 
   const handleApply = () => {
     setLoading(true);
@@ -282,7 +283,7 @@ function PolicySuggestionModalContent(props) {
       },
       body: JSON.stringify({
         name: policyName,
-        policy: policy.policy_code,
+        policy: policyCode.trim(),
         action: "log",
         enabled: true,
       }),
@@ -332,19 +333,6 @@ function PolicySuggestionModalContent(props) {
             placeholder="Guardrail Name"
             className="policy-name"
           />
-
-          {policy.detection_rate !== undefined && (
-            <div className="detection-rate">
-              <h3>Detection Rate</h3>
-              <div className="rate-indicator">
-                <div
-                  className="rate-bar"
-                  style={{ width: `${policy.detection_rate * 100}%` }}
-                ></div>
-                <span>{Math.round(policy.detection_rate * 100)}%</span>
-              </div>
-            </div>
-          )}
         </div>
 
         <h3>
@@ -356,7 +344,7 @@ function PolicySuggestionModalContent(props) {
             width="100%"
             className="policy-editor"
             defaultLanguage="python"
-            value={policy.policy_code}
+            value={policyCode}
             options={{
               fontSize: 14,
               minimap: {
@@ -367,9 +355,10 @@ function PolicySuggestionModalContent(props) {
               lineNumbers: "on",
               wordWrap: "on",
               wrappingIndent: "same",
-              readOnly: true,
+              readOnly: false,
             }}
             theme="vs-light"
+            onChange={(value?: string) => setPolicyCode(value || "")}
           />
         </div>
       </div>
@@ -1282,14 +1271,6 @@ export function Guardrails(props: {
               </div>
             </h3>
             <div className="guardrail-list">
-              {/* Show loading state only when no completed policies are available */}
-              {loadingJobs && completedPolicies.length === 0 && (
-                <div className="empty instructions box semi">
-                  <h2>
-                    <BsGearWideConnected className="spin" /> Loading...
-                  </h2>
-                </div>
-              )}
 
               {/* Show no suggestions yet state */}
               {!loadingJobs && policyJobs.length === 0 && completedPolicies.length === 0 && (
@@ -1309,38 +1290,25 @@ export function Guardrails(props: {
                 [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
               ).length > 0 && (
                 <>
-                  <div className="section-label">Active Jobs</div>
-                  {policyJobs.filter(job =>
-                    [JOB_STATUS.PENDING, JOB_STATUS.RUNNING].includes(job.extra_metadata.status)
-                  ).map((job: PolicyJob) => (
-                    <div key={job.id} className="box full setting guardrail-item job-item">
-                      <div className="job-info">
-                        <h1>
-                          <BsShieldFillCheck /> {job.extra_metadata.name}
-                        </h1>
-                        <JobStatus
-                          status={job.extra_metadata.status}
-                          progress={
-                            job.extra_metadata.status === JOB_STATUS.RUNNING
-                              ? {
-                                  num_processed: job.extra_metadata.num_processed || 0,
-                                  total: job.extra_metadata.total || 0
-                                }
-                              : null
-                          }
-                        />
-                      </div>
-                      <div className="guardrail-actions">
-                        <button
-                          aria-label="cancel"
-                          className="policy-action inline secondary"
-                          onClick={() => cancelPolicyJob(job.id)}
-                        >
-                          <BsX /> Cancel
-                        </button>
+                  <div className="box full setting guardrail-item job-item">
+                    <div className="job-info">
+                      <h1>
+                        <BsGearWideConnected className="spin" /> Guardrail Synthesis in Progress
+                      </h1>
+                      <div className="progress-indicator">
+                        Analyzing clusters and generating guardrail suggestions...
                       </div>
                     </div>
-                  ))}
+                    <div className="guardrail-actions">
+                      <button
+                        aria-label="cancel"
+                        className="policy-action inline secondary"
+                        onClick={() => cancelPolicyJob(policyJobs[0].id)}
+                      >
+                        <BsX /> Cancel
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -1359,11 +1327,6 @@ export function Guardrails(props: {
                         <h1>
                           <BsShieldCheck /> Guardrail for: {policy.cluster_name}
                         </h1>
-                        {policy.detection_rate !== undefined && (
-                          <div className="detection-info">
-                            Detection Rate: {Math.round(policy.detection_rate * 100)}%
-                          </div>
-                        )}
                       </div>
                       <div className="guardrail-actions">
                         <button

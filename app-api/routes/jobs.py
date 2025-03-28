@@ -146,12 +146,19 @@ async def check_job(session: Session, job: DatasetJob):
     num_checked = job.extra_metadata.get("num_checked_when_done_or_failed", 0)
     if status in [JobStatus.COMPLETED.value, JobStatus.FAILED.value]:
         job.extra_metadata["num_checked_when_done_or_failed"] = num_checked + 1
+        # Mark as modified right away to ensure this counter is updated
+        flag_modified(job, "extra_metadata")
 
     try:
         async with AnalysisClient(endpoint, apikey) as client:
             job_progress = await client.status(job_id)
             print(f"Job {job_id} has status {job_progress.status}", flush=True)
+
+            # Update job status
             job.extra_metadata["status"] = job_progress.status.value
+
+            # Flag as modified immediately after updating status
+            flag_modified(job, "extra_metadata")
 
             if job_progress.status == JobStatus.FAILED:
                 # Delete failed jobs after checking them a few times
@@ -167,6 +174,7 @@ async def check_job(session: Session, job: DatasetJob):
             elif job_progress.status == JobStatus.COMPLETED:
                 if "num_total" in job.extra_metadata:
                     job.extra_metadata["num_processed"] = job.extra_metadata["num_total"]
+                    flag_modified(job, "extra_metadata")
                 await handle_job_result(job, job_progress)
                 # delete job (so we don't handle the results again)
                 await client.delete(job_id)
@@ -176,56 +184,31 @@ async def check_job(session: Session, job: DatasetJob):
             elif job_progress.status == JobStatus.RUNNING:
                 job.extra_metadata["num_processed"] = job_progress.num_processed
                 job.extra_metadata["num_total"] = job_progress.total
+                # Flag as modified immediately after updating running job metrics
+                flag_modified(job, "extra_metadata")
             elif job_progress.status == JobStatus.PENDING:
+                # No additional updates needed for pending status
                 pass
+
+            # Commit changes after successful status update
+            try:
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                logger.error(f"Error committing job status update for {job_id}: {e}")
 
     except aiohttp.ClientResponseError as e:
         if e.status == 404:
             # job not found, delete it from local records (nothing to track here anymore)
             logger.info(f"Job {job_id} not found with analysis service, deleting it")
             session.delete(job)
+            session.commit()
         else:
             import traceback
-
-            print("Error handling job", job_id, e, traceback.format_exc(), flush=True)
+            logger.error(f"Error handling job {job_id}: {e}\n{traceback.format_exc()}")
     except Exception as e:
         import traceback
-
-        print("Error handling job", job_id, e, traceback.format_exc(), flush=True)
-    finally:
-        try:
-            # Make sure the job is still in the session before trying to update it
-            if job in session:
-                try:
-                    # Explicitly refresh the job to make sure it's in the correct state
-                    session.refresh(job)
-                    # Make a fresh update to ensure it's tracked properly
-                    job_dict = job.extra_metadata.copy() if job.extra_metadata else {}
-                    job.extra_metadata = job_dict
-                    # Now flag it as modified
-                    flag_modified(job, "extra_metadata")
-                    # Commit the changes
-                    session.commit()
-                except Exception as e:
-                    # If we can't refresh, it's likely because it was deleted
-                    import traceback
-                    print(f"Warning: Could not refresh job {job_id}, it may have been deleted: {e}", flush=True)
-                    try:
-                        session.commit()
-                    except:
-                        session.rollback()
-            else:
-                # Job might have been deleted in an earlier step
-                print(f"Job {job_id} no longer in session, skipping metadata update", flush=True)
-                session.commit()
-        except Exception as e:
-            import traceback
-            print("Error updating job metadata:", job_id, e, traceback.format_exc(), flush=True)
-            # Try to commit any other changes
-            try:
-                session.commit()
-            except:
-                session.rollback()
+        logger.error(f"Error handling job {job_id}: {e}\n{traceback.format_exc()}")
 
 
 async def handle_job_result(job: DatasetJob, results: CompletedJobResponse):
