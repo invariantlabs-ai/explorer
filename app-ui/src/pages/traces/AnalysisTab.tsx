@@ -90,7 +90,7 @@ export function AnalysisReport(props: {
 
   // Get only analysis jobs for UI controls
   const analysisJobs = useMemo(() => {
-    return jobs?.filter(job => job.extra_metadata?.type === 'analysis') || [];
+    return jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
   }, [jobs]);
 
   const onStartJob = async () => {
@@ -184,9 +184,7 @@ export function AnalysisReport(props: {
                   <BsArrowCounterclockwise />
                 </button>
               </h1>
-              {showConfigEditor && (
-                <AnalyzerConfigEditor configType="dataset" />
-              )}
+              {showConfigEditor && <AnalyzerConfigEditor configType="single" />}
               <Jobs jobs={jobs} />
               <div className="spacer" />
               {Array.isArray(jobs) && (
@@ -250,13 +248,14 @@ function ClusterSummary({ clustering }: { clustering: any }) {
  */
 function Jobs({ jobs }: { jobs: any[] | null }) {
   // Filter only analysis jobs
-  const analysisJobs = jobs?.filter(job =>
-    job.extra_metadata?.type === 'analysis'
-  ) || [];
+  const analysisJobs =
+    jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
 
   return (
     <ul className="jobs">
-      {analysisJobs.map((job) => <Job key={job.id} job={job} />)}
+      {analysisJobs.map((job) => (
+        <Job key={job.id} job={job} />
+      ))}
       {analysisJobs.length === 0 && (
         <li className="empty">No analysis jobs running</li>
       )}

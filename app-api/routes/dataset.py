@@ -1327,8 +1327,6 @@ async def queue_policy_synthesis(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        username = user.username
-
         # Check if the dataset has analysis results
         if "analysis_report" not in dataset.extra_metadata:
             raise HTTPException(
