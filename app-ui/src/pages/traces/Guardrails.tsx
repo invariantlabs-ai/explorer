@@ -12,6 +12,7 @@ import {
   BsExclamationTriangle,
   BsGearWideConnected,
   BsInfoCircle,
+  BsInfoCircleFill,
   BsPauseCircle,
   BsPencilFill,
   BsShieldCheck,
@@ -262,7 +263,9 @@ function PolicySynthesisModalContent(props) {
       </div>
 
       {loading && loadingStatus && (
-        <div className="status-message">{loadingStatus}</div>
+        <div className="banner-note info">
+          <BsInfoCircleFill /> {loadingStatus}
+        </div>
       )}
       {error && <div className="error">{error}</div>}
 
