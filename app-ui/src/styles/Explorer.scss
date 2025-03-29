@@ -199,6 +199,14 @@ button.inline {
     background: rgba(0, 0, 0, 0.2);
   }
 
+  &:disabled {
+    opacity: 0.5;
+
+    &:hover {
+      background: white;
+    }
+  }
+
   &.active {
     // use primary
     border: 1pt solid $color-primary;
