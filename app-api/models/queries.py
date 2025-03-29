@@ -4,7 +4,7 @@ import datetime
 import json
 import re
 import uuid
-from typing import List
+from typing import List, Any
 from uuid import UUID, uuid4
 
 import aiofiles
@@ -83,7 +83,44 @@ class AnalyzerTraceExporter:
             content = re.sub(r",?\s*severity=[0-1](?:\.\d+)?", "", content).strip()
             return content, severity
         return content, None # Return original string with severity=None if not found
-            
+
+    async def get_traces_by_ids(self, session: Session, trace_ids: list[str]) -> list[Any]:
+        """
+        Fetch raw traces by their IDs for policy generation.
+
+        Args:
+            session (Session): The database session
+            trace_ids (list[str]): List of trace IDs to fetch
+
+        Returns:
+            list[Any]: List of trace contents in OpenAI message format
+        """
+        if not trace_ids:
+            return []
+
+        # Convert string IDs to UUID objects
+        uuid_ids = [UUID(id) for id in trace_ids]
+
+        # Query traces by their IDs
+        traces = (
+            session.query(Trace)
+            .filter(Trace.id.in_(uuid_ids))
+            .filter(Trace.dataset_id == self.dataset_id)
+            .all()
+        )
+
+        # Extract and format trace content
+        trace_contents = []
+        for trace in traces:
+            try:
+                # Assuming trace.content contains the trace data in a format
+                # that can be converted to policy generation input
+                trace_contents.append(trace.content)
+            except Exception as e:
+                import traceback
+                print(f"Error extracting trace content: {e}", traceback.format_exc(), flush=True)
+
+        return trace_contents
 
     async def analyzer_model_input(
         self, session: Session, input_trace_id: UUID | None = None
