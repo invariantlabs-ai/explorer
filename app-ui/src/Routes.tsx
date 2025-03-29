@@ -13,6 +13,7 @@ import MarkdownFile from "./components/MarkdownFile.tsx";
 
 import privacyPolicy from "./assets/policy.md?raw";
 import terms from "./assets/terms.md?raw";
+import { DeployGuardrail } from "./pages/deploy-guardrail/DeployGuardrail.tsx";
 
 export const routes = [
   {
@@ -42,7 +43,7 @@ export const routes = [
     path: "/u/:username/:datasetname",
     label: "Dataset",
     element: (
-      <Layout>
+      <Layout fullscreen withTabs>
         <DatasetView />
       </Layout>
     ),
@@ -105,6 +106,18 @@ export const routes = [
     element: (
       <Layout needsLogin fullscreen>
         <NewTrace />
+      </Layout>
+    ),
+    loader: async (task: any) => {
+      return {};
+    },
+  },
+  {
+    path: "/deploy-guardrail",
+    label: "Deploy A Guardrailing Rule",
+    element: (
+      <Layout needsLogin fullscreen>
+        <DeployGuardrail />
       </Layout>
     ),
     loader: async (task: any) => {

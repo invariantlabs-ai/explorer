@@ -20,7 +20,12 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from models.datasets_and_traces import db, DatasetJob, Dataset
-from models.analyzer_model import JobStatus, JobResponseUnion, JobResponseParser, CompletedJobResponse
+from models.analyzer_model import (
+    JobStatus,
+    JobResponseUnion,
+    JobResponseParser,
+    CompletedJobResponse,
+)
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
@@ -164,7 +169,10 @@ async def check_job(session: Session, job: DatasetJob):
                 # Delete failed jobs after checking them a few times
                 # This avoids endless polling of jobs that will never succeed
                 if num_checked >= 3:  # After checking 3 times, delete the job
-                    print(f"Deleting failed job {job_id} after {num_checked} checks", flush=True)
+                    print(
+                        f"Deleting failed job {job_id} after {num_checked} checks",
+                        flush=True,
+                    )
                     await client.delete(job_id)
                     session.delete(job)
             elif job_progress.status == JobStatus.CANCELLED:
@@ -173,8 +181,11 @@ async def check_job(session: Session, job: DatasetJob):
                 session.delete(job)
             elif job_progress.status == JobStatus.COMPLETED:
                 if "num_total" in job.extra_metadata:
-                    job.extra_metadata["num_processed"] = job.extra_metadata["num_total"]
+                    job.extra_metadata["num_processed"] = job.extra_metadata[
+                        "num_total"
+                    ]
                     flag_modified(job, "extra_metadata")
+
                 await handle_job_result(job, job_progress)
                 # delete job (so we don't handle the results again)
                 await client.delete(job_id)
@@ -205,9 +216,11 @@ async def check_job(session: Session, job: DatasetJob):
             session.commit()
         else:
             import traceback
+
             logger.error(f"Error handling job {job_id}: {e}\n{traceback.format_exc()}")
     except Exception as e:
         import traceback
+
         logger.error(f"Error handling job {job_id}: {e}\n{traceback.format_exc()}")
 
 
@@ -225,7 +238,10 @@ async def handle_job_result(job: DatasetJob, results: CompletedJobResponse):
             print(f"No handler for job type {job_type}, job {job_id}", flush=True)
     except Exception as e:
         import traceback
-        print(f"Error handling job result for {job_type}, job {job_id}: {e}", flush=True)
+
+        print(
+            f"Error handling job result for {job_type}, job {job_id}: {e}", flush=True
+        )
         print(traceback.format_exc(), flush=True)
 
 
@@ -251,7 +267,9 @@ async def on_analysis_result(job: DatasetJob, results: CompletedJobResponse):
                 source,
                 [
                     {
-                        "content": json.dumps(analysis.model_dump(exclude={"cost", "id"})["annotations"]),
+                        "content": json.dumps(
+                            analysis.model_dump(exclude={"cost", "id"})["annotations"]
+                        ),
                         "address": "<root>",
                         "extra_metadata": {"source": source},
                     }
@@ -260,7 +278,6 @@ async def on_analysis_result(job: DatasetJob, results: CompletedJobResponse):
         cost = sum(a.cost for a in results.analysis if a.cost is not None)
         report = results.model_dump()
         report["cost"] = cost
-
 
         # update analysis report
         await update_dataset_metadata(
@@ -276,28 +293,37 @@ async def on_policy_synthesis_result(job: DatasetJob, results: CompletedJobRespo
     Handles the outcome of 'policy_synthesis' jobs.
     Stores the generated policy in the dataset metadata for persistence.
     """
-    print(f"Policy synthesis job {job.extra_metadata.get('job_id')} completed", flush=True)
+    print(
+        f"Policy synthesis job {job.extra_metadata.get('job_id')} completed", flush=True
+    )
 
     try:
         # Store policy results in dataset metadata for persistence
         with Session(db()) as session:
             try:
                 # Load the dataset
-                dataset = session.query(Dataset).filter(Dataset.id == job.dataset_id).first()
+                dataset = (
+                    session.query(Dataset).filter(Dataset.id == job.dataset_id).first()
+                )
                 if not dataset:
-                    print(f"Dataset {job.dataset_id} not found for policy job {job.id}", flush=True)
+                    print(
+                        f"Dataset {job.dataset_id} not found for policy job {job.id}",
+                        flush=True,
+                    )
                     return
 
                 # Initialize policies storage in metadata if needed
-                if 'generated_policies' not in dataset.extra_metadata:
-                    dataset.extra_metadata['generated_policies'] = []
-                elif dataset.extra_metadata['generated_policies'] is None:
-                    dataset.extra_metadata['generated_policies'] = []
+                if "generated_policies" not in dataset.extra_metadata:
+                    dataset.extra_metadata["generated_policies"] = []
+                elif dataset.extra_metadata["generated_policies"] is None:
+                    dataset.extra_metadata["generated_policies"] = []
 
                 # Extract policy data from results
                 policy_data = {
                     "id": str(uuid.uuid4()),
-                    "cluster_name": job.extra_metadata.get("cluster_name", "Unnamed Cluster"),
+                    "cluster_name": job.extra_metadata.get(
+                        "cluster_name", "Unnamed Cluster"
+                    ),
                     "policy_code": results.policy_code,
                     "detection_rate": results.detection_rate,
                     "success": results.success,
@@ -305,26 +331,32 @@ async def on_policy_synthesis_result(job: DatasetJob, results: CompletedJobRespo
                 }
 
                 # Add to the generated policies list
-                dataset.extra_metadata['generated_policies'].append(policy_data)
+                dataset.extra_metadata["generated_policies"].append(policy_data)
                 flag_modified(dataset, "extra_metadata")
 
                 try:
                     session.commit()
-                    print(f"Stored policy for cluster {policy_data['cluster_name']} in dataset metadata", flush=True)
+                    print(
+                        f"Stored policy for cluster {policy_data['cluster_name']} in dataset metadata",
+                        flush=True,
+                    )
                 except Exception as e:
                     session.rollback()
                     print(f"Failed to commit policy to database: {e}", flush=True)
                     import traceback
+
                     print(traceback.format_exc(), flush=True)
             except Exception as e:
                 # Handle session-specific errors
                 session.rollback()
                 print(f"Session error while storing policy: {e}", flush=True)
                 import traceback
+
                 print(traceback.format_exc(), flush=True)
     except Exception as e:
         # Handle general errors
         import traceback
+
         print(f"Error storing policy synthesis results: {e}", flush=True)
         print(traceback.format_exc(), flush=True)
 
@@ -357,7 +389,11 @@ async def cleanup_stale_jobs(force_all: bool = False):
 
             # Clean up jobs that are stuck in completed, failed, or cancelled state
             # or all jobs if force_all is True
-            if force_all or status in [JobStatus.COMPLETED.value, JobStatus.FAILED.value, JobStatus.CANCELLED.value]:
+            if force_all or status in [
+                JobStatus.COMPLETED.value,
+                JobStatus.FAILED.value,
+                JobStatus.CANCELLED.value,
+            ]:
                 logger.info(f"Cleaning up {status} job {job_id} (type: {job_type})")
                 session.delete(job)
                 cleaned_up += 1

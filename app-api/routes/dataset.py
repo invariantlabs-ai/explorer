@@ -47,7 +47,14 @@ from models.queries import (
     TraceExporter,
     AnalyzerTraceExporter,
 )
-from models.analyzer_model import JobRequest, AnalysisRequest, JobType, PolicyGenerationRequest, JobStatus, PolicySynthesisRequest
+from models.analyzer_model import (
+    JobRequest,
+    AnalysisRequest,
+    JobType,
+    PolicyGenerationRequest,
+    JobStatus,
+    PolicySynthesisRequest,
+)
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
@@ -245,6 +252,7 @@ def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, Any]]
 @dataset.get("/list")
 def list_datasets(
     kind: DatasetKind,
+    request: Request,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
     limit: Optional[int] = None,
 ):
@@ -252,6 +260,9 @@ def list_datasets(
         if kind == DatasetKind.HOMEPAGE:
             # Use cached results for HOMEPAGE datasets
             return fetch_homepage_datasets(limit)
+
+        # check if there is a q=... parameter to match in the name
+        q = request.query_params.get("q")
 
         # Base query joining Dataset with User and getting latest trace time
         query = (
@@ -269,6 +280,11 @@ def list_datasets(
             query = query.filter(Dataset.is_public)
         elif kind == DatasetKind.ANY:
             query = query.filter(or_(Dataset.is_public, Dataset.user_id == user_id))
+
+        # if q is provided, filter by name
+        if q:
+            q = f"%{q}%"
+            query = query.filter(Dataset.name.ilike(q))
 
         # Order by latest trace time if exists, otherwise by dataset creation time
         datasets = (
@@ -1085,6 +1101,7 @@ async def create_policy(
                     content=payload.get("policy"),
                     enabled=payload.get("enabled", True),
                     action=payload.get("action", "log"),
+                    extra_metadata=payload.get("extra_metadata", {}),
                 ).to_dict()
             )
         except ValidationError as e:
@@ -1319,13 +1336,11 @@ async def queue_policy_synthesis(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        username = user.username
-
         # Check if the dataset has analysis results
         if "analysis_report" not in dataset.extra_metadata:
             raise HTTPException(
                 status_code=400,
-                detail="No analysis results found for this dataset. Please run analysis first."
+                detail="No analysis results found for this dataset. Please run analysis first.",
             )
 
         try:
@@ -1337,8 +1352,7 @@ async def queue_policy_synthesis(
 
             if not clusters:
                 raise HTTPException(
-                    status_code=400,
-                    detail="No clusters found in the analysis results"
+                    status_code=400, detail="No clusters found in the analysis results"
                 )
         except Exception as e:
             raise HTTPException(
@@ -1360,8 +1374,7 @@ async def queue_policy_synthesis(
             target_clusters = [c for c in clusters if c.get("name") == cluster_id]
             if not target_clusters:
                 raise HTTPException(
-                    status_code=404,
-                    detail=f"Cluster with ID {cluster_id} not found"
+                    status_code=404, detail=f"Cluster with ID {cluster_id} not found"
                 )
         else:
             # Process all clusters
@@ -1381,7 +1394,9 @@ async def queue_policy_synthesis(
 
             for idx, annotation_idx in issues_indexes:
                 # Find the corresponding analysis
-                trace_analysis = next((a for a in analysis_data if a.get("id") == idx), None)
+                trace_analysis = next(
+                    (a for a in analysis_data if a.get("id") == idx), None
+                )
                 if not trace_analysis:
                     continue
 
@@ -1397,7 +1412,9 @@ async def queue_policy_synthesis(
             # Extract traces for this cluster from the dataset
             try:
                 limit_traces_per_cluster = 10
-                cluster_traces = await trace_exporter.get_traces_by_ids(session, trace_ids)
+                cluster_traces = await trace_exporter.get_traces_by_ids(
+                    session, trace_ids
+                )
                 cluster_traces = cluster_traces[:limit_traces_per_cluster]
 
                 if not cluster_traces:
@@ -1410,8 +1427,7 @@ async def queue_policy_synthesis(
                         problem_description += f" - {annotation.get('content', '')}\n"
 
                 policy_request = PolicyGenerationRequest(
-                    problem_description=problem_description,
-                    traces=cluster_traces
+                    problem_description=problem_description, traces=cluster_traces
                 )
 
                 # Send the request to the policy synthesis endpoint
@@ -1437,7 +1453,9 @@ async def queue_policy_synthesis(
                         job_metadata = {
                             "name": f"Policy Synthesis for {cluster_name}",
                             "type": JobType.POLICY_SYNTHESIS.value,
-                            "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                            "created_on": str(
+                                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            ),
                             "endpoint": synthesis_request.apiurl,
                             "status": "pending",
                             "job_id": str(policy_job_id),
@@ -1467,14 +1485,14 @@ async def queue_policy_synthesis(
         if not created_jobs:
             raise HTTPException(
                 status_code=400,
-                detail="No policy synthesis jobs were created. Check if there are valid clusters with traces."
+                detail="No policy synthesis jobs were created. Check if there are valid clusters with traces.",
             )
 
         session.commit()
 
         return {
             "message": f"Created {len(created_jobs)} policy synthesis jobs",
-            "jobs": [job.to_dict() for job in created_jobs]
+            "jobs": [job.to_dict() for job in created_jobs],
         }
 
 
@@ -1500,7 +1518,8 @@ async def cancel_policy_synthesis(
         # If cluster_name is provided, filter jobs for that cluster
         if cluster_name:
             pending_jobs = [
-                job for job in pending_jobs
+                job
+                for job in pending_jobs
                 if job.extra_metadata.get("cluster_name") == cluster_name
             ]
 
@@ -1527,7 +1546,8 @@ async def cancel_policy_synthesis(
             # Apply cluster filter if specified
             if cluster_name:
                 pending_jobs = [
-                    job for job in jobs_query
+                    job
+                    for job in jobs_query
                     if job.extra_metadata.get("cluster_name") == cluster_name
                 ]
             else:
@@ -1537,7 +1557,9 @@ async def cancel_policy_synthesis(
             await asyncio.sleep(0.5)
 
             # Check if we waited too long overall
-            if (datetime.datetime.now() - start_time).total_seconds() > wait_and_check_timeout:
+            if (
+                datetime.datetime.now() - start_time
+            ).total_seconds() > wait_and_check_timeout:
                 break
 
         # Return remaining jobs
@@ -1551,7 +1573,7 @@ async def cleanup_jobs(
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
     request: Request,
     force: bool = False,
-    job_ids: List[str] = None
+    job_ids: List[str] = None,
 ):
     """
     Administrative endpoint to clean up stale jobs.
@@ -1560,15 +1582,11 @@ async def cleanup_jobs(
     - force: If true, clean up all jobs regardless of status
     - job_ids: Optional list of specific job IDs to clean up
     """
-    from routes.jobs import cleanup_stale_jobs
-
     if job_ids:
         # Clean up specific jobs by ID
         with Session(db()) as session:
             for job_id in job_ids:
-                jobs = session.query(DatasetJob).filter(
-                    DatasetJob.id == job_id
-                ).all()
+                jobs = session.query(DatasetJob).filter(DatasetJob.id == job_id).all()
 
                 for job in jobs:
                     print(f"Manually cleaning up job {job.id}", flush=True)
@@ -1596,6 +1614,10 @@ async def get_generated_policies(
     - min_detection_rate: Minimum detection rate (0.0 to 1.0) to include policy
     - success_only: If True, only include policies where success=True
     """
+    # refresh job statuses when client requests this endpoint (e.g. to process potentially
+    # completed jobs, since the last check)
+    await check_all_jobs()
+
     with Session(db()) as session:
         # Check if the user has access to the dataset
         dataset = session.query(Dataset).filter(Dataset.id == id).first()
@@ -1624,7 +1646,7 @@ async def get_generated_policies(
         return {
             "policies": filtered_policies,
             "total_count": len(all_policies),
-            "filtered_count": len(filtered_policies)
+            "filtered_count": len(filtered_policies),
         }
 
 
@@ -1654,6 +1676,7 @@ async def delete_generated_policies(
 
             # Mark the metadata as modified so SQLAlchemy knows to update it
             from sqlalchemy.orm.attributes import flag_modified
+
             flag_modified(dataset, "extra_metadata")
 
             # Commit the changes
@@ -1661,10 +1684,7 @@ async def delete_generated_policies(
 
             return {
                 "message": f"Deleted {deleted_count} generated policies",
-                "deleted_count": deleted_count
+                "deleted_count": deleted_count,
             }
 
-        return {
-            "message": "No generated policies to delete",
-            "deleted_count": 0
-        }
+        return {"message": "No generated policies to delete", "deleted_count": 0}

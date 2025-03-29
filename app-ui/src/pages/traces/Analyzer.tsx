@@ -17,6 +17,15 @@ import { alertModelAccess } from "./ModelModal";
 import { events } from "fetch-event-stream";
 import { useUserInfo } from "../../utils/UserInfo";
 
+// Job status values
+export const JOB_STATUS = {
+  PENDING: "pending",
+  RUNNING: "running",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+};
+
 interface Analyzer {
   running: boolean;
   setRunning: (running: boolean) => void;
@@ -147,7 +156,7 @@ function Loading(props) {
  * @param dataset The current dataset name.
  */
 
-const TEMPLATE_API_KEY = "<api key on the Explorer above>";
+export const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
 /**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.

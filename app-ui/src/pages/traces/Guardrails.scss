@@ -51,14 +51,21 @@
   }
 
   .box {
-    // max-width: calc(min(620pt, 100vw - 10pt));
     h2 {
       justify-content: flex-start;
 
       svg {
         position: relative;
-        top: 4pt;
-        margin-right: 3pt;
+        top: 3pt;
+        margin-right: 5pt;
+      }
+    }
+
+    &.empty {
+      margin-bottom: 20pt;
+
+      button {
+        margin-top: 10pt;
       }
     }
 
@@ -160,6 +167,10 @@ button.policy-action {
 
 .box.full.setting.guardrail-item {
   padding-right: 5pt;
+
+  &.applied {
+    opacity: 0.4;
+  }
 
   h1 {
     font-size: 12pt;
@@ -328,6 +339,7 @@ button.policy-action {
     padding-left: 5pt;
     width: calc(100% - 5pt);
     height: calc(100% - 30pt);
+    padding-top: 2pt;
 
     background-color: $color-secondary-background;
     border-top: 1pt solid #e0e0e0;
@@ -528,6 +540,10 @@ button.inline.icon-text {
     background-color: #f5f5f5;
     color: white;
     text-transform: uppercase;
+    height: 10pt;
+    font-size: 5pt;
+    line-height: 10pt;
+    padding: 0pt 5pt;
     position: relative;
     background-color: red;
     border-radius: 10pt;
@@ -543,10 +559,10 @@ button.inline.icon-text {
       "Open Sans",
       "Helvetica Neue",
       sans-serif;
-    padding: 2pt 5pt;
-    top: -1pt;
     font-weight: 600;
-    margin-right: 5pt;
+    transform: scale(1.5);
+    margin-right: 10pt;
+    margin-left: 10pt;
 
     animation: pulse-color 2s infinite;
   }
@@ -558,32 +574,75 @@ button.create-guardrail {
   height: 30pt;
 }
 
-// Add the style for status message
-.status-message {
-  margin: 10px 0;
-  padding: 8px;
-  background-color: #f0f8ff;
-  border-left: 4px solid #1e90ff;
-  color: #333;
+// Add styling for the quality-note in the PolicySynthesisModalContent
+.policy-synthesis-form.form {
+  width: 400pt;
+
+  p {
+    margin-top: 0pt;
+    margin-bottom: 10pt;
+  }
+
+  .banner-note {
+    margin-bottom: 25pt;
+  }
 }
 
-// Add styling for the quality-note in the PolicySynthesisModalContent
-.policy-synthesis-form {
-  .quality-note {
-    background-color: #f0f8ff;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    color: #333;
+.pulse-text {
+  animation: pulse-text 2s linear infinite;
+}
 
-    svg {
-      color: #1e90ff;
-      margin-right: 8px;
-      flex-shrink: 0;
-      font-size: 18px;
-    }
+@keyframes pulse-text {
+  0% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+svg.spin {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(180deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
+span.policy-code {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: inline-block;
+  border-radius: 4pt;
+  font-family: monospace;
+  background-color: #e4e4e4;
+  color: rgb(83, 83, 83);
+  padding: 3pt 5pt;
+  opacity: 0.3;
+  margin-right: 10pt;
+  max-width: 30%;
+}
+
+.guardrail-item {
+  display: flex;
+  flex-direction: row;
+}
+
+.job-info.applied {
+  color: red;
 }
