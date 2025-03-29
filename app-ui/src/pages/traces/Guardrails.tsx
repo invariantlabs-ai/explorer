@@ -30,7 +30,7 @@ import { alertModelAccess } from "./ModelModal";
 import { Traces } from "./Traces";
 
 // Enable the suggestions section for policy synthesis
-const SUGGETSIONS_ENABLED = true;
+const GUARDRAIL_SUGGESTIONS_ENABLED = true;
 const GUARDRAIL_EVALUATION_ENABLED = false;
 
 // Poll interval in milliseconds
@@ -283,111 +283,7 @@ function PolicySynthesisModalContent(props) {
 }
 
 /**
- * Component for viewing a generated policy and optionally applying it.
- */
-function PolicySuggestionModalContent(props) {
-  const { policy, onClose, onApply } = props;
-  const [loading, setLoading] = React.useState(false);
-  const [policyName, setPolicyName] = React.useState(
-    policy.cluster_name || "Generated Guardrail"
-  );
-  const [policyCode, setPolicyCode] = React.useState(policy.policy_code);
-
-  const handleApply = () => {
-    setLoading(true);
-    // Create a new guardrail policy with the generated code
-    fetch(`/api/v1/dataset/${props.dataset_id}/policy`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: policyName,
-        policy: policyCode.trim(),
-        action: "log",
-        enabled: true,
-      }),
-    })
-      .then(async (response) => {
-        if (response.ok) {
-          setLoading(false);
-          onApply && onApply();
-          onClose();
-        } else {
-          const data = await response.json();
-          setLoading(false);
-          alert(data.detail || "Failed to create guardrail");
-        }
-      })
-      .catch((error) => {
-        setLoading(false);
-        alert("Error: " + error.message);
-      });
-  };
-
-  return (
-    <div className="modal-content policy-editor-form">
-      <header>
-        <b>
-          <BsShieldCheck /> Generated Guardrail
-        </b>
-        <div className="spacer" />
-        <button className="button inline" onClick={onClose}>
-          Cancel
-        </button>
-        <button
-          className="primary inline"
-          onClick={handleApply}
-          disabled={loading || !policyName}
-        >
-          {loading ? "Applying..." : "Apply Guardrail"}
-        </button>
-      </header>
-      <div className="main">
-        <div className="collapsable" style={{ width: "100%" }}>
-          <h3>Guardrail Name</h3>
-          <input
-            type="text"
-            value={policyName}
-            onChange={(e) => setPolicyName(e.target.value)}
-            placeholder="Guardrail Name"
-            className="policy-name"
-          />
-        </div>
-
-        <h3>
-          Guardrailing Rule
-          <i>The generated policy code.</i>
-        </h3>
-        <div className="editor-container">
-          <Editor
-            width="100%"
-            className="policy-editor"
-            defaultLanguage="python"
-            value={policyCode}
-            options={{
-              fontSize: 14,
-              minimap: {
-                enabled: false,
-              },
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              lineNumbers: "on",
-              wordWrap: "on",
-              wrappingIndent: "same",
-              readOnly: false,
-            }}
-            theme="vs-light"
-            onChange={(value?: string) => setPolicyCode(value || "")}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Content to show in the modal when updating or creating a policy.
+ * Content to show in the modal when updating or creating a policy (from scratch or from a suggestion).
  */
 function MutatePolicyModalContent(props: {
   dataset_id: string;
@@ -692,6 +588,15 @@ function MutatePolicyModalContent(props: {
   );
 }
 
+/**
+ * Radio button-like component to select a guardrail action.
+ *
+ * Example:
+ *
+ * [Block | The agent is blocked from executing any further actions.]
+ * |[Log | The agent continues to execute but a failure is logged.]|
+ * [Paused | The guardrail is paused and will not be checked.]
+ */
 export function LabelSelect(props: {
   value: string;
   options: {
@@ -721,6 +626,9 @@ export function LabelSelect(props: {
   );
 }
 
+/**
+ * Layout for the editor modal (to create and edit guardrails).
+ */
 export function EditorModal(props: {
   children: React.ReactNode;
   title: string;
@@ -728,56 +636,6 @@ export function EditorModal(props: {
   hasWindowControls?: boolean;
 }) {
   return <div className="editor-modal">{props.children}</div>;
-}
-
-/**
- * Job status component to display the current job status
- */
-function JobStatus({ status, progress }) {
-  let statusIcon;
-  let statusText;
-  let statusClass;
-
-  switch (status) {
-    case JOB_STATUS.PENDING:
-      statusIcon = <BsGearWideConnected className="spin" />;
-      statusText = "Pending";
-      statusClass = "pending";
-      break;
-    case JOB_STATUS.RUNNING:
-      statusIcon = <BsGearWideConnected className="spin" />;
-      statusText = progress
-        ? `Running (${progress.num_processed}/${progress.total})`
-        : "Running";
-      statusClass = "running";
-      break;
-    case JOB_STATUS.COMPLETED:
-      statusIcon = <BsCheckCircleFill />;
-      statusText = "Completed";
-      statusClass = "completed";
-      break;
-    case JOB_STATUS.FAILED:
-      statusIcon = <BsXCircle />;
-      statusText = "Failed";
-      statusClass = "failed";
-      break;
-    case JOB_STATUS.CANCELLED:
-      statusIcon = <BsXCircle />;
-      statusText = "Cancelled";
-      statusClass = "cancelled";
-      break;
-    default:
-      statusIcon = <BsExclamationTriangle />;
-      statusText = "Unknown";
-      statusClass = "unknown";
-  }
-
-  return (
-    <div className={`job-status ${statusClass}`}>
-      {statusIcon}
-      <span>{statusText}</span>
-    </div>
-  );
 }
 
 /**
@@ -799,19 +657,23 @@ export function Guardrails(props: {
   // tracks the policy to be updated.
   const [selectedPolicyForUpdation, setSelectedPolicyForUpdation] =
     React.useState(null);
+  // tracks the selected policy suggestion.
+  const [selectedPolicySuggestion, setSelectedPolicySuggestion] =
+    React.useState<CompletedPolicy | null>(null);
 
   // Policy synthesis state
   const [showPolicySynthesisModal, setShowPolicySynthesisModal] =
     React.useState(false);
-  const [policyJobs, setPolicyJobs] = React.useState<PolicyJob[]>([]);
+
+  // tracks whether we are currently synthesizing policies.
   const [loadingJobs, setLoadingJobs] = React.useState(false);
-  const [selectedPolicySuggestion, setSelectedPolicySuggestion] =
-    React.useState<CompletedPolicy | null>(null);
+  // tracks the active policy jobs
+  const [policyJobs, setPolicyJobs] = React.useState<PolicyJob[]>([]);
   const [completedPolicies, setCompletedPolicies] = React.useState<
     CompletedPolicy[]
   >([]);
 
-  // Flag to track if we've loaded the stored policies
+  // flag to track if we've loaded the stored policies
   const [storedPoliciesLoaded, setStoredPoliciesLoaded] = React.useState(false);
 
   // Refs to avoid dependency issues
@@ -829,7 +691,7 @@ export function Guardrails(props: {
     }
   }, [dataset?.id]);
 
-  // get guardrails from metadata
+  // get guardrails from dataset metadata
   const guardrails = dataset.extra_metadata?.policies
     ? dataset.extra_metadata.policies
     : [];
@@ -1361,7 +1223,7 @@ export function Guardrails(props: {
               );
             })}
         </div>
-        {SUGGETSIONS_ENABLED && (
+        {GUARDRAIL_SUGGESTIONS_ENABLED && (
           <>
             <h3>
               <span>

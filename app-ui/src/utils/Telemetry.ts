@@ -16,6 +16,8 @@ export function useTelemetry() {
     return {
       capture: () => {},
       wrap: (fct: Function) => fct,
+      // without telemetry, all feature flags are enabled
+      hasFeatureFlag: (s: string) => true,
     };
   }
 
@@ -33,6 +35,12 @@ export function useTelemetry() {
       return wrapped;
     },
     posthog: posthog,
+    hasFeatureFlag: (s: string) => {
+      if (!posthog) {
+        return false;
+      }
+      return posthog.isFeatureEnabled(s);
+    },
   };
 }
 
@@ -75,4 +83,14 @@ export function useTelemetryWithIdentification(
   window["telemetry_identified"] = true;
 
   return telemetry;
+}
+
+export function useFeatureFlag(key: string) {
+  const telemetry = useTelemetry();
+
+  if (!telemetry) {
+    return {};
+  }
+
+  return telemetry.hasFeatureFlag(key);
 }
