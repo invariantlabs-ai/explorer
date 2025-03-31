@@ -1123,8 +1123,13 @@ function SearchBox(props) {
   const hasSearch = inputValue == "" || hasChanged;
 
   let fancy_string = inputValue;
-  // if serach query is filter:<label>:1,2,3,4, set fancy to filter:<label>
+  // if search query is filter:<label>:1,2,3,4, set fancy to filter:<label>
   if (inputValue.startsWith("filter:")) {
+    const filter = inputValue.split(":")[1];
+    fancy_string = `${filter}`;
+  }
+  // if search query is idfilter:<label>:1,2,3,4, set fancy to idfilter:<label>
+  if (inputValue.startsWith("idfilter:")) {
     const filter = inputValue.split(":")[1];
     fancy_string = `${filter}`;
   }

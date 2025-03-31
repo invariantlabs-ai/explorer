@@ -3,31 +3,47 @@ import React from "react";
 import {
   BsArrowsAngleContract,
   BsArrowsAngleExpand,
-  BsArrowsCollapse,
   BsBan,
   BsCardList,
   BsCode,
-  BsDatabaseAdd,
   BsDatabaseLock,
-  BsFileEarmarkBreak,
+  BsInfoCircleFill,
   BsPauseCircle,
   BsPencilFill,
-  BsPlus,
-  BsPlusCircle,
-  BsShieldFillCheck,
-  BsStars,
+  BsShieldCheck,
   BsTerminal,
   BsTrash,
-  BsX,
 } from "react-icons/bs";
-import { Modal } from "../../components/Modal";
 import { Link } from "react-router-dom";
-import "./Guardrails.scss";
 import { Tooltip } from "react-tooltip";
+import { DatasetSelector } from "../../components/DatasetSelector";
+import { Modal } from "../../components/Modal";
+import { useGuardrailSuggestionFromURL } from "../../lib/guardrail_from_url";
+import "./Guardrails.scss";
+import {
+  GuardrailSuggestion,
+  GuardrailSuggestions,
+} from "./GuardrailSuggestions";
 import { Traces } from "./Traces";
 
-const SUGGETSIONS_ENABLED = false;
 const GUARDRAIL_EVALUATION_ENABLED = false;
+
+function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
+  return {
+    id: null,
+    name: completedPolicy.cluster_name,
+    content: completedPolicy.policy_code,
+    action: "block",
+    enabled: true,
+    source: !completedPolicy.extra_metadata?.from_url ? "suggestions" : "url",
+    extra_metadata: {
+      suggestion_job_id: completedPolicy.id,
+      from_url: completedPolicy.extra_metadata?.from_url,
+      // detection rate in synthesis
+      detection_rate: completedPolicy.detection_rate,
+    },
+  };
+}
 
 /**
  * Content to show in the modal when deleting a policy.
@@ -85,26 +101,44 @@ function DeletePolicyModalContent(props) {
 }
 
 /**
- * Content to show in the modal when updating or creating a policy.
+ * Content to show in the modal when updating or creating a policy (from scratch or from a suggestion).
  */
-function MutatePolicyModalContent(props) {
+function MutatePolicyModalContent(props: {
+  dataset_id: string;
+  dataset: any;
+  datasetLoadingError: any;
+  onClose: () => void;
+  onSuccess: () => void;
+  onDelete?: () => void;
+  action: "create" | "update";
+  policy?: {
+    id: string | null;
+    name: string;
+    content: string;
+    action: string;
+    enabled: boolean;
+    extra_metadata?: any;
+    // where this policy came from (e.g. suggestions, url, or not set if user created)
+    source?: string;
+  };
+}) {
   const defaultPolicyCode = `# this is a sample guardrail policy.\nraise "Something went wrong" if:\n   (msg: Message)\n   "error" in msg.content\n`;
   const action = props.action;
   const [name, setName] = React.useState(
     props.policy ? props.policy.name : "New Guardrail"
   );
   const [policyCode, setPolicyCode] = React.useState(
-    action == "update" ? props.policy.content : defaultPolicyCode
+    props.policy?.content || defaultPolicyCode
   );
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
 
   const [guardrailAction, setGuardrailAction] = React.useState(
-    action == "update" ? props.policy.action : "log"
+    props.policy?.action || "log"
   );
 
   const [guardrailEnabled, setGuardrailEnabled] = React.useState(
-    action == "update" ? props.policy.enabled : true
+    (props.policy?.enabled || true) as boolean
   );
 
   const [editMode, setEditMode] = React.useState(false);
@@ -137,10 +171,14 @@ function MutatePolicyModalContent(props) {
   ];
 
   const onMutate = () => {
+    if ((!props.policy || !props.policy.id) && action == "update") {
+      throw new Error("A policy with ID is required to update a policy.");
+    }
+
     setLoading(true);
     fetch(
       action == "update"
-        ? `/api/v1/dataset/${props.dataset_id}/policy/${props.policy.id}`
+        ? `/api/v1/dataset/${props.dataset_id}/policy/${props.policy!.id}`
         : `/api/v1/dataset/${props.dataset_id}/policy`,
       {
         method: action == "update" ? "PUT" : "POST",
@@ -152,6 +190,7 @@ function MutatePolicyModalContent(props) {
           policy: policyCode.trim(),
           action: guardrailAction,
           enabled: guardrailEnabled,
+          extra_metadata: props.policy?.extra_metadata || {},
         }),
       }
     ).then((response) => {
@@ -200,7 +239,7 @@ function MutatePolicyModalContent(props) {
                 aria-label="delete guardrail"
                 className="inline icon secondary danger"
                 disabled={loading}
-                onClick={props.onDelete}
+                onClick={props.onDelete || (() => {})}
               >
                 <BsTrash />
               </button>
@@ -241,6 +280,57 @@ function MutatePolicyModalContent(props) {
       <div className="main">
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
+            {props.policy?.source == "suggestions" &&
+              props.policy?.extra_metadata?.detection_rate && (
+                <div className="banner-note info">
+                  <BsInfoCircleFill />
+                  <span>
+                    Automatically generated rule (detection rate of{" "}
+                    <code>
+                      {props.policy.extra_metadata.detection_rate * 100}%
+                    </code>
+                    ) . Please review before deployment.
+                  </span>
+                </div>
+              )}
+            {/* warn about template */}
+            {props.policy?.source == "url" && (
+              <div className="banner-note">
+                <BsInfoCircleFill />
+                <span>
+                  This guardrailing rule is a template. Please review before
+                  deployment.
+                </span>
+              </div>
+            )}
+            {props.policy?.extra_metadata?.from_url && (
+              <>
+                <h3>Dataset</h3>
+                <DatasetSelector
+                  initialDatasetName={props.dataset.name}
+                  onSelect={(datasetName: string) => {
+                    // set 'last-picked-dataset' in localStorage. This is used in DeployGuardrail.tsx
+                    // to redirect to the selected dataset, next time the /deploy-guardrail page is loaded
+                    // with a pre-filled guardrail code
+                    localStorage.setItem("last-picked-dataset", datasetName);
+
+                    // replace /u/<user>/<dataset> dataset name in the url
+                    // with the selected dataset name
+                    const url = new URL(window.location.href);
+                    const pathParts = url.pathname.split("/");
+                    const userIndex = pathParts.indexOf("u");
+                    const datasetIndex = userIndex + 2;
+                    if (datasetIndex < pathParts.length) {
+                      pathParts[datasetIndex] = datasetName;
+                      url.pathname = pathParts.join("/");
+                      window.history.pushState({}, "", url.toString());
+                    }
+                    // reload the page to load the new dataset
+                    window.location.reload();
+                  }}
+                />
+              </>
+            )}
             <h3>Name</h3>
             <input
               type="text"
@@ -369,6 +459,15 @@ function MutatePolicyModalContent(props) {
   );
 }
 
+/**
+ * Radio button-like component to select a guardrail action.
+ *
+ * Example:
+ *
+ * [Block | The agent is blocked from executing any further actions.]
+ * |[Log | The agent continues to execute but a failure is logged.]|
+ * [Paused | The guardrail is paused and will not be checked.]
+ */
 export function LabelSelect(props: {
   value: string;
   options: {
@@ -398,7 +497,10 @@ export function LabelSelect(props: {
   );
 }
 
-export function SidepaneModal(props: {
+/**
+ * Layout for the editor modal (to create and edit guardrails).
+ */
+export function EditorModal(props: {
   children: React.ReactNode;
   title: string;
   onClose: () => void;
@@ -426,23 +528,38 @@ export function Guardrails(props: {
   // tracks the policy to be updated.
   const [selectedPolicyForUpdation, setSelectedPolicyForUpdation] =
     React.useState(null);
+  // tracks the selected policy suggestion.
+  const [selectedPolicySuggestion, setSelectedPolicySuggestion] =
+    React.useState<GuardrailSuggestion | null>(null);
+  // track guardrail suggestion passed via URL
+  const [urlGuardrailSuggestion, clearGuardrailURL] =
+    useGuardrailSuggestionFromURL();
+
   const dataset = props.dataset;
   const datasetLoader = props.datasetLoader;
 
-  // get guardrails from metadta
-  const guadrails = dataset.extra_metadata?.policies
+  // get guardrails from dataset metadata
+  const guardrails = dataset.extra_metadata?.policies
     ? dataset.extra_metadata.policies
     : [];
 
   // sort them by name
-  guadrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
+  guardrails.sort((a, b) => a.name && a.name.localeCompare(b.name || ""));
+
+  // collect all guardrail suggestion_job_ids (guardrails that were applied that come from
+  // some suggestion job)
+  const suggestionJobIds = new Set(
+    guardrails
+      .filter((policy) => policy.extra_metadata?.suggestion_job_id)
+      .map((policy) => policy.extra_metadata.suggestion_job_id)
+  ) as Set<string>;
 
   return (
     <div className="panel">
       {/* create modal */}
       {showCreatePolicyModal && (
-        <SidepaneModal
-          title="Create Policy"
+        <EditorModal
+          title="Create Guardrail"
           onClose={() => setShowCreatePolicyModal(false)}
           hasWindowControls
         >
@@ -450,12 +567,11 @@ export function Guardrails(props: {
             dataset={props.dataset}
             datasetLoadingError={props.datasetLoadingError}
             dataset_id={dataset.id}
-            policy={null}
             action="create"
             onClose={() => setShowCreatePolicyModal(false)}
             onSuccess={() => datasetLoader.refresh()}
           ></MutatePolicyModalContent>
-        </SidepaneModal>
+        </EditorModal>
       )}
       {/* delete modal */}
       {selectedPolicyForDeletion && (
@@ -474,7 +590,7 @@ export function Guardrails(props: {
       )}
       {/* update modal */}
       {selectedPolicyForUpdation && (
-        <SidepaneModal
+        <EditorModal
           title="Update Policy"
           onClose={() => setSelectedPolicyForUpdation(null)}
           hasWindowControls
@@ -492,7 +608,32 @@ export function Guardrails(props: {
               setSelectedPolicyForUpdation(null);
             }}
           ></MutatePolicyModalContent>
-        </SidepaneModal>
+        </EditorModal>
+      )}
+      {/* create from suggestion modal */}
+      {(urlGuardrailSuggestion || selectedPolicySuggestion) && (
+        <EditorModal
+          title="Create Guardrail from Suggestion"
+          onClose={() => setSelectedPolicySuggestion(null)}
+          hasWindowControls
+        >
+          <MutatePolicyModalContent
+            dataset={props.dataset}
+            datasetLoadingError={props.datasetLoadingError}
+            dataset_id={dataset.id}
+            policy={suggestion_to_guardrail(
+              urlGuardrailSuggestion || selectedPolicySuggestion!
+            )}
+            action="create"
+            onClose={() => {
+              setSelectedPolicySuggestion(null);
+              if (urlGuardrailSuggestion) {
+                clearGuardrailURL();
+              }
+            }}
+            onSuccess={() => datasetLoader.refresh()}
+          ></MutatePolicyModalContent>
+        </EditorModal>
       )}
       <header className="toolbar">
         <h1>
@@ -532,14 +673,17 @@ export function Guardrails(props: {
               </h3>
             </div>
           )}
-          {guadrails.length > 0 &&
-            guadrails.map((policy) => {
+          {guardrails.length > 0 &&
+            guardrails.map((policy) => {
               return (
                 <div key={policy.id}>
                   <div className="box full setting guardrail-item">
                     <h1 className="policy-label">
                       {policy.enabled ? (
-                        <span className="badge live">LIVE</span>
+                        <>
+                          <span className="badge live">LIVE</span>
+                          <BsShieldCheck />
+                        </>
                       ) : (
                         <BsPauseCircle />
                       )}
@@ -559,27 +703,11 @@ export function Guardrails(props: {
               );
             })}
         </div>
-        {SUGGETSIONS_ENABLED && (
-          <div className="suggestions">
-            <h3>
-              <span>
-                <BsStars /> Guardrail Suggestions
-              </span>
-            </h3>
-            <div className="guardrail-list">
-              <div className="empty instructions box semi">
-                <h2>
-                  <BsFileEarmarkBreak /> Guardrail Suggestions{" "}
-                  <span className="badge">Beta</span>
-                </h2>
-                <h3>
-                  As you keep using Invariant, new suggestions for guardrailing
-                  rules customized to your agent's behavior will appear here.
-                </h3>
-              </div>
-            </div>
-          </div>
-        )}
+        <GuardrailSuggestions
+          dataset={dataset}
+          setSelectedPolicySuggestion={setSelectedPolicySuggestion}
+          suggestionJobIds={suggestionJobIds}
+        />
       </div>
     </div>
   );

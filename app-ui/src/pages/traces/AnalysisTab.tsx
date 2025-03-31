@@ -79,7 +79,7 @@ export function AnalysisReport(props: {
       });
   };
 
-  // refresh regularly (if there are jobs)
+  // Refresh regularly (if there are jobs)
   useEffect(() => {
     const interval = setInterval(() => {
       if ((jobs || []).length > 0) {
@@ -87,6 +87,11 @@ export function AnalysisReport(props: {
       }
     }, 500);
     return () => clearInterval(interval);
+  }, [jobs]);
+
+  // Get only analysis jobs for UI controls
+  const analysisJobs = useMemo(() => {
+    return jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
   }, [jobs]);
 
   const onStartJob = async () => {
@@ -180,9 +185,7 @@ export function AnalysisReport(props: {
                   <BsArrowCounterclockwise />
                 </button>
               </h1>
-              {showConfigEditor && (
-                <AnalyzerConfigEditor configType="dataset" />
-              )}
+              {showConfigEditor && <AnalyzerConfigEditor configType="single" />}
               <Jobs jobs={jobs} />
               <div className="spacer" />
               {Array.isArray(jobs) && (
@@ -190,12 +193,12 @@ export function AnalysisReport(props: {
                   <CancelButton
                     datasetId={props.dataset.id}
                     onCancel={refreshJobs}
-                    disabled={(jobs || []).length === 0}
+                    disabled={analysisJobs.length === 0}
                   />
                   <button
                     className="inline primary"
                     onClick={onStartJob}
-                    disabled={(jobs || []).length > 0}
+                    disabled={analysisJobs.length > 0}
                   >
                     Queue
                   </button>
@@ -266,10 +269,16 @@ function ClusterSummary({ clustering }: { clustering: any }) {
  * However, in the case that multiple jobs are running, this will show all of them.
  */
 function Jobs({ jobs }: { jobs: any[] | null }) {
+  // Filter only analysis jobs
+  const analysisJobs =
+    jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
+
   return (
     <ul className="jobs">
-      {jobs && jobs.map((job) => <Job key={job.id} job={job} />)}
-      {Array.isArray(jobs) && jobs.length === 0 && (
+      {analysisJobs.map((job) => (
+        <Job key={job.id} job={job} />
+      ))}
+      {analysisJobs.length === 0 && (
         <li className="empty">No analysis jobs running</li>
       )}
     </ul>

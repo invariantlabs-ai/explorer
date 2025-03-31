@@ -3,14 +3,16 @@ import { sharedFetch } from "./SharedFetch";
 
 /** Hook to fetch the list of datasets from the server. */
 export function useDatasetList(
-  kind: "private" | "public" | "homepage" | "any", // Restrict kind to valid values
+  kind: "private" | "public" | "homepage" | "any",
   limit: number | null = null,
+  query: string = ""
 ): [any[] | null, () => void] {
   const [datasets, setDatasets] = React.useState<any[] | null>(null);
   const refresh = React.useCallback(() => {
     const queryParams = new URLSearchParams({
       kind,
       ...(limit !== null && { limit: limit.toString() }),
+      ...(query && { q: query }),
     }).toString();
 
     sharedFetch(`/api/v1/dataset/list?${queryParams}`)
@@ -21,7 +23,7 @@ export function useDatasetList(
         setDatasets([]);
         alert("Failed to fetch datasets");
       });
-  }, [kind, limit]);
+  }, [kind, limit, query]);
 
   return [datasets, refresh];
 }
@@ -66,7 +68,7 @@ export function createDataset(name: string, isPublic: boolean = false) {
 export function uploadDataset(
   name: string,
   file: File,
-  isPublic: boolean = false,
+  isPublic: boolean = false
 ) {
   const promise = new Promise((resolve, reject) => {
     const formData = new FormData();
