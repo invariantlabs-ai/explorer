@@ -8,7 +8,6 @@ import {
   BsCardList,
   BsCode,
   BsDatabaseAdd,
-  BsDatabaseLock,
   BsFileEarmarkBreak,
   BsPauseCircle,
   BsPencilFill,
@@ -25,6 +24,7 @@ import { Link } from "react-router-dom";
 import "./Guardrails.scss";
 import { Tooltip } from "react-tooltip";
 import { Traces } from "./Traces";
+import { GuardrailsIcon } from "../../components/Icons";
 
 const SUGGETSIONS_ENABLED = false;
 const GUARDRAIL_EVALUATION_ENABLED = false;
@@ -182,7 +182,7 @@ function MutatePolicyModalContent(props) {
         <b>
           {!editMode && (
             <>
-              <BsDatabaseLock /> Guardrail Details
+              <GuardrailsIcon /> Guardrail Details
               {error && <span className="error">Error: {error}</span>}
             </>
           )}
@@ -508,14 +508,14 @@ export function Guardrails(props: {
           onClick={() => setShowCreatePolicyModal(true)}
         >
           {" "}
-          <BsDatabaseLock />
+          <GuardrailsIcon />
           Create Guardrail
         </button>
       </header>
       <div className="tab-content guardrails">
         <h3>
           <span>
-            <BsDatabaseLock />
+            <GuardrailsIcon />
             Active Guardrails
           </span>
         </h3>
@@ -524,7 +524,7 @@ export function Guardrails(props: {
             dataset.extra_metadata.policies.length === 0) && (
             <div className="empty instructions box no-policies">
               <h2>
-                <BsDatabaseLock /> No Guardrails Configured
+                <GuardrailsIcon /> No Guardrails Configured
               </h2>
               <h3>
                 Guardrails are rules to secure and steer the actions of your
