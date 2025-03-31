@@ -6,6 +6,7 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from test_basic import trace_shown_in_sidebar
+from playwright.async_api import expect
 from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
@@ -143,10 +144,26 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
         trace_result = page.locator("li.trace.active").locator("a.active")
         trace_result_text = await trace_result.locator("span.name").text_content()
         assert trace_result_text.strip() == "Run 1"
-        trace_result_badge = await trace_result.locator("span.badge").text_content()
-        assert trace_result_badge.strip() == "1"
 
-        # verify that the annotation indicator batch is shown on screen (.annotation-indicator.human)
+        # verify that the annotation badge is shown on screen
         annotation_indicator = page.locator(".annotation-indicator")
         assert await annotation_indicator.count() == 1
+
+        await screenshot(page)
+
+        # Assert that it's there (exists and visible)
+        await page.click('button[data-tooltip-content="View Options"]')
+        user_annotation_checkbox = page.locator(
+            'div.options >> span.annotation-indicator[data-tooltip-content="user annotation"]'
+        ).locator('..').locator('input[type="checkbox"]')
+
+        # Change options to view user annotations on sidebar
+        await user_annotation_checkbox.click()
+        await screenshot(page)
+        await page.reload()
+        await screenshot(page)
+
+        # verify that the annotation indicator batch is shown on screen (.p.human), and on the sidebar
+        annotation_indicator = page.locator(".annotation-indicator")
+        assert await annotation_indicator.count() == 2
         await screenshot(page)
