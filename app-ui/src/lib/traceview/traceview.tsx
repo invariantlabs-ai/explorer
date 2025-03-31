@@ -11,6 +11,7 @@ import {
   BsPencilFill,
   BsFileEarmarkBreak,
   BsDatabaseLock,
+  BsBracesAsterisk,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -786,13 +787,24 @@ function MessageHeader(props: {
  * Can be empty if the type should not have a descriptive name in the UI.
  */
 function annotationName(type: string) {
-  return type
+  if (type == "guardrails-error") {
+    return "guardrailing";
+  }
+  if (type == "analyzer-model") {
+    return "analysis";
+  }
+
+  return type;
 }
 
 function annotationIcon(type: string) {
   if (type === "user") {
-    return <BsPencilFill style={{ transform: 'scale(0.9)', transformOrigin: 'bottom' }}/>;
-  } 
+    return (
+      <BsPencilFill
+        style={{ transform: "scale(0.9)", transformOrigin: "bottom" }}
+      />
+    );
+  }
   if (type === "analyzer-model") {
     // other types do not have an explicit icon
     return <BsFileEarmarkBreak />;
@@ -834,10 +846,10 @@ function MessageHeaderAnnotationIndicator(props: {
     <>
       {annotationTypes.map((type, index) => {
         return (
-          <AnnotationCounterBadge 
-            key={index} 
-            count={type.count} 
-            type={type.type} 
+          <AnnotationCounterBadge
+            key={index}
+            count={type.count}
+            type={type.type}
             onClick={() => {
               if (type.address) {
                 reveal(type.address, "annotations", true, {
@@ -852,19 +864,30 @@ function MessageHeaderAnnotationIndicator(props: {
   );
 }
 
-// bedge component
-export function AnnotationCounterBadge(props: { count: number; type: string ; onClick?: () => void }) {
-
+// badge component
+export function AnnotationCounterBadge(props: {
+  count: number;
+  type: string;
+  onClick?: () => void;
+}) {
   const name = annotationName(props.type);
-  const tooltip = (props.count > 1 ? props.count + " ": "") + name + " annotation" + (props.count > 1 ? "s" : "");
+  const tooltip =
+    (props.count > 1 ? props.count + " " : "") +
+    name +
+    " annotation" +
+    (props.count > 1 ? "s" : "");
   return (
-    <span className={"annotation-indicator"} onClick={props.onClick} data-tooltip-id="highlight-tooltip" data-tooltip-content={tooltip}>
+    <span
+      className={"annotation-indicator"}
+      onClick={props.onClick}
+      data-tooltip-id="highlight-tooltip"
+      data-tooltip-content={tooltip}
+    >
       {annotationIcon(props.type)}
       {props.count > 1 ? <span className="count"> {props.count}</span> : null}
     </span>
   );
 }
-
 
 // categorical color palette for marking different tools
 // to enable easier visual distinction
@@ -933,6 +956,7 @@ function CompactView(props: { message: any }) {
 
   return (
     <span className="tool-call-badge" style={badge_string_style(f.name)}>
+      <BsBracesAsterisk />
       {compact}
     </span>
   );

@@ -395,13 +395,13 @@ body {
     position: relative;
     cursor: pointer;
 
-    >svg {
+    > svg {
       display: inline-block;
       position: relative;
       margin-right: 2pt;
     }
 
-    >svg:last-of-type {
+    > svg:last-of-type {
       margin-right: 3pt;
     }
 
@@ -902,7 +902,7 @@ pre.marked-line {
     overflow: visible;
   }
 }
-.annotation-indicator{
+.annotation-indicator {
   height: 18pt;
   line-height: 18pt;
   padding-left: 4pt;
@@ -917,27 +917,39 @@ pre.marked-line {
   border-radius: 2.5pt;
   color: rgba(37, 36, 99, 0.761);
 }
-.message-header.role .annotation-indicator{
+
+.message-header.role .annotation-indicator {
   font-size: 7pt;
   height: 12pt;
-  padding-top: 0pt;
+  padding-top: 0.5pt;
   line-height: 12pt;
   padding-left: 3pt;
   padding-right: 3pt;
+
+  svg {
+    position: relative;
+    top: 0.5pt;
+  }
 }
-.options .annotation-indicator{
+
+.options .annotation-indicator {
   padding-left: 4pt;
   padding-right: 4pt;
   padding-top: 3pt;
   padding-bottom: 3pt;
   font-size: 14pt;
 }
-.options .radio-block{
-  border-bottom: 1pt solid rgb(234, 234, 234);
 
+.options .radio-block {
+  border-bottom: 1pt solid rgb(234, 234, 234);
 }
+
 .tool-call-badge {
   color: rgba(0, 0, 0, 0.627);
+
+  svg {
+    margin-right: 4pt;
+  }
 }
 
 .badge {

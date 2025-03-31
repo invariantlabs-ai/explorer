@@ -2,7 +2,7 @@
  * User-customizable view options for trace views (e.g. collapse behavior, etc.).
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
 
 export interface ViewOptions {
@@ -12,6 +12,9 @@ export interface ViewOptions {
   showAnalyzerModelBedge: boolean;
   showGuardrailsErrorBadge: boolean;
 }
+
+// all listeners that are registered to be notified when view options change
+const GLOBAL_VIEW_OPTIONS_LISTENERS = new Set<() => void>();
 
 export function useViewOptions(): {
   viewOptions: ViewOptions;
@@ -48,7 +51,43 @@ export function useViewOptions(): {
     const updatedOptions = { ...viewOptions, ...newOptions };
     _setViewOptions(updatedOptions);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedOptions));
+
+    // notify all listeners that the view options have changed
+    GLOBAL_VIEW_OPTIONS_LISTENERS.forEach((listener) => {
+      try {
+        listener();
+      } catch (e) {
+        console.error("Failed to notify view options listener", e);
+      }
+    });
   };
+
+  // register as view options listener
+  useEffect(() => {
+    // listen for GLOBAL_VIEW_OPTIONS_LISTENERS and update via setViewOptions
+    const handler = () => {
+      const localStorageOptions = localStorage.getItem(LOCAL_STORAGE_KEY);
+      let options = {
+        autocollapseTestTraces: false,
+        autocollapseAll: false,
+        showUserBadges: true,
+        showAnalyzerModelBedge: true,
+        showGuardrailsErrorBadge: true,
+      };
+      try {
+        options = JSON.parse(localStorageOptions || "{}");
+      } catch (e) {
+        console.error("Failed to parse view options from local storage", e);
+      }
+      _setViewOptions(options);
+    };
+
+    GLOBAL_VIEW_OPTIONS_LISTENERS.add(handler);
+
+    return () => {
+      GLOBAL_VIEW_OPTIONS_LISTENERS.delete(handler);
+    };
+  }, []);
 
   const viewOptionsEditor = (
     <div className="options">
@@ -116,22 +155,22 @@ export function useViewOptions(): {
         </div>
       </div>
       <h2>Trace Badges</h2>
-      <h3>Choose which annotations bedges to display.</h3>
+      <h3>Customize the badges shown on traces in the sidebar.</h3>
       <div>
         <div>
           <input
             type="checkbox"
             name="viewOption"
             checked={viewOptions.showUserBadges}
-            id="expanded"
+            id="user-badges"
             onChange={(e) =>
               setViewOptions({
-                showUserBadges: e.target.checked  // Use the actual checkbox state
+                showUserBadges: e.target.checked, // Use the actual checkbox state
               })
             }
           />
           <AnnotationCounterBadge count={1} type="user" />
-          <label>User annotations.</label>
+          <label htmlFor="user-badges">User annotations.</label>
         </div>
 
         <div>
@@ -139,15 +178,17 @@ export function useViewOptions(): {
             type="checkbox"
             name="viewOption"
             checked={viewOptions.showAnalyzerModelBedge}
-            id="autocollapse-all"
+            id="analyzer-model-badges"
             onChange={(e) =>
               setViewOptions({
-                showAnalyzerModelBedge: e.target.checked  // Use the actual checkbox state
+                showAnalyzerModelBedge: e.target.checked, // Use the actual checkbox state
               })
             }
           />
           <AnnotationCounterBadge count={1} type="analyzer-model" />
-          <label>Analyzer Model annotations.</label>
+          <label htmlFor="analyzer-model-badges">
+            Analyzer Model annotations.
+          </label>
         </div>
 
         <div className="badge-checkbox-group">
@@ -155,15 +196,15 @@ export function useViewOptions(): {
             type="checkbox"
             name="viewOption"
             checked={viewOptions.showGuardrailsErrorBadge}
-            id="autocollapse-test-traces"
+            id="guardrail-badges"
             onChange={(e) =>
               setViewOptions({
-                showGuardrailsErrorBadge: e.target.checked  // Use the actual checkbox state
+                showGuardrailsErrorBadge: e.target.checked, // Use the actual checkbox state
               })
             }
           />
           <AnnotationCounterBadge count={1} type="guardrails-error" />
-          <label>Guardrails annotations.</label>
+          <label htmlFor="guardrail-badges">Guardrails annotations.</label>
         </div>
       </div>
     </div>
