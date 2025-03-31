@@ -217,6 +217,8 @@ class DatasetPolicy(BaseModel):
     enabled: bool
     # the mode of this policy (e.g. block, log, etc.)
     action: str
+    # extra metadata for the policy (can be used to store internal extra data about a guardrail)
+    extra_metadata: dict = Field(default_factory=dict)
 
     # The timestamp when the policy was created or last updated (whichever is later).
     last_updated_time: str = Field(
