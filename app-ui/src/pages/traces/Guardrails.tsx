@@ -41,6 +41,8 @@ function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
       from_url: completedPolicy.extra_metadata?.from_url,
       // detection rate in synthesis
       detection_rate: completedPolicy.detection_rate,
+      // from rule library
+      from_rule_library: completedPolicy.extra_metadata?.from_rule_library,
     },
   };
 }
@@ -281,10 +283,12 @@ function MutatePolicyModalContent(props: {
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
             {props.policy?.source == "suggestions" &&
-              props.policy?.extra_metadata?.detection_rate && (
+              props.policy?.extra_metadata?.detection_rate &&
+              !props.policy?.extra_metadata?.from_rule_library && (
                 <div className="banner-note info">
                   <BsInfoCircleFill />
                   <span>
+                    <code>{JSON.stringify(props.policy.extra_metadata)}</code>
                     Automatically generated rule (detection rate of{" "}
                     <code>
                       {props.policy.extra_metadata.detection_rate * 100}%

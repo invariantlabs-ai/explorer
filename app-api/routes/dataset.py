@@ -3,6 +3,7 @@
 import datetime
 import json
 import os
+import time
 import re
 import uuid
 from enum import Enum
@@ -20,6 +21,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import StreamingResponse
+import httpx
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
@@ -651,12 +653,12 @@ def get_traces(
 
         # with join, count number of annotations per trace
         try:
-            traces_with_annotations = (
-                traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
-                .add_columns(Annotation)
-            )
+            traces_with_annotations = traces.outerjoin(
+                Annotation, Trace.id == Annotation.trace_id
+            ).add_columns(Annotation)
         except Exception as e:
             import traceback
+
             print("error", e, flush=True)
             traceback.print_exception()
         if limit is not None:
@@ -669,22 +671,30 @@ def get_traces(
         output = {}
         try:
             for trace, annotation in traces_with_annotations.all():
-                output.setdefault(trace.index, {
-                    "id": trace.id,
-                    "index": trace.index,
-                    "messages": [],
-                    "annotations_by_source": {},
-                    "extra_metadata": trace.extra_metadata,
-                    "name": trace.name,
-                    "hierarchy_path": trace.hierarchy_path,
-                })
+                output.setdefault(
+                    trace.index,
+                    {
+                        "id": trace.id,
+                        "index": trace.index,
+                        "messages": [],
+                        "annotations_by_source": {},
+                        "extra_metadata": trace.extra_metadata,
+                        "name": trace.name,
+                        "hierarchy_path": trace.hierarchy_path,
+                    },
+                )
                 if not annotation:
                     continue
-                source = annotation.extra_metadata.get("source", "user") if annotation.extra_metadata else "user"
+                source = (
+                    annotation.extra_metadata.get("source", "user")
+                    if annotation.extra_metadata
+                    else "user"
+                )
                 output[trace.index]["annotations_by_source"].setdefault(source, 0)
                 output[trace.index]["annotations_by_source"][source] += 1
         except Exception:
             import traceback
+
             print(traceback.format_exc())
         return [output[k] for k in output]
 
@@ -1580,10 +1590,14 @@ async def cleanup_jobs(
         with Session(db()) as session:
             # Query only jobs that belong to the current user
             for job_id in job_ids:
-                jobs = session.query(DatasetJob).filter(
-                    DatasetJob.id == job_id,
-                    DatasetJob.user_id == user_id,
-                ).all()
+                jobs = (
+                    session.query(DatasetJob)
+                    .filter(
+                        DatasetJob.id == job_id,
+                        DatasetJob.user_id == user_id,
+                    )
+                    .all()
+                )
 
                 for job in jobs:
                     print(f"Manually cleaning up job {job.id}", flush=True)
@@ -1595,6 +1609,44 @@ async def cleanup_jobs(
     # Otherwise use the standard cleanup with user_id filter
     await cleanup_stale_jobs(force_all=force, user_id=user_id)
     return {"message": "Job cleanup complete. Check logs for details."}
+
+
+_LIBRARY_CACHE = {"timestamp": 0, "data": None}
+RULE_LIBRARY_URL = "https://preview-explorer.invariantlabs.ai/rules/library.json"
+
+
+@dataset.get("/byid/{id}/library-policies")
+async def get_rule_library_guardrails(
+    id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
+):
+    """
+    Get all library policies, i.e. non-generated ones but potentially useful still for any agent/dataset.
+    """
+    now = time.time()
+    if _LIBRARY_CACHE["data"] and now - _LIBRARY_CACHE["timestamp"] < 2:
+        return _LIBRARY_CACHE["data"]
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(RULE_LIBRARY_URL)
+            text = response.text
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Failed to fetch policies: {response.text}",
+                )
+            result = json.loads(text)
+            _LIBRARY_CACHE.update({"timestamp": now, "data": result})
+
+            return result
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to fetch policies: {str(e)}"
+        )
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse policies: {str(e)}"
+        )
 
 
 @dataset.get("/byid/{id}/generated-policies")

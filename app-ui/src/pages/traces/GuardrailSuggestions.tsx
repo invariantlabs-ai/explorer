@@ -1,6 +1,7 @@
 import React from "react";
 import {
   BsCheck2,
+  BsDatabaseFillLock,
   BsGearWideConnected,
   BsInfoCircle,
   BsInfoCircleFill,
@@ -203,10 +204,35 @@ export function GuardrailSuggestions({
   const [storedPolicies, setStoredPolicies] = React.useState<
     GuardrailSuggestion[]
   >([]);
+  const [libraryPolicies, setLibraryPolicies] = React.useState<
+    GuardrailSuggestion[]
+  >([]);
 
   // policy synthesis state
   const [showPolicySynthesisModal, setShowPolicySynthesisModal] =
     React.useState(false);
+
+  // refreshes the list of standard suggested guardrails (@dataset.get("/byid/{id}/suggested-policies"))
+  const refreshStandardPolicies = async () => {
+    try {
+      const libraryPoliciesResponse = await fetch(
+        `/api/v1/dataset/byid/${dataset.id}/library-policies`
+      );
+
+      if (!libraryPoliciesResponse.ok) {
+        console.error(
+          "Failed to fetch standard policies:",
+          libraryPoliciesResponse.status
+        );
+        return;
+      }
+
+      const libraryPoliciesData = await libraryPoliciesResponse.json();
+      setLibraryPolicies(libraryPoliciesData || []);
+    } catch (error) {
+      console.error("Error fetching standard policies:", error);
+    }
+  };
 
   // refreshes the list of stored suggested guardrails
   const refreshStoredPolicies = async () => {
@@ -266,6 +292,8 @@ export function GuardrailSuggestions({
     // fetch active jobs and stored policies
     refreshStoredPolicies();
     refreshActiveJobs();
+    // load standard policies once
+    refreshStandardPolicies();
   }, [dataset]);
 
   // when there are pending policy jobs, regularly refresh stored and active jobs
@@ -358,17 +386,19 @@ export function GuardrailSuggestions({
 
         <div className="guardrail-list">
           {/* Show no suggestions yet state */}
-          {policyJobs.length === 0 && storedPolicies.length === 0 && (
-            <div className="empty instructions box semi">
-              <h2>
-                <BsShieldExclamation /> No Guardrail Suggestions Yet
-              </h2>
-              <h3>
-                Generate guardrail suggestions based on the clusters identified
-                in analysis.
-              </h3>
-            </div>
-          )}
+          {policyJobs.length === 0 &&
+            storedPolicies.length === 0 &&
+            libraryPolicies.length === 0 && (
+              <div className="empty instructions box semi">
+                <h2>
+                  <BsShieldExclamation /> No Guardrail Suggestions Yet
+                </h2>
+                <h3>
+                  Generate guardrail suggestions based on the clusters
+                  identified in analysis.
+                </h3>
+              </div>
+            )}
 
           {/* box like on empty when inProgress, but showing progress */}
           {inProgress && (
@@ -400,39 +430,51 @@ export function GuardrailSuggestions({
           )}
 
           {/* Show completed policies (if any) */}
-          {storedPolicies.length > 0 && (
+          {(storedPolicies.length > 0 || libraryPolicies.length > 0) && (
             <>
-              {storedPolicies.map((policy: GuardrailSuggestion, i: number) => {
-                const already_applied = suggestionJobIds.has(policy.id);
-                return (
-                  <div
-                    key={i + "_" + policy.id}
-                    className={
-                      "box full setting guardrail-item suggestion-item" +
-                      (already_applied || false ? " applied" : "")
-                    }
-                  >
-                    <div className={"job-info"}>
-                      <h1>
-                        <BsShieldCheck />
-                        <span>{policy.cluster_name}</span>
-                      </h1>
+              {[...storedPolicies, ...libraryPolicies].map(
+                (policy: GuardrailSuggestion, i: number) => {
+                  const already_applied = suggestionJobIds.has(policy.id);
+                  return (
+                    <div
+                      key={i + "_" + policy.id}
+                      className={
+                        "box full setting guardrail-item suggestion-item" +
+                        (already_applied || false ? " applied" : "")
+                      }
+                    >
+                      <div className={"job-info"}>
+                        <h1>
+                          <BsShieldCheck />
+                          <span>{policy.cluster_name}</span>
+                          {!policy.extra_metadata?.from_rule_library && (
+                            <span className="badge blue">
+                              <BsStars /> Generated
+                            </span>
+                          )}
+                          {policy.extra_metadata?.from_rule_library && (
+                            <span className="badge">
+                              <BsDatabaseFillLock /> Rule Library
+                            </span>
+                          )}
+                        </h1>
+                      </div>
+                      {already_applied && (
+                        <span className="badge ">Already Applied</span>
+                      )}
+                      <div className="guardrail-actions">
+                        <button
+                          aria-label="view"
+                          className="policy-action inline"
+                          onClick={() => setSelectedPolicySuggestion(policy)}
+                        >
+                          <BsCheck2 /> View & Apply
+                        </button>
+                      </div>
                     </div>
-                    {already_applied && (
-                      <span className="badge ">Already Applied</span>
-                    )}
-                    <div className="guardrail-actions">
-                      <button
-                        aria-label="view"
-                        className="policy-action inline"
-                        onClick={() => setSelectedPolicySuggestion(policy)}
-                      >
-                        <BsCheck2 /> View & Apply
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </>
           )}
         </div>
