@@ -1802,7 +1802,7 @@ function TraceRowContents(props: { trace: Trace }) {
           type="user"
         />
       ) : null}
-      {viewOptions.showAnalyzerModelBedge &&
+      {viewOptions.showAnalyzerModelBadge &&
       (trace.annotations_by_source["analyzer-model"] ?? 0) > 0 ? (
         <AnnotationCounterBadge
           count={trace.annotations_by_source["analyzer-model"]}

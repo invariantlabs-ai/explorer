@@ -9,7 +9,7 @@ export interface ViewOptions {
   autocollapseTestTraces: boolean;
   autocollapseAll: boolean;
   showUserBadges: boolean;
-  showAnalyzerModelBedge: boolean;
+  showAnalyzerModelBadge: boolean;
   showGuardrailsErrorBadge: boolean;
 }
 
@@ -35,7 +35,7 @@ export function useViewOptions(): {
     autocollapseTestTraces: false,
     autocollapseAll: false,
     showUserBadges: true,
-    showAnalyzerModelBedge: true,
+    showAnalyzerModelBadge: true,
     showGuardrailsErrorBadge: true,
   };
   try {
@@ -71,7 +71,7 @@ export function useViewOptions(): {
         autocollapseTestTraces: false,
         autocollapseAll: false,
         showUserBadges: true,
-        showAnalyzerModelBedge: true,
+        showAnalyzerModelBadge: true,
         showGuardrailsErrorBadge: true,
       };
       try {
@@ -177,11 +177,11 @@ export function useViewOptions(): {
           <input
             type="checkbox"
             name="viewOption"
-            checked={viewOptions.showAnalyzerModelBedge}
+            checked={viewOptions.showAnalyzerModelBadge}
             id="analyzer-model-badges"
             onChange={(e) =>
               setViewOptions({
-                showAnalyzerModelBedge: e.target.checked, // Use the actual checkbox state
+                showAnalyzerModelBadge: e.target.checked, // Use the actual checkbox state
               })
             }
           />
