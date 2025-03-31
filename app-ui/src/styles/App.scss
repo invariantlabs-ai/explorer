@@ -741,12 +741,13 @@ button {
   .options {
     display: block;
     max-width: 320pt;
+    border-top: 1pt solid rgb(234, 234, 234);
 
     h2 {
       font-size: 12pt;
       font-weight: bold;
-      border-top: 1pt solid rgb(234, 234, 234);
-      padding-top: 10pt;
+      padding-top: 20pt;
+      margin-bottom: 0pt;
 
       p {
         margin: 0pt;
@@ -756,6 +757,12 @@ button {
         border: none;
         padding-bottom: 0pt;
       }
+    }
+
+    h3 {
+      font-size: 10pt;
+      margin-top: 0pt;
+      margin-bottom: 5pt;
     }
 
     label {
@@ -778,7 +785,6 @@ button {
       margin-left: 17pt;
       color: $text-color;
       padding-bottom: 15pt;
-      border-bottom: 1pt solid rgb(234, 234, 234);
     }
 
     input {
@@ -1314,22 +1320,20 @@ button.primary .shortcut {
         }
 
         .test-result {
-          display: inline-block;
+          height: 19pt;
+          width: 19pt;
+          line-height: 18pt;
+          font-size: 15pt;
           text-align: center;
-          padding: 2pt 4pt;
-          font-size: 9pt;
-          line-height: 16pt;
+          border-radius: 2.5pt;
           color: white;
-          border-radius: 2pt;
-          width: 24pt;
-          min-width: 24pt;
 
           &.pass {
-            background-color: #1e883e;
+            background-color: #45d18b;
           }
 
           &.fail {
-            background-color: #ba2929;
+            background-color: #ff6678;
           }
         }
 
