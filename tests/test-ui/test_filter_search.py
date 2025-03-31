@@ -1,6 +1,6 @@
 import os
 import sys
-
+import asyncio
 # add tests folder (parent) to sys.path
 import pytest
 
@@ -151,19 +151,23 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
 
         await screenshot(page)
 
-        # Assert that it's there (exists and visible)
-        await page.click('button[data-tooltip-content="View Options"]')
-        user_annotation_checkbox = page.locator(
-            'div.options >> span.annotation-indicator[data-tooltip-content="user annotation"]'
-        ).locator('..').locator('input[type="checkbox"]')
+        # Click the view badge option
+        async def click_view_badge():
+            await page.click('button[data-tooltip-content="View Options"]')
+            user_annotation_checkbox = page.locator(
+                'div.options >> span.annotation-indicator[data-tooltip-content="user annotation"]'
+            ).locator('..').locator('input[type="checkbox"]')
+            await user_annotation_checkbox.click()
+            await screenshot(page)
+            await page.reload()
+            await screenshot(page)
 
-        # Change options to view user annotations on sidebar
-        await user_annotation_checkbox.click()
-        await screenshot(page)
-        await page.reload()
-        await screenshot(page)
-
+        await click_view_badge()
         # verify that the annotation indicator batch is shown on screen (.p.human), and on the sidebar
         annotation_indicator = page.locator(".annotation-indicator")
+
         assert await annotation_indicator.count() == 2
         await screenshot(page)
+
+        await click_view_badge()
+        # Click the view badge option back
