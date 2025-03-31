@@ -162,6 +162,7 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
             await screenshot(page)
             await page.reload()
             await page.wait_for_selector("div.explorer.panel.traceview", state="attached")
+            await page.wait_for_selector("#messages-0", state="visible")
             await screenshot(page)
 
         await click_view_badge()
