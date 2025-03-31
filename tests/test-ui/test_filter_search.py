@@ -17,6 +17,7 @@ async def test_navigate_with_search_query(context, url, data_code, screenshot):
     async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query=foo")
+        await screenshot(page)
         await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
@@ -160,12 +161,12 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
             await user_annotation_checkbox.click()
             await screenshot(page)
             await page.reload()
+            await page.wait_for_selector("div.explorer.panel.traceview", state="attached")
             await screenshot(page)
 
         await click_view_badge()
         # verify that the annotation indicator batch is shown on screen (.p.human), and on the sidebar
         annotation_indicator = page.locator(".annotation-indicator")
-
         assert await annotation_indicator.count() == 2
         await screenshot(page)
 
