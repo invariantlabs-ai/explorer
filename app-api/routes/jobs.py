@@ -26,6 +26,7 @@ from models.analyzer_model import (
     JobResponseParser,
     CompletedJobResponse,
 )
+from uuid import UUID
 from models.queries import get_all_jobs, load_dataset
 from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
@@ -361,18 +362,20 @@ async def on_policy_synthesis_result(job: DatasetJob, results: CompletedJobRespo
         print(traceback.format_exc(), flush=True)
 
 
-async def cleanup_stale_jobs(force_all: bool = False):
+async def cleanup_stale_jobs(force_all: bool = False, user_id: UUID = None):
     """
     Utility function to clean up jobs that are stuck in a failed, completed, or cancelled state.
     This helps clean up the database when jobs aren't properly removed through the normal flow.
 
     Parameters:
     - force_all: If true, clean up all jobs regardless of their status
+    - user_id: Optional user ID to restrict cleanup to a specific user's jobs
+               If None and called from an admin endpoint, will clean up all jobs
     """
     logger.info("Cleaning up stale jobs")
     with Session(db()) as session:
-        # Get all jobs
-        jobs = get_all_jobs(session)
+        # Get jobs, filtered by user_id if provided
+        jobs = get_all_jobs(session, user_id=user_id)
 
         # Count before cleanup
         total_jobs = len(jobs)

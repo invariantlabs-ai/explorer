@@ -369,8 +369,13 @@ def load_jobs(
     return result
 
 
-def get_all_jobs(session: Session) -> List[DatasetJob]:
-    result = session.query(DatasetJob).all()
+def get_all_jobs(session: Session, user_id: UUID = None) -> List[DatasetJob]:
+    if user_id is not None:
+        # Only return jobs owned by the specified user
+        result = session.query(DatasetJob).filter(DatasetJob.user_id == user_id).all()
+    else:
+        # Return all jobs (should only be used by admin operations)
+        result = session.query(DatasetJob).all()
     return result
 
 

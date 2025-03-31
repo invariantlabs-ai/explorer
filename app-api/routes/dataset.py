@@ -1576,17 +1576,21 @@ async def cleanup_jobs(
     job_ids: List[str] = None,
 ):
     """
-    Administrative endpoint to clean up stale jobs.
+    Endpoint to clean up stale jobs for the authenticated user.
 
     Parameters:
-    - force: If true, clean up all jobs regardless of status
-    - job_ids: Optional list of specific job IDs to clean up
+    - force: If true, clean up all jobs regardless of status (only for user's own jobs)
+    - job_ids: Optional list of specific job IDs to clean up (only for user's own jobs)
     """
     if job_ids:
-        # Clean up specific jobs by ID
+        # Clean up specific jobs by ID (only those belonging to the current user)
         with Session(db()) as session:
+            # Query only jobs that belong to the current user
             for job_id in job_ids:
-                jobs = session.query(DatasetJob).filter(DatasetJob.id == job_id).all()
+                jobs = session.query(DatasetJob).filter(
+                    DatasetJob.id == job_id,
+                    DatasetJob.user_id == user_id,
+                ).all()
 
                 for job in jobs:
                     print(f"Manually cleaning up job {job.id}", flush=True)
@@ -1595,8 +1599,8 @@ async def cleanup_jobs(
             session.commit()
         return {"message": f"Manually cleaned up {len(job_ids)} jobs"}
 
-    # Otherwise use the standard cleanup
-    await cleanup_stale_jobs(force_all=force)
+    # Otherwise use the standard cleanup with user_id filter
+    await cleanup_stale_jobs(force_all=force, user_id=user_id)
     return {"message": "Job cleanup complete. Check logs for details."}
 
 
@@ -1623,7 +1627,7 @@ async def get_generated_policies(
         dataset = session.query(Dataset).filter(Dataset.id == id).first()
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        if dataset.user_id != user_id and not dataset.is_public:
+        if dataset.user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Get generated policies from metadata
@@ -1663,7 +1667,7 @@ async def delete_generated_policies(
         dataset = session.query(Dataset).filter(Dataset.id == id).first()
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        if dataset.user_id != user_id and not dataset.is_public:
+        if dataset.user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Remove generated_policies from metadata
@@ -1673,9 +1677,6 @@ async def delete_generated_policies(
 
             # Remove the generated_policies list
             dataset.extra_metadata["generated_policies"] = []
-
-            # Mark the metadata as modified so SQLAlchemy knows to update it
-            from sqlalchemy.orm.attributes import flag_modified
 
             flag_modified(dataset, "extra_metadata")
 
