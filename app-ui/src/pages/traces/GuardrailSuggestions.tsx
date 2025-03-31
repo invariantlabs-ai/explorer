@@ -1,36 +1,18 @@
-import Editor from "@monaco-editor/react";
-import React, { useEffect } from "react";
+import React from "react";
 import {
-  BsArrowsAngleContract,
-  BsArrowsAngleExpand,
-  BsBan,
-  BsCardList,
   BsCheck2,
-  BsCheckCircleFill,
-  BsCode,
-  BsDatabaseLock,
-  BsExclamationTriangle,
   BsGearWideConnected,
   BsInfoCircle,
   BsInfoCircleFill,
-  BsPauseCircle,
-  BsPencilFill,
   BsShieldCheck,
   BsShieldExclamation,
   BsStars,
-  BsTerminal,
-  BsTrash,
   BsX,
-  BsXCircle,
 } from "react-icons/bs";
-import { Link } from "react-router-dom";
-import { Tooltip } from "react-tooltip";
 import { Modal } from "../../components/Modal";
+import { JOB_STATUS, TEMPLATE_API_KEY } from "./Analyzer";
 import "./Guardrails.scss";
 import { alertModelAccess } from "./ModelModal";
-import { Traces } from "./Traces";
-import { DatasetSelector } from "../../components/DatasetSelector";
-import { JOB_STATUS, TEMPLATE_API_KEY } from "./Analyzer";
 
 // Enable the suggestions section for policy synthesis
 const GUARDRAIL_SUGGESTIONS_ENABLED = true;

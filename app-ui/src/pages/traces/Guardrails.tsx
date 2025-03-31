@@ -1,40 +1,30 @@
 import Editor from "@monaco-editor/react";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   BsArrowsAngleContract,
   BsArrowsAngleExpand,
   BsBan,
   BsCardList,
-  BsCheck2,
-  BsCheckCircleFill,
   BsCode,
   BsDatabaseLock,
-  BsExclamationTriangle,
-  BsGearWideConnected,
-  BsInfoCircle,
   BsInfoCircleFill,
   BsPauseCircle,
   BsPencilFill,
   BsShieldCheck,
-  BsShieldExclamation,
-  BsStars,
   BsTerminal,
   BsTrash,
-  BsX,
-  BsXCircle,
 } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
-import { Modal } from "../../components/Modal";
-import "./Guardrails.scss";
-import { alertModelAccess } from "./ModelModal";
-import { Traces } from "./Traces";
 import { DatasetSelector } from "../../components/DatasetSelector";
+import { Modal } from "../../components/Modal";
+import { useGuardrailSuggestionFromURL } from "../../lib/guardrail_from_url";
+import "./Guardrails.scss";
 import {
   GuardrailSuggestion,
   GuardrailSuggestions,
 } from "./GuardrailSuggestions";
-import { useGuardrailSuggestionFromURL } from "../../lib/guardrail_from_url";
+import { Traces } from "./Traces";
 
 const GUARDRAIL_EVALUATION_ENABLED = false;
 
@@ -45,6 +35,7 @@ function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
     content: completedPolicy.policy_code,
     action: "block",
     enabled: true,
+    source: !completedPolicy.extra_metadata?.from_url ? "suggestions" : "url",
     extra_metadata: {
       suggestion_job_id: completedPolicy.id,
       from_url: completedPolicy.extra_metadata?.from_url,
@@ -127,6 +118,8 @@ function MutatePolicyModalContent(props: {
     action: string;
     enabled: boolean;
     extra_metadata?: any;
+    // where this policy came from (e.g. suggestions, url, or not set if user created)
+    source?: string;
   };
 }) {
   const defaultPolicyCode = `# this is a sample guardrail policy.\nraise "Something went wrong" if:\n   (msg: Message)\n   "error" in msg.content\n`;
@@ -287,15 +280,26 @@ function MutatePolicyModalContent(props: {
       <div className="main">
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
-            {props.policy?.extra_metadata?.detection_rate && (
-              <div className="banner-note info">
+            {props.policy?.source == "suggestions" &&
+              props.policy?.extra_metadata?.detection_rate && (
+                <div className="banner-note info">
+                  <BsInfoCircleFill />
+                  <span>
+                    Automatically generated rule (detection rate of{" "}
+                    <code>
+                      {props.policy.extra_metadata.detection_rate * 100}%
+                    </code>
+                    ) . Please review before deployment.
+                  </span>
+                </div>
+              )}
+            {/* warn about template */}
+            {props.policy?.source == "url" && (
+              <div className="banner-note">
                 <BsInfoCircleFill />
                 <span>
-                  Automatically generated rule (detection rate of{" "}
-                  <code>
-                    {props.policy.extra_metadata.detection_rate * 100}%
-                  </code>
-                  ) . Please review before deployment.
+                  This guardrailing rule is a template. Please review before
+                  deployment.
                 </span>
               </div>
             )}
