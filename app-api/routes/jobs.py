@@ -268,12 +268,10 @@ async def on_analysis_result(job: DatasetJob, results: CompletedJobResponse):
                 source,
                 [
                     {
-                        "content": json.dumps(
-                            analysis.model_dump(exclude={"cost", "id"})["annotations"]
-                        ),
-                        "address": "<root>",
-                        "extra_metadata": {"source": source},
-                    }
+                        "content": annotation.content,
+                        "address": annotation.location,
+                        "extra_metadata": {"source": source, "severity": annotation.severity},
+                    } for annotation in analysis.annotations
                 ],
             )
         cost = sum(a.cost for a in results.analysis if a.cost is not None)

@@ -83,7 +83,7 @@ async def push_trace(
     )
     # mark API key id that was used to upload the trace
     for md in metadata:
-        md["uploader"] = "Via API " + "..." + str(apikey[4:])
+        md["uploader"] = "Via API " + "..." + str(apikey[-5:])
 
     traces = []
     try:
