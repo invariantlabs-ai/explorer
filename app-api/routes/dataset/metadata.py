@@ -12,6 +12,7 @@ from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import UserIdentity
 
 from routes.dataset.utils import load_dataset
+from routes.dataset_metadata import update_dataset_metadata
 
 router = APIRouter()
 
@@ -101,69 +102,3 @@ async def update_metadata(
         raise HTTPException(status_code=400, detail="replace_all must be a boolean")
 
     return await update_dataset_metadata(user_id, dataset_name, metadata, replace_all)
-
-
-async def update_dataset_metadata(
-    user_id: UUID, dataset_name: str, metadata: Dict[str, Any], replace_all: bool = False
-):
-    """
-    Update the metadata of a dataset.
-
-    Args:
-        user_id: The user ID of the dataset owner
-        dataset_name: The name of the dataset
-        metadata: The metadata to update
-        replace_all: If True, replace all metadata; if False, update incrementally
-
-    Returns:
-        The updated dataset metadata
-    """
-    with Session(db()) as session:
-        # Find the dataset by user_id and name
-        dataset = (
-            session.query(Dataset)
-            .filter(Dataset.user_id == user_id, Dataset.name == dataset_name)
-            .first()
-        )
-
-        if not dataset:
-            raise HTTPException(status_code=404, detail="Dataset not found")
-
-        # Ensure the user owns the dataset
-        if dataset.user_id != user_id:
-            raise HTTPException(
-                status_code=403, detail="Not allowed to update metadata for this dataset"
-            )
-
-        # Initialize extra_metadata if it doesn't exist
-        if not dataset.extra_metadata:
-            dataset.extra_metadata = {}
-
-        # Update the extra_metadata based on the update mode
-        if replace_all:
-            # For replace_all mode, use the provided metadata directly
-            dataset.extra_metadata = metadata
-        else:
-            # For incremental mode, update existing fields and add new ones
-            _update_nested_dict(dataset.extra_metadata, metadata)
-
-        # Mark the field as modified to ensure SQLAlchemy detects the change
-        flag_modified(dataset, "extra_metadata")
-        session.commit()
-
-        return dataset.extra_metadata
-
-
-def _update_nested_dict(target: Dict[str, Any], source: Dict[str, Any]):
-    """
-    Recursively update nested dictionaries.
-    If a key is present in both, the value from source overwrites target.
-    If a key is present in source but not in target, it is added to target.
-    """
-    for key, value in source.items():
-        if key in target and isinstance(value, dict) and isinstance(target[key], dict):
-            # Recursively update nested dictionaries
-            _update_nested_dict(target[key], value)
-        else:
-            # Update or add the value
-            target[key] = value
