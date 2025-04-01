@@ -1722,7 +1722,7 @@ async def check_policy_on_dataset(
 
     api_key = data.get("api_key")
     cookie = data.get("cookie")
-    api_key = "inv-..."
+    api_key = "inv-"
 
     # Check if at least one authentication method is provided
     if not api_key and not cookie:
@@ -1750,11 +1750,6 @@ async def check_policy_on_dataset(
                 "triggered_count": 0
             }
 
-        # Setup for policy checking
-        triggered_traces = []
-        check_count = 0
-        total_traces = len(traces)
-
         # Setup request headers
         headers = {
             "Content-Type": "application/json"
@@ -1766,10 +1761,11 @@ async def check_policy_on_dataset(
         if cookie:
             headers["Cookie"] = cookie
 
-        # Process each trace
-        for trace in traces:
-            check_count += 1
+        total_traces = len(traces)
+        max_concurrent_requests = 100
 
+        # Function to check a single trace against the policy
+        async def check_single_trace(trace):
             # Prepare trace messages for policy check
             trace_messages = trace.content
 
@@ -1781,61 +1777,67 @@ async def check_policy_on_dataset(
             }
 
             try:
-                # Log request details for debugging
-                print(f"Checking policy for trace {trace.id}", flush=True)
-                print(f"Request URL: {policy_check_url}", flush=True)
-                print(f"Request headers: {headers}", flush=True)
-                print(f"Request payload length: {len(str(payload))}", flush=True)
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        policy_check_url,
+                        headers=headers,
+                        json=payload,
+                        timeout=10  # Add a timeout to prevent hanging
+                    ) as response:
+                        if response.status >= 400:
+                            error_text = await response.text()
+                            try:
+                                error_detail = await response.json()
+                                error_message = f"HTTP Error checking policy for trace {trace.id}: {response.status}"
+                                error_message += f"\nResponse details: {error_detail}"
+                            except Exception:
+                                error_message = f"HTTP Error checking policy for trace {trace.id}: {response.status}"
+                                error_message += f"\nResponse text: {error_text[:500]}"
 
-                # Make the policy check request
-                response = requests.post(
-                    policy_check_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=10  # Add a timeout to prevent hanging
-                )
+                            print(error_message, flush=True)
+                            return {"trace_id": str(trace.id), "error": error_message, "triggered": False}
 
-                # Check for HTTP errors
-                try:
-                    response.raise_for_status()
-                except requests.exceptions.HTTPError as e:
-                    # More detailed error logging
-                    error_message = f"HTTP Error checking policy for trace {trace.id}: {str(e)}"
+                        result = await response.json()
 
-                    # Try to get more details from the response if possible
-                    try:
-                        error_detail = response.json()
-                        error_message += f"\nResponse details: {error_detail}"
-                    except Exception:
-                        error_message += f"\nResponse text: {response.text[:500]}"
-
-                    print(error_message, flush=True)
-                    # Stop processing all traces if any trace check fails
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Policy check failed: {error_message}"
-                    )
-
-                result = response.json()
-
-                # If policy was triggered, add trace ID to results
-                if result and result.get("triggered", False):
-                    triggered_traces.append(str(trace.id))
-
-            except requests.exceptions.RequestException as e:
-                # Detailed error logging
+                        # Return result with trace ID
+                        return {
+                            "trace_id": str(trace.id),
+                            "triggered": len(result["errors"]) > 0,
+                            "error": None
+                        }
+            except Exception as e:
                 error_message = f"Error checking policy for trace {trace.id}: {str(e)}"
                 print(error_message, flush=True)
+                return {"trace_id": str(trace.id), "error": error_message, "triggered": False}
 
-                # Stop processing all traces if any trace check fails
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Policy check failed: {error_message}"
-                )
+        # Process traces in batches to control concurrency
+        triggered_traces = []
+        error_traces = []
 
-        # Return results
-        return {
+        # Process traces in chunks to limit concurrency
+        for i in range(0, len(traces), max_concurrent_requests):
+            batch = traces[i:i + max_concurrent_requests]
+
+            # Run concurrent checks for this batch
+            results = await asyncio.gather(*[check_single_trace(trace) for trace in batch])
+
+            # Process results
+            for result in results:
+                if result["error"]:
+                    error_traces.append({"trace_id": result["trace_id"], "error": result["error"]})
+                elif result["triggered"]:
+                    triggered_traces.append(result["trace_id"])
+
+        # Return results with error information
+        response = {
             "triggered_traces": triggered_traces,
             "total_traces": total_traces,
             "triggered_count": len(triggered_traces)
         }
+
+        # Include errors if any occurred
+        if error_traces:
+            response["errors"] = error_traces
+            response["error_count"] = len(error_traces)
+
+        return response
