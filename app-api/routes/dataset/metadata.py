@@ -16,7 +16,7 @@ from routes.dataset.utils import load_dataset
 router = APIRouter()
 
 
-@router.get("/metadata/{dataset_name}")
+@router.get("/{dataset_name}")
 async def get_metadata(
     dataset_name: str,
     user_id: Annotated[UUID, Depends(APIIdentity)],
@@ -70,7 +70,7 @@ async def get_metadata(
         }
 
 
-@router.put("/metadata/{dataset_name}")
+@router.put("/{dataset_name}")
 async def update_metadata(
     dataset_name: str,
     request: Request,
