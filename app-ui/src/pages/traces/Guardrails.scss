@@ -646,3 +646,96 @@ span.policy-code {
 .job-info.applied {
   color: red;
 }
+
+// Add styles for guardrail run section
+.guardrail-run-section {
+  margin-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+
+  h3 {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12pt;
+    font-weight: bold;
+    line-height: 20pt;
+    margin-bottom: 10pt;
+
+    i {
+      font-size: 10pt;
+      opacity: 0.5;
+      font-weight: 500;
+      font-style: italic !important;
+      margin-left: 8px;
+    }
+  }
+
+  .guardrail-run-actions {
+    margin-bottom: 15px;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .guardrail-results {
+    margin-top: 15px;
+
+    h4 {
+      font-size: 11pt;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .trace-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .guardrail-triggered-trace {
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 10px;
+      background-color: #f8f8f8;
+
+      &:hover {
+        background-color: #f0f0f0;
+      }
+
+      .trace-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        h4 {
+          margin: 0;
+          font-size: 11pt;
+          font-weight: 600;
+        }
+
+        .trace-time {
+          font-size: 9pt;
+          color: #666;
+        }
+      }
+
+      .trace-message {
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        padding: 8px;
+
+        code {
+          font-family: monospace;
+          font-size: 10pt;
+        }
+      }
+    }
+  }
+}

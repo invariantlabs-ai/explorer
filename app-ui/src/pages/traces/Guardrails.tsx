@@ -16,6 +16,7 @@ import {
 } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
+import ClockLoader from "react-spinners/ClockLoader";
 import { DatasetSelector } from "../../components/DatasetSelector";
 import { Modal } from "../../components/Modal";
 import { useGuardrailSuggestionFromURL } from "../../lib/guardrail_from_url";
@@ -143,6 +144,25 @@ function MutatePolicyModalContent(props: {
 
   const [editMode, setEditMode] = React.useState(false);
 
+  // New state for guardrail run
+  const [runningGuardrail, setRunningGuardrail] = React.useState(false);
+  const [guardrailRunComplete, setGuardrailRunComplete] = React.useState(false);
+  const [triggeredTraces, setTriggeredTraces] = React.useState<any[]>([]);
+  const [totalTracesChecked, setTotalTracesChecked] = React.useState(0);
+
+  // Track if the policy has been modified since loading
+  const [policyModified, setPolicyModified] = React.useState(false);
+
+  // Check if policy needs to be saved before running
+  const needsSave = props.action === "create" || policyModified;
+
+  // Update policyModified when policyCode changes
+  React.useEffect(() => {
+    if (props.policy?.content !== policyCode) {
+      setPolicyModified(true);
+    }
+  }, [policyCode, props.policy]);
+
   const guardrailActions = [
     {
       title: "Block Agent",
@@ -196,6 +216,7 @@ function MutatePolicyModalContent(props: {
     ).then((response) => {
       if (response.ok) {
         setLoading(false);
+        setPolicyModified(false);
         props.onSuccess();
         props.onClose();
       } else {
@@ -213,6 +234,113 @@ function MutatePolicyModalContent(props: {
           });
       }
     });
+  };
+
+  // New function to run guardrail against dataset
+  const runGuardrail = () => {
+    // If the policy needs to be saved first, show a message
+    if (needsSave) {
+      setError("Please save the guardrail before running it.");
+      return;
+    }
+
+    setRunningGuardrail(true);
+    setTriggeredTraces([]);
+    setGuardrailRunComplete(false);
+    setTotalTracesChecked(0);
+    setError("");
+
+    // Prepare the request to check the policy against the dataset
+    fetch(`/api/v1/dataset/byid/${props.dataset_id}/check-policy`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        policy: policyCode,
+        parameters: {}, // Optional parameters for policy
+        policy_check_url: `${window.location.origin}/api/v1/policy/check`,
+        cookie: document.cookie, // Send the current cookie for authentication
+      }),
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            // Extract and format detailed error message if available
+            let errorMsg = "Failed to run guardrail";
+            if (data.detail) {
+              // If the detail message is very long, truncate it for display
+              errorMsg = data.detail.length > 200
+                ? data.detail.substring(0, 200) + "..."
+                : data.detail;
+
+              // Log the full error to console for debugging
+              console.error("Full error details:", data.detail);
+            }
+            throw new Error(errorMsg);
+          }).catch(err => {
+            // Handle case where response isn't valid JSON
+            if (err.name === "SyntaxError") {
+              throw new Error("Failed to run guardrail: Invalid response format");
+            }
+            throw err;
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Store the total number of traces checked
+        setTotalTracesChecked(data.total_traces || 0);
+
+        if (data.triggered_traces && data.triggered_traces.length > 0) {
+          // Fetch detailed information for each triggered trace
+          const fetchPromises = data.triggered_traces.map(traceId =>
+            fetch(`/api/v1/trace/${traceId}`)
+              .then(response => {
+                if (!response.ok) {
+                  console.warn(`Failed to fetch trace ${traceId}`);
+                  return null;
+                }
+                return response.json();
+              })
+          );
+
+          Promise.all(fetchPromises)
+            .then(traces => {
+              // Format traces for display
+              const formattedTraces = traces
+                .filter(Boolean)
+                .map(trace => ({
+                  id: trace.id,
+                  index: trace.index,
+                  name: trace.name || `Trace ${trace.index}`,
+                  messages: trace.messages || [],
+                  time_created: trace.time_created || new Date().toISOString(),
+                }));
+
+              setTriggeredTraces(formattedTraces);
+              setRunningGuardrail(false);
+              setGuardrailRunComplete(true);
+            })
+            .catch(error => {
+              console.error("Error fetching trace details:", error);
+              setError(`Error fetching trace details: ${error.message}`);
+              setRunningGuardrail(false);
+              setGuardrailRunComplete(true);
+            });
+        } else {
+          // No traces triggered the guardrail
+          setTriggeredTraces([]);
+          setRunningGuardrail(false);
+          setGuardrailRunComplete(true);
+        }
+      })
+      .catch(error => {
+        console.error("Error running guardrail:", error);
+        setError(`Error running guardrail: ${error.message}`);
+        setRunningGuardrail(false);
+        setGuardrailRunComplete(true);
+      });
   };
 
   return (
@@ -454,6 +582,76 @@ function MutatePolicyModalContent(props: {
           style={{ backgroundColor: "#000", color: "#fff" }}
           className="tooltip"
         />
+
+        {/* New section for running guardrail */}
+        {!editMode && (
+          <div className="guardrail-run-section">
+            <h3>
+              Run Guardrail
+              <i>Test this guardrail against your dataset.</i>
+            </h3>
+            <div className="guardrail-run-actions">
+              <button
+                aria-label="run guardrail"
+                className="button primary inline"
+                disabled={runningGuardrail || !policyCode || !policyCode.trim()}
+                onClick={runGuardrail}
+              >
+                <BsTerminal />
+                {runningGuardrail ? (
+                  <>
+                    <ClockLoader size={12} color="#fff" />
+                    <span style={{ marginLeft: "8px" }}>Running...</span>
+                  </>
+                ) : needsSave ? "Save Guardrail First" : "Run Against Dataset"}
+              </button>
+            </div>
+
+            {needsSave && (
+              <div className="banner-note">
+                <BsInfoCircleFill />
+                <span>Save the guardrail before running it against your dataset.</span>
+              </div>
+            )}
+
+            {guardrailRunComplete && triggeredTraces.length > 0 && (
+              <div className="guardrail-results">
+                <h4>Guardrail Triggered by {triggeredTraces.length} of {totalTracesChecked} Traces:</h4>
+                <div className="trace-list">
+                  {triggeredTraces.map(trace => (
+                    <div key={trace.id} className="box full setting guardrail-triggered-trace">
+                      <div className="trace-info">
+                        <h4>{trace.name}</h4>
+                        <span className="trace-time">
+                          Created: {new Date(trace.time_created).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="trace-message">
+                        <code>{trace.messages[0]?.content || "No content available"}</code>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {guardrailRunComplete && triggeredTraces.length === 0 && (
+              <div className="guardrail-results">
+                <div className="banner-note info">
+                  <BsInfoCircleFill />
+                  <span>No traces triggered this guardrail out of {totalTracesChecked} total traces checked.</span>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="banner-note error" style={{ marginTop: "15px", padding: "15px", borderRadius: "4px", backgroundColor: "#ffeded" }}>
+                <BsInfoCircleFill style={{ color: "#d32f2f" }} />
+                <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{error}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -69,6 +69,7 @@ from routes.dataset_metadata import update_dataset_metadata
 from routes.jobs import cancel_job, check_all_jobs, cleanup_stale_jobs
 
 import aiohttp
+import requests
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
 homepage_dataset_ids = (
@@ -1682,3 +1683,159 @@ async def delete_generated_policies(
             }
 
         return {"message": "No generated policies to delete", "deleted_count": 0}
+
+
+@dataset.post("/byid/{id}/check-policy")
+async def check_policy_on_dataset(
+    request: Request,
+    id: str,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
+):
+    """
+    Runs a policy over all traces in a dataset and returns trace IDs that trigger the policy.
+
+    Input:
+    - policy: String containing the policy code
+    - parameters: Optional parameters for policy evaluation
+    - policy_check_url: URL of the policy checking service
+    - api_key: Optional API key for policy checking service
+    - cookie: Optional cookie for authentication
+
+    Output:
+    - triggered_traces: List of trace IDs that triggered the policy
+    - total_traces: Total number of traces checked
+    - triggered_count: Number of traces that triggered the policy
+    """
+    data = await request.json()
+
+    # Extract request parameters
+    policy = data.get("policy")
+    if not policy:
+        raise HTTPException(status_code=400, detail="Policy must be provided")
+
+    parameters = data.get("parameters", {})
+    policy_check_url = data.get("policy_check_url")
+    policy_check_url = "https://explorer.invariantlabs.ai/api/v1/policy/check"
+
+    if not policy_check_url:
+        raise HTTPException(status_code=400, detail="Policy check URL must be provided")
+
+    api_key = data.get("api_key")
+    cookie = data.get("cookie")
+    api_key = "inv-..."
+
+    # Check if at least one authentication method is provided
+    if not api_key and not cookie:
+        raise HTTPException(
+            status_code=400,
+            detail="Either api_key or cookie must be provided for authentication"
+        )
+
+    # Authenticate and get dataset
+    with Session(db()) as session:
+        try:
+            dataset = load_dataset(
+                session, {"id": id}, user_id, allow_public=True, return_user=False
+            )
+        except HTTPException as e:
+            raise e
+
+        # Get all traces from the dataset
+        traces = session.query(Trace).filter(Trace.dataset_id == dataset.id).all()
+
+        if not traces:
+            return {
+                "triggered_traces": [],
+                "total_traces": 0,
+                "triggered_count": 0
+            }
+
+        # Setup for policy checking
+        triggered_traces = []
+        check_count = 0
+        total_traces = len(traces)
+
+        # Setup request headers
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        if cookie:
+            headers["Cookie"] = cookie
+
+        # Process each trace
+        for trace in traces:
+            check_count += 1
+
+            # Prepare trace messages for policy check
+            trace_messages = trace.content
+
+            # Prepare payload
+            payload = {
+                "messages": trace_messages,
+                "policy": policy,
+                "parameters": parameters
+            }
+
+            try:
+                # Log request details for debugging
+                print(f"Checking policy for trace {trace.id}", flush=True)
+                print(f"Request URL: {policy_check_url}", flush=True)
+                print(f"Request headers: {headers}", flush=True)
+                print(f"Request payload length: {len(str(payload))}", flush=True)
+
+                # Make the policy check request
+                response = requests.post(
+                    policy_check_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=10  # Add a timeout to prevent hanging
+                )
+
+                # Check for HTTP errors
+                try:
+                    response.raise_for_status()
+                except requests.exceptions.HTTPError as e:
+                    # More detailed error logging
+                    error_message = f"HTTP Error checking policy for trace {trace.id}: {str(e)}"
+
+                    # Try to get more details from the response if possible
+                    try:
+                        error_detail = response.json()
+                        error_message += f"\nResponse details: {error_detail}"
+                    except Exception:
+                        error_message += f"\nResponse text: {response.text[:500]}"
+
+                    print(error_message, flush=True)
+                    # Stop processing all traces if any trace check fails
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Policy check failed: {error_message}"
+                    )
+
+                result = response.json()
+
+                # If policy was triggered, add trace ID to results
+                if result and result.get("triggered", False):
+                    triggered_traces.append(str(trace.id))
+
+            except requests.exceptions.RequestException as e:
+                # Detailed error logging
+                error_message = f"Error checking policy for trace {trace.id}: {str(e)}"
+                print(error_message, flush=True)
+
+                # Stop processing all traces if any trace check fails
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Policy check failed: {error_message}"
+                )
+
+        # Return results
+        return {
+            "triggered_traces": triggered_traces,
+            "total_traces": total_traces,
+            "triggered_count": len(triggered_traces)
+        }
