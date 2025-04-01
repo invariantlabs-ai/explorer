@@ -1,15 +1,18 @@
 """Defines routes for APIs related to dataset."""
 
+import asyncio
 import datetime
 import json
 import os
-import time
 import re
+import time
 import uuid
 from enum import Enum
-from typing import Annotated, Any, Optional, List
+from typing import Annotated, Any, List, Optional
 from uuid import UUID
-import asyncio
+
+import aiohttp
+import httpx
 from cachetools import TTLCache, cached
 from fastapi import (
     BackgroundTasks,
@@ -21,7 +24,13 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import StreamingResponse
-import httpx
+from models.analyzer_model import (
+    AnalysisRequest,
+    JobRequest,
+    JobType,
+    PolicyGenerationRequest,
+    PolicySynthesisRequest,
+)
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
@@ -33,10 +42,11 @@ from models.datasets_and_traces import (
     User,
     db,
 )
-from sqlalchemy import and_, func
-
 from models.importers import import_jsonl
 from models.queries import (
+    AnalyzerTraceExporter,
+    ExportConfig,
+    TraceExporter,
     dataset_to_json,
     get_savedqueries,
     load_annotations,
@@ -45,32 +55,18 @@ from models.queries import (
     query_traces,
     search_term_mappings,
     trace_to_json,
-    ExportConfig,
-    TraceExporter,
-    AnalyzerTraceExporter,
-)
-from models.analyzer_model import (
-    JobRequest,
-    AnalysisRequest,
-    JobType,
-    PolicyGenerationRequest,
-    JobStatus,
-    PolicySynthesisRequest,
 )
 from pydantic import ValidationError
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-from sqlalchemy import and_, or_, text
+from routes.dataset_metadata import update_dataset_metadata
+from routes.jobs import cancel_job, check_all_jobs, cleanup_stale_jobs
+from sqlalchemy import and_, func, or_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import exists, func
 from util.util import delete_images, validate_dataset_name
-
-from routes.dataset_metadata import update_dataset_metadata
-from routes.jobs import cancel_job, check_all_jobs, cleanup_stale_jobs
-
-import aiohttp
 
 homepage_dataset_ids = json.load(open("homepage_datasets.json"))
 homepage_dataset_ids = (
@@ -124,7 +120,8 @@ def str_to_bool(key: str, value: str) -> bool:
 
 @dataset.post("/create")
 async def create(
-    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
+    request: Request,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
 ):
     """Create a dataset."""
     if user_id is None:
@@ -1068,7 +1065,7 @@ def get_all_traces(by: dict, user_id: Annotated[UUID, Depends(UserIdentity)]):
 async def create_policy(
     request: Request,
     dataset_id: str,
-    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
 ):
     """Creates a new policy for a dataset."""
 
