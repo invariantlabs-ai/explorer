@@ -24,7 +24,8 @@ router = APIRouter()
 
 @router.post("/create")
 async def create(
-    request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
+    request: Request,
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
 ):
     """Create a dataset."""
     if user_id is None:

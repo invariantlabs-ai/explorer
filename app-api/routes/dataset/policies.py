@@ -63,7 +63,7 @@ async def get_rule_library_guardrails(
 async def create_policy(
     request: Request,
     dataset_id: str,
-    user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
+    user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
 ):
     """Creates a new policy for a dataset."""
 
