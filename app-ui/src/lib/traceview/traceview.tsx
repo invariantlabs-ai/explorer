@@ -10,8 +10,8 @@ import {
   BsExclamationCircleFill,
   BsPencilFill,
   BsFileEarmarkBreak,
-  BsDatabaseLock,
   BsBracesAsterisk,
+  BsShieldCheck,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -31,6 +31,7 @@ import {
   permalink,
   reveal,
 } from "../permalink-navigator";
+import { GuardrailsIcon } from "../../components/Icons";
 
 /**
  * Props for the TraceView component.
@@ -810,7 +811,7 @@ function annotationIcon(type: string) {
     return <BsFileEarmarkBreak />;
   }
   if (type === "guardrails-error" || type === "analyzer") {
-    return <BsDatabaseLock />;
+    return <GuardrailsIcon />;
   }
   return type;
 }

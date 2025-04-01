@@ -6,7 +6,6 @@ import {
   BsBan,
   BsCardList,
   BsCode,
-  BsDatabaseLock,
   BsInfoCircleFill,
   BsPauseCircle,
   BsPencilFill,
@@ -25,6 +24,7 @@ import {
   GuardrailSuggestions,
 } from "./GuardrailSuggestions";
 import { Traces } from "./Traces";
+import { GuardrailsIcon } from "../../components/Icons";
 
 const GUARDRAIL_EVALUATION_ENABLED = false;
 
@@ -41,6 +41,8 @@ function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
       from_url: completedPolicy.extra_metadata?.from_url,
       // detection rate in synthesis
       detection_rate: completedPolicy.detection_rate,
+      // from rule library
+      from_rule_library: completedPolicy.extra_metadata?.from_rule_library,
     },
   };
 }
@@ -221,7 +223,7 @@ function MutatePolicyModalContent(props: {
         <b>
           {!editMode && (
             <>
-              <BsDatabaseLock /> Guardrail Details
+              <GuardrailsIcon /> Guardrail Details
               {error && <span className="error">Error: {error}</span>}
             </>
           )}
@@ -281,10 +283,12 @@ function MutatePolicyModalContent(props: {
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
             {props.policy?.source == "suggestions" &&
-              props.policy?.extra_metadata?.detection_rate && (
+              props.policy?.extra_metadata?.detection_rate &&
+              !props.policy?.extra_metadata?.from_rule_library && (
                 <div className="banner-note info">
                   <BsInfoCircleFill />
                   <span>
+                    <code>{JSON.stringify(props.policy.extra_metadata)}</code>
                     Automatically generated rule (detection rate of{" "}
                     <code>
                       {props.policy.extra_metadata.detection_rate * 100}%
@@ -649,14 +653,14 @@ export function Guardrails(props: {
           onClick={() => setShowCreatePolicyModal(true)}
         >
           {" "}
-          <BsDatabaseLock />
+          <GuardrailsIcon />
           Create Guardrail
         </button>
       </header>
       <div className="tab-content guardrails">
         <h3>
           <span>
-            <BsDatabaseLock />
+            <GuardrailsIcon />
             Active Guardrails
           </span>
         </h3>
@@ -665,7 +669,7 @@ export function Guardrails(props: {
             dataset.extra_metadata.policies.length === 0) && (
             <div className="empty instructions box no-policies">
               <h2>
-                <BsDatabaseLock /> No Guardrails Configured
+                <GuardrailsIcon /> No Guardrails Configured
               </h2>
               <h3>
                 Guardrails are rules to secure and steer the actions of your
