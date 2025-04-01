@@ -33,10 +33,14 @@ async def cleanup_jobs(
         with Session(db()) as session:
             # Query only jobs that belong to the current user
             for job_id in job_ids:
-                jobs = session.query(DatasetJob).filter(
-                    DatasetJob.id == job_id,
-                    DatasetJob.user_id == user_id,
-                ).all()
+                jobs = (
+                    session.query(DatasetJob)
+                    .filter(
+                        DatasetJob.id == job_id,
+                        DatasetJob.user_id == user_id,
+                    )
+                    .all()
+                )
 
                 for job in jobs:
                     print(f"Manually cleaning up job {job.id}", flush=True)

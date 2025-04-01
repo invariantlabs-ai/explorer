@@ -305,10 +305,9 @@ def get_traces(
 
         # with join, count number of annotations per trace
         try:
-            traces_with_annotations = (
-                traces.outerjoin(Annotation, Trace.id == Annotation.trace_id)
-                .add_columns(Annotation)
-            )
+            traces_with_annotations = traces.outerjoin(
+                Annotation, Trace.id == Annotation.trace_id
+            ).add_columns(Annotation)
         except Exception as e:
             import traceback
             print("error", e, flush=True)
@@ -323,18 +322,25 @@ def get_traces(
         output = {}
         try:
             for trace, annotation in traces_with_annotations.all():
-                output.setdefault(trace.index, {
-                    "id": trace.id,
-                    "index": trace.index,
-                    "messages": [],
-                    "annotations_by_source": {},
-                    "extra_metadata": trace.extra_metadata,
-                    "name": trace.name,
-                    "hierarchy_path": trace.hierarchy_path,
-                })
+                output.setdefault(
+                    trace.index,
+                    {
+                        "id": trace.id,
+                        "index": trace.index,
+                        "messages": [],
+                        "annotations_by_source": {},
+                        "extra_metadata": trace.extra_metadata,
+                        "name": trace.name,
+                        "hierarchy_path": trace.hierarchy_path,
+                    },
+                )
                 if not annotation:
                     continue
-                source = annotation.extra_metadata.get("source", "user") if annotation.extra_metadata else "user"
+                source = (
+                    annotation.extra_metadata.get("source", "user")
+                    if annotation.extra_metadata
+                    else "user"
+                )
                 output[trace.index]["annotations_by_source"].setdefault(source, 0)
                 output[trace.index]["annotations_by_source"][source] += 1
         except Exception:

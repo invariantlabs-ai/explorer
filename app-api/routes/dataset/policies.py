@@ -1,9 +1,12 @@
 """Policy related operations for datasets."""
 
+import json
+import time
 import uuid
 from typing import Annotated
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -11,11 +14,49 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from models.datasets_and_traces import db, DatasetPolicy
 from routes.apikeys import UserOrAPIIdentity
-from routes.auth import AuthenticatedUserIdentity
+from routes.auth import AuthenticatedUserIdentity, UserIdentity
 
 from routes.dataset.utils import load_dataset
 
 router = APIRouter()
+
+# Cache for library policies
+_LIBRARY_CACHE = {"timestamp": 0, "data": None}
+RULE_LIBRARY_URL = "https://preview-explorer.invariantlabs.ai/rules/library.json"
+
+
+@router.get("/byid/{id}/library-policies")
+async def get_rule_library_guardrails(
+    id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
+):
+    """
+    Get all library policies, i.e. non-generated ones but potentially useful still for any agent/dataset.
+    """
+    now = time.time()
+    if _LIBRARY_CACHE["data"] and now - _LIBRARY_CACHE["timestamp"] < 2:
+        return _LIBRARY_CACHE["data"]
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(RULE_LIBRARY_URL)
+            text = response.text
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Failed to fetch policies: {response.text}",
+                )
+            result = json.loads(text)
+            _LIBRARY_CACHE.update({"timestamp": now, "data": result})
+
+            return result
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to fetch policies: {str(e)}"
+        )
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse policies: {str(e)}"
+        )
 
 
 @router.post("/{dataset_id}/policy")
