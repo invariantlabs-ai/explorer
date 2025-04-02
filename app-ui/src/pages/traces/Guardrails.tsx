@@ -26,8 +26,7 @@ import {
   GuardrailSuggestions,
 } from "./GuardrailSuggestions";
 import { Traces } from "./Traces";
-
-const GUARDRAIL_EVALUATION_ENABLED = false;
+import { Time } from "../../components/Time";
 
 function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
   return {
@@ -102,6 +101,115 @@ function DeletePolicyModalContent(props) {
 }
 
 /**
+ * Wrapper component that doesn't display the "Private" label
+ */
+function TracesWithoutPrivate(props) {
+  const wrapperRef = React.useRef(null);
+
+  // Use a DOM mutation observer to physically remove "Private" elements after they're rendered
+  React.useEffect(() => {
+    if (!wrapperRef.current) return;
+
+    // Function to recursively find and remove any elements with "Private" text
+    const removePrivateElements = (parentNode: Element) => {
+      // Handle text nodes directly
+      const walker = document.createTreeWalker(
+        parentNode,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+
+      const nodesToRemove: Node[] = [];
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        // If the text contains "Private" and is not within a script or style
+        if (
+          node.textContent?.includes("Private") &&
+          node.parentElement &&
+          !["SCRIPT", "STYLE"].includes(node.parentElement.tagName)
+        ) {
+          // Find the closest meaningful container to remove
+          let target: Node = node;
+          let current: Node | null = node;
+
+          // Walk up to find a suitable container (span, div, etc.)
+          while (
+            current &&
+            current.parentElement &&
+            current.parentElement !== parentNode &&
+            !/span|div|p|h\d|li|a/i.test(current.parentElement.tagName)
+          ) {
+            current = current.parentElement;
+          }
+
+          // If found a suitable container, that's our target to remove
+          if (current) {
+            target = current;
+          }
+
+          nodesToRemove.push(target);
+        }
+      }
+
+      // Remove nodes in reverse order to avoid index shifting
+      for (let i = nodesToRemove.length - 1; i >= 0; i--) {
+        const nodeToRemove = nodesToRemove[i];
+        if (nodeToRemove.parentElement) {
+          nodeToRemove.parentElement.removeChild(nodeToRemove);
+        }
+      }
+
+      // Also handle elements with 'private' class
+      const privateElements = parentNode.querySelectorAll('.private, [class*="private"]');
+      privateElements.forEach((el: Element) => {
+        if (el.parentElement) {
+          el.parentElement.removeChild(el);
+        }
+      });
+    };
+
+    // Initial removal
+    removePrivateElements(wrapperRef.current);
+
+    // Set up mutation observer to handle dynamically added content
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) { // Element node
+              removePrivateElements(node as Element);
+            }
+          });
+        }
+      });
+    });
+
+    // Start observing
+    observer.observe(wrapperRef.current, {
+      childList: true,
+      subtree: true
+    });
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Pass all props to the Traces component with additional flags to disable as much UI as possible
+  return (
+    <div className="traces-clean-wrapper" ref={wrapperRef}>
+      <Traces
+        {...props}
+        withoutHeader={true}
+        hidePrivate={true}
+        hideAnnotations={true}
+      />
+    </div>
+  );
+}
+
+/**
  * Content to show in the modal when updating or creating a policy (from scratch or from a suggestion).
  */
 function MutatePolicyModalContent(props: {
@@ -112,6 +220,8 @@ function MutatePolicyModalContent(props: {
   onSuccess: () => void;
   onDelete?: () => void;
   action: "create" | "update";
+  username: string;
+  datasetname: string;
   policy?: {
     id: string | null;
     name: string;
@@ -144,11 +254,23 @@ function MutatePolicyModalContent(props: {
 
   const [editMode, setEditMode] = React.useState(false);
 
+  // Generate a stable storage key based on policy details
+  const storageKey = React.useMemo(() => {
+    const policyId = props.policy?.id || "new-policy";
+    const datasetId = props.dataset_id;
+    return `guardrail-run-results-${datasetId}-${policyId}`;
+  }, [props.policy?.id, props.dataset_id]);
+
   // New state for guardrail run
   const [runningGuardrail, setRunningGuardrail] = React.useState(false);
   const [guardrailRunComplete, setGuardrailRunComplete] = React.useState(false);
   const [triggeredTraces, setTriggeredTraces] = React.useState<any[]>([]);
   const [totalTracesChecked, setTotalTracesChecked] = React.useState(0);
+  const [lastSaved, setLastSaved] = React.useState<string | null>(null);
+  const [loadedFromStorage, setLoadedFromStorage] = React.useState(false);
+
+  // State to control display of traces in a modal
+  const [showTracesModal, setShowTracesModal] = React.useState(false);
 
   // Track if the policy has been modified since loading
   const [policyModified, setPolicyModified] = React.useState(false);
@@ -156,12 +278,81 @@ function MutatePolicyModalContent(props: {
   // Check if policy needs to be saved before running
   const needsSave = props.action === "create" || policyModified;
 
+  // Load saved results from localStorage on component mount
+  React.useEffect(() => {
+    try {
+      const savedResults = localStorage.getItem(storageKey);
+      if (savedResults) {
+        const parsedResults = JSON.parse(savedResults);
+        setTriggeredTraces(parsedResults.triggeredTraces || []);
+        setTotalTracesChecked(parsedResults.totalTracesChecked || 0);
+        setLastSaved(parsedResults.timestamp || null);
+        setGuardrailRunComplete(true);
+        setLoadedFromStorage(true);
+      }
+    } catch (e) {
+      console.error("Error loading saved guardrail results:", e);
+    }
+  }, [storageKey]);
+
   // Update policyModified when policyCode changes
   React.useEffect(() => {
     if (props.policy?.content !== policyCode) {
       setPolicyModified(true);
     }
   }, [policyCode, props.policy]);
+
+  // Save results to localStorage when they change
+  React.useEffect(() => {
+    if (guardrailRunComplete) {
+      const timestamp = new Date().toISOString();
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            triggeredTraces,
+            totalTracesChecked,
+            timestamp,
+          })
+        );
+        setLastSaved(timestamp);
+      } catch (e) {
+        console.error("Error saving guardrail results:", e);
+      }
+    }
+  }, [triggeredTraces, totalTracesChecked, guardrailRunComplete, storageKey]);
+
+  // Add effect for handling modal keyboard events and body scroll
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTracesModal) {
+        setShowTracesModal(false);
+      }
+    };
+
+    // Add event listener for escape key
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Lock body scroll when modal is open
+    if (showTracesModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [showTracesModal]);
+
+  const clearSavedResults = () => {
+    localStorage.removeItem(storageKey);
+    setTriggeredTraces([]);
+    setTotalTracesChecked(0);
+    setGuardrailRunComplete(false);
+    setLastSaved(null);
+  };
 
   const guardrailActions = [
     {
@@ -248,6 +439,7 @@ function MutatePolicyModalContent(props: {
     setTriggeredTraces([]);
     setGuardrailRunComplete(false);
     setTotalTracesChecked(0);
+    setLoadedFromStorage(false);
     setError("");
 
     // Prepare the request to check the policy against the dataset
@@ -299,24 +491,32 @@ function MutatePolicyModalContent(props: {
               .then(response => {
                 if (!response.ok) {
                   console.warn(`Failed to fetch trace ${traceId}`);
-                  return null;
+                  // Return a minimal trace object with the ID to preserve it
+                  return { id: traceId, index: null };
                 }
                 return response.json();
+              })
+              .catch(error => {
+                console.warn(`Error fetching trace ${traceId}:`, error);
+                // Return a minimal trace object with the ID to preserve it
+                return { id: traceId, index: null };
               })
           );
 
           Promise.all(fetchPromises)
             .then(traces => {
-              // Format traces for display
+              // Format traces for display, preserving all trace IDs even if fetch failed
               const formattedTraces = traces
                 .filter(Boolean)
                 .map(trace => ({
                   id: trace.id,
                   index: trace.index,
-                  name: trace.name || `Trace ${trace.index}`,
+                  name: trace.name || `Trace ${trace.index || 'Unknown'}`,
                   messages: trace.messages || [],
                   time_created: trace.time_created || new Date().toISOString(),
-                }));
+                }))
+                // Filter out traces without index if needed for Traces component
+                .filter(trace => trace.index !== null);
 
               setTriggeredTraces(formattedTraces);
               setRunningGuardrail(false);
@@ -528,10 +728,7 @@ function MutatePolicyModalContent(props: {
         )}
         {editMode && (
           <>
-            <div
-              className="editor-container full"
-              style={{ flex: GUARDRAIL_EVALUATION_ENABLED ? 0 : 1 }}
-            >
+            <div className="editor-container full">
               <Editor
                 width="100%"
                 className="policy-editor full"
@@ -551,29 +748,7 @@ function MutatePolicyModalContent(props: {
                 onChange={(value?: string) => setPolicyCode(value || "")}
                 theme="vs-light"
               />
-              {GUARDRAIL_EVALUATION_ENABLED && (
-                <>
-                  <button
-                    className="inline primary evaluate"
-                    onClick={() =>
-                      alert("guardrail evaluation is not supported yet")
-                    }
-                  >
-                    <BsTerminal />
-                    Evaluate
-                  </button>
-                </>
-              )}
             </div>
-            {GUARDRAIL_EVALUATION_ENABLED && (
-              <div className="policy-traces">
-                <Traces
-                  dataset={props.dataset}
-                  datasetLoadingError={props.datasetLoadingError}
-                  enableAnalyzer={false}
-                />
-              </div>
-            )}
           </>
         )}
         <Tooltip
@@ -616,21 +791,43 @@ function MutatePolicyModalContent(props: {
 
             {guardrailRunComplete && triggeredTraces.length > 0 && (
               <div className="guardrail-results">
-                <h4>Guardrail Triggered by {triggeredTraces.length} of {totalTracesChecked} Traces:</h4>
-                <div className="trace-list">
-                  {triggeredTraces.map(trace => (
-                    <div key={trace.id} className="box full setting guardrail-triggered-trace">
-                      <div className="trace-info">
-                        <h4>{trace.name}</h4>
-                        <span className="trace-time">
-                          Created: {new Date(trace.time_created).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="trace-message">
-                        <code>{trace.messages[0]?.content || "No content available"}</code>
-                      </div>
-                    </div>
-                  ))}
+                <h4>
+                  <span className="title">Guardrail Triggered Traces</span>
+                  <span className="count-badge">{triggeredTraces.length}/{totalTracesChecked}</span>
+                  <button
+                    className="clear-results-btn"
+                    onClick={clearSavedResults}
+                    aria-label="Clear saved results"
+                    title="Clear saved results"
+                  >
+                    <BsTrash />
+                  </button>
+                </h4>
+                <div className="saved-results-info">
+                  {loadedFromStorage ? (
+                    <span className="storage-badge">
+                      <BsInfoCircleFill /> Showing saved results
+                    </span>
+                  ) : (
+                    <span>Results are saved automatically and will persist across tabs.</span>
+                  )}
+                  {lastSaved && (
+                    <span className="last-saved">
+                      Last run: <Time>{lastSaved}</Time>
+                    </span>
+                  )}
+                </div>
+                <div className="trace-list-summary">
+                  <div className="summary-info">
+                    <span>{triggeredTraces.length} traces triggered this guardrail</span>
+                  </div>
+                  <button
+                    className="button primary inline view-traces-btn"
+                    onClick={() => setShowTracesModal(true)}
+                    disabled={triggeredTraces.length === 0 || runningGuardrail}
+                  >
+                    <BsTerminal /> {runningGuardrail ? "Loading..." : "View Traces"}
+                  </button>
                 </div>
               </div>
             )}
@@ -639,8 +836,23 @@ function MutatePolicyModalContent(props: {
               <div className="guardrail-results">
                 <div className="banner-note info">
                   <BsInfoCircleFill />
-                  <span>No traces triggered this guardrail out of {totalTracesChecked} total traces checked.</span>
+                  <span>
+                    {loadedFromStorage && <span className="storage-badge-inline">Saved results: </span>}
+                    No traces triggered this guardrail out of {totalTracesChecked} total traces checked.
+                    <button
+                      className="clear-results-btn text"
+                      onClick={clearSavedResults}
+                      aria-label="Clear saved results"
+                    >
+                      Clear saved results
+                    </button>
+                  </span>
                 </div>
+                {lastSaved && (
+                  <div className="saved-timestamp">
+                    Last run: <Time>{lastSaved}</Time>
+                  </div>
+                )}
               </div>
             )}
 
@@ -650,6 +862,51 @@ function MutatePolicyModalContent(props: {
                 <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{error}</span>
               </div>
             )}
+          </div>
+        )}
+        <Tooltip
+          id="trace-id-tooltip"
+          place="top"
+          style={{ backgroundColor: "#000", color: "#fff" }}
+          className="tooltip"
+        />
+
+        {/* Modal for viewing triggered traces */}
+        {showTracesModal && triggeredTraces.length > 0 && triggeredTraces.filter(trace => trace.id).length > 0 && (
+          <div
+            className="traces-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowTracesModal(false);
+              }
+            }}
+          >
+            <div className="traces-modal-container">
+              <div className="traces-modal-header">
+                <h2>
+                  <BsShieldCheck />
+                  {triggeredTraces.length} Traces Triggered by "{name}" Guardrail
+                </h2>
+                <button
+                  className="close-button"
+                  onClick={() => setShowTracesModal(false)}
+                  aria-label="Close modal"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="traces-modal-body">
+                <TracesWithoutPrivate
+                  dataset={props.dataset}
+                  datasetLoadingError={props.datasetLoadingError}
+                  enableAnalyzer={false}
+                  username={props.username}
+                  datasetname={props.datasetname}
+                  traceIndex={null}
+                  query={`idfilter:${name}-guardrail:${triggeredTraces.filter(trace => trace.id).map(trace => trace.id).join(',')}`}
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -765,6 +1022,8 @@ export function Guardrails(props: {
             dataset={props.dataset}
             datasetLoadingError={props.datasetLoadingError}
             dataset_id={dataset.id}
+            username={props.username}
+            datasetname={props.datasetname}
             action="create"
             onClose={() => setShowCreatePolicyModal(false)}
             onSuccess={() => datasetLoader.refresh()}
@@ -797,6 +1056,8 @@ export function Guardrails(props: {
             dataset={props.dataset}
             datasetLoadingError={props.datasetLoadingError}
             dataset_id={dataset.id}
+            username={props.username}
+            datasetname={props.datasetname}
             policy={selectedPolicyForUpdation}
             action="update"
             onClose={() => setSelectedPolicyForUpdation(null)}
@@ -819,6 +1080,8 @@ export function Guardrails(props: {
             dataset={props.dataset}
             datasetLoadingError={props.datasetLoadingError}
             dataset_id={dataset.id}
+            username={props.username}
+            datasetname={props.datasetname}
             policy={suggestion_to_guardrail(
               urlGuardrailSuggestion || selectedPolicySuggestion!
             )}
