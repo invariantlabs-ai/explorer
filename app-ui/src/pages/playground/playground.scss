@@ -1,0 +1,122 @@
+.panel {
+  //min-height: 200px;
+}
+
+.panel-horizontal {
+  min-width: 200px;
+}
+
+.output-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.output-header {
+  padding: 5px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 16px;
+}
+
+.output-time {
+  color: #6b7280;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.output-content {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  background-color: white;
+  overflow: auto;
+  flex-grow: 1;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.output-text {
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.playground {
+  width: 100%;
+  height: 100%;
+
+    h2 {
+        margin-left: 5pt;
+        flex-direction: row;
+        font-size: 12pt;
+        width: 100%;
+        display: flex;
+        padding: 0pt;
+        align-items: center;
+        justify-content: space-between;
+
+        &.header-minimal {
+          flex-direction: row;
+          padding-bottom: 4pt;
+          justify-content: flex-end;
+          
+          button {
+            height: 16pt;
+            font-size: 10pt;
+            line-height: 10pt;
+            padding: 4pt 8pt;
+            margin-left: 4pt;
+          }
+
+          .playground-button:last-of-type {
+              margin-right: 12px;
+          }
+          
+        }
+        
+        &.header-full {
+          padding: 4pt 8pt;
+          .playground-button:last-of-type {
+              margin-right: 34px;
+          }
+
+        }
+
+        .playground-title {
+          margin-right: auto; /* Pushes all buttons to the right */
+          padding: 10pt;
+        }
+
+        .playground-button {
+            margin-left: 8px;
+        }
+
+    }
+
+    .playground-container {
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    .traceview {
+      .content, .tab, .traces.tab
+      {
+        position: relative; 
+        height: fit-content;
+      }
+
+        .traces {
+            padding: 0 5pt;
+            .messages {
+                width: 100%;
+            }
+        }
+
+    }
+}

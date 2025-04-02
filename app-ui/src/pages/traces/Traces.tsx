@@ -1977,3 +1977,4 @@ export function SingleTrace() {
     </div>
   );
 }
+
