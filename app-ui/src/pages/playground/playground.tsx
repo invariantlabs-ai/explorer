@@ -188,40 +188,20 @@ const Playground = ({ editable = true,
   };
 
   const handleShare = () => {
-
     navigator.clipboard
       .writeText(getShareURL())
       .then(() => {
-        alert({
-          description: "URL copied to clipboard!",
-        });
+        alert("URL copied to clipboard!");
       })
       .catch((error) => {
-        alert({
-          title: "Uh oh! Something went wrong.",
-          description: error.message,
-        });
+        alert("Uh oh! Something went wrong.");
+        console.log(error)
       });
   };
 
   const handleOpenInPlayground = () => {
     window.open(getShareURL(), '_blank');
   };
-
-    /*
-      <nav className="">
-          <button onClick={handleShare}><BsShare className="inline relative mr-[5pt]" /> Share </button>
-          <button onClick={handleEvaluate} disabled={loading}>
-            {loading ? (
-              <Spinning className="h-5 w-5 text-white mr-[5pt]" />
-            ) : (
-              <BsPlayFill className="inline relative mr-[5pt] h-5 w-5" />
-            )}
-            Evaluate
-          </button>
-      </nav>
-    */
-
 
   return (
     <>
@@ -293,7 +273,8 @@ const Playground = ({ editable = true,
           {showPolicy && (
             <>
               <ResizablePanel 
-                defaultSize={40} 
+                defaultSize={50} 
+                minSize={25}
                 className="panel" 
                 style={(resizeEditor && policyEditorHeight) ? { height: `${policyEditorHeight}px` } : undefined}
               >
@@ -316,7 +297,7 @@ const Playground = ({ editable = true,
           
              {showTrace && (
                 <>
-                  <ResizablePanel defaultSize={showOutput ? 50 : 100} className="panel-horizontal">
+                  <ResizablePanel defaultSize={50} minSize={25} className="panel-horizontal">
                     <TraceView
                       inputData={inputData}
                       traceId={'<none>'}

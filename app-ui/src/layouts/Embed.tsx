@@ -19,7 +19,7 @@ function Embed(props: {
 
   return (
     <>
-      <div className="fullscreen app plain">
+      <div className="fullscreen app plain embed">
         {props.children}
       </div>
     </>

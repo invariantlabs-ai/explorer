@@ -47,10 +47,16 @@
   word-break: break-word;
 }
 
+.fullscreen > .playground {
+  height: calc(100vh - 40pt - 78px);
+}
+
+.embed > .playground {
+  height: 100% !important;
+}
+
 .playground {
   width: 100%;
-  height: 100%;
-
     h2 {
         margin-left: 5pt;
         flex-direction: row;

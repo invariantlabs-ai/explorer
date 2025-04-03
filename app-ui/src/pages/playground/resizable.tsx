@@ -30,15 +30,18 @@ const ResizablePanelGroup = ({
 // Create a wrapper for the Panel component to ensure all props are passed through
 const ResizablePanel = ({
   defaultSize,
+  minSize = 10,
   style,
   ...props
 }: React.ComponentProps<typeof ResizablePrimitive.Panel> & {
   defaultSize?: number;
+  minSize?: number;
   style?: React.CSSProperties;
 }) => {
   return (
     <ResizablePrimitive.Panel
       defaultSize={defaultSize}
+      minSize={minSize}
       style={style}
       {...props}
     />
