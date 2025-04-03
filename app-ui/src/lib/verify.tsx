@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { Modal } from './../components/Modal'
 
+const key = 'invariant.explorer.production.apikey'
+
 function useVerify() {
     const userInfo = useUserInfo();
     const isLocal = config('instance_name') === 'local';
@@ -19,7 +21,7 @@ function useVerify() {
     }, [isModalVisible]);
 
     const handleSubmit = () => {
-        localStorage.setItem('PRODUCTION_EXPLORER_API_KEY', apiKey);
+        localStorage.setItem(key, apiKey);
         window.location.reload();
         setIsModalVisible(false);
     };
@@ -27,7 +29,7 @@ function useVerify() {
     const verify = async (messages: any, policy: string): Promise<Response> => {
         if (isLocal) {
             // if we are local, use an API key from local storage -- if it is not there, ask the user
-            if (!localStorage.getItem('PRODUCTION_EXPLORER_API_KEY')?.trim()) {
+            if (!localStorage.getItem(key)?.trim()) {
                 // Display a modal to ask for the API key
                 setIsModalVisible(true);
                 return Promise.reject(new Error('API key required'));
@@ -81,6 +83,7 @@ function useVerify() {
                         cancelText="Cancel"
                         onClose={() => setIsModalVisible(false)}
                     >
+                    <div className="form">
                         <p>Please enter your Invariant Explorer API key to continue:</p>
 
                         <input
@@ -89,13 +92,13 @@ function useVerify() {
                             onChange={(e) => setApiKey(e.target.value)}
                         />
 
-                        <div>
                             <button
                                 onClick={handleSubmit}
+                                className="primary"
                             >
                                 Submit
                             </button>
-                        </div>
+                    </div>
                     </Modal>
                 )}
             </div>
