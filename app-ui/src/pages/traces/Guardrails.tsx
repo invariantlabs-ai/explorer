@@ -136,11 +136,11 @@ function MutatePolicyModalContent(props: {
   const [error, setError] = React.useState("");
 
   const [guardrailAction, setGuardrailAction] = React.useState(
-    props.policy?.action || "log"
+    props.policy?.action || "block"
   );
 
   const [guardrailEnabled, setGuardrailEnabled] = React.useState(
-    (props.policy?.enabled || false) as boolean
+    (props.policy?.enabled || action == "create") as boolean
   );
 
   const [editMode, setEditMode] = React.useState(false);

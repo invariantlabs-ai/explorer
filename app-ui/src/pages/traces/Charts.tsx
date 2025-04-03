@@ -18,7 +18,7 @@ const COLORS = [
   "#FF6666",
 ];
 
-const IssuePieChart = (props) => {
+export const IssuePieChart = (props) => {
   const navigate = useNavigate();
 
   const rawData = props.data;
@@ -92,4 +92,76 @@ function truncate(str, n) {
   return str.length > n ? str.substr(0, n - 1) + "..." : str;
 }
 
-export default IssuePieChart;
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
+
+type ToolData = {
+  name: string;
+  n: number;
+  n_success: number;
+};
+
+type Tools = Record<string, ToolData>;
+
+type Props = {
+  tools: Tools;
+  sort: "asc" | "desc";
+};
+
+export const ToolsBySuccessRateChart: React.FC<Props> = ({ tools, sort }) => {
+  const data = Object.values(tools)
+    .filter((t) => t.n > 0.5)
+    .map((t) => ({
+      name: t.name,
+      failureRate: t.n > 1 ? (1 - t.n_success / t.n) * 100 : 0,
+      n: t.n,
+    }))
+    .sort((a, b) =>
+      sort === "desc"
+        ? b.failureRate - a.failureRate
+        : a.failureRate - b.failureRate
+    );
+
+  return (
+    <ResponsiveContainer height={300}>
+      <BarChart data={data}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        {/* also show n in tooltip */}
+        <Tooltip
+          formatter={(value: number, name, props) => {
+            return [
+              `${value.toFixed(2)}%`,
+              `Failure Rate (${props.payload.n * (value / 100)}/${
+                props.payload.n
+              })`,
+            ];
+          }}
+        />
+        <Bar
+          dataKey="failureRate"
+          fill={sort === "desc" ? "#00C49F" : "#FF6666"}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
+export const ToolsByUsageChart: React.FC<Props> = ({ tools }) => {
+  const data = Object.values(tools)
+    .map((t) => ({
+      name: t.name,
+      usage: t.n,
+    }))
+    .sort((a, b) => b.usage - a.usage);
+
+  return (
+    <ResponsiveContainer height={300}>
+      <BarChart data={data}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="usage" fill="#0088FE" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};

@@ -11,7 +11,13 @@ import {
 } from "react-icons/bs";
 
 import "./Analyzer.scss";
-import IssuePieChart from "./Charts";
+import {
+  ToolsByUsageChart,
+  IssuePieChart,
+  ToolsBySuccessRateChart,
+} from "./Charts";
+import { sharedFetch } from "../../service/SharedFetch";
+import CircularToolGraph from "./Graphs";
 
 export function useJSONParse<T>(json: string | null): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -153,6 +159,12 @@ export function AnalysisReport(props: {
         </header>
         <div className="insights">
           <div className="tiles">
+            {
+              <DatasetStatistics
+                dataset={props.dataset}
+                datasetLoadingError={props.datasetLoadingError}
+              />
+            }
             {report && (
               <div className="tile wide">
                 <h1>Issue Types</h1>
@@ -215,20 +227,23 @@ export function AnalysisReport(props: {
 function ClusterSummary({ clustering }: { clustering: any }) {
   if (!clustering || clustering.length === 0) {
     return (
-      <div className="empty-clustering" style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "160px",
-        height: "calc(100% - 40px)",
-        width: "100%",
-        color: "#6c757d",
-        fontSize: "1rem",
-        textAlign: "center",
-        flexDirection: "column",
-        gap: "0.75rem",
-        marginTop: "-20px"
-      }}>
+      <div
+        className="empty-clustering"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "160px",
+          height: "calc(100% - 40px)",
+          width: "100%",
+          color: "#6c757d",
+          fontSize: "1rem",
+          textAlign: "center",
+          flexDirection: "column",
+          gap: "0.75rem",
+          marginTop: "-20px",
+        }}
+      >
         <BsInfoCircle size={28} />
         <span>No issue patterns were found.</span>
       </div>
@@ -282,6 +297,78 @@ function Jobs({ jobs }: { jobs: any[] | null }) {
         <li className="empty">No analysis jobs running</li>
       )}
     </ul>
+  );
+}
+
+// fetches ("/byuser/{username}/{dataset_name}/derived")
+function DatasetStatistics({
+  dataset,
+  datasetLoadingError,
+}: {
+  dataset: any;
+  datasetLoadingError: any;
+}) {
+  const [derivedData, setDerivedData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const url = `/api/v1/dataset/byuser/${dataset.user.username}/${dataset.name}/derived`;
+
+    sharedFetch(url)
+      .then((r) => {
+        setDerivedData(r);
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.error("Failed to fetch derived data", e);
+        setLoading(false);
+      });
+  }, [dataset.id]);
+  if (datasetLoadingError) {
+    return (
+      <div className="error">
+        <BsExclamationCircleFill />
+        <span>Failed to load dataset</span>
+      </div>
+    );
+  }
+  if (!dataset) {
+    return (
+      <div className="error">
+        <BsExclamationCircle />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {derivedData && derivedData.tools && (
+        <div className="tile wide">
+          <h1>Tools By Success Rate</h1>
+          <ToolsBySuccessRateChart tools={derivedData?.tools} sort="desc" />
+        </div>
+      )}
+      {/* ToolsByUsageChart */}
+      {derivedData && derivedData.tools && (
+        <div className="tile wide">
+          <h1>Tools By Usage</h1>
+          <ToolsByUsageChart tools={derivedData?.tools} sort="asc" />
+        </div>
+      )}
+      {derivedData && derivedData && (
+        <div className="tile wide">
+          <h1>Tool Statistics</h1>
+          <pre>{JSON.stringify(derivedData, null, 2)}</pre>
+        </div>
+      )}
+      {derivedData && derivedData.tool_graph && (
+        <div className="tile wide">
+          <h1>Tool Graph</h1>
+          <CircularToolGraph data={derivedData.tool_graph} size={400} />
+        </div>
+      )}
+    </>
   );
 }
 

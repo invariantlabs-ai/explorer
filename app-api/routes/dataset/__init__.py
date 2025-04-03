@@ -11,6 +11,7 @@ from routes.dataset.synthesis import router as synthesis_router
 from routes.dataset.jobs import router as jobs_router
 from routes.dataset.list import router as list_router
 from routes.dataset.queries import router as queries_router
+from routes.dataset.derived import router as derived_router
 
 # dataset routes
 dataset = FastAPI()
@@ -25,3 +26,4 @@ dataset.include_router(synthesis_router)
 dataset.include_router(jobs_router)
 dataset.include_router(list_router)
 dataset.include_router(queries_router)
+dataset.include_router(derived_router)
