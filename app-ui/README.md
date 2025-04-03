@@ -8,7 +8,7 @@ For annotations to be visualized correctly, they need to be in the correct forma
 
 ### Guardrailing Errors
 
-```
+```json
 {
     "content": "Hello in user message",
     "address": "messages.0.content:0-5",
@@ -23,14 +23,13 @@ For annotations to be visualized correctly, they need to be in the correct forma
 - `content` - The content of the message
 - `address` - The address of the message in the conversation (can be character range (e.g. `:0-5`), line range (e.g. `:L2), object level (e.g. `messages.0.content) or a bounding box.
 - `extra_metadata` - Extra metadata for the annotation:
-    - `source` - The source of the annotation (always `guardrails-error`)
-    - `guardrail_content` - The content of the guardrailing rule at evaluation time (optional)
-    - `guardrail_action` - The action taken by the guardrail (e.g. `log`, `block`) (optional)
+  - `source` - The source of the annotation (always `guardrails-error`)
+  - `guardrail_content` - The content of the guardrailing rule at evaluation time (optional)
+  - `guardrail_action` - The action taken by the guardrail (e.g. `log`, `block`) (optional)
 
+### User Annotations
 
-## User Annotations
-
-```
+```json
 {
     "content": "Hello in user message",
     "address": "messages.0.content:L2",
@@ -42,4 +41,18 @@ For annotations to be visualized correctly, they need to be in the correct forma
 - `address` - The address of the message in the conversation. For user annotations, this is always a line range (e.g. `:L2`).
 - `extra_metadata` - Extra metadata for the annotation (currently `null` for user annotations)
 
+### Analyzer Model Annotations
 
+```json
+{
+  "content": "[Issue name] Issue description.",
+  "address": "messages.10",
+  "extra_metadata": { "source": "analyzer-model", "severity": 0.4 }
+}
+```
+
+- `content` - The title and description of the issue found. It must be in the form `[title] description`.
+- `address` - The address of the message in the conversation.
+- `extra_metadata` - Extra metadata for the annotation:
+  - `source` - The source of the annotation (always `analyzer-model`)
+  - `severity` - Number between 0 and 1. A measure of severity of the issue.
