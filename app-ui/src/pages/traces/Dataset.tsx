@@ -1,6 +1,7 @@
 //@ts-nocheck
 import React, { useEffect } from "react";
 import {
+  BsChat,
   BsCheckCircleFill,
   BsCodeSlash,
   BsCollection,

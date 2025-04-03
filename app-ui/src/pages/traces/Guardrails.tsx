@@ -140,7 +140,7 @@ function MutatePolicyModalContent(props: {
   );
 
   const [guardrailEnabled, setGuardrailEnabled] = React.useState(
-    (props.policy?.enabled || true) as boolean
+    (props.policy?.enabled || false) as boolean
   );
 
   const [editMode, setEditMode] = React.useState(false);
@@ -288,12 +288,8 @@ function MutatePolicyModalContent(props: {
                 <div className="banner-note info">
                   <BsInfoCircleFill />
                   <span>
-                    <code>{JSON.stringify(props.policy.extra_metadata)}</code>
-                    Automatically generated rule (detection rate of{" "}
-                    <code>
-                      {props.policy.extra_metadata.detection_rate * 100}%
-                    </code>
-                    ) . Please review before deployment.
+                    Automatically generated rule. Please review before
+                    deployment.
                   </span>
                 </div>
               )}
