@@ -53,7 +53,10 @@ if os.getenv("DEV_MODE") != "true":
 app.middleware("http")(write_back_refreshed_token)
 
 # expose standard FastAPI request metrics to observability stack
-Instrumentator().add(
+Instrumentator(
+    # Ignore the /api/v1/metrics endpoint and /api/v1/ directly. The latter we use for health checks in status monitoring.
+    excluded_handlers=["/api/v1/", "/api/v1/metrics"],
+).add(
     metrics.default(
         metric_namespace="invariant",
         metric_subsystem="explorer",

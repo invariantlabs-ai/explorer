@@ -356,6 +356,74 @@ body {
     }
   }
 
+  &.guardrail {
+    font-size: 10pt;
+    margin-bottom: 15pt;
+    margin-top: 10pt;
+    margin-right: 5pt;
+    margin-left: 0pt;
+    background-color: rgba(179, 133, 217, 0.1);
+    border: 1pt solid #5855f6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(179, 133, 217, 0.2);
+    }
+
+    .guardrail-id {
+      margin-left: auto;
+      margin-right: 7pt;
+      font-weight: normal;
+      position: relative;
+      top: -1pt;
+      opacity: 0.3;
+    }
+
+    .guardrail-header {
+      display: flex;
+
+      b {
+        margin-right: 5pt;
+        margin-left: 5pt;
+        white-space: nowrap;
+      }
+
+      svg {
+        min-width: 15pt;
+        min-height: 15pt;
+        margin-top: 0.5pt;
+        margin-left: 4pt;
+      }
+
+      &.expanded {
+        margin-bottom: 10pt !important;
+      }
+    }
+
+    &.compact {
+      .test-result-header {
+        margin-bottom: 0pt;
+      }
+    }
+
+    pre {
+      background-color: rgba(255, 255, 255, 0.755);
+      border: 1pt solid var(--border-color);
+      border-radius: 5pt;
+      display: block;
+      margin: 0pt;
+      margin: 0pt 3pt;
+      margin-bottom: -2pt;
+      display: block;
+      padding: 10pt;
+      white-space: pre;
+      overflow-x: auto !important;
+    }
+  }
+
   &.parser-error {
     border: 1pt solid red;
   }
@@ -395,13 +463,13 @@ body {
     position: relative;
     cursor: pointer;
 
-    svg {
+    > svg {
       display: inline-block;
       position: relative;
       margin-right: 2pt;
     }
 
-    svg:last-of-type {
+    > svg:last-of-type {
       margin-right: 3pt;
     }
 
@@ -837,6 +905,13 @@ pre.marked-line {
   div:not(.highlight) {
     opacity: 0.5;
   }
+
+  &.no-line {
+    div:not(.highlight) {
+      opacity: 1;
+      font-weight: normal;
+    }
+  }
 }
 
 .event.top-level-highlights {
@@ -863,7 +938,6 @@ pre.marked-line {
   margin-left: 5pt;
 }
 
-.annotation-indicator,
 .tool-call-badge,
 .badge {
   font-family:
@@ -895,19 +969,6 @@ pre.marked-line {
   color: rgba(37, 36, 99, 0.761);
   transition: opacity 0.1s;
 
-  &.human {
-    border: 1pt solid rgba(88, 85, 246, 0.2);
-    background-color: rgba(88, 85, 246, 0.2);
-    position: absolute;
-    left: -12.5pt;
-    transform: translateX(-100%) scale(1);
-    opacity: 0.8;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
   svg {
     position: relative;
     left: 0.5pt !important;
@@ -916,12 +977,56 @@ pre.marked-line {
     overflow: visible;
   }
 }
+.annotation-indicator {
+  height: 18pt;
+  line-height: 18pt;
+  padding-left: 4pt;
+  padding-right: 4pt;
+  padding-top: 1pt;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: center;
+  align-items: bottom;
+  margin-left: 4pt;
+  background-color: rgba(88, 85, 246, 0.2);
+  border-radius: 2.5pt;
+  color: rgba(37, 36, 99, 0.761);
+}
+
+.message-header.role .annotation-indicator {
+  font-size: 7pt;
+  height: 12pt;
+  padding-top: 0.5pt;
+  line-height: 12pt;
+  padding-left: 3pt;
+  padding-right: 3pt;
+
+  svg {
+    position: relative;
+    top: 0.5pt;
+  }
+}
+
+.options .annotation-indicator {
+  padding-left: 4pt;
+  padding-right: 4pt;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
+  font-size: 14pt;
+}
+
+.options .radio-block {
+  border-bottom: 1pt solid rgb(234, 234, 234);
+}
 
 .tool-call-badge {
   color: rgba(0, 0, 0, 0.627);
+
+  svg {
+    margin-right: 4pt;
+  }
 }
 
-.sidebar .annotation-indicator,
 .badge {
   margin-top: 1pt;
   height: 18pt;

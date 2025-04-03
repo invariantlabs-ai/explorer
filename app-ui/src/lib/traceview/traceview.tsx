@@ -10,6 +10,8 @@ import {
   BsExclamationCircleFill,
   BsPencilFill,
   BsFileEarmarkBreak,
+  BsBracesAsterisk,
+  BsShieldCheck,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
@@ -29,6 +31,7 @@ import {
   permalink,
   reveal,
 } from "../permalink-navigator";
+import { GuardrailsIcon } from "../../components/Icons";
 
 /**
  * Props for the TraceView component.
@@ -759,12 +762,12 @@ function MessageHeader(props: {
       {props.expanded ? <BsCaretRightFill /> : <BsCaretDownFill />}
       <RoleIcon role={props.role} />
       {props.role}
-      <CompactView message={props} />
       <MessageHeaderAnnotationIndicator
         highlightContext={props.highlightContext}
         address={props.address}
         message={props.message}
       />
+      <CompactView message={props} />
       <div
         className="address"
         onClick={(e) => {
@@ -780,33 +783,44 @@ function MessageHeader(props: {
 }
 
 /**
- * The written name of the annotation type, e.g. "human" or "highlight".
+ * The written name of the annotation type, e.g. "user" or "highlight".
  *
  * Can be empty if the type should not have a descriptive name in the UI.
  */
 function annotationName(type: string) {
-  if (type === "human") {
-    return "";
-  } else {
-    // other types do not have an explicit name
-    return "highlight";
+  if (type == "guardrails-error") {
+    return "guardrailing";
   }
+  if (type == "analyzer-model") {
+    return "analysis";
+  }
+
+  return type;
 }
 
 function annotationIcon(type: string) {
-  if (type === "human") {
-    return <BsPencilFill />;
-  } else {
+  if (type === "user") {
+    return (
+      <BsPencilFill
+        style={{ transform: "scale(0.9)", transformOrigin: "bottom" }}
+      />
+    );
+  }
+  if (type === "analyzer-model") {
     // other types do not have an explicit icon
     return <BsFileEarmarkBreak />;
   }
+  if (type === "guardrails-error" || type === "analyzer") {
+    return <GuardrailsIcon />;
+  }
+  return type;
 }
 
 /**
  * Shows badges in the message header, if the message has highlights or
  * user annotations. Also visible in the collapsed view.
  *
- * 'human', i.e. user, annotations are shown offset to the left of the header, not in the header.
+ * 'user', i.e. user, annotations are shown offset to the left of the header, not in the header.
  *
  * @param props.highlightContext The context for the highlights.
  * @param props.address The address of the message.
@@ -833,9 +847,10 @@ function MessageHeaderAnnotationIndicator(props: {
     <>
       {annotationTypes.map((type, index) => {
         return (
-          <span
+          <AnnotationCounterBadge
             key={index}
-            className={"annotation-indicator " + type.type}
+            count={type.count}
+            type={type.type}
             onClick={() => {
               if (type.address) {
                 reveal(type.address, "annotations", true, {
@@ -843,14 +858,35 @@ function MessageHeaderAnnotationIndicator(props: {
                 });
               }
             }}
-          >
-            {annotationIcon(type.type)}
-            {type.count} {annotationName(type.type)}
-            {annotationName(type.type) != "" && type.count > 1 ? "s" : ""}
-          </span>
+          />
         );
       })}
     </>
+  );
+}
+
+// badge component
+export function AnnotationCounterBadge(props: {
+  count: number;
+  type: string;
+  onClick?: () => void;
+}) {
+  const name = annotationName(props.type);
+  const tooltip =
+    (props.count > 1 ? props.count + " " : "") +
+    name +
+    " annotation" +
+    (props.count > 1 ? "s" : "");
+  return (
+    <span
+      className={"annotation-indicator"}
+      onClick={props.onClick}
+      data-tooltip-id="highlight-tooltip"
+      data-tooltip-content={tooltip}
+    >
+      {annotationIcon(props.type)}
+      {props.count > 1 ? <span className="count"> {props.count}</span> : null}
+    </span>
   );
 }
 
@@ -921,6 +957,7 @@ function CompactView(props: { message: any }) {
 
   return (
     <span className="tool-call-badge" style={badge_string_style(f.name)}>
+      <BsBracesAsterisk />
       {compact}
     </span>
   );

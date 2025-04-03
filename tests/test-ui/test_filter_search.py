@@ -1,11 +1,12 @@
 import os
 import sys
-
+import asyncio
 # add tests folder (parent) to sys.path
 import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from test_basic import trace_shown_in_sidebar
+from playwright.async_api import expect
 from util import TemporaryExplorerDataset
 
 pytest_plugins = ("pytest_asyncio",)
@@ -16,6 +17,7 @@ async def test_navigate_with_search_query(context, url, data_code, screenshot):
     async with TemporaryExplorerDataset(url, context, data_code) as dataset:
         page = await context.new_page()
         await page.goto(f"{url}/u/developer/{dataset['name']}/t/1?query=foo")
+        await screenshot(page)
         await page.locator("div.filter-container").wait_for(state="attached")
         await screenshot(page)
 
@@ -143,10 +145,31 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
         trace_result = page.locator("li.trace.active").locator("a.active")
         trace_result_text = await trace_result.locator("span.name").text_content()
         assert trace_result_text.strip() == "Run 1"
-        trace_result_badge = await trace_result.locator("span.badge").text_content()
-        assert trace_result_badge.strip() == "1"
 
-        # verify that the annotation indicator batch is shown on screen (.annotation-indicator.human)
-        annotation_indicator = page.locator(".annotation-indicator.human")
+        # verify that the annotation badge is shown on screen
+        annotation_indicator = page.locator(".annotation-indicator")
         assert await annotation_indicator.count() == 1
+
         await screenshot(page)
+
+        # Click the view badge option
+        async def click_view_badge():
+            await page.click('button[data-tooltip-content="View Options"]')
+            user_annotation_checkbox = page.locator(
+                'div.options >> span.annotation-indicator[data-tooltip-content="user annotation"]'
+            ).locator('..').locator('input[type="checkbox"]')
+            await user_annotation_checkbox.click()
+            await screenshot(page)
+            await page.reload()
+            await page.wait_for_selector("div.explorer.panel.traceview", state="attached")
+            await page.wait_for_selector("#messages-0", state="visible")
+            await screenshot(page)
+
+        await click_view_badge()
+        # verify that the annotation indicator batch is shown on screen (.p.human), and on the sidebar
+        annotation_indicator = page.locator(".annotation-indicator")
+        assert await annotation_indicator.count() == 2
+        await screenshot(page)
+
+        await click_view_badge()
+        # Click the view badge option back

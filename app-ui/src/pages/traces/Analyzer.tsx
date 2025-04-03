@@ -7,6 +7,8 @@ import {
   BsStars,
   BsXCircle,
 } from "react-icons/bs";
+import { AnalyzerAnnotation } from ".././../lib/traceview/highlights";
+
 import "./Analyzer.scss";
 import logo from "../../assets/invariant.svg";
 import { reveal } from "../../lib/permalink-navigator";
@@ -16,6 +18,15 @@ import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
 import { useUserInfo } from "../../utils/UserInfo";
+
+// Job status values
+export const JOB_STATUS = {
+  PENDING: "pending",
+  RUNNING: "running",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+};
 
 interface Analyzer {
   running: boolean;
@@ -65,60 +76,30 @@ export function useAnalyzer(): Analyzer {
 /**
  * Parses and sorts the issues from the analyzer output.
  */
-function useIssues(analyzerOutput: any, storedOutput?: any) {
+function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
   const [issues, setIssues] = useState([] as any[]);
 
   // take analyzer output as list and sort by severity key
   useEffect(() => {
-    let output = analyzerOutput;
+    let issues = annotations || [] as AnalyzerAnnotation[];
 
-    // if there is no current (just generated) analyzer output, parse the stored output instead
-    if (!output) {
-      output = [];
-      try {
-        for (let i = 0; i < storedOutput.length; i++) {
-          if (storedOutput[i].source === "analyzer-model") {
-            try {
-              JSON.parse(storedOutput[i].content).forEach((item: any) => {
-                output.push(item);
-              });
-            } catch (e) {
-              console.error(
-                "Failed to parse stored analyzer output:",
-                storedOutput[i]
-              );
-            }
-            break;
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse analyzer output:", output);
-        output = null;
-      }
-    }
-
-    if (!output) {
+    if (!issues) {
       setIssues([]);
     }
-    let issues = output || [];
-
     // sort by severity
     issues.sort((a, b) => {
-      if (a.severity < b.severity) {
+      if (a.severity || 0 < (b.severity || 0)) {
         return 1;
-      } else if (a.severity > b.severity) {
+      } else if (a.severity || 0 > (b.severity || 0)) {
         return -1;
       }
       return 0;
     });
-
-    // if length > 1 and loading still in there, remove it
-    if (issues.length > 1 && issues[0].loading) {
-      issues = issues.slice(1);
-    }
+  
+    // if length > 1 and loading still in there, remove i
 
     setIssues(issues);
-  }, [analyzerOutput, storedOutput]);
+  }, [annotations]);
 
   return issues;
 }
@@ -147,7 +128,7 @@ function Loading(props) {
  * @param dataset The current dataset name.
  */
 
-const TEMPLATE_API_KEY = "<api key on the Explorer above>";
+export const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
 /**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.
@@ -168,7 +149,8 @@ function createAnalysis(
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
-  setDebug?: (debug: any) => void
+  setDebug?: (debug: any) => void,
+  onAnnotationChange?: () => void,
 ): AbortController {
   const abortController = new AbortController();
 
@@ -185,6 +167,9 @@ function createAnalysis(
       }
       const url = `/api/v1/trace/${trace_id}/analysis`;
       setRunning(true);
+      setOutput((prev) => []);
+      if (onAnnotationChange)
+        onAnnotationChange()
       const response = await fetch(url, {
         method: "POST",
         body,
@@ -208,23 +193,29 @@ function createAnalysis(
       let event: any = null;
 
       for await (event of stream) {
+        if (event.data === "update" && onAnnotationChange){
+          onAnnotationChange()
+        }
         if (event.data) {
           try {
             const chunk_data = JSON.parse(event.data);
-            // handle debug messages separately
-            if (chunk_data.error) {
-              setRunning(false);
-              setError(chunk_data.error);
-              receivedError = true;
-              alert("Analysis Error: " + chunk_data.error);
-              return;
-            } else if (chunk_data.debug) {
+            if (chunk_data.content) {
+              if (onAnnotationChange)
+                onAnnotationChange()
+            }
+            if (chunk_data.debug) {
               if (setDebug) {
                 setDebug(chunk_data.debug);
               }
-            } else {
-              setOutput((prev) => [...(prev || []), chunk_data]);
             }
+            if (chunk_data.error) {
+              receivedError = true;
+              if (setError) {
+                setError(chunk_data.error);
+                alert("Analysis Error: " + chunk_data.error);
+              }
+            }
+
           } catch {
             setOutput((prev) => [
               ...(prev || []),
@@ -275,22 +266,19 @@ export function AnalyzerPreview(props: {
   open: boolean;
   setAnalyzerOpen: (open: boolean) => void;
   output: any;
-  storedOutput;
+  annotations: AnalyzerAnnotation[];
   analyzer: Analyzer;
   running: boolean;
   onRunAnalyzer?: BroadcastEvent;
 }) {
-  const issues = useIssues(props.output, props.storedOutput);
+  const issues = useIssues(props.annotations);
 
-  const numIssues = issues.filter((i) => !i.loading).length;
+  const numIssues = issues.length;
 
-  const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
-  const outputIsEmpty =
-    !props.output ||
-    (props.output.filter((o) => !o.loading).length === 0 && !props.running);
+  const storedIsEmpty = numIssues === 0;
 
   const notYetRun =
-    storedIsEmpty && outputIsEmpty && !props.running && numIssues === 0;
+    storedIsEmpty && !props.running && numIssues === 0;
 
   let content: React.ReactNode = null;
 
@@ -455,7 +443,7 @@ export function AnalyzerSidebar(props: {
   output: any;
   running: boolean;
   analyzer: Analyzer;
-  storedOutput;
+  annotations: AnalyzerAnnotation[];
   traceId: string;
   datasetId: string;
   username: string;
@@ -464,6 +452,7 @@ export function AnalyzerSidebar(props: {
   onDiscardAnalysisResult?: (output: any) => void;
   // passes onRun to parent component in callback
   onAnalyzeEvent?: BroadcastEvent;
+  onAnnotationChange?: () => void;
 }) {
   const [abortController, setAbortController] = React.useState(
     new AbortController()
@@ -472,12 +461,12 @@ export function AnalyzerSidebar(props: {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [status, setStatus] = useState("Ready");
 
-  const issues = useIssues(props.output, props.storedOutput);
-  const numIssues = issues.filter((i) => !i.loading).length;
+  const issues = useIssues(props.annotations);
+  const numIssues = issues.length;
 
   const userInfo = useUserInfo();
 
-  const storedIsEmpty = !props.storedOutput?.filter((o) => o.length > 0).length;
+  const storedIsEmpty = props.annotations.length === 0;
   const outputIsEmpty =
     !props.output ||
     (props.output.filter((o) => !o.loading).length === 0 && !props.running);
@@ -515,9 +504,6 @@ export function AnalyzerSidebar(props: {
     ]);
 
     const { config, endpoint, apikey } = clientAnalyzerConfig("single");
-    console.log("Analyzer options", config);
-    console.log("Analyzer endpoint", endpoint);
-    console.log("Analyzer apikey", apikey);
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
       return;
@@ -532,7 +518,8 @@ export function AnalyzerSidebar(props: {
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
-        props.analyzer.setDebug
+        props.analyzer.setDebug,
+        props.onAnnotationChange,
       );
       setAbortController(ctrl);
     } catch (error) {
@@ -568,7 +555,7 @@ export function AnalyzerSidebar(props: {
         {!notYetRun && !props.running && props.onDiscardAnalysisResult && (
           <button
             className="inline icon"
-            onClick={() => props.onDiscardAnalysisResult?.(props.storedOutput)}
+            onClick={() => props.onDiscardAnalysisResult?.(props.annotations)}
             data-tooltip-id="highlight-tooltip"
             data-tooltip-content="Discard Results"
           >
@@ -613,12 +600,7 @@ export function AnalyzerSidebar(props: {
       )}
       <div className="status">{status}</div>
       <div className="issues">
-        {issues.map((output, i) =>
-          output.loading ? (
-            props.running ? (
-              <Loading key="issues-loading" />
-            ) : null
-          ) : (
+        {issues.map((output, i) =>(
             <Issues
               key={props.traceId + "-" + "issue-" + i + "-" + output.content}
               issue={output}
@@ -698,7 +680,7 @@ function onMountConfigEditor(editor, monaco) {
 }
 
 export function Issues(props: {
-  issue: object & { severity: number; content: string; location: string };
+  issue: AnalyzerAnnotation;
 }) {
   // content: [abc] content
   let errorContent = "";
@@ -711,14 +693,14 @@ export function Issues(props: {
   }
 
   const first_location =
-    locations(props.issue.location).length > 0
-      ? locations(props.issue.location)[0]
+    locations(props.issue.address).length > 0
+      ? locations(props.issue.address)[0]
       : "";
 
   const [clickLocation, setClickLocation] = useState(first_location);
 
   const onNextLocation = () => {
-    const locs = locations(props.issue.location);
+    const locs = locations(props.issue.address);
     let idx = locs.indexOf(clickLocation);
     idx = (idx + 1) % locs.length;
     setClickLocation(locs[idx]);
@@ -741,7 +723,7 @@ export function Issues(props: {
         <b>[{errorContent}]</b> {content}
       </div>
       <div className="issue-header">
-        <Location location={props.issue.location} />
+        <Location location={props.issue.address} />
         <br />
         {typeof props.issue.severity === "number" && (
           <span className="severity">

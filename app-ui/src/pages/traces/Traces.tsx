@@ -40,6 +40,7 @@ import { useTelemetry } from "../../utils/Telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
+import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
 import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
@@ -132,7 +133,6 @@ class FeatureSet {
     return this.flags[flag] || true;
   }
 }
-
 /**
  * Metadata for a trace that we receive from the server.
  */
@@ -154,8 +154,8 @@ export interface Trace {
   preloaded?: boolean;
   // number of annotations for this trace
   num_annotations?: number;
-  // number of line annotations
-  num_line_annotations?: number;
+  // annotations_by_source, a map from source to number of annotations,
+  annotations_by_source: Record<string, number>;
 }
 
 /**
@@ -380,7 +380,6 @@ function useTraces(
         }
       });
   };
-
   return [traces, hierarchyPaths, refresh];
 }
 
@@ -848,7 +847,8 @@ export function Traces(props) {
   const onAnnotationCreate = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      trace.num_line_annotations = (trace.num_line_annotations ?? 0) + 1;
+      trace.annotations_by_source["user"] =
+        (trace.annotations_by_source["user"] ?? 0) + 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -856,12 +856,9 @@ export function Traces(props) {
   const onAnnotationDelete = (traceIndex: number) => {
     const trace = traces?.get(traceIndex);
     if (trace) {
-      if (
-        trace.num_line_annotations === undefined ||
-        trace.num_line_annotations === 0
-      )
-        return;
-      trace.num_line_annotations = trace.num_line_annotations - 1;
+      if (trace.annotations_by_source["user"] === 0) return;
+      trace.annotations_by_source["user"] =
+        (trace.annotations_by_source["user"] ?? 0) - 1;
       traces?.update(traceIndex, trace);
     }
   };
@@ -1126,8 +1123,13 @@ function SearchBox(props) {
   const hasSearch = inputValue == "" || hasChanged;
 
   let fancy_string = inputValue;
-  // if serach query is filter:<label>:1,2,3,4, set fancy to filter:<label>
+  // if search query is filter:<label>:1,2,3,4, set fancy to filter:<label>
   if (inputValue.startsWith("filter:")) {
+    const filter = inputValue.split(":")[1];
+    fancy_string = `${filter}`;
+  }
+  // if search query is idfilter:<label>:1,2,3,4, set fancy to idfilter:<label>
+  if (inputValue.startsWith("idfilter:")) {
     const filter = inputValue.split(":")[1];
     fancy_string = `${filter}`;
   }
@@ -1223,6 +1225,14 @@ function Sidebar(props: {
   const filters = [
     { label: "Show annotated", value: "show-annotated-traces" },
     { label: "Group by Analysis Result", value: "group-by-analysis-result" },
+    {
+      label: "Successful Runs",
+      value: "meta:success=true",
+    },
+    {
+      label: "Failed Runs",
+      value: "meta:success=false",
+    },
   ];
 
   useEffect(() => {
@@ -1321,6 +1331,8 @@ function Sidebar(props: {
       onTriggerAnnotatedGrouping(e);
     } else if (filter.value === "group-by-analysis-result") {
       onTriggerInvariantGrouping(e);
+    } else {
+      setSearchQuery(filter.value);
     }
     if (filterRef.current) filterRef.current.open = false;
   };
@@ -1751,6 +1763,16 @@ function TraceRowContents(props: { trace: Trace }) {
   const isTest =
     trace?.extra_metadata &&
     trace?.extra_metadata["invariant.num-failures"] !== undefined;
+  const hasSuccessMetadata =
+    trace?.extra_metadata && trace?.extra_metadata["success"] !== undefined;
+  const hasWarnings =
+    trace?.extra_metadata &&
+    trace?.extra_metadata["invariant.num-warnings"] !== undefined &&
+    trace?.extra_metadata["invariant.num-warnings"] > 0;
+  let num_warnings = null;
+  if (hasWarnings) {
+    num_warnings = trace?.extra_metadata["invariant.num-warnings"] || 0;
+  }
   // check if name is <something>[<params>]
   let name = <span className="name">{trace.name}</span>;
   if (trace.name?.match(/.*\[.*\]$/)) {
@@ -1762,38 +1784,51 @@ function TraceRowContents(props: { trace: Trace }) {
       </>
     );
   }
+  const viewOptions = useViewOptions().viewOptions;
 
-  if (isTest) {
-    const num_warnings = trace?.extra_metadata["invariant.num-warnings"] || 0;
-    const num_failures = trace?.extra_metadata["invariant.num-failures"] || 0;
-    const fail = num_failures > 0;
-
-    return (
-      <>
-        {name}
-        {/* don't show the annotations badge for test cases */}
-        <div className="spacer" />
-        {num_warnings > 0 && (
-          <span className="warnings">{num_warnings} warnings</span>
-        )}
-        <span className={"test-result " + (fail ? "fail" : "pass")}>
-          {fail ? "FAIL" : "PASS"}
-        </span>
-      </>
-    );
-  } else {
-    return (
-      <>
-        {name}
-        {(trace.num_line_annotations || 0) > 0 ? (
-          <span className="badge annotation-indicator">
-            {trace?.num_line_annotations}
-          </span>
-        ) : null}
-        <div className="spacer" />
-      </>
-    );
+  const showLabel = isTest || hasSuccessMetadata;
+  let label = null;
+  if (showLabel) {
+    label = isTest
+      ? (trace?.extra_metadata["invariant.num-failures"] || 0) === 0
+      : trace?.extra_metadata["success"];
   }
+  trace.annotations_by_source = trace.annotations_by_source ?? {};
+  return (
+    <>
+      {name}
+      {/* don't show the annotations badge for test cases */}
+      <div className="spacer" />
+      {hasWarnings && <span className="warnings">{num_warnings} warnings</span>}
+      {viewOptions.showUserBadges &&
+      (trace.annotations_by_source["user"] ?? 0) > 0 ? (
+        <AnnotationCounterBadge
+          count={trace.annotations_by_source["user"]}
+          type="user"
+        />
+      ) : null}
+      {viewOptions.showAnalyzerModelBadge &&
+      (trace.annotations_by_source["analyzer-model"] ?? 0) > 0 ? (
+        <AnnotationCounterBadge
+          count={trace.annotations_by_source["analyzer-model"]}
+          type="analyzer-model"
+        />
+      ) : null}
+      {viewOptions.showGuardrailsErrorBadge &&
+      (trace.annotations_by_source["guardrails-error"] ?? 0) > 0 ? (
+        <AnnotationCounterBadge
+          count={trace.annotations_by_source["guardrails-error"]}
+          type="guardrails-error"
+        />
+      ) : null}
+      {showLabel && <div style={{ width: "5px" }}></div>}
+      {showLabel && (
+        <span className={"test-result " + (label ? "pass" : "fail")}>
+          {label ? "✓" : "✗"}
+        </span>
+      )}
+    </>
+  );
 }
 
 /**

@@ -1,11 +1,11 @@
 //@ts-nocheck
 import React, { useEffect } from "react";
 import {
+  BsChat,
   BsCheckCircleFill,
   BsCodeSlash,
   BsCollection,
   BsDatabaseFillLock,
-  BsDatabaseLock,
   BsDownload,
   BsFileEarmarkBreak,
   BsFillLightningChargeFill,
@@ -32,6 +32,7 @@ import { Traces } from "./Traces";
 import { AnalysisReport } from "./AnalysisTab";
 import { Guardrails } from "./Guardrails";
 import { UploadOptions } from "../../components/EmptyDataset";
+import { GuardrailsIcon } from "../../components/Icons";
 
 interface Query {
   id: string;
@@ -302,7 +303,7 @@ function DatasetView() {
             onClick={() => setSelectedTab("guardrails")}
           >
             <div className="inner">
-              <BsDatabaseLock />
+              <GuardrailsIcon />
               Guardrails
             </div>
           </button>

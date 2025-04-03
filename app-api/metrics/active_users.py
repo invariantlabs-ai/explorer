@@ -72,8 +72,12 @@ def install_metrics_middleware(app):
 
         userid = user_id or request.headers.get("x-forwarded-for", "anonymous")
 
-        # ignore the /metrics endpoint
-        if not request.url.path.endswith("/metrics"):
+        # ignore the /metrics endpoint and user identity checks by other services
+        if (
+            not request.url.path.endswith("/metrics")
+            and not request.url.path.endswith("/user/identity")
+            or request.url.path == "/api/v1/"
+        ):
             ACTIVE_USERS.add(userid)
             # track anonymous users in a separate set
             if user_id is None:
