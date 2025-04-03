@@ -21,7 +21,7 @@ For annotations to be visualized correctly, they need to be in the correct forma
 ```
 
 - `content` - The content of the message
-- `address` - The address of the message in the conversation (can be character range (e.g. `:0-5`), line range (e.g. `:L2), object level (e.g. `messages.0.content) or a bounding box.
+- `address` - The address of the message in the conversation (can be character range (e.g. `:0-5`), line range (e.g. `:L2`), object level (e.g. `messages.0.content`) or a bounding box.
 - `extra_metadata` - Extra metadata for the annotation:
   - `source` - The source of the annotation (always `guardrails-error`)
   - `guardrail_content` - The content of the guardrailing rule at evaluation time (optional)
@@ -47,7 +47,10 @@ For annotations to be visualized correctly, they need to be in the correct forma
 {
   "content": "[Issue name] Issue description.",
   "address": "messages.10",
-  "extra_metadata": { "source": "analyzer-model", "severity": 0.4 }
+  "extra_metadata": { 
+    "source": "analyzer-model", 
+    "severity": 0.4 
+  }
 }
 ```
 
@@ -56,3 +59,16 @@ For annotations to be visualized correctly, they need to be in the correct forma
 - `extra_metadata` - Extra metadata for the annotation:
   - `source` - The source of the annotation (always `analyzer-model`)
   - `severity` - Number between 0 and 1. A measure of severity of the issue.
+
+
+### Bounding Boxes In Images
+```json
+{
+   "content":"Hello in image",
+   "address":"messages.0.content:bbox-0.3,0.8,0.4,0.8",
+   "extra_metadata": null
+}
+```
+- `content` - The content of the message.
+- `address` - The address of the message in the conversation. The bounding box is formatted as `:bbox-x1,y1,x2,y2`, normalized between 0 and 1, and taking (0, 0) to be the upper left corner.
+- `extra_metadata` - Can be null or contain test or guardrail data.
