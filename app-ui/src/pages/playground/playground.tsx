@@ -50,6 +50,7 @@ const Playground = ({ editable = true,
   );
   const { width: screenWidth } = useWindowSize();
   const {verify, ApiKeyModal} = useVerify();
+  const navigate = useNavigate();
 
   // output and ranges
   const [loading, setLoading] = useState<boolean>(false);
@@ -202,6 +203,11 @@ const Playground = ({ editable = true,
   const handleOpenInPlayground = () => {
     window.open(getShareURL(), '_blank');
   };
+  
+  const handleDeploy = () => {
+    const location = '/deploy-guardrail#policy-code=' + encodeURIComponent(policyCode) + '&name=' + 'New Rule'
+    window.open(location, '_blank');
+  }
 
   return (
     <>
@@ -216,6 +222,7 @@ const Playground = ({ editable = true,
           <>
           <button 
             className="playground-button"
+            onClick={handleDeploy}
           >
             Deploy
           </button>

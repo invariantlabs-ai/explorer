@@ -39,7 +39,7 @@ function useVerify() {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('PRODUCTION_EXPLORER_API_KEY')
+                    'Authorization': 'Bearer ' + localStorage.getItem(key)
                 },
                 body: JSON.stringify({
                     messages: messages,
