@@ -345,7 +345,7 @@ function DatasetStatistics({
     <>
       {derivedData && derivedData.tools && (
         <div className="tile wide">
-          <h1>Tools By Success Rate</h1>
+          <h1>Tools By Failure Rate</h1>
           <ToolsBySuccessRateChart tools={derivedData?.tools} sort="desc" />
         </div>
       )}
