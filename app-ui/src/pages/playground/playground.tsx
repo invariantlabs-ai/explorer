@@ -287,8 +287,8 @@ const Playground = ({ editable = true,
                         traceId={'<none>'}
                         handleInputChange={handleInputChange}
                         highlights={analysisResult && analysisResult[analysisResultIdx] ? Object.fromEntries(analysisResult[analysisResultIdx].ranges.map(r => [r, r])) : {}}
-                        header={false}
                         sideBySide={false}
+                        editor={true}
                       />
                   </ResizablePanel>
                 </>

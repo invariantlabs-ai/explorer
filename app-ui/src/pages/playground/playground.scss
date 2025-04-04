@@ -113,8 +113,8 @@
     .traceview {
       .content, .tab, .traces.tab
       {
-        position: relative; 
-        height: fit-content;
+        //position: relative; 
+        //height: fit-content;
       }
 
         .traces {
@@ -178,7 +178,6 @@
 
 .controls {
   display: inline-block;
-  margin-left: 8pt;
 
   button {
       height: 24pt;
