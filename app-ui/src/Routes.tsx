@@ -140,7 +140,6 @@ export const routes = [
         showTrace={false}
         runnable={false}
         shareable={false}
-        showOutput={false}
         headerStyle="minimal"
         editable={false}
         resizeEditor={true}
