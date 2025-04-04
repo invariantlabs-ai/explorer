@@ -104,7 +104,6 @@ class JobStatus(str, Enum):
 class JobType(str, Enum):
     ANALYSIS = "analysis"
     POLICY_SYNTHESIS = "policy_synthesis"
-    POLICY_CHECK = "policy_check"
 
 
 class CompletedJobResponse(BaseModel):
@@ -123,14 +122,6 @@ class CompletedPolicySynthesisJobResponse(CompletedJobResponse):
     success: bool = Field(..., description="Whether the policy synthesis was successful")
     policy_code: str = Field(..., description="The generated policy code")
     detection_rate: float = Field(..., description="The detection rate for the traces from the request")
-
-
-class CompletedPolicyCheckJobResponse(CompletedJobResponse):
-    type: Literal[JobType.POLICY_CHECK] = JobType.POLICY_CHECK
-    success: bool = Field(..., description="Whether the policy check was successful")
-    triggered_traces: list[str] = Field(..., description="List of trace IDs that triggered the policy")
-    total_traces: int = Field(..., description="Total number of traces checked")
-    triggered_count: int = Field(..., description="Number of traces that triggered the policy")
 
 
 class ErrorStep(BaseModel):
@@ -174,7 +165,6 @@ class PolicySynthesisRequest(BaseModel):
 
 JobResponseUnion = (
     CompletedAnalysisJobResponse | CompletedPolicySynthesisJobResponse |
-    CompletedPolicyCheckJobResponse |
     FailedJobResponse | RunningJobResponse | CancelledJobResponse | PendingJobResponse
 )
 
@@ -215,8 +205,6 @@ class JobResponseParser(RootModel):
                         return CompletedAnalysisJobResponse(**v)
                     elif job_type == JobType.POLICY_SYNTHESIS:
                         return CompletedPolicySynthesisJobResponse(**v)
-                    elif job_type == JobType.POLICY_CHECK:
-                        return CompletedPolicyCheckJobResponse(**v)
                 except Exception as e:
                     # If validation fails, try to adapt the response
                     if job_type == JobType.POLICY_SYNTHESIS:
@@ -228,17 +216,6 @@ class JobResponseParser(RootModel):
                         if "detection_rate" not in v:
                             v["detection_rate"] = 0.0
                         return CompletedPolicySynthesisJobResponse(**v)
-                    elif job_type == JobType.POLICY_CHECK:
-                        # Ensure all required fields are present
-                        if "success" not in v:
-                            v["success"] = False
-                        if "triggered_traces" not in v:
-                            v["triggered_traces"] = []
-                        if "total_traces" not in v:
-                            v["total_traces"] = 0
-                        if "triggered_count" not in v:
-                            v["triggered_count"] = 0
-                        return CompletedPolicyCheckJobResponse(**v)
                     # Re-raise if we can't adapt
                     raise e
 
