@@ -2012,3 +2012,4 @@ export function SingleTrace() {
     </div>
   );
 }
+

@@ -4,7 +4,7 @@ import Ajv from "ajv";
 const tool_call_schema = {
   type: "object",
   properties: {
-    id: { type: ["string", "number"] },
+    id: { type: ["string", "number"] }, 
     type: { type: "string", enum: ["function"] },
     function: {
       type: "object",
@@ -18,13 +18,39 @@ const tool_call_schema = {
   required: ["id", "type", "function"],
 };
 
+
+const image_chunk_schema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["image_url"] },
+    image_url: { type: "object", properties: { url: { type: "string" } }, required: ["url"] },
+  },
+  required: ["type", "image_url"],
+};
+
+const text_chunk_schema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["text"] },
+    text: { type: "string" },
+  },
+  required: ["type", "text"],
+};
+
+
+const content_schema = {
+  type: "object",
+  oneOf: [image_chunk_schema, text_chunk_schema],
+};
+
+
 const event_schema = {
   type: "object",
   // schema for regular messages
   properties: {
     role: { type: "string" },
     // content can be string or null
-    content: { type: ["string", "null"] },
+    content: { type: ["string", "null", "array"], items: content_schema },
     tool_call_id: { type: ["string", "number", "null"] },
     tool_calls: {
       type: "array",
