@@ -47,84 +47,87 @@
   word-break: break-word;
 }
 
-.fullscreen > .playground {
+.fullscreen>.playground {
   height: calc(100vh - 40pt - 78px);
 }
 
-.embed > .playground {
+.embed>.playground {
   height: 100% !important;
 }
 
 .playground {
   width: 100%;
-    h2 {
-        margin-left: 5pt;
-        flex-direction: row;
-        font-size: 12pt;
-        width: 100%;
-        display: flex;
-        padding: 0pt;
-        align-items: center;
-        justify-content: space-between;
 
-        &.header-minimal {
-          flex-direction: row;
-          padding-bottom: 4pt;
-          justify-content: flex-end;
-          
-          button {
-            height: 16pt;
-            font-size: 10pt;
-            line-height: 10pt;
-            padding: 4pt 8pt;
-            margin-left: 4pt;
-          }
+  h2 {
+    margin-left: 5pt;
+    flex-direction: row;
+    font-size: 12pt;
+    width: 100%;
+    display: flex;
+    padding: 0pt;
+    align-items: center;
+    justify-content: space-between;
 
-          .playground-button:last-of-type {
-              margin-right: 12px;
-          }
-          
-        }
-        
-        &.header-full {
-          padding: 4pt 8pt;
-          .playground-button:last-of-type {
-              margin-right: 34px;
-          }
+    &.header-minimal {
+      flex-direction: row;
+      padding-bottom: 4pt;
+      justify-content: flex-end;
 
-        }
-
-        .playground-title {
-          margin-right: auto; /* Pushes all buttons to the right */
-          padding: 10pt;
-        }
-
-        .playground-button {
-            margin-left: 8px;
-        }
-
-    }
-
-    .playground-container {
-      flex-grow: 1;
-      width: 100%;
-    }
-
-    .traceview {
-      .content, .tab, .traces.tab
-      {
-        //position: relative; 
-        //height: fit-content;
+      button {
+        height: 16pt;
+        font-size: 10pt;
+        line-height: 10pt;
+        padding: 4pt 8pt;
+        margin-left: 4pt;
       }
 
-        .traces {
-            padding: 0 5pt;
-            .messages {
-                width: 100%;
-            }
-        }
+      .playground-button:last-of-type {
+        margin-right: 12px;
+      }
 
     }
+
+    &.header-full {
+      padding: 4pt 8pt;
+
+      .playground-button:last-of-type {
+        margin-right: 34px;
+      }
+
+    }
+
+    .playground-title {
+      margin-right: auto;
+      /* Pushes all buttons to the right */
+      padding: 10pt;
+    }
+
+    .playground-button {
+      margin-left: 8px;
+    }
+
+  }
+
+  .playground-container {
+    flex-grow: 1;
+    width: 100%;
+  }
+
+  .traceview {
+    
+    .content,
+    .tab,
+    .traces.tab {}
+
+    .traces {
+      padding: 0 5pt;
+
+      .messages {
+        width: 100%;
+      }
+    }
+
+  }
 }
 
 .policy-violation {
@@ -134,27 +137,26 @@
   margin: 8pt;
   display: flex;
   flex-direction: column;
-  
+
   h2 {}
-  
+
   .text {
     padding: 8pt;
   }
-  
+
   .policy-violation-buttons {
     position: absolute;
     right: 8pt;
     display: flex;
-    
+
     button {
       height: 24pt;
       width: 24pt;
       border: 1px solid #e2e8f0;
-      //background: white;
       margin: 0;
       padding: 0;
       justify-content: right;
-      
+
       &:first-child {
         border-top-right-radius: 0pt;
         border-bottom-right-radius: 0pt;
@@ -162,7 +164,7 @@
         border-bottom-left-radius: 12pt;
         border-right: none;
       }
-      
+
       &:last-child {
         border-top-right-radius: 12pt;
         border-bottom-right-radius: 12pt;
@@ -172,21 +174,30 @@
         margin-right: 8pt;
       }
     }
-    
+
   }
 }
 
-.controls {
+.control-indicator {
+  text-align: right;
+  margin-right: 8pt;
   display: inline-block;
 
-  button {
+  span {
+    margin-right: 8pt;
+  }
+
+  .controls {
+    display: inline-block;
+
+    button {
       height: 24pt;
       width: 24pt;
       border: 1px solid #e2e8f0;
       margin: 0;
       padding: 0;
       justify-content: right;
-      
+
       &:first-child {
         border-top-right-radius: 0pt;
         border-bottom-right-radius: 0pt;
@@ -194,7 +205,7 @@
         border-bottom-left-radius: 12pt;
         border-right: none;
       }
-      
+
       &:last-child {
         border-top-right-radius: 12pt;
         border-bottom-right-radius: 12pt;
@@ -203,6 +214,7 @@
         border-left: none;
         margin-right: 8pt;
       }
-   
+
+    }
   }
 }

@@ -268,8 +268,9 @@ const Playground = ({ editable = true,
                       )}
                       {analysisResult && Object.keys(analysisResult).length > 0 && (
                         <>
-                        <div style={{ textAlign: 'right' }}>
-                          {analysisResultIdx + 1} / {analysisResult.length}
+                        <div className="control-indicator">
+                        <>
+                        <span>{analysisResultIdx + 1} / {analysisResult.length}</span>
                         <div className="controls">
                           <button onClick={() => {setAnalysisResultIdx( (analysisResultIdx - 1) % analysisResult.length )}}>
                             <BsChevronLeft />
@@ -278,6 +279,7 @@ const Playground = ({ editable = true,
                             <BsChevronRight />
                           </button>
                         </div>
+                        </>
                         </div>
                         <PolicyViolation title={`Match #${analysisResultIdx + 1}`} result={analysisResult[analysisResultIdx]} />
                         </>
