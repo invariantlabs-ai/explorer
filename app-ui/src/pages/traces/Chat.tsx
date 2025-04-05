@@ -14,9 +14,14 @@ import { useEffect, useRef, useState } from "react";
 import { GuardrailsIcon } from "../../components/Icons";
 import { DatasetRefreshBroadcastChannel } from "./Traces";
 import { BroadcastEvent } from "../../lib/traceview/traceview";
+import { config } from "../../utils/Config";
 
 // trigger this to open the chat pane
 export const TriggerChatOpenBroadcastEvent = new BroadcastEvent();
+
+export function isLocalInstance() {
+  return config("instance_name") != "local";
+}
 
 function Text({
   data,
@@ -62,38 +67,51 @@ function SettingsModal({
         <div className="options">
           <h2>OpenAI API Key</h2>
           <p>
-            Before using the chat, set your OpenAI API key. Stored locally in
-            your browser.
+            Before using the chat, set your OpenAI API key. This key will be
+            stored locally in this browser and will not be shared with anyone.
           </p>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
+            autoComplete="off"
           />
-          <h2>Invariant API Key</h2>
-          <p>
-            Set your Invariant API key. Obtain it <a href="/settings">here</a>.
-          </p>
-          <input
-            type="password"
-            value={invariantApiKey}
-            onChange={(e) => setInvariantApiKey(e.target.value)}
-          />
+          {isLocalInstance() && (
+            <>
+              <h2>Invariant API Key</h2>
+              <p>
+                Set an Invariant API key for this instance of Explorer. You can
+                obtain it <a href="/settings">in your account settings</a>.
+              </p>
+              <input
+                type="password"
+                value={invariantApiKey}
+                onChange={(e) => setInvariantApiKey(e.target.value)}
+                autoComplete="off"
+              />
+            </>
+          )}
           <h2>Guardrails API Key</h2>
           <p>
             Obtain a Guardrails API key from the{" "}
-            <a href="https://explorer.invariantlabs.ai">hosted Explorer</a>.
+            <a href="https://explorer.invariantlabs.ai">hosted Explorer</a>, to
+            execute guardrails on your agent.
           </p>
           <input
             type="password"
             value={guardrailsApiKey}
             onChange={(e) => setGuardrailsApiKey(e.target.value)}
+            autoComplete="off"
           />
         </div>
         <br />
         <button
           className="inline primary"
-          disabled={!apiKey || !invariantApiKey || !guardrailsApiKey}
+          disabled={
+            !apiKey ||
+            (!invariantApiKey && !isLocalInstance) ||
+            !guardrailsApiKey
+          }
           onClick={onClose}
         >
           Save
@@ -330,7 +348,7 @@ export function Chat(props: { dataset: string }) {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
-            "Invariant-Authorization": `Bearer ${invariantApiKey}`,
+            "Invariant-Authorization": `Bearer ${isLocalInstance() ? "dev-mode" : invariantApiKey}}`,
             "Invariant-Guardrails-Authorization": `Bearer ${guardrailsApiKey}`,
           },
           body: JSON.stringify({

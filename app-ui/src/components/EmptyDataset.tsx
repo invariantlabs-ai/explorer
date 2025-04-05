@@ -19,7 +19,7 @@ function ChatStart() {
       <h2>Start by simulating an Agent</h2>
       <p>
         You can start generating traces by chatting to a simulated agent in the
-        right-hand side chat pane.
+        Chat sidebar.
       </p>
       <button
         className="primary"

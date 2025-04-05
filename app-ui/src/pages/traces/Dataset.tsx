@@ -452,7 +452,7 @@ function DatasetView() {
                       <h3>Import More Trace Data</h3>
                       <UploadOptions
                         dataset={dataset.name}
-                        excluded={["JSON Upload"]}
+                        excluded={["JSON Upload", "Chat"]}
                         // active tab is traces
                         onSuccess={() => setSelectedTab("traces")}
                       />
