@@ -331,51 +331,48 @@ function DatasetView() {
         </button>
       </div>
 
-      {selectedTab === "traces" && (
-        <div className="two-column">
+      <div className="two-column">
+        {selectedTab === "traces" && (
           <Traces
             dataset={dataset}
             datasetLoadingError={datasetError}
             enableAnalyzer={true}
           />
-          <Chat dataset={dataset.name} />
-        </div>
-      )}
+        )}
 
-      {selectedTab === "insights" && (
-        <AnalysisReport
-          dataset={dataset}
-          datasetLoadingError={datasetError}
-          username={props.username}
-          datasetname={props.datasetname}
-          onRefreshReport={() => datasetLoader.refresh()}
-        />
-      )}
+        {selectedTab === "insights" && (
+          <AnalysisReport
+            dataset={dataset}
+            datasetLoadingError={datasetError}
+            username={props.username}
+            datasetname={props.datasetname}
+            onRefreshReport={() => datasetLoader.refresh()}
+          />
+        )}
 
-      {selectedTab === "metadata" && (
-        <>
-          <div className="panel">
-            <header className="toolbar">
-              <h1>
-                <Link to="/"> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                {props.datasetname}
-              </h1>
-            </header>
-            <div className="metadata-summary">
-              <Metadata
-                extra_metadata={filterMetadata({
-                  ...dataset?.extra_metadata,
-                  id: dataset.id,
-                })}
-              />
+        {selectedTab === "metadata" && (
+          <>
+            <div className="panel">
+              <header className="toolbar">
+                <h1>
+                  <Link to="/"> /</Link>
+                  <Link to={`/u/${props.username}`}>{props.username}</Link>/
+                  {props.datasetname}
+                </h1>
+              </header>
+              <div className="metadata-summary">
+                <Metadata
+                  extra_metadata={filterMetadata({
+                    ...dataset?.extra_metadata,
+                    id: dataset.id,
+                  })}
+                />
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      {selectedTab === "guardrails" && (
-        <div className="two-column">
+        {selectedTab === "guardrails" && (
           <Guardrails
             dataset={dataset}
             datasetLoader={datasetLoader}
@@ -383,91 +380,92 @@ function DatasetView() {
             username={props.username}
             datasetname={props.datasetname}
           />
-          <Chat dataset={dataset.name} />
-        </div>
-      )}
+        )}
 
-      {selectedTab === "settings" && (
-        <>
-          {/* delete modal */}
-          {selectedDatasetForDelete && (
-            <Modal
-              title="Delete Dataset"
-              onClose={() => setSelectedDatasetForDelete(null)}
-              hasWindowControls
-            >
-              <DeleteDatasetModalContent
-                dataset={selectedDatasetForDelete}
+        {selectedTab === "settings" && (
+          <>
+            {/* delete modal */}
+            {selectedDatasetForDelete && (
+              <Modal
+                title="Delete Dataset"
                 onClose={() => setSelectedDatasetForDelete(null)}
-                onSuccess={() => navigate("/")}
-              ></DeleteDatasetModalContent>
-            </Modal>
-          )}
-          <div className="panel entity-list">
-            <header className="toolbar">
-              <h1>
-                <Link to="/"> /</Link>
-                <Link to={`/u/${props.username}`}>{props.username}</Link>/
-                {props.datasetname}
-              </h1>
-            </header>
-            <div className="settings-actions">
-              {isUserOwned && (
+                hasWindowControls
+              >
+                <DeleteDatasetModalContent
+                  dataset={selectedDatasetForDelete}
+                  onClose={() => setSelectedDatasetForDelete(null)}
+                  onSuccess={() => navigate("/")}
+                ></DeleteDatasetModalContent>
+              </Modal>
+            )}
+            <div className="panel entity-list">
+              <header className="toolbar">
+                <h1>
+                  <Link to="/"> /</Link>
+                  <Link to={`/u/${props.username}`}>{props.username}</Link>/
+                  {props.datasetname}
+                </h1>
+              </header>
+              <div className="settings-actions">
+                {isUserOwned && (
+                  <div className="box full setting">
+                    <div>
+                      <h3>Delete Entire Dataset</h3>
+                      Delete this dataset and all associated data. This action
+                      cannot be undone.
+                    </div>
+                    <button
+                      aria-label="delete"
+                      className="danger"
+                      onClick={() => setSelectedDatasetForDelete(dataset)}
+                    >
+                      <BsTrash /> Delete
+                    </button>
+                  </div>
+                )}
+                {config("sharing") && (
+                  <PublicControls
+                    dataset={dataset}
+                    datasetLoader={datasetLoader}
+                    onPublicChange={onPublicChange}
+                    userInfo={userInfo}
+                  />
+                )}
                 <div className="box full setting">
                   <div>
-                    <h3>Delete Entire Dataset</h3>
-                    Delete this dataset and all associated data. This action
-                    cannot be undone.
+                    <h3>Export Dataset</h3>
+                    Download a copy of the dataset.
                   </div>
                   <button
-                    aria-label="delete"
-                    className="danger"
-                    onClick={() => setSelectedDatasetForDelete(dataset)}
+                    aria-label="download"
+                    className="primary"
+                    onClick={() => onDownloadDataset()}
                   >
-                    <BsTrash /> Delete
+                    <>
+                      <BsDownload /> Download
+                    </>
                   </button>
                 </div>
-              )}
-              {config("sharing") && (
-                <PublicControls
-                  dataset={dataset}
-                  datasetLoader={datasetLoader}
-                  onPublicChange={onPublicChange}
-                  userInfo={userInfo}
-                />
-              )}
-              <div className="box full setting">
-                <div>
-                  <h3>Export Dataset</h3>
-                  Download a copy of the dataset.
-                </div>
-                <button
-                  aria-label="download"
-                  className="primary"
-                  onClick={() => onDownloadDataset()}
-                >
-                  <>
-                    <BsDownload /> Download
-                  </>
-                </button>
-              </div>
-              {isUserOwned && (
-                <div className="box full setting import-more">
-                  <div>
-                    <h3>Import More Trace Data</h3>
-                    <UploadOptions
-                      dataset={dataset.name}
-                      excluded={["JSON Upload"]}
-                      // active tab is traces
-                      onSuccess={() => setSelectedTab("traces")}
-                    />
+                {isUserOwned && (
+                  <div className="box full setting import-more">
+                    <div>
+                      <h3>Import More Trace Data</h3>
+                      <UploadOptions
+                        dataset={dataset.name}
+                        excluded={["JSON Upload"]}
+                        // active tab is traces
+                        onSuccess={() => setSelectedTab("traces")}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+        {/* show chat side pane */}
+        <Chat dataset={dataset.name} />
+      </div>
     </div>
   );
 }

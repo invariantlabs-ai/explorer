@@ -40,7 +40,10 @@ import { useTelemetry } from "../../utils/Telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
-import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
+import {
+  AnnotationCounterBadge,
+  BroadcastEvent,
+} from "../../lib/traceview/traceview";
 import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
@@ -49,6 +52,7 @@ import {
 } from "../notfound/NotFound";
 import { Tooltip } from "react-tooltip";
 import { useViewOptions } from "./ViewOptions.js";
+import { EventChannel } from "../../lib/EventChannel.js";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
@@ -705,30 +709,7 @@ function useSearch() {
   ] as const;
 }
 
-export class EventChannel {
-  listeners: any[];
-
-  constructor(public name: string) {
-    this.name = name;
-    this.listeners = [];
-  }
-
-  addListener(listener: any) {
-    this.listeners.push(listener);
-  }
-
-  removeListener(listener: any) {
-    this.listeners = this.listeners.filter((l) => l !== listener);
-  }
-
-  postMessage(message: any) {
-    this.listeners.forEach((listener) => listener(message));
-  }
-}
-
-export const DatasetRefreshBroadcastChannel = new EventChannel(
-  "dataset-refresh-broadcast-channel"
-);
+export const DatasetRefreshBroadcastChannel = new BroadcastEvent();
 
 /**
  * Component for displaying the list of traces in a dataset.
@@ -794,9 +775,9 @@ export function Traces(props) {
     const handleRefresh = (event) => {
       refresh();
     };
-    DatasetRefreshBroadcastChannel.addListener(handleRefresh);
+    DatasetRefreshBroadcastChannel.on(handleRefresh);
     return () => {
-      DatasetRefreshBroadcastChannel.removeListener(handleRefresh);
+      DatasetRefreshBroadcastChannel.off(handleRefresh);
     };
   }, []);
 

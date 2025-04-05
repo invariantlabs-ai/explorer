@@ -2,10 +2,35 @@ import React, { useEffect } from "react";
 import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
-import { BsClipboard2, BsClipboard2Check, BsCollection } from "react-icons/bs";
+import {
+  BsChat,
+  BsClipboard2,
+  BsClipboard2Check,
+  BsCollection,
+} from "react-icons/bs";
 import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
+import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
+
+function ChatStart() {
+  return (
+    <div className="box simulated-agent">
+      <h2>Start by simulating an Agent</h2>
+      <p>
+        You can start generating traces by chatting to a simulated agent in the
+        right-hand side chat pane.
+      </p>
+      <button
+        className="primary"
+        onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
+      >
+        <BsChat />
+        Open Chat
+      </button>
+    </div>
+  );
+}
 
 function JSONLUpload({
   file,
@@ -245,6 +270,8 @@ export function UploadOptions({
             setFile={setFile}
             onSubmit={onSubmit}
           />
+        ) : snippet == "<chat>" ? (
+          <ChatStart />
         ) : (
           <CodeWithCopyButton code={snippet} />
         )}

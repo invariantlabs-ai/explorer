@@ -7,6 +7,11 @@
 
 export const SETUP_SNIPPETS = [
   {
+    name: "Chat",
+    description: "Start by directly chatting to a simulated agent.",
+    snippet: "<chat>",
+  },
+  {
     name: "OpenAI",
     description: "Upload via Gateway and the OpenAI Python SDK.",
     link: "https://explorer.invariantlabs.ai/docs/gateway/llm-provider-integrations/openai/",
