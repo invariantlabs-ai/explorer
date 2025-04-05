@@ -1,22 +1,52 @@
 import {
   BsChatFill,
+  BsChevronRight,
   BsExclamationCircleFill,
   BsGear,
   BsSend,
+  BsSpeedometer2,
   BsXCircleFill,
 } from "react-icons/bs";
 import "./Chat.scss";
 import { PROMPT_LIBRARY } from "./Prompts";
 import { useEffect, useRef, useState } from "react";
 import { GuardrailsIcon } from "../../components/Icons";
+import { DatasetRefreshBroadcastChannel } from "./Traces";
 
 type TextProps = {
   data: string;
+  role: string;
   done?: boolean;
 };
 
-export function Text({ data, done }: TextProps) {
-  return data;
+export function Text({ data, role, done }: TextProps) {
+  const DEFAULT_DELAY = 5; // milliseconds
+
+  if (role != "assistant") {
+    return data;
+  }
+
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    if (!data.startsWith(displayedText)) {
+      setDisplayedText(data);
+    }
+
+    const updater = () => {
+      if (displayedText.length < data.length) {
+        setDisplayedText(data.slice(0, displayedText.length + 1));
+      }
+    };
+
+    const step = setTimeout(updater, done ? 1 : DEFAULT_DELAY);
+
+    return () => {
+      clearTimeout(step);
+    };
+  }, [data, displayedText]);
+
+  return displayedText;
 }
 
 export function Chat(props: { dataset: string }) {
@@ -59,8 +89,16 @@ export function Chat(props: { dataset: string }) {
   );
 
   const chatWindowRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const onSendMessage = async (msg: string) => {
+  // on open, focus on the textarea
+  useEffect(() => {
+    if (!settingsVisible && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [settingsVisible, textareaRef]);
+
+  const onSendMessage = async (msg: string, history: any[] = []) => {
     try {
       setHistory([
         ...history,
@@ -68,6 +106,11 @@ export function Chat(props: { dataset: string }) {
         { role: "assistant", content: "" },
       ]);
       setLoading(true);
+      setError(null);
+      setGuardrailingError(null);
+
+      // reset stats
+      const start = Date.now();
 
       const updatedHistory = [...history, { role: "user", content: msg }];
       const controller = new AbortController();
@@ -128,9 +171,11 @@ export function Chat(props: { dataset: string }) {
 
             // check for error
             if (parsed.error) {
+              const duration = Date.now() - start;
+
               const msg = parsed.error.message;
               if (msg.includes("[Invariant]")) {
-                setGuardrailingError(parsed.error);
+                setGuardrailingError({ ...parsed.error, time: duration });
               } else {
                 setError(JSON.stringify(parsed.error));
               }
@@ -148,12 +193,13 @@ export function Chat(props: { dataset: string }) {
                 newHist[newHist.length - 1] = {
                   role: "assistant",
                   content: assistantMessage,
+                  time: Date.now() - start,
                 };
                 return newHist;
               });
             }
           } catch (err) {
-            setError("Could not parse stream chunk: " + err);
+            // setError("Could not parse stream chunk: " + err);
             console.error("Could not parse stream chunk", err);
           }
         }
@@ -165,6 +211,12 @@ export function Chat(props: { dataset: string }) {
         setError("An unknown error occurred");
       }
     } finally {
+      setTimeout(() => {
+        DatasetRefreshBroadcastChannel.postMessage({
+          type: "refresh",
+          dataset: props.dataset,
+        });
+      }, 500);
       setLoading(false);
     }
   };
@@ -173,7 +225,7 @@ export function Chat(props: { dataset: string }) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       // Handle send message
-      onSendMessage(userInput);
+      onSendMessage(userInput, history);
       setUserInput("");
     }
   };
@@ -260,12 +312,17 @@ export function Chat(props: { dataset: string }) {
       )}
 
       <header className="toolbar">
+        <BsChevronRight />
         <h3>
           <BsChatFill /> Chat
         </h3>
         <div className="spacer"></div>
-        <button className="inline icon" onClick={() => onReset()}>
-          <BsXCircleFill />
+        <button
+          className="inline"
+          onClick={() => onReset()}
+          disabled={loading || !history.length}
+        >
+          <BsXCircleFill /> Clear
         </button>
         <button
           className="inline icon"
@@ -275,82 +332,97 @@ export function Chat(props: { dataset: string }) {
         </button>
       </header>
       <div className="chat-messages" ref={chatWindowRef}>
-        {history.length === 0 && !error && (
-          <div className="empty">How can I help you today?</div>
-        )}
-        {history.map((msg, index) => (
-          <div
-            key={index}
-            className={`bubble-container ${
-              msg.role === "user" ? "right" : "left"
-            }`}
-          >
-            {isMessageVisible(msg, loading) && (
-              <div className={`message ${msg.role}`}>
-                {/* {msg.content} */}
-                <Text
-                  data={msg.content}
-                  done={
-                    msg.role !== "assistant" ||
-                    !loading ||
-                    index !== history.length - 1
-                  }
-                />
-                {index == history.length - 1 && loading && (
-                  <div className="chat-loading" />
-                )}
-                {(index != history.length - 1 || !loading) && (
-                  <div className="message-actions">
-                    {msg.role === "assistant" && (
-                      <button className="icon">
-                        <BsGear />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        {error && (
-          <div className="error">
-            <BsExclamationCircleFill /> {error}
-          </div>
-        )}
-        {guardrailingError && <GuardrailMessage error={guardrailingError} />}
-        {history.length > 0 && <div className="message spacer" />}
+        <div className="contents">
+          {history.length === 0 && !error && (
+            <div className="empty">How can I help you today?</div>
+          )}
+          {history.map((msg, index) => (
+            <div
+              key={index}
+              className={`bubble-container ${
+                msg.role === "user" ? "right" : "left"
+              }`}
+            >
+              {isMessageVisible(msg, loading) && (
+                <div className={`message ${msg.role}`}>
+                  {/* {msg.content} */}
+                  <Text
+                    role={msg.role}
+                    data={msg.content}
+                    done={
+                      msg.role !== "assistant" ||
+                      !loading ||
+                      index !== history.length - 1
+                    }
+                  />
+                  {index == history.length - 1 && loading && (
+                    <div className="chat-loading" />
+                  )}
+                  {(index != history.length - 1 || !loading) && (
+                    <div className="message-actions">
+                      {msg.role === "assistant" && (
+                        <>
+                          <button className="icon">
+                            <BsGear />
+                          </button>
+                          <div className="spacer" />
+                          <span className="stat">
+                            <BsSpeedometer2 />
+                            {msg.time}ms
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {error && (
+            <div className="error">
+              <BsExclamationCircleFill /> {error}
+            </div>
+          )}
+          {guardrailingError && <GuardrailMessage error={guardrailingError} />}
+          {history.length > 0 && <div className="message spacer" />}
 
-        <div className="composer">
-          <div className="templates">
-            {PROMPT_LIBRARY.map((prompt) => (
-              <div
-                key={prompt.title}
-                className="template"
+          <div className="composer">
+            <div className="templates">
+              {PROMPT_LIBRARY.map((prompt) => (
+                <div
+                  key={prompt.title}
+                  className="template"
+                  onClick={(event) => {
+                    if (event.shiftKey) {
+                      onSendMessage(prompt.value, []);
+                    } else {
+                      onSendMessage(prompt.value, history);
+                    }
+                  }}
+                >
+                  {prompt.title}
+                </div>
+              ))}
+            </div>
+            <textarea
+              placeholder="Ask a question..."
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              ref={textareaRef}
+            />
+            <div className="composer-actions">
+              <button
+                className="inline icon"
                 onClick={() => {
-                  onSendMessage(prompt.value);
+                  // Handle send message
+                  console.log("Sending message:", userInput);
+                  setUserInput("");
                 }}
               >
-                {prompt.title}
-              </div>
-            ))}
-          </div>
-          <textarea
-            placeholder="Ask a question..."
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={onKeyDown}
-          />
-          <div className="composer-actions">
-            <button
-              className="inline icon"
-              onClick={() => {
-                // Handle send message
-                console.log("Sending message:", userInput);
-                setUserInput("");
-              }}
-            >
-              <BsSend />
-            </button>
+                <BsSend />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -374,27 +446,33 @@ export function GuardrailMessage({ error }: { error: any }) {
   const message = err.args.map((arg: any) => arg.toString()).join(" ");
 
   return (
-    <div className="event guardrail nofocus">
-      <div className="content">
-        <div className="guardrail-header expanded">
-          <GuardrailsIcon />
-          <b>Guardrail Failure</b> {message}
-          <span className="guardrail-id">{name}</span>
+    <>
+      <div className="event guardrail nofocus flow-in">
+        <div className="content">
+          <div className="guardrail-header expanded">
+            <GuardrailsIcon />
+            <b>Guardrail Failure</b> {message}
+            <span className="guardrail-id">{name}</span>
+          </div>
+          <pre className="marked-line">
+            <div># id: {id}</div>
+            <div># action: {err.guardrail.action}</div>
+            <br />
+            {content.split("\n").map((line, i) => (
+              <div
+                key={i}
+                className={line.includes(message) ? "highlight" : undefined}
+              >
+                {line}
+              </div>
+            ))}
+          </pre>
         </div>
-        <pre className="marked-line">
-          <div># id: {id}</div>
-          <div># action: {err.guardrail.action}</div>
-          <br />
-          {content.split("\n").map((line, i) => (
-            <div
-              key={i}
-              className={line.includes(message) ? "highlight" : undefined}
-            >
-              {line}
-            </div>
-          ))}
-        </pre>
       </div>
-    </div>
+      <div className="stat">
+        <BsSpeedometer2 />
+        {error.time}ms
+      </div>
+    </>
   );
 }

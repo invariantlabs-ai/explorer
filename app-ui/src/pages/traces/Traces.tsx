@@ -705,6 +705,31 @@ function useSearch() {
   ] as const;
 }
 
+export class EventChannel {
+  listeners: any[];
+
+  constructor(public name: string) {
+    this.name = name;
+    this.listeners = [];
+  }
+
+  addListener(listener: any) {
+    this.listeners.push(listener);
+  }
+
+  removeListener(listener: any) {
+    this.listeners = this.listeners.filter((l) => l !== listener);
+  }
+
+  postMessage(message: any) {
+    this.listeners.forEach((listener) => listener(message));
+  }
+}
+
+export const DatasetRefreshBroadcastChannel = new EventChannel(
+  "dataset-refresh-broadcast-channel"
+);
+
 /**
  * Component for displaying the list of traces in a dataset.
  *
@@ -763,6 +788,17 @@ export function Traces(props) {
       setSearchQuery(props.query);
     }
   }, [props.query]);
+
+  // subscribe to dataset refresh events
+  useEffect(() => {
+    const handleRefresh = (event) => {
+      refresh();
+    };
+    DatasetRefreshBroadcastChannel.addListener(handleRefresh);
+    return () => {
+      DatasetRefreshBroadcastChannel.removeListener(handleRefresh);
+    };
+  }, []);
 
   // when the trace index changes, update the activeTrace
   useEffect(() => {

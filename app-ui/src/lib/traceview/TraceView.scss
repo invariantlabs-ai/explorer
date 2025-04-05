@@ -384,6 +384,10 @@ body {
       position: relative;
       top: -1pt;
       opacity: 0.3;
+      max-width: 120pt;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .guardrail-header {

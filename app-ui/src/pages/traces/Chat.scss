@@ -26,6 +26,7 @@
 
   h3 {
     margin: 0pt;
+    margin-left: 5pt;
     padding: 0pt;
     font-size: 12pt;
     font-weight: bold;
@@ -44,14 +45,19 @@
 
     button {
       border-radius: 4pt;
+      border: none;
     }
   }
 
   .chat-messages {
+    width: 100%;
+
     $chat-width: calc(min(520pt, 100% - 20pt));
 
-    width: $chat-width;
-    margin: 0 auto;
+    .contents {
+      width: $chat-width;
+      margin: 0 auto;
+    }
 
     max-height: calc(100vh - 250pt);
     overflow-y: auto;
@@ -184,6 +190,9 @@
   .message-actions {
     margin-left: -4pt;
     margin-top: 4pt;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 
     button {
       background-color: transparent;
@@ -249,6 +258,24 @@
     animation: pulse-chat 2s infinite;
     margin-left: 5pt;
   }
+
+  .stat {
+    margin-left: 4pt;
+    position: relative;
+    top: 0pt;
+    font-size: 8pt;
+
+    svg {
+      position: relative;
+      top: 1pt;
+      font-size: 10pt;
+      margin-right: 3pt;
+    }
+  }
+
+  .event.guardrail + .stat {
+    margin-top: -10pt;
+  }
 }
 
 @keyframes pulse-chat {
@@ -262,5 +289,33 @@
 
   100% {
     opacity: 1;
+  }
+}
+
+.flow-in {
+  // error shake
+  animation: shake 0.2s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-5px);
+  }
+
+  100% {
+    transform: translateX(0);
   }
 }

@@ -332,11 +332,14 @@ function DatasetView() {
       </div>
 
       {selectedTab === "traces" && (
-        <Traces
-          dataset={dataset}
-          datasetLoadingError={datasetError}
-          enableAnalyzer={true}
-        />
+        <div className="two-column">
+          <Traces
+            dataset={dataset}
+            datasetLoadingError={datasetError}
+            enableAnalyzer={true}
+          />
+          <Chat dataset={dataset.name} />
+        </div>
       )}
 
       {selectedTab === "insights" && (
