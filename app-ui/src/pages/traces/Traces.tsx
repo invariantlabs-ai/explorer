@@ -40,7 +40,10 @@ import { useTelemetry } from "../../utils/Telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
-import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
+import {
+  AnnotationCounterBadge,
+  BroadcastEvent,
+} from "../../lib/traceview/traceview";
 import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
@@ -49,6 +52,7 @@ import {
 } from "../notfound/NotFound";
 import { Tooltip } from "react-tooltip";
 import { useViewOptions } from "./ViewOptions.js";
+import { EventChannel } from "../../lib/EventChannel.js";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
@@ -705,6 +709,8 @@ function useSearch() {
   ] as const;
 }
 
+export const DatasetRefreshBroadcastChannel = new BroadcastEvent();
+
 /**
  * Component for displaying the list of traces in a dataset.
  *
@@ -763,6 +769,17 @@ export function Traces(props) {
       setSearchQuery(props.query);
     }
   }, [props.query]);
+
+  // subscribe to dataset refresh events
+  useEffect(() => {
+    const handleRefresh = (event) => {
+      refresh();
+    };
+    DatasetRefreshBroadcastChannel.on(handleRefresh);
+    return () => {
+      DatasetRefreshBroadcastChannel.off(handleRefresh);
+    };
+  }, []);
 
   // when the trace index changes, update the activeTrace
   useEffect(() => {
