@@ -562,7 +562,8 @@ button.inline.icon-text {
     font-weight: 600;
     transform: scale(1.5);
     margin-right: 10pt;
-    margin-left: 10pt;
+    margin-left: 5pt;
+    top: -1pt;
 
     animation: pulse-color 2s infinite;
   }

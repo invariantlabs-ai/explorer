@@ -809,6 +809,15 @@ button {
     font-weight: 500;
     display: inline;
   }
+
+  input {
+    width: 100%;
+    padding: 5pt;
+    font-size: 12pt;
+    border-radius: 5pt;
+    border: 1pt solid $border-color;
+    margin-top: 10pt;
+  }
 }
 
 label {
@@ -3248,5 +3257,21 @@ span.highlight-dot {
   &.info {
     background-color: #d6ecff;
     color: #1e90ff;
+  }
+}
+
+.two-column {
+  display: flex;
+  flex-direction: row;
+  gap: 10pt;
+  min-height: calc(100vh - 78pt);
+
+  > div.panel {
+    position: relative;
+
+    header.toolbar {
+      top: 0pt;
+      width: 100%;
+    }
   }
 }

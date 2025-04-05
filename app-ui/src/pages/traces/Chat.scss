@@ -1,0 +1,266 @@
+@use "../../styles/Colors.scss" as *;
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  width: 50vw;
+  overflow: hidden;
+  border-left: 1pt solid #ccc;
+  padding-left: 10pt;
+  min-height: 100%;
+  padding-top: 40pt;
+  background-color: white;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol" !important;
+
+  h3 {
+    margin: 0pt;
+    padding: 0pt;
+    font-size: 12pt;
+    font-weight: bold;
+
+    svg {
+      position: relative;
+      top: 1pt;
+      margin-right: 2pt;
+    }
+  }
+
+  header.toolbar {
+    padding-left: 10pt;
+    padding-right: 10pt;
+    width: calc(100% - 15pt) !important;
+
+    button {
+      border-radius: 4pt;
+    }
+  }
+
+  .chat-messages {
+    $chat-width: calc(min(520pt, 100% - 20pt));
+
+    width: $chat-width;
+    margin: 0 auto;
+
+    max-height: calc(100vh - 250pt);
+    overflow-y: auto;
+    // hide scroll bar
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
+
+    .bubble-container.right {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10pt;
+
+      .message {
+        max-width: 80%;
+      }
+    }
+
+    .empty {
+      font-size: 12pt;
+      font-weight: 500;
+      height: calc(100vh - 250pt);
+    }
+
+    .error {
+      border: 1pt solid #ff0000;
+      padding: 10pt;
+      border-radius: 5pt;
+      background-color: #ffe6e6;
+
+      svg {
+        color: #ff0000;
+        margin-right: 5pt;
+        position: relative;
+        top: 1pt;
+        margin-left: 5pt;
+      }
+    }
+
+    .message {
+      margin-bottom: 10pt;
+      padding: 10pt 15pt;
+      border-radius: 5pt;
+
+      &.spacer {
+        height: 400pt;
+      }
+
+      &.user {
+        background-color: #f0f0f0;
+        align-self: flex-end;
+        width: auto;
+        display: inline-block;
+        border-radius: 20pt;
+        padding: 10pt 15pt;
+        padding-bottom: 8pt;
+      }
+
+      .message-body {
+        font-size: 12pt;
+        color: #333;
+      }
+    }
+
+    .composer {
+      position: absolute;
+      bottom: 0;
+      width: $chat-width;
+
+      .templates {
+        position: absolute;
+        top: 0pt;
+        transform: translateY(calc(-100% - 5pt));
+        border-radius: 5pt;
+        margin-bottom: 10pt;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: calc(100% - 20pt);
+        gap: 5pt;
+
+        .template {
+          border-radius: 5pt;
+          border: 1pt solid #ccc;
+          padding: 15pt;
+          font-weight: 500;
+          width: auto;
+
+          &:hover {
+            background-color: #f0f0f0;
+            cursor: pointer;
+          }
+
+          &:active {
+            background-color: #e0e0e0;
+          }
+        }
+      }
+
+      textarea {
+        width: calc(100% - 20pt);
+        min-height: 19pt;
+        max-height: auto;
+        height: auto;
+        padding: 10pt;
+        border-radius: 5pt;
+        border: 1pt solid #ccc;
+        font-size: 12pt;
+        resize: none;
+        line-height: 1.5;
+
+        outline: none;
+
+        &:focus {
+          outline: none;
+          border-color: #007bff;
+        }
+      }
+
+      button {
+        position: absolute;
+        right: 4pt;
+        top: 5pt;
+        margin: 0pt;
+        height: 30pt;
+        border-radius: 3pt;
+      }
+    }
+  }
+
+  .message-actions {
+    margin-left: -4pt;
+    margin-top: 4pt;
+
+    button {
+      background-color: transparent;
+      width: auto;
+      height: auto;
+      border-radius: 2pt;
+      color: $text-color;
+      padding: 2pt 5pt;
+      text-align: center;
+
+      svg {
+        margin: 0pt;
+        width: 12pt;
+        height: 12pt;
+      }
+
+      &:hover {
+        background-color: $highlighted-background;
+        color: $text-color-highlight;
+      }
+
+      &:active {
+        background-color: $highlighted-background;
+        color: $text-color-highlight;
+      }
+    }
+  }
+
+  .chat-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+
+    .modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20pt;
+      border-radius: 5pt;
+      width: 340pt;
+
+      .options p {
+        font-size: 10pt;
+        margin-left: 0pt;
+        margin-top: 5pt;
+        margin-bottom: -10pt;
+      }
+    }
+  }
+
+  .chat-loading {
+    background-color: #3e3aff;
+    width: 10pt;
+    height: 10pt;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-chat 2s infinite;
+    margin-left: 5pt;
+  }
+}
+
+@keyframes pulse-chat {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}

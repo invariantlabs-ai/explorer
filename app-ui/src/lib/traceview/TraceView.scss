@@ -373,6 +373,10 @@ body {
       background-color: rgba(179, 133, 217, 0.2);
     }
 
+    &.nofocus:hover {
+      background-color: rgba(179, 133, 217, 0.1);
+    }
+
     .guardrail-id {
       margin-left: auto;
       margin-right: 7pt;

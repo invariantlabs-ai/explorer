@@ -33,6 +33,7 @@ import { AnalysisReport } from "./AnalysisTab";
 import { Guardrails } from "./Guardrails";
 import { UploadOptions } from "../../components/EmptyDataset";
 import { GuardrailsIcon } from "../../components/Icons";
+import { Chat } from "./Chat";
 
 interface Query {
   id: string;
@@ -371,13 +372,16 @@ function DatasetView() {
       )}
 
       {selectedTab === "guardrails" && (
-        <Guardrails
-          dataset={dataset}
-          datasetLoader={datasetLoader}
-          datasetLoadingError={datasetError}
-          username={props.username}
-          datasetname={props.datasetname}
-        />
+        <div className="two-column">
+          <Guardrails
+            dataset={dataset}
+            datasetLoader={datasetLoader}
+            datasetLoadingError={datasetError}
+            username={props.username}
+            datasetname={props.datasetname}
+          />
+          <Chat dataset={dataset.name} />
+        </div>
       )}
 
       {selectedTab === "settings" && (
