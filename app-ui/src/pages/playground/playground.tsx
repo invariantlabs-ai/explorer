@@ -1,13 +1,10 @@
 import { Base64 } from "js-base64";
-import { useEffect, useRef, useState } from "react";
-import React from "react";
+import { useEffect, useState } from "react";
 import { BsPlayFill, BsGithub, BsShare, BsChevronLeft, BsChevronRight, BsArrowDown, BsArrowUp, BsCheckCircle, BsChevronDown, BsExclamationTriangle } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import useVerify from "../../lib/verify";
-
 import {
   beautifyJson,
-  clearTerminalControlCharacters
 } from "./utils";
 import type { AnalysisResult, PolicyError } from "./types";
 import { TraceView } from "../../lib/traceview/traceview";
@@ -16,46 +13,7 @@ import { PolicyEditor } from "./policyeditor";
 import useWindowSize from "../../lib/size";
 import './playground.scss';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./resizable";
-
-
-type PolicyViolationProps = {
-  title: string;
-  result: PolicyError;
-};
-
-export function PolicyViolation({ title, result}: PolicyViolationProps) {
-  const handleClick = (amount: number) => {}
-  const text = result.args.join(' ');
-
-  return (
-    <div className="policy-violation">
-        <h2>{title}</h2>
-        {/*
-        <div className="policy-violation-buttons">
-          {result.ranges.length > 0 && (
-            <>
-              <button onClick={() => handleClick(-1)}>
-                <BsArrowUp />
-              </button>
-              <button onClick={() => handleClick(1)}>
-                <BsArrowDown />
-              </button>
-            </>
-          )}
-        </div>
-        */}
-        <div className="text">{text}</div>
-    </div>
-  );
-}
-
-
-
-                        
-
-
-
-
+import { GuardrailHighlightDetail, GuardrailFailureHighlightDetail } from "../traces/HighlightDetails";
 
 interface PlaygroundProps {
   editable?: boolean;
@@ -70,15 +28,15 @@ interface PlaygroundProps {
 }
 
 const Playground = ({ editable = true,
-                      runnable = true,
-                      deployable = true,
-                      playgroundable = true,
-                      shareable = true,
-                      showPolicy = true,
-                      showTrace = true,
-                      headerStyle = 'full',
-                      resizeEditor = false,
-                     }: PlaygroundProps) => {
+  runnable = true,
+  deployable = true,
+  playgroundable = true,
+  shareable = true,
+  showPolicy = true,
+  showTrace = true,
+  headerStyle = 'full',
+  resizeEditor = false,
+}: PlaygroundProps) => {
   const [policyCode, setPolicyCode] = useState<string>(
     localStorage.getItem("policy") || ""
   );
@@ -86,15 +44,15 @@ const Playground = ({ editable = true,
     localStorage.getItem("input") || ""
   );
   const { width: screenWidth } = useWindowSize();
-  const {verify, ApiKeyModal} = useVerify();
+  const { verify, ApiKeyModal } = useVerify();
   const navigate = useNavigate();
-
   const [policyEditorHeight, setPolicyEditorHeight] = useState<number | undefined>(undefined);
-  
+
   // verification & highlight state
   const [loading, setLoading] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<PolicyError[] | null>(null);
   const [analysisResultIdx, setAnalysisResultIdx] = useState<number>(0);
+  const highlights = analysisResult && analysisResult[analysisResultIdx] ? Object.fromEntries(analysisResult[analysisResultIdx].ranges.map(r => [r, r])) : {};
 
   const handleBase64Hash = (hash: string) => {
     try {
@@ -159,7 +117,7 @@ const Playground = ({ editable = true,
         setLoading(false);
         return;
       }
-      
+
       setAnalysisResult(analysisResult.errors);
       setAnalysisResultIdx(0);
     } catch (error) {
@@ -172,7 +130,7 @@ const Playground = ({ editable = true,
   const getShareURL = () => {
     const data = JSON.stringify({ policy: policyCode, input: inputData });
     const encodedData = Base64.encode(data);
-    return `${window.location.origin}${window.location.pathname.replace('/embed','')}#${encodedData}`;
+    return `${window.location.origin}${window.location.pathname.replace('/embed', '')}#${encodedData}`;
   }
 
   const handleInputChange = (value: string | undefined) => {
@@ -197,7 +155,7 @@ const Playground = ({ editable = true,
   const handleOpenInPlayground = () => {
     window.open(getShareURL(), '_blank');
   };
-  
+
   const handleDeploy = () => {
     const location = '/deploy-guardrail#policy-code=' + encodeURIComponent(policyCode) + '&name=' + 'New Rule'
     window.open(location, '_blank');
@@ -205,42 +163,42 @@ const Playground = ({ editable = true,
 
   return (
     <>
-    <ApiKeyModal />
-    <div className="playground">
+      <ApiKeyModal />
+      <div className="playground">
         <h2 className={`header-${headerStyle}`}>
-        {headerStyle === 'full' &&
-          <div className="playground-title">Guardrail</div>
-        }
+          {headerStyle === 'full' &&
+            <div className="playground-title">Guardrail</div>
+          }
 
-        {deployable && (
-          <button className="playground-button" onClick={handleDeploy}>Deploy</button>)
-        }
+          {deployable && (
+            <button className="playground-button" onClick={handleDeploy}>Deploy</button>)
+          }
 
-        {shareable && (
-          <button onClick={handleShare} className="playground-button" >Share</button>)
-        }
+          {shareable && (
+            <button onClick={handleShare} className="playground-button" >Share</button>)
+          }
 
-        {playgroundable && (
-          <button onClick={handleOpenInPlayground} className="playground-button" >Open in Playground</button>)
-        }
+          {playgroundable && (
+            <button onClick={handleOpenInPlayground} className="playground-button" >Open in Playground</button>)
+          }
 
-        {runnable && (
-          <button onClick={handleEvaluate} disabled={loading} className="playground-button" >
-            <span style={{whiteSpace: 'nowrap'}}> {loading ? ( <Spinning />) : ( <BsPlayFill className="icon-play" />)}Evaluate</span>
-          </button>)
-        }
+          {runnable && (
+            <button onClick={handleEvaluate} disabled={loading} className="playground-button" >
+              <span style={{ whiteSpace: 'nowrap' }}> {loading ? (<Spinning />) : (<BsPlayFill className="icon-play" />)}Evaluate</span>
+            </button>)
+          }
         </h2>
-        
-        <ResizablePanelGroup 
-          direction="horizontal" 
+
+        <ResizablePanelGroup
+          direction="horizontal"
           className="playground-container"
         >
           {showPolicy && (
             <>
-              <ResizablePanel 
-                defaultSize={50} 
+              <ResizablePanel
+                defaultSize={50}
                 minSize={25}
-                className="panel" 
+                className="panel"
                 style={(resizeEditor && policyEditorHeight) ? { height: `${policyEditorHeight}px` } : undefined}
               >
                 <PolicyEditor
@@ -255,48 +213,59 @@ const Playground = ({ editable = true,
                   }}
                 />
               </ResizablePanel>
-              
-              {showTrace && <ResizableHandle/>}
+
+              {showTrace && <ResizableHandle />}
             </>
           )}
-          
-             {showTrace && (
-                <>
-                  <ResizablePanel defaultSize={50} minSize={25} className="panel-horizontal">
-                      {analysisResult&& Object.keys(analysisResult).length == 0 && (
-                        <div>No matches found.</div>
-                      )}
-                      {analysisResult && Object.keys(analysisResult).length > 0 && (
-                        <>
-                        <div className="control-indicator">
-                        <>
+
+          {showTrace && (
+            <>
+              <ResizablePanel defaultSize={50} minSize={25} className="panel-horizontal">
+              <div className="analysis-result">                
+                {analysisResult && Object.keys(analysisResult).length == 0 && (
+                    <GuardrailHighlightDetail highlight={{
+                      content: 'No Matches Found',
+                      source: 'Guardrail',
+                      type: 'guardrail'
+                    }} text="Guardrail" />
+
+                )}
+                {analysisResult && Object.keys(analysisResult).length > 0 && (
+                  <>
+                    <div className="control-indicator">
+                      <>
                         <span>{analysisResultIdx + 1} / {analysisResult.length}</span>
                         <div className="controls">
-                          <button onClick={() => {setAnalysisResultIdx( (analysisResultIdx - 1) % analysisResult.length )}}>
+                          <button onClick={() => { setAnalysisResultIdx((analysisResultIdx - 1) % analysisResult.length) }}>
                             <BsChevronLeft />
                           </button>
-                          <button onClick={() => {setAnalysisResultIdx( (analysisResultIdx + 1) % analysisResult.length )}}>
+                          <button onClick={() => { setAnalysisResultIdx((analysisResultIdx + 1) % analysisResult.length) }}>
                             <BsChevronRight />
                           </button>
                         </div>
-                        </>
-                        </div>
-                        <PolicyViolation title={`Match #${analysisResultIdx + 1}`} result={analysisResult[analysisResultIdx]} />
-                        </>
-                      )}
-                      <TraceView
-                        inputData={inputData}
-                        traceId={'<none>'}
-                        handleInputChange={handleInputChange}
-                        highlights={analysisResult && analysisResult[analysisResultIdx] ? Object.fromEntries(analysisResult[analysisResultIdx].ranges.map(r => [r, r])) : {}}
-                        sideBySide={false}
-                        editor={true}
-                      />
-                  </ResizablePanel>
-                </>
-              )}
+                      </>
+                    </div>
+                    <GuardrailFailureHighlightDetail highlight={{
+                      content: analysisResult && analysisResult[analysisResultIdx] ? analysisResult[analysisResultIdx].args.join(' ') : '',
+                      source: 'Guardrail',
+                      type: 'guardrail'
+                    }} />
+                  </>
+                )}
+              </div>
+                <TraceView
+                  inputData={inputData}
+                  traceId={'<none>'}
+                  handleInputChange={handleInputChange}
+                  highlights={highlights}
+                  sideBySide={false}
+                  editor={true}
+                />
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
-    </div>
+      </div>
     </>
   );
 };

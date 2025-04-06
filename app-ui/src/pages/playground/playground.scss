@@ -181,7 +181,6 @@
 .control-indicator {
   text-align: right;
   margin-right: 8pt;
-  display: inline-block;
 
   span {
     margin-right: 8pt;
@@ -216,5 +215,11 @@
       }
 
     }
+  }
+}
+
+.analysis-result {
+  .event {
+    margin: 10pt 5pt;
   }
 }
