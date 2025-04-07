@@ -45,6 +45,7 @@ export interface GuardrailSuggestion {
   detection_rate: number | null;
   id: string;
   policy_code: string;
+  policy_name?: string;
   success: boolean;
   extra_metadata: any;
 }
@@ -446,7 +447,7 @@ export function GuardrailSuggestions({
                       <div className={"job-info"}>
                         <h1>
                           <BsShieldCheck />
-                          <span>{policy.cluster_name}</span>
+                          <span>{policy.policy_name || policy.cluster_name}</span>
                           {!policy.extra_metadata?.from_rule_library && (
                             <span className="badge blue">
                               <BsStars /> Generated
