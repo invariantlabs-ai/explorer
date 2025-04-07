@@ -323,6 +323,11 @@ button.inline.danger {
   padding: 0pt;
   border: none;
   background: transparent;
+  overflow-y: auto;
+
+  > .explorer.panel {
+    margin-top: 0pt;
+  }
 }
 
 .explorer .traces {

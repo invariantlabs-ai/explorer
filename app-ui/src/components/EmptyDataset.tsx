@@ -16,20 +16,19 @@ import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
 
 function ChatStart() {
   return (
-    <div className="empty instructions box simulated-agent wide">
-      <h2>
-        <BsChatFill /> Start with a simulated agent
-      </h2>
-      <h3>
-        You can start experiment by chatting to a <i>simulated agent</i>.<br />
-        This allows you to experiment before integrating with your own agent.
-      </h3>
-      <br />
+    <div className="simulated-agent options">
+      <div>
+        <b>Capture Traces with a Simulated Agent</b>
+        <div>
+          You can start experiment by chatting to a <i>simulated agent</i> that
+          logs to this dataset.
+        </div>
+      </div>
       <button
         className="primary"
         onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
       >
-        <BsChatFill /> Open Simulated Agent
+        <BsChatFill /> Simulated Agent
       </button>
     </div>
   );
@@ -168,19 +167,17 @@ export function EmptyDatasetInstructions(props: {
           No Traces Captured Yet
         </h2>
         <h3>
-          To start using Invariant, you need to connect your agent and capture
-          traces.
-          <br />
-          To generate a new Invariant API key, go <a href="/settings">here</a>.
+          Connect or simulate an agent to capture traces. To obtain an API key,
+          go <a href="/settings">here</a>.
         </h3>
+        <ChatStart />
+        <div className="or-separator">
+          <span className="line" />
+          or
+          <span className="line" />
+        </div>
         <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
       </div>
-      <div className="or-separator">
-        <span className="line" />
-        Or
-        <span className="line" />
-      </div>
-      <ChatStart />
     </>
   );
 }

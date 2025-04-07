@@ -233,7 +233,7 @@ function Composer({
   );
 }
 
-function Message({ msg, index, loading, historyLength }: any) {
+function Message({ msg, index, loading, historyLength, loadingDotRef }: any) {
   if (!isMessageVisible(msg, loading)) return null;
   return (
     <div
@@ -248,7 +248,7 @@ function Message({ msg, index, loading, historyLength }: any) {
           }
         />
         {index === historyLength - 1 && loading && (
-          <div className="chat-loading" />
+          <div className="chat-loading" ref={loadingDotRef} />
         )}
         {(index !== historyLength - 1 || !loading) &&
           msg.role === "assistant" && (
@@ -353,6 +353,8 @@ export function Chat(props: { dataset: string }) {
     null
   );
   const chatWindowRef = useRef<HTMLDivElement>(null);
+  const loadingDotRef = useRef<HTMLDivElement>(null);
+  const lastUserMessageRef = useRef<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -374,6 +376,25 @@ export function Chat(props: { dataset: string }) {
       const start = Date.now();
       const updatedHistory = [...hist, { role: "user", content: msg }];
       const controller = new AbortController();
+
+      setTimeout(() => {
+        if (chatWindowRef.current) {
+          // find the anchor right after the last user message and scroll to it
+          // the anchor is offset by -70pt to make sure the last line of the user
+          // message is still visible. Otherwise, we mostly focus on the assistant response.
+          let anchors = chatWindowRef.current.querySelectorAll(
+            ".post-message-anchor.user"
+          );
+          if (anchors.length > 0) {
+            let lastAnchor = anchors[anchors.length - 1];
+            lastAnchor.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+              inline: "nearest",
+            });
+          }
+        }
+      }, 0);
 
       const res = await fetch(
         `/api/v1/gateway/${props.dataset}/openai/chat/completions`,
@@ -399,13 +420,6 @@ export function Chat(props: { dataset: string }) {
         setError("Failed to fetch response: " + errorText);
         setHistory(updatedHistory);
         return;
-      }
-
-      if (chatWindowRef.current) {
-        chatWindowRef.current.scrollTo({
-          top: chatWindowRef.current.scrollHeight,
-          behavior: "smooth",
-        });
       }
 
       const reader = res.body!.getReader();
@@ -547,13 +561,20 @@ export function Chat(props: { dataset: string }) {
               <div className="empty">How can I help you today?</div>
             )}
             {history.map((msg, index) => (
-              <Message
-                key={index}
-                msg={msg}
-                index={index}
-                loading={loading}
-                historyLength={history.length}
-              />
+              <>
+                <Message
+                  key={index}
+                  msg={msg}
+                  index={index}
+                  loading={loading}
+                  loadingDotRef={loadingDotRef}
+                  historyLength={history.length}
+                />
+                <div
+                  className={"post-message-anchor " + msg.role}
+                  style={{ position: "relative", top: "-70pt" }}
+                />
+              </>
             ))}
             {error && (
               <div className="error">
