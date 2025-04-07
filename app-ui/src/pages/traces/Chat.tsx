@@ -4,6 +4,7 @@ import {
   BsChevronRight,
   BsExclamationCircleFill,
   BsGear,
+  BsInfoCircleFill,
   BsSend,
   BsSpeedometer2,
   BsXCircleFill,
@@ -22,6 +23,7 @@ import {
   useLocalAPIKey,
   useLocalOpenAIAPIKey,
 } from "../../components/AutoAPIKey";
+import { ToggleButton } from "../../components/ToggleButton";
 
 // trigger this to open the chat pane
 export const TriggerChatOpenBroadcastEvent = new BroadcastEvent();
@@ -80,6 +82,15 @@ export function useChatSettingsModal() {
     APIKeyInput: HostedExplorerAPIKey,
   } = useHostedExplorerAPIKey();
 
+  const [record, _setRecord] = useState(
+    localStorage.getItem("chat-record") === "true"
+  );
+
+  const setRecord = (record: boolean) => {
+    _setRecord(record);
+    localStorage.setItem("chat-record", record.toString());
+  };
+
   const SettingsModal = ({ onClose }: { onClose: () => void }) => (
     <div className="chat-modal">
       <div className="modal-content view-options">
@@ -112,6 +123,14 @@ export function useChatSettingsModal() {
               <HostedExplorerAPIKey />
             </>
           )}
+          <h2>Trace Interactions</h2>
+          {/* <ToggleButton toggled={record} setToggled={setRecord} className="red">
+          Record interactions with this simulated agent as traces in this dataset.
+          </ToggleButton> */}
+          <div className="banner-note info">
+            <BsInfoCircleFill />
+            All interactions will be logged in this dataset.
+          </div>
         </div>
         <br />
         <button
@@ -134,21 +153,30 @@ export function useChatSettingsModal() {
     localInvariantAPIKey,
     openAIAPIKey,
     hostedInvariantAPIKey,
+    record,
+    setRecord,
   };
 }
 
-function Toolbar({ onReset, loading, historyLength, openSettings }: any) {
+function Toolbar({
+  onReset,
+  loading,
+  historyLength,
+  openSettings,
+  record,
+  setRecord,
+}: any) {
   return (
     <header className="toolbar">
       <h3>Simulated Agent</h3>
       <div className="secondary">Interact with your agent and guardrails.</div>
       <div className="spacer" />
       <button
-        className="inline"
+        className="inline icon"
         onClick={onReset}
         disabled={loading || !historyLength}
       >
-        <BsXCircleFill /> Clear
+        <BsXCircleFill />
       </button>
       <button className="inline icon" onClick={openSettings}>
         <BsGear />
@@ -312,6 +340,8 @@ export function Chat(props: { dataset: string }) {
     hostedInvariantAPIKey,
     openAIAPIKey,
     SettingsModal,
+    record,
+    setRecord,
   } = useChatSettingsModal();
 
   const [settingsVisible, setSettingsVisible] = useState(!openAIAPIKey);

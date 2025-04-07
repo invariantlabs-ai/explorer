@@ -3269,10 +3269,11 @@ span.highlight-dot {
 .two-column {
   display: flex;
   flex-direction: row;
-  min-height: calc(100vh - 78pt);
+  height: calc(100vh - 78pt);
 
   > div.panel {
     position: relative;
+    overflow-y: auto;
 
     header.toolbar {
       top: 0pt;

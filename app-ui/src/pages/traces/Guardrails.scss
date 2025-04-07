@@ -416,53 +416,6 @@ button.policy-action {
   }
 }
 
-// <div className="toggle-button">
-//   <div className={"slider " + (props.value ? "on" : "off")} />
-// </div>
-.toggle-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40pt;
-  height: 20pt;
-  border-radius: 12pt;
-  background-color: white;
-  border-radius: 12pt;
-  border: 2pt solid #e0e0e0;
-  cursor: pointer;
-  position: relative;
-  margin-left: 5pt;
-  margin-top: -2pt;
-  transition: background-color 0.1s ease-in-out;
-
-  &:hover {
-    background-color: #ebebeb;
-  }
-
-  &:active {
-    background-color: #e0e0e0;
-  }
-
-  .slider {
-    width: 20pt;
-    height: 20pt;
-    border-radius: 50%;
-    background-color: #a6a6a6;
-    border: 0.5pt solid #e0e0e0;
-    transition:
-      transform 0.1s ease-in-out,
-      background-color 0.3s ease-in-out;
-    position: absolute;
-    top: 0pt;
-    left: 0pt;
-
-    &.on {
-      transform: translateX(20pt);
-      background-color: $color-primary;
-    }
-  }
-}
-
 .editor-container {
   height: 800pt;
 }

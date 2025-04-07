@@ -48,7 +48,7 @@ async def get_rule_library_guardrails(
             result = json.loads(text)
             _LIBRARY_CACHE.update({"timestamp": now, "data": result})
 
-            return result
+            return result + result + result
     except httpx.HTTPError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to fetch policies: {str(e)}"
@@ -109,6 +109,7 @@ async def create_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -191,6 +192,7 @@ async def update_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -222,4 +224,5 @@ async def delete_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)

@@ -1,0 +1,81 @@
+@use "../styles/Colors.scss" as *;
+
+.toggle-button-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 5pt;
+  cursor: pointer;
+  margin-left: -10pt;
+  margin-top: 5pt;
+  margin-bottom: 5pt;
+
+  &:hover {
+    label {
+      opacity: 1;
+    }
+  }
+
+  label {
+    font-size: 10pt;
+    font-weight: 500;
+    padding-top: 5pt;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+}
+
+.toggle-button {
+  background-color: rgb(214, 214, 214);
+  height: 16pt;
+  width: 50pt;
+  border-radius: 10pt;
+  //   border: 2pt solid green;
+  user-select: none;
+  cursor: pointer;
+  transition: background-color 0.1s linear;
+  margin-right: 10pt;
+  margin-left: 10pt;
+
+  &:hover {
+    background-color: rgb(208, 208, 208);
+  }
+
+  &.toggled {
+    background-color: $color-primary;
+
+    &:hover {
+      background-color: $color-primary;
+    }
+  }
+
+  &.red {
+    &.toggled {
+      background-color: #ff6678;
+
+      &:hover {
+        background-color: #ff6678;
+      }
+    }
+  }
+
+  button {
+    border-radius: 8pt !important;
+    width: 16pt !important;
+    height: 16pt !important;
+    padding: 0pt !important;
+    margin: 0pt;
+    transition: margin-left 0.1s linear;
+    border: 0.5pt solid grey;
+    background-color: white;
+    box-shadow: 0 0 10pt rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      background-color: white;
+    }
+
+    &.toggled {
+      margin-left: 19pt;
+    }
+  }
+}
