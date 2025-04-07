@@ -31,7 +31,7 @@ const GUARDRAIL_EVALUATION_ENABLED = false;
 function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
   return {
     id: null,
-    name: completedPolicy.cluster_name,
+    name: completedPolicy.policy_name || completedPolicy.cluster_name, // fallback to cluster name
     content: completedPolicy.policy_code,
     action: "block",
     enabled: true,
