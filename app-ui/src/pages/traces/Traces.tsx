@@ -2032,3 +2032,4 @@ export function SingleTrace() {
     </div>
   );
 }
+

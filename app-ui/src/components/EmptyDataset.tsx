@@ -27,6 +27,7 @@ function ChatStart() {
       <button
         className="primary"
         onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
+        aria-label="start-simulated-agent"
       >
         <BsChatFill /> Simulated Agent
       </button>

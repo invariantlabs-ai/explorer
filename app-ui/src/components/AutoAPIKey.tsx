@@ -136,6 +136,7 @@ export function AutoAPIKeyInput({ onChange }) {
     <div className="auto-api-key">
       <input
         type={apiKey?.key ? "password" : "text"}
+        aria-label="local-invariant-api-key"
         // show 32*
         value={
           apiKey?.key
@@ -171,9 +172,11 @@ export function AutoAPIKeyInput({ onChange }) {
 export function LocalAPIKeyInput({
   url,
   onChange,
+  ariaLabel,
 }: {
   url: string;
   onChange?: (key: string | null) => void;
+  ariaLabel?: string;
 }) {
   /**
    * Component to manage a user-specified API key that lives in local storage.
@@ -236,6 +239,7 @@ export function LocalAPIKeyInput({
         // show 32*
         value={apiKey?.key ? "*".repeat(64) : ""}
         onChange={handleChange}
+        aria-label={ariaLabel || undefined}
         placeholder="No API key set."
         autoComplete="off"
       />
@@ -259,7 +263,10 @@ export function LocalAPIKeyInput({
   );
 }
 
-export function useLocalAPIKey(url: string) {
+export function useLocalAPIKey(
+  url: string,
+  ariaLabel: string | undefined = undefined
+) {
   /**
    * General version of an API key input that returns {apiKey, APIKeyInput}.
    *
@@ -271,7 +278,9 @@ export function useLocalAPIKey(url: string) {
 
   return {
     apiKey,
-    APIKeyInput: () => <LocalAPIKeyInput url={url} onChange={setApiKey} />,
+    APIKeyInput: () => (
+      <LocalAPIKeyInput url={url} onChange={setApiKey} ariaLabel={ariaLabel} />
+    ),
   };
 }
 
@@ -290,7 +299,13 @@ export function useLocalOpenAIAPIKey() {
 
   return {
     apiKey,
-    APIKeyInput: () => <LocalAPIKeyInput url={url} onChange={setApiKey} />,
+    APIKeyInput: () => (
+      <LocalAPIKeyInput
+        url={url}
+        onChange={setApiKey}
+        ariaLabel="openai-api-key"
+      />
+    ),
   };
 }
 
@@ -316,7 +331,10 @@ export function useHostedExplorerAPIKey() {
   }
 
   return {
-    ...useLocalAPIKey("https://explorer.invariantlabs.ai/settings"),
+    ...useLocalAPIKey(
+      "https://explorer.invariantlabs.ai/settings",
+      "hosted-explorer-api-key"
+    ),
     required: true,
   };
 }

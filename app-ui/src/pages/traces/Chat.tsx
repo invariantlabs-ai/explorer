@@ -136,11 +136,12 @@ export function useChatSettingsModal() {
         <button
           className="inline primary"
           disabled={
-            !localInvariantAPIKey ||
-            (localInvariantAPIKeyRequired && !openAIAPIKey) ||
+            (localInvariantAPIKeyRequired && !localInvariantAPIKey) ||
+            !openAIAPIKey ||
             (hostedApiKeyRequired && !hostedInvariantAPIKey)
           }
           onClick={onClose}
+          aria-label="Close"
         >
           Save
         </button>
@@ -174,6 +175,7 @@ function Toolbar({
       <button
         className="inline icon"
         onClick={onReset}
+        aria-label="Reset chat"
         disabled={loading || !historyLength}
       >
         <BsXCircleFill />
@@ -217,10 +219,12 @@ function Composer({
         onChange={(e) => setUserInput(e.target.value)}
         onKeyDown={onKeyDown}
         ref={textareaRef}
+        aria-label="Type your message here"
       />
       <div className="composer-actions">
         <button
           className="inline icon"
+          aria-label="Send"
           onClick={() => {
             onSend(userInput);
             setUserInput("");

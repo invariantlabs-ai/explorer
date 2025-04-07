@@ -137,7 +137,7 @@ class Annotation(Base):
     # JSON object of the annotation
     content: Mapped[str] = mapped_column(String, nullable=False)
     # address within the trace that this annotation belongs to (e.g. message, offset, etc.)
-    address: Mapped[str] = mapped_column(String, nullable=False)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
     # timestamp of the creation of the comment
     time_created = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.now()

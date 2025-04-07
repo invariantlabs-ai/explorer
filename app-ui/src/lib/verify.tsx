@@ -1,12 +1,9 @@
 import { useUserInfo } from "../utils/UserInfo";
 import { config } from "../utils/Config";
 import { useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "./../components/Modal";
-import {
-  useAutoAPIKey,
-  useHostedExplorerAPIKey,
-} from "../components/AutoAPIKey";
+import { useHostedExplorerAPIKey } from "../components/AutoAPIKey";
 
 const key = "invariant.explorer.production.apikey";
 

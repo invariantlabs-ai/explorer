@@ -2,10 +2,10 @@ name: Explorer CI
 on:
   push:
     branches:
-      - main   # Trigger on main branch pushes
-      - prod   # Trigger on prod branch pushes
+      - main # Trigger on main branch pushes
+      - prod # Trigger on prod branch pushes
     tags:
-      - 'v*'   # Trigger on tags (e.g., v1.0.0)
+      - "v*" # Trigger on tags (e.g., v1.0.0)
   pull_request:
     branches:
       - main # Trigger on main branch pull requests
@@ -16,52 +16,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v1
 
-    - name: Build Test Environnement
-      run: ./run.sh test-env
+      - name: Build Test Environnement
+        run: ./run.sh test-env
 
-    - name: Build Test Runner
-      run: ./run.sh build-tester
+      - name: Build Test Runner
+        run: ./run.sh build-tester
 
-    - name: Run CI
-      run: ./run.sh tests
-        
-    - name: tar screenshots
-      run: tar czf screenshots.tar.gz ./tests/screenshots
-      if: always()
+      - name: Run CI
+        run: ./run.sh tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PRODUCTION_EXPLORER_KEY: ${{ secrets.PRODUCTION_EXPLORER_KEY }}
 
-    - name: upload screenshots
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: screenshots
-        path: screenshots.tar.gz 
+      - name: tar screenshots
+        run: tar czf screenshots.tar.gz ./tests/screenshots
+        if: always()
 
-    - name: upload rest-result
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: ./tests/results/test-results-all.xml
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots.tar.gz
 
-    - name: test-report
-      uses: pmeier/pytest-results-action@main
-      if: always()
-      with:
-        path: ./tests/results/test-results-all.xml
+      - name: upload rest-result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./tests/results/test-results-all.xml
 
-        # (Optional) Add a summary of the results at the top of the report
-        summary: true
+      - name: test-report
+        uses: pmeier/pytest-results-action@main
+        if: always()
+        with:
+          path: ./tests/results/test-results-all.xml
 
-        # (Optional) Select which results should be included in the report.
-        # Follows the same syntax as `pytest -r`
-        display-options: fEX
+          # (Optional) Add a summary of the results at the top of the report
+          summary: true
 
-        # (Optional) Fail the workflow if no JUnit XML was found.
-        fail-on-empty: true
+          # (Optional) Select which results should be included in the report.
+          # Follows the same syntax as `pytest -r`
+          display-options: fEX
 
-        # (Optional) Title of the test results section in the workflow summary
-        title: Test results
-    
+          # (Optional) Fail the workflow if no JUnit XML was found.
+          fail-on-empty: true
+
+          # (Optional) Title of the test results section in the workflow summary
+          title: Test results

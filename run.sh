@@ -66,6 +66,8 @@ tests() {
     -e API_SERVER_HTTP_ENDPOINT="http://127.0.0.1:${PORT_API}" \
     --mount type=bind,source=./tests,target=/tests \
     --network host \
+    -e PRODUCTION_EXPLORER_KEY=${PRODUCTION_EXPLORER_KEY} \
+    -e OPENAI_API_KEY=${OPENAI_API_KEY} \
     explorer-test $@
 }
 
@@ -126,6 +128,7 @@ compile_requirements() {
   # then run the command in the container
   docker exec -it explorer-app-api-1 bash -c "pip install pip-tools && pip-compile --output-file=/srv/app/requirements.txt /srv/app/requirements.in"
 }
+
 # -----------------------------
 # Command dispatcher
 # -----------------------------
