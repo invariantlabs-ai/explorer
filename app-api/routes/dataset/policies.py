@@ -48,7 +48,7 @@ async def get_rule_library_guardrails(
             result = json.loads(text)
             _LIBRARY_CACHE.update({"timestamp": now, "data": result})
 
-            return result + result + result
+            return result
     except httpx.HTTPError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to fetch policies: {str(e)}"

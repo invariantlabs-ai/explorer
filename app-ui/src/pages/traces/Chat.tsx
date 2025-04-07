@@ -368,6 +368,8 @@ export function Chat(props: { dataset: string }) {
   }, [settingsVisible, textareaRef]);
 
   const onSendMessage = async (msg: string, hist: any[] = history) => {
+    let numChunks = 0;
+
     try {
       setHistory([
         ...hist,
@@ -443,6 +445,8 @@ export function Chat(props: { dataset: string }) {
           if (json === "[DONE]") break;
           try {
             const parsed = JSON.parse(json);
+            numChunks++;
+
             if (parsed.error) {
               const duration = Date.now() - start;
               const msg = parsed.error.message;
@@ -484,6 +488,11 @@ export function Chat(props: { dataset: string }) {
         });
       }, 500);
       setLoading(false);
+
+      if (numChunks == 0) {
+        setError("Unexpected end of stream. Is your OpenAI key valid?");
+        setGuardrailingError(null);
+      }
     }
   };
 
