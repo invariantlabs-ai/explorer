@@ -319,14 +319,12 @@ const Playground = ({
                   )}
                   {analysisResult &&
                     Object.keys(analysisResult).length == 0 && (
-                      <GuardrailHighlightDetail
-                        highlight={{
-                          content: "No Matches Found",
-                          source: "Guardrail",
-                          type: "guardrail",
-                        }}
-                        text="Guardrail"
-                      />
+                      <div
+                        className={"no-result " + (loading ? "is-loading" : "")}
+                        onClick={handleEvaluate}
+                      >
+                        {loading ? <>Evaluating...</> : <>No matches found.</>}
+                      </div>
                     )}
                   {analysisResult && Object.keys(analysisResult).length > 0 && (
                     <>

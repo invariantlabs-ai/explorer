@@ -106,8 +106,8 @@ export interface DatasetData {
 /**
  * Hook to load the dataset metadata for a given user and dataset name.
  */
-function useDataset(
-  username: string,
+export function useDataset(
+  username: string | null,
   datasetname: string
 ): [DatasetData | null, Response | null] {
   const [dataset, setDataset] = React.useState(null);
@@ -123,6 +123,10 @@ function useDataset(
         }
       });
   }, [username, datasetname]);
+
+  if (!username) {
+    return [null, null];
+  }
 
   return [dataset, error];
 }
@@ -2028,4 +2032,3 @@ export function SingleTrace() {
     </div>
   );
 }
-
