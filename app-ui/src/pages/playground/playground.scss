@@ -1,3 +1,5 @@
+@use "../../styles/Colors.scss" as *;
+
 .panel {
   //min-height: 200px;
 }
@@ -16,7 +18,7 @@
 .output-header {
   padding: 5px 10px;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 16px;
+  zsize: 16px;
 }
 
 .output-time {
@@ -47,18 +49,42 @@
   word-break: break-word;
 }
 
-.fullscreen>.playground {
-  height: calc(100vh - 40pt - 78px);
+.fullscreen > .playground {
+  height: calc(100vh - 42pt);
 }
 
-.embed>.playground {
+.embed > .playground {
   height: 100% !important;
 }
 
 .playground {
   width: 100%;
+  overflow: hidden;
+  height: 100%;
+  max-height: auto;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif !important;
 
-  h2 {
+  h2.traceview-header {
+    margin-left: 0pt;
+    padding-top: 2pt;
+
+    .tab-group {
+      margin-left: -5pt;
+    }
+  }
+
+  > h2 {
     margin-left: 5pt;
     flex-direction: row;
     font-size: 12pt;
@@ -68,32 +94,58 @@
     align-items: center;
     justify-content: space-between;
 
+    border-bottom: 1pt solid $border-color;
+
     &.header-minimal {
       flex-direction: row;
       padding-bottom: 4pt;
       justify-content: flex-end;
 
       button {
-        height: 16pt;
+        height: 20pt;
         font-size: 10pt;
         line-height: 10pt;
-        padding: 4pt 8pt;
+        padding: 4pt 2pt;
         margin-left: 4pt;
+        border-radius: 4pt;
+        margin-top: 0pt;
+        margin-bottom: -3pt;
+
+        background: none;
+        border: none;
+        font-weight: normal;
+        width: auto;
+
+        &:last-of-type {
+          padding-right: 5pt;
+        }
+
+        &:hover {
+          text-decoration: underline;
+        }
       }
 
       .playground-button:last-of-type {
         margin-right: 12px;
       }
-
     }
 
     &.header-full {
-      padding: 4pt 8pt;
+      padding: 0pt 8pt;
+      height: 35pt;
 
-      .playground-button:last-of-type {
-        margin-right: 34px;
+      .playground-title {
+        font-weight: bold;
+        margin-left: -10pt;
       }
 
+      button {
+        height: 30pt;
+      }
+
+      button:last-of-type {
+        margin-right: 24px;
+      }
     }
 
     .playground-title {
@@ -105,7 +157,6 @@
     .playground-button {
       margin-left: 8px;
     }
-
   }
 
   .playground-container {
@@ -114,10 +165,11 @@
   }
 
   .traceview {
-    
-    .content,
-    .tab,
-    .traces.tab {}
+    width: 100%;
+    padding-top: 0pt;
+    border-top: none;
+    background-color: rgb(246, 246, 246);
+    border-left: none;
 
     .traces {
       padding: 0 5pt;
@@ -126,7 +178,6 @@
         width: 100%;
       }
     }
-
   }
 }
 
@@ -137,8 +188,6 @@
   margin: 8pt;
   display: flex;
   flex-direction: column;
-
-  h2 {}
 
   .text {
     padding: 8pt;
@@ -174,7 +223,6 @@
         margin-right: 8pt;
       }
     }
-
   }
 }
 
@@ -213,13 +261,68 @@
         border-left: none;
         margin-right: 8pt;
       }
-
     }
   }
 }
 
 .analysis-result {
+  margin: 10pt 0pt;
+  margin-top: 0pt;
+  padding: 10pt;
+  position: relative;
+  min-height: 50pt;
+  border-bottom: 1pt solid #e2e8f0;
+  margin-bottom: 0pt;
+
+  a.link {
+    font-weight: normal;
+    margin-left: 10pt;
+    text-decoration: underline;
+    font-size: 10pt;
+    line-height: 12pt;
+
+    &:hover {
+      text-decoration: underline;
+      opacity: 0.5;
+      cursor: pointer;
+    }
+  }
+
+  .no-result {
+    background-color: rgb(233, 233, 233);
+    margin-top: 30pt;
+    border-radius: 4pt;
+    padding: 10pt;
+    text-align: center;
+    margin-bottom: 5pt;
+
+    &.is-loading:hover {
+      background-color: rgb(233, 233, 233);
+    }
+
+    &:hover {
+      background-color: rgb(212, 212, 212);
+      cursor: pointer;
+    }
+  }
+
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    position: absolute;
+    top: 10pt;
+    left: 10pt;
+    margin: 0pt;
+  }
+
   .event {
     margin: 10pt 5pt;
+    max-width: auto !important;
+    margin-left: auto;
+    margin-right: auto;
+
+    .content {
+      margin: auto;
+    }
   }
 }

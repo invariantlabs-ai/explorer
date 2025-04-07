@@ -119,7 +119,6 @@ export const routes = [
       <Embed>
         <PlainTrace />
       </Embed>
-
     ),
   },
   {
@@ -127,7 +126,7 @@ export const routes = [
     label: "Playground",
     element: (
       <Layout needsLogin={false} fullscreen>
-      <Playground playgroundable={false} />
+        <Playground playgroundable={false} />
       </Layout>
     ),
   },
@@ -136,14 +135,14 @@ export const routes = [
     label: "Playground",
     element: (
       <Embed>
-      <Playground
-        showTrace={false}
-        runnable={false}
-        shareable={false}
-        headerStyle="minimal"
-        editable={false}
-        resizeEditor={true}
-      />
+        <Playground
+          showTrace={false}
+          runnable={false}
+          shareable={false}
+          headerStyle="minimal"
+          editable={false}
+          resizeEditor={true}
+        />
       </Embed>
     ),
   },

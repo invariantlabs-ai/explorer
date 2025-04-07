@@ -14,6 +14,7 @@ interface PolicyEditorProps {
   theme?: string;
   value?: string;
   readOnly?: boolean;
+  fontSize?: number;
   onChange?: (value: string | undefined) => void;
   onDidContentSizeChange?: (number) => void;
 }
@@ -61,9 +62,7 @@ export function PolicyEditor(props: PolicyEditorProps) {
               insertText: `from invariant.detectors.code import python_code, ipython_code, semgrep`,
               documentation: "Import code detectors.",
             },
-            {
-
-            }
+            {},
           ],
         };
       },
@@ -77,7 +76,6 @@ export function PolicyEditor(props: PolicyEditorProps) {
     <Editor
       height="100%"
       defaultLanguage="python"
-      theme="vs-light"
       options={{
         wordWrap: "on",
         readOnly: props.readOnly,
@@ -88,6 +86,7 @@ export function PolicyEditor(props: PolicyEditorProps) {
         scrollbar: {
           vertical: props.readOnly ? "hidden" : "auto",
         },
+        fontSize: props.fontSize || 14,
         overviewRulerBorder: false,
       }}
       onMount={onMount}

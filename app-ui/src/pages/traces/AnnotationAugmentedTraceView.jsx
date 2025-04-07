@@ -44,6 +44,7 @@ import {
   BsTerminal,
   BsTrash,
 } from "react-icons/bs";
+import { useNavigate } from "react-router-dom";
 
 export const THUMBS_UP = ":feedback:thumbs-up";
 export const THUMBS_DOWN = ":feedback:thumbs-down";
@@ -63,6 +64,9 @@ export class Annotations extends RemoteResource {
   }
 
   transform(data) {
+    if (!data) {
+      return [];
+    }
     let annotations = {};
     data.forEach((annotation) => {
       if (!(annotation.address in annotations)) {
@@ -166,21 +170,21 @@ function useHighlightDecorator(
           let importantHighlights = highlights.highlights
             .for_path(forAddressKey)
             .allHighlights();
-          const sources = importantHighlights.map(importantHighlight => 
-            importantHighlight[1].content?.source ?? "unknown"
+          const sources = importantHighlights.map(
+            (importantHighlight) =>
+              importantHighlight[1].content?.source ?? "unknown"
           );
           let counts_map = new Map();
           for (const source of sources) {
-             counts_map.set(source, (counts_map.get(source) || 0) + 1);
+            counts_map.set(source, (counts_map.get(source) || 0) + 1);
           }
-          
+
           for (const [s, c] of counts_map.entries()) {
-             counts.push({
-                 type: s,
-                 count: c,
-             });
+            counts.push({
+              type: s,
+              count: c,
+            });
           }
-          
         }
 
         // add user annotations
@@ -293,9 +297,11 @@ export function AnnotationAugmentedTraceView(props) {
     events.collapseAll?.fire();
   };
 
+  const navigate = useNavigate();
+
   // open in playground
   const onOpenInPlayground = () => {
-    openInPlayground(activeTrace?.messages || []);
+    openInPlayground(activeTrace?.messages || [], navigate);
     telemetry.capture("traceview.open-in-playground");
   };
 
@@ -323,11 +329,16 @@ export function AnnotationAugmentedTraceView(props) {
 
   // whenever annotations change, update mappings
   useEffect(() => {
-    let { highlights, errors, filtered_annotations, top_level_annotations, analyzer_annotations } =
-      AnnotationsParser.parse_annotations(
-        !props.hideAnnotations ? annotations : [],
-        props.mappings
-      );
+    let {
+      highlights,
+      errors,
+      filtered_annotations,
+      top_level_annotations,
+      analyzer_annotations,
+    } = AnnotationsParser.parse_annotations(
+      !props.hideAnnotations ? annotations : [],
+      props.mappings
+    );
     setHighlights({
       highlights: HighlightedJSON.from_entries(highlights),
       traceId: activeTraceId,
@@ -453,9 +464,14 @@ export function AnnotationAugmentedTraceView(props) {
             {props.actions}
             <div className="vr" />
             {
-              <button className="inline" onClick={onOpenInPlayground}>
+              <button
+                className="inline"
+                onClick={onOpenInPlayground}
+                data-tooltip-id="highlight-tooltip"
+                data-tooltip-content="Opens this trace in the Guardrails Playground"
+              >
                 {" "}
-                <BsTerminal /> Open In Invariant
+                <BsTerminal /> Open In Playground
               </button>
             }
             {props.isUserOwned && config("sharing") && props.onShare && (

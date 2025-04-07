@@ -181,7 +181,7 @@ export function TraceView(props: TraceViewProps) {
   return (
     <div className="traceview">
       {props.header != false && (
-        <h2>
+        <h2 className="traceview-header">
           <div>
             {props.title}
             {!sideBySide && (
@@ -364,6 +364,7 @@ export function TraceEditor(props: {
       options={{
         // line break
         wordWrap: "on",
+        fontSize: 16,
         // background color
         minimap: { enabled: false },
         // custom theme with adapted background color
