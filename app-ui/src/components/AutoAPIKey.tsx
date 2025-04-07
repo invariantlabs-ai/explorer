@@ -46,7 +46,7 @@ export function useAutoAPIKey() {
 
   if (config("instance_name") == "local") {
     return {
-      required: true,
+      required: false,
       apiKey,
       APIKeyInput: () => <AutoAPIKeyInput onChange={setApiKey} />,
     };
@@ -60,6 +60,13 @@ export function useAutoAPIKey() {
 }
 
 export function AutoAPIKeyInput({ onChange }) {
+  /**
+   * API key input to be stored in the browser's local storage.
+   *
+   * Automatically creates a new API key if none is found.
+   *
+   * Also offers buttons to create a new key or clear and expire the old one.
+   */
   const [apiKey, setApiKey] = useState(null as AutoAPIKeyItem | null);
   const [loading, setLoading] = useState(false);
 
@@ -169,7 +176,9 @@ export function LocalAPIKeyInput({
   onChange?: (key: string | null) => void;
 }) {
   /**
-   * Components looks like above, but actually links to another Explorer instance (via `<url>/settings`).
+   * Component to manage a user-specified API key that lives in local storage.
+   *
+   * For instance, this is used for the OpenAI API key input in the settings page.
    */
   const [apiKey, setApiKey] = useState(null as AutoAPIKeyItem | null);
   const [loading, setLoading] = useState(false);
@@ -251,6 +260,11 @@ export function LocalAPIKeyInput({
 }
 
 export function useLocalAPIKey(url: string) {
+  /**
+   * General version of an API key input that returns {apiKey, APIKeyInput}.
+   *
+   * URL is the URL of the settings page of the platform/service that the API key is for.
+   */
   const [apiKey, setApiKey] = useState(
     getLocalAPIKey(url)?.key as string | null
   );
@@ -261,19 +275,13 @@ export function useLocalAPIKey(url: string) {
   };
 }
 
-type ExplorerHost = "local" | "production";
-
-export function useExplorerAPIKey(instance: ExplorerHost) {
-  if (instance == "local") {
-    return useAutoAPIKey();
-  } else if (instance == "production") {
-    return useLocalAPIKey("https://explorer.invariantlabs.ai/settings");
-  } else {
-    throw new Error("Invalid Explorer host");
-  }
-}
-
 export function useLocalOpenAIAPIKey() {
+  /**
+   * Returns a {apiKey, APIKeyInput} for asking a user and storing the OpenAI API key
+   * in local storage.
+   *
+   * This is used for the OpenAI API key input in the settings page.
+   */
   const url = "https://platform.openai.com/api-keys";
 
   const [apiKey, setApiKey] = useState(
@@ -287,8 +295,15 @@ export function useLocalOpenAIAPIKey() {
 }
 
 export function useHostedExplorerAPIKey() {
-  // Returns controls/keys for the hosted production explorer.
-  // Same as useAutoAPIKey if this is the production explorer instance.
+  /**
+   * Returns a {apiKey, APIKeyInput} for asking a user and storing an API key for
+   * a hosted version of Explorer.
+   *
+   * In case this is already the production/hosted version of Explorer, it will
+   * re-use a local auto API key, and not require the user to enter a new one.
+   *
+   * Sets `required: false`, if this is the production version of Explorer.
+   */
   const isProduction = location.hostname === "explorer.invariantlabs.ai";
 
   if (isProduction) {

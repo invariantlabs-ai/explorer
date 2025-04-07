@@ -52,7 +52,6 @@ import {
 } from "../notfound/NotFound";
 import { Tooltip } from "react-tooltip";
 import { useViewOptions } from "./ViewOptions.js";
-import { EventChannel } from "../../lib/EventChannel.js";
 
 // constant used to combine hierarchy paths
 const pathSeparator = " > ";
