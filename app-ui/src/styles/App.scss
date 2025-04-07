@@ -1600,6 +1600,76 @@ button.share {
   margin-left: auto;
 }
 
+.app.plain.fullscreen {
+      height: fit-content;
+      min-height: fit-content;
+      max-height: fit-content;
+      display: block;
+      overflow: hidden;
+}  
+
+.app.plain {
+  margin-top: 5pt;
+  padding: 0 5pt;
+
+  header {
+    display: none;
+  }
+
+  .traceview {
+    padding: 0pt;
+    padding-top: 2pt;
+    border-radius: 6pt;
+    background: transparent;
+    height: fit-content;
+    min-height: fit-content;
+    max-height: fit-content;
+    display: block;
+    overflow: hidden;
+
+    .fullscreen {
+      padding: 0;
+      height: fit-content;
+      min-height: fit-content;
+      max-height: fit-content;
+      display: block;
+    }
+
+    .tab {
+      padding: 0;
+      height: fit-content;
+    }
+    
+
+    .traces {
+      padding: 0;
+      width: 100%;
+      height: fit-content;
+      
+      .messages {
+        width: 100%;
+        height: fit-content;
+      }
+    }
+      
+
+    h2 {
+      width: calc(100% - 5pt);
+    }
+
+    .sidebyside {
+      max-height: 100%;
+    }
+    
+    
+  }
+  
+  footer {
+    display: none;
+  }
+}
+
+
 .app.new {
   margin-top: 5pt;
 

@@ -31,6 +31,7 @@ body {
     // height: 26.5pt;
     font-size: 12pt;
     line-height: 16pt;
+    min-width: fit-content;
   }
 
   .tab-group button {
@@ -90,6 +91,10 @@ body {
     display: block;
     padding: 0pt;
     line-height: 27pt;
+    overflow: hidden;
+    margin-bottom: 5pt !important;
+
+
 
     > div {
       display: flex;
@@ -849,6 +854,8 @@ div.inline-line-editor {
   line-height: 15pt;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   .popup {
     position: absolute;
