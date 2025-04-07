@@ -98,12 +98,17 @@ async def test_create_delete_snippet(context, url, screenshot):
 
     # in monaco editor select all text and delete
     await page.click(".monaco-editor")
-    await page.keyboard.press("Meta+A")  # Cmd+A on macOS if needed
+
+    # if mac, use Meta+A, else use Control+A
+    if "darwin" in sys.platform:
+        await page.keyboard.press("Meta+A")
+    else:
+        await page.keyboard.press("Control+A")
     await page.keyboard.press("Backspace")
     await page.keyboard.type("""
 raise "Do not greet with 'Hello'" if:
-(msg: Message)
-"Hello" in msg.content
+    (msg: Message)
+    "Hello" in msg.content
 """)
 
     # click on div with aria-label 'block-enabled'
@@ -122,6 +127,9 @@ raise "Do not greet with 'Hello'" if:
     # click on 'Send'
     await page.click("button[aria-label='Send']")
 
+    await screenshot(page)
+
+    # wait for 1s
     await screenshot(page)
 
     # assert presence of "Guardrail Failure Do not greet with 'Hello'"
