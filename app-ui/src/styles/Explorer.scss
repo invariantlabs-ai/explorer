@@ -191,6 +191,11 @@ button.inline {
   text-overflow: ellipsis;
   border-radius: 8pt;
 
+  &.tall {
+    border-radius: 4pt;
+    height: 30pt;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1);
   }

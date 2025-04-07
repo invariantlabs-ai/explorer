@@ -114,6 +114,7 @@
       margin-bottom: 10pt;
       padding: 10pt 15pt;
       border-radius: 5pt;
+      white-space: pre-wrap;
 
       &.spacer {
         height: 400pt;
@@ -254,7 +255,7 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 19;
 
     .modal-content {
       position: absolute;
@@ -312,6 +313,7 @@
     width: 5pt;
     height: 100%;
     cursor: ew-resize;
+    z-index: 20;
 
     &:hover,
     &.active {

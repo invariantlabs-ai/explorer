@@ -4,6 +4,7 @@ import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
 import {
   BsChat,
+  BsChatFill,
   BsClipboard2,
   BsClipboard2Check,
   BsCollection,
@@ -15,18 +16,20 @@ import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
 
 function ChatStart() {
   return (
-    <div className="box simulated-agent">
-      <h2>Start by simulating an Agent</h2>
-      <p>
-        You can start generating traces by chatting to a simulated agent in the
-        Chat sidebar.
-      </p>
+    <div className="empty instructions box simulated-agent wide">
+      <h2>
+        <BsChatFill /> Start with a simulated agent
+      </h2>
+      <h3>
+        You can start experiment by chatting to a <i>simulated agent</i>.<br />
+        This allows you to experiment before integrating with your own agent.
+      </h3>
+      <br />
       <button
         className="primary"
         onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
       >
-        <BsChat />
-        Open Chat
+        <BsChatFill /> Open Simulated Agent
       </button>
     </div>
   );
@@ -158,19 +161,27 @@ export function EmptyDatasetInstructions(props: {
   const datasetname = props.datasetname;
 
   return (
-    <div className="empty instructions box left wide">
-      <h2>
-        <BsCollection />
-        No Traces Captured Yet
-      </h2>
-      <h3>
-        To start using Invariant, you need to connect your agent and capture
-        traces.
-        <br />
-        To generate a new Invariant API key, go <a href="/settings">here</a>.
-      </h3>
-      <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
-    </div>
+    <>
+      <div className="empty instructions box left wide">
+        <h2>
+          <BsCollection />
+          No Traces Captured Yet
+        </h2>
+        <h3>
+          To start using Invariant, you need to connect your agent and capture
+          traces.
+          <br />
+          To generate a new Invariant API key, go <a href="/settings">here</a>.
+        </h3>
+        <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
+      </div>
+      <div className="or-separator">
+        <span className="line" />
+        Or
+        <span className="line" />
+      </div>
+      <ChatStart />
+    </>
   );
 }
 /**
@@ -270,8 +281,6 @@ export function UploadOptions({
             setFile={setFile}
             onSubmit={onSubmit}
           />
-        ) : snippet == "<chat>" ? (
-          <ChatStart />
         ) : (
           <CodeWithCopyButton code={snippet} />
         )}

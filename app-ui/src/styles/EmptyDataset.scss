@@ -6,6 +6,7 @@
   margin: 5pt;
   padding: 0pt;
   width: 100%;
+  flex-wrap: wrap;
 
   .tab {
     border-radius: 5pt;
@@ -193,9 +194,32 @@
 
 .box.simulated-agent {
   text-align: center;
+  max-width: 500pt;
+  margin: auto;
+  margin-top: 10pt;
 
   button {
     width: 220pt;
     margin-bottom: 20pt !important;
+  }
+}
+
+.or-separator {
+  display: flex;
+  flex-direction: row;
+  max-width: 500pt;
+  justify-content: center;
+  align-items: center;
+  margin: 10pt auto;
+  margin-top: 15pt;
+
+  .line {
+    height: 1pt;
+    background-color: $border-color;
+    display: block;
+    width: 30%;
+    margin-top: 0.2em;
+    margin-left: 10pt;
+    margin-right: 10pt;
   }
 }

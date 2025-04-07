@@ -15,6 +15,13 @@ import { GuardrailsIcon } from "../../components/Icons";
 import { DatasetRefreshBroadcastChannel } from "./Traces";
 import { BroadcastEvent } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
+import {
+  AutoAPIKeyInput,
+  useAutoAPIKey,
+  useHostedExplorerAPIKey,
+  useLocalAPIKey,
+  useLocalOpenAIAPIKey,
+} from "../../components/AutoAPIKey";
 
 // trigger this to open the chat pane
 export const TriggerChatOpenBroadcastEvent = new BroadcastEvent();
@@ -50,67 +57,69 @@ function Text({
 
   return <>{role !== "assistant" ? data : displayedText}</>;
 }
+// useSettingsModal.tsx
+export function useChatSettingsModal() {
+  /**
+   * Modal to configure the different required API keys.
+   *
+   * Depending on local, production, preview, this shows different
+   * API keys prompts, including one for OpenAI.
+   */
+  const {
+    required: localInvariantAPIKeyRequired,
+    apiKey: localInvariantAPIKey,
+    APIKeyInput: AutoAPIKeyInput,
+  } = useAutoAPIKey();
 
-function SettingsModal({
-  apiKey,
-  invariantApiKey,
-  guardrailsApiKey,
-  setApiKey,
-  setInvariantApiKey,
-  setGuardrailsApiKey,
-  onClose,
-}: any) {
-  return (
+  const { apiKey: openAIAPIKey, APIKeyInput: LocalOpenAIAPIKeyInput } =
+    useLocalOpenAIAPIKey();
+
+  const {
+    required: hostedApiKeyRequired,
+    apiKey: hostedInvariantAPIKey,
+    APIKeyInput: HostedExplorerAPIKey,
+  } = useHostedExplorerAPIKey();
+
+  const SettingsModal = ({ onClose }: { onClose: () => void }) => (
     <div className="chat-modal">
       <div className="modal-content view-options">
         <h1>Chat Configuration</h1>
         <div className="options">
-          <h2>OpenAI API Key</h2>
-          <p>
-            Before using the chat, set your OpenAI API key. This key will be
-            stored locally in this browser and will not be shared with anyone.
-          </p>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            autoComplete="off"
-          />
-          {isLocalInstance() && (
+          {localInvariantAPIKeyRequired && (
             <>
-              <h2>Invariant API Key</h2>
-              <p>
-                Set an Invariant API key for this instance of Explorer. You can
-                obtain it <a href="/settings">in your account settings</a>.
-              </p>
-              <input
-                type="password"
-                value={invariantApiKey}
-                onChange={(e) => setInvariantApiKey(e.target.value)}
-                autoComplete="off"
-              />
+              <h2>Invariant Key</h2>
+              <p>Configure an Invariant API key used to push traces.</p>
+              <AutoAPIKeyInput />
             </>
           )}
-          <h2>Guardrails API Key</h2>
+          <h2>OpenAI API Key</h2>
           <p>
-            Obtain a Guardrails API key from the{" "}
-            <a href="https://explorer.invariantlabs.ai">hosted Explorer</a>, to
-            execute guardrails on your agent.
+            To use chat, provide an OpenAI API key. This key will be stored in
+            your browser's local storage only.
           </p>
-          <input
-            type="password"
-            value={guardrailsApiKey}
-            onChange={(e) => setGuardrailsApiKey(e.target.value)}
-            autoComplete="off"
-          />
+          <LocalOpenAIAPIKeyInput />
+          {hostedApiKeyRequired && (
+            <>
+              <h2>Guardrails API Key</h2>
+              <p>
+                To enable Guardrail evaluation, please obtain a Guardrails API
+                key from the hosted{" "}
+                <a href="https://explorer.invariantlabs.ai">
+                  Invariant Explorer
+                </a>{" "}
+                instance.
+              </p>
+              <HostedExplorerAPIKey />
+            </>
+          )}
         </div>
         <br />
         <button
           className="inline primary"
           disabled={
-            !apiKey ||
-            (!invariantApiKey && !isLocalInstance) ||
-            !guardrailsApiKey
+            !localInvariantAPIKey ||
+            (localInvariantAPIKeyRequired && !openAIAPIKey) ||
+            (hostedApiKeyRequired && !hostedInvariantAPIKey)
           }
           onClick={onClose}
         >
@@ -119,12 +128,19 @@ function SettingsModal({
       </div>
     </div>
   );
+
+  return {
+    SettingsModal,
+    localInvariantAPIKey,
+    openAIAPIKey,
+    hostedInvariantAPIKey,
+  };
 }
 
 function Toolbar({ onReset, loading, historyLength, openSettings }: any) {
   return (
     <header className="toolbar">
-      <h3>Chat</h3>
+      <h3>Simulated Agent</h3>
       <div className="secondary">Interact with your agent and guardrails.</div>
       <div className="spacer" />
       <button
@@ -290,28 +306,16 @@ export function Chat(props: { dataset: string }) {
   }, [show]);
 
   const [userInput, setUserInput] = useState("");
-  const [apiKey, _setApiKey] = useState(
-    localStorage.getItem("explorer-chat-openai-api-key") || ""
-  );
-  const setApiKey = (key: string) => {
-    _setApiKey(key);
-    localStorage.setItem("explorer-chat-openai-api-key", key);
-  };
-  const [invariantApiKey, _setInvariantApiKey] = useState(
-    localStorage.getItem("explorer-chat-invariant-api-key") || ""
-  );
-  const setInvariantApiKey = (key: string) => {
-    _setInvariantApiKey(key);
-    localStorage.setItem("explorer-chat-invariant-api-key", key);
-  };
-  const [guardrailsApiKey, _setGuardrailsApiKey] = useState(
-    localStorage.getItem("explorer-chat-guardrails-api-key") || ""
-  );
-  const setGuardrailsApiKey = (key: string) => {
-    _setGuardrailsApiKey(key);
-    localStorage.setItem("explorer-chat-guardrails-api-key", key);
-  };
-  const [settingsVisible, setSettingsVisible] = useState(!apiKey);
+
+  const {
+    localInvariantAPIKey,
+    hostedInvariantAPIKey,
+    openAIAPIKey,
+    SettingsModal,
+  } = useChatSettingsModal();
+
+  const [settingsVisible, setSettingsVisible] = useState(!openAIAPIKey);
+
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -347,9 +351,9 @@ export function Chat(props: { dataset: string }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-            "Invariant-Authorization": `Bearer ${isLocalInstance() ? "dev-mode" : invariantApiKey}}`,
-            "Invariant-Guardrails-Authorization": `Bearer ${guardrailsApiKey}`,
+            Authorization: `Bearer ${openAIAPIKey}`,
+            "Invariant-Authorization": `Bearer ${isLocalInstance() ? "dev-mode" : localInvariantAPIKey}}`,
+            "Invariant-Guardrails-Authorization": `Bearer ${hostedInvariantAPIKey}`,
           },
           body: JSON.stringify({
             model: "gpt-4",
@@ -458,7 +462,7 @@ export function Chat(props: { dataset: string }) {
   };
 
   const [width, _setWidth] = useState(
-    parseInt(localStorage.getItem("chat-width") || "0") || 400
+    parseInt(localStorage.getItem("chat-width") || "0") || 600
   );
 
   const setWidth = (w: number) => {
@@ -474,7 +478,7 @@ export function Chat(props: { dataset: string }) {
       <button className="chat-button tab" onClick={() => setShow(true)}>
         <div className="inner">
           <BsChatFill />
-          Chat
+          Simulated Agent
         </div>
       </button>
     );
@@ -485,7 +489,7 @@ export function Chat(props: { dataset: string }) {
       <button className="chat-button tab active" onClick={() => setShow(false)}>
         <div className="inner">
           <BsChatFill />
-          Chat
+          Simulated Agent
         </div>
       </button>
       <div
@@ -499,15 +503,7 @@ export function Chat(props: { dataset: string }) {
           maxWidth={MAX_WIDTH}
         />
         {settingsVisible && (
-          <SettingsModal
-            apiKey={apiKey}
-            invariantApiKey={invariantApiKey}
-            guardrailsApiKey={guardrailsApiKey}
-            setApiKey={setApiKey}
-            setInvariantApiKey={setInvariantApiKey}
-            setGuardrailsApiKey={setGuardrailsApiKey}
-            onClose={() => setSettingsVisible(false)}
-          />
+          <SettingsModal onClose={() => setSettingsVisible(false)} />
         )}
         <Toolbar
           onReset={onReset}

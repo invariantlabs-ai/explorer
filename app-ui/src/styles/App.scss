@@ -2412,7 +2412,7 @@ table.api-keys {
   margin: auto;
 
   &.wide {
-    width: calc(min(800pt, 100vw - 80pt));
+    width: calc(min(600pt, 100% - 80pt));
   }
 
   .error {
@@ -3257,6 +3257,12 @@ span.highlight-dot {
   &.info {
     background-color: #d6ecff;
     color: #1e90ff;
+  }
+
+  &.success {
+    background-color: #0f9d0f13;
+    color: #0f9d0f;
+    border: 1pt solid #60b760;
   }
 }
 

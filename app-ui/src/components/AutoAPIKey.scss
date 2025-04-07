@@ -1,0 +1,35 @@
+.auto-api-key {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+
+  input {
+    padding-right: 70pt;
+    height: 14pt;
+    color: rgb(163, 163, 163);
+  }
+
+  button.inline {
+    z-index: 2;
+    position: absolute;
+    top: 10pt;
+    opacity: 1 !important;
+    right: -15pt;
+    width: 70pt;
+    border-radius: 3pt;
+
+    &:hover {
+      opacity: 1;
+      background: rgb(241, 241, 241);
+    }
+  }
+
+  p {
+    margin: 0pt;
+    margin-top: -5pt !important;
+    font-size: 8pt !important;
+    text-align: right;
+    height: 5pt;
+  }
+}
