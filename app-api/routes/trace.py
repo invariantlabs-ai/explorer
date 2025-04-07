@@ -3,6 +3,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
+import sseclient
 from uuid import UUID
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
@@ -294,6 +295,16 @@ async def analyze_trace(
         debug_options=analysis_request.options.debug_options,
     )
 
+    async def sse_parse(chunks):
+        """Function to parse sse chunks."""
+        output = b""
+        async for chunk in chunks:
+            output += chunk
+            if b"\n\n" in output:
+                lines = output.split(b"\n\n")
+                for line in lines[:-1]:
+                    yield line.decode("utf-8")
+                output = lines[-1]
     async def stream_response():
         url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
         try:
@@ -304,25 +315,22 @@ async def analyze_trace(
                     json=sar.model_dump(),
                     headers={"Authorization": f"Bearer {analysis_request.apikey}"},
                 ) as streaming_response:
-                    async for chunk in streaming_response.aiter_text():
-                        # TODO: replace with robust chunk parsing
-                        # split by lines
-                        for line in chunk.strip().split("\n"):
-                            annotation = annotation_from_chunk(line)
-                            if isinstance(annotation, AnalyzerAnnotation):
-                                with Session(db()) as session:
-                                    new_annotation = Annotation(
-                                        trace_id=UUID(id),
-                                        user_id=user_id,
-                                        address=annotation.location or "",
-                                        content=annotation.content,
-                                        extra_metadata={
-                                            "source": "analyzer-model",
-                                            "severity": annotation.severity,
-                                        },
-                                    )
-                                    session.add(new_annotation)
-                                    session.commit()
+                    async for chunk in sse_parse(streaming_response.aiter_bytes()):
+                        annotation = annotation_from_chunk(chunk)
+                        if isinstance(annotation, AnalyzerAnnotation):
+                            with Session(db()) as session:
+                                new_annotation = Annotation(
+                                    trace_id=UUID(id),
+                                    user_id=user_id,
+                                    address=annotation.location or "",
+                                    content=annotation.content,
+                                    extra_metadata={
+                                        "source": "analyzer-model",
+                                        "severity": annotation.severity,
+                                    },
+                                )
+                                session.add(new_annotation)
+                                session.commit()
                                 yield "data: update\n\n"
                         yield chunk
         except httpx.ConnectError as e:
