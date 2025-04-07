@@ -368,6 +368,9 @@ export function TraceEditor(props: {
         minimap: { enabled: false },
         // custom theme with adapted background color
         theme: "vs-light",
+        stickyScroll: {
+          enabled: false,
+        },
       }}
     />
   );

@@ -23,6 +23,7 @@ import { GuardrailsIcon } from "../../components/Icons";
 
  */
 export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
+  console.log(props.highlights);
   let highlightsByKey: Record<string, HighlightData> = {};
   for (const highlight of props.highlights) {
     for (const highlightData of highlight.content || []) {
@@ -219,10 +220,11 @@ export function TestSuccessHighlightDetail(props: {
 }
 
 /**
- * Visualizes a guardrail failure when the corresponding line is selected in the trace view.
+ * Visualizes a guardrail evaluation details when the corresponding line is selected in the trace view.
  */
-export function GuardrailFailureHighlightDetail(props: {
+export function GuardrailHighlightDetail(props: {
   highlight: HighlightData;
+  text: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const highlight = props.highlight;
@@ -270,7 +272,7 @@ export function GuardrailFailureHighlightDetail(props: {
       <div className="content">
         <div className={"guardrail-header" + (expanded ? " expanded" : "")}>
           <GuardrailsIcon />
-          <b>Guardrail Failure</b> {highlight.content}
+          <b>{props.text}</b> {highlight.content}
           {guardrail_id && <span className="guardrail-id">{guardrail_id}</span>}
         </div>
         {expanded && guardrail_content && (
@@ -282,6 +284,17 @@ export function GuardrailFailureHighlightDetail(props: {
     </AnchorDiv>
   );
 }
+
+/**
+ * Visualizes a guardrail failure when the corresponding line is selected in the trace view.
+ */
+export function GuardrailFailureHighlightDetail(props: {
+  highlight: HighlightData;
+}) {
+  return <GuardrailHighlightDetail highlight={props.highlight} text="Guardrail Failure" />;
+}
+
+
 /**
  * Details failed test highlights in the selected line of the trace view.
  */
