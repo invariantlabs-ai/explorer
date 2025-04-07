@@ -487,6 +487,7 @@ export function LabelSelect(props: {
             option.value === props.value ? "selected" : ""
           }`}
           onClick={() => props.onChange(option.value)}
+          aria-label={option.value}
         >
           {option.icon ? <span className="icon">{option.icon}</span> : null}
           <b>{option.title}</b>

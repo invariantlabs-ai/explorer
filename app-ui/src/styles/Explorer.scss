@@ -191,6 +191,11 @@ button.inline {
   text-overflow: ellipsis;
   border-radius: 8pt;
 
+  &.tall {
+    border-radius: 4pt;
+    height: 30pt;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1);
   }
@@ -318,6 +323,11 @@ button.inline.danger {
   padding: 0pt;
   border: none;
   background: transparent;
+  overflow-y: auto;
+
+  > .explorer.panel {
+    margin-top: 0pt;
+  }
 }
 
 .explorer .traces {
@@ -325,5 +335,5 @@ button.inline.danger {
 }
 
 .sidebyside {
-  width: calc(100% - 5pt);
+  width: calc(100% + 5pt);
 }

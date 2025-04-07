@@ -2,6 +2,8 @@
  * Utilities for opening a trace in the Invariant Playground.
  */
 
+import { Base64 } from "js-base64";
+
 /**
  * Tries to find the name of a tool call in the given messages.
  */
@@ -48,7 +50,7 @@ function makeCompatibleInvariantPolicy(messages) {
  * This function will try to automatically synthesize a policy that matches
  * some pattern in the given messages to showcase the Invariant Playground.
  */
-export function openInPlayground(messages: any[]) {
+export function openInPlayground(messages: any[], navigate: ((url: string) => void) | null = null) {
   if (!messages) {
     alert("Failed to send to Invariant: No messages");
     return;
@@ -69,24 +71,21 @@ export function openInPlayground(messages: any[]) {
       return message;
     });
 
-    const object = {
-      policy: `raise "Detected issue" if:
+    const policyCode = `raise "Detected issue" if:
     # specify your conditions here
     # To learn more about Invariant policies go to https://github.com/invariantlabs-ai/invariant
     
     # example query
-    ${makeCompatibleInvariantPolicy(messages) || "True"}`,
-      input: JSON.stringify(messages || []),
-    };
-    // JSON encode, encode to utf-8, convert to base64 and send to playground
-    const json_object = JSON.stringify(object);
-    const bytes = new TextEncoder().encode(json_object);
-    const encoded_string = Array.from(bytes, (byte) =>
-      String.fromCodePoint(byte),
-    ).join("");
-    const b64_object = btoa(encoded_string);
-    // open in new tab
-    window.open(`https://playground.invariantlabs.ai/#${b64_object}`, "_blank");
+    ${makeCompatibleInvariantPolicy(messages) || "True"}`
+
+    const url = `/playground?policy=${Base64.encode(policyCode)}&input=${Base64.encode(JSON.stringify(messages || []))}`;
+
+    if (navigate) {
+      navigate(url);
+    } else {
+      // open the URL
+      window.open(url, "_blank");
+    }
   } catch (e) {
     alert("Failed to send to Invariant: " + e);
   }

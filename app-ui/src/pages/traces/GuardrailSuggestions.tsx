@@ -5,6 +5,7 @@ import {
   BsGearWideConnected,
   BsInfoCircle,
   BsInfoCircleFill,
+  BsList,
   BsShieldCheck,
   BsShieldExclamation,
   BsStars,
@@ -469,7 +470,7 @@ export function GuardrailSuggestions({
                           className="policy-action inline"
                           onClick={() => setSelectedPolicySuggestion(policy)}
                         >
-                          <BsCheck2 /> View & Apply
+                          <BsList /> Details
                         </button>
                       </div>
                     </div>

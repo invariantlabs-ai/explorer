@@ -6,6 +6,7 @@
   margin: 5pt;
   padding: 0pt;
   width: 100%;
+  flex-wrap: wrap;
 
   .tab {
     border-radius: 5pt;
@@ -189,4 +190,53 @@
 .file-upload-mask {
   background-color: red;
   opacity: 1 !important;
+}
+
+.options.simulated-agent {
+  text-align: center;
+  max-width: calc(100% - 20pt);
+  margin: auto;
+  margin-top: 10pt;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20pt;
+  padding-left: 20pt;
+  padding-right: 20pt;
+  text-align: left;
+  white-space: nowrap;
+
+  font-size: 10pt;
+  padding: 10pt;
+
+  div {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  button {
+    width: 170pt;
+    font-size: 12pt;
+  }
+}
+
+.or-separator {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  margin: 10pt auto;
+  margin-bottom: -10pt;
+
+  .line {
+    height: 1pt;
+    background-color: $border-color !important;
+    display: block;
+    width: 30%;
+    margin-top: 0.2em;
+    margin-left: 10pt;
+    margin-right: 10pt;
+  }
 }

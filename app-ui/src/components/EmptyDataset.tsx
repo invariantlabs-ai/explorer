@@ -2,10 +2,38 @@ import React, { useEffect } from "react";
 import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
-import { BsClipboard2, BsClipboard2Check, BsCollection } from "react-icons/bs";
+import {
+  BsChat,
+  BsChatFill,
+  BsClipboard2,
+  BsClipboard2Check,
+  BsCollection,
+} from "react-icons/bs";
 import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
+import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
+
+function ChatStart() {
+  return (
+    <div className="simulated-agent options">
+      <div>
+        <b>Capture Traces with a Simulated Agent</b>
+        <div>
+          You can start experiment by chatting to a <i>simulated agent</i> that
+          logs to this dataset.
+        </div>
+      </div>
+      <button
+        className="primary"
+        onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
+        aria-label="start-simulated-agent"
+      >
+        <BsChatFill /> Simulated Agent
+      </button>
+    </div>
+  );
+}
 
 function JSONLUpload({
   file,
@@ -133,19 +161,25 @@ export function EmptyDatasetInstructions(props: {
   const datasetname = props.datasetname;
 
   return (
-    <div className="empty instructions box left wide">
-      <h2>
-        <BsCollection />
-        No Traces Captured Yet
-      </h2>
-      <h3>
-        To start using Invariant, you need to connect your agent and capture
-        traces.
-        <br />
-        To generate a new Invariant API key, go <a href="/settings">here</a>.
-      </h3>
-      <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
-    </div>
+    <>
+      <div className="empty instructions box left wide">
+        <h2>
+          <BsCollection />
+          No Traces Captured Yet
+        </h2>
+        <h3>
+          Connect or simulate an agent to capture traces. To obtain an API key,
+          go <a href="/settings">here</a>.
+        </h3>
+        <ChatStart />
+        <div className="or-separator">
+          <span className="line" />
+          or
+          <span className="line" />
+        </div>
+        <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
+      </div>
+    </>
   );
 }
 /**

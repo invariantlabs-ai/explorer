@@ -109,6 +109,7 @@ async def create_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -191,6 +192,7 @@ async def update_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -222,4 +224,5 @@ async def delete_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)

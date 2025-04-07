@@ -12,6 +12,7 @@ import {
   BsHouse,
   BsList,
   BsPerson,
+  BsTerminal,
   BsUpload,
   BsX,
 } from "react-icons/bs";
@@ -272,6 +273,12 @@ function Layout(props: {
               </li>
             </>
           )}
+          <li>
+            <a href="/playground">
+              <BsTerminal />
+              Guardrails Playground
+            </a>
+          </li>
         </Sidebar>
         <h1
           onClick={() => navigate("/")}
