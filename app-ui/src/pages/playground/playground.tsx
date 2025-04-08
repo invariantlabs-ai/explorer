@@ -147,9 +147,12 @@ interface PlaygroundProps {
 
 export function usePlaygroundExamples() {
   const [policyLibrary, setPolicyLibrary] = useState<any[]>([]);
-  const [defaultExample, setDefaultExample] = useState<{policy: string, input: string}>({
+  const [defaultExample, setDefaultExample] = useState<{
+    policy: string;
+    input: string;
+  }>({
     policy: "",
-    input: "[]"
+    input: "[]",
   });
 
   useEffect(() => {
@@ -165,13 +168,15 @@ export function usePlaygroundExamples() {
         }
         const data = await response.json();
         setPolicyLibrary(data);
-        
+
         // Find first non-header example to use as default
-        const firstExample = data.find((example: any) => example.policy && example.input);
+        const firstExample = data.find(
+          (example: any) => example.policy && example.input
+        );
         if (firstExample) {
           setDefaultExample({
             policy: firstExample.policy,
-            input: firstExample.input
+            input: firstExample.input,
           });
         }
       } catch (error) {
@@ -311,7 +316,11 @@ const Playground = ({
         window.history.replaceState({}, document.title, url.toString());
       } else {
         setPolicyCode(policy_local || defaultExample.policy);
-        setInputData(input_local || defaultExample.input);
+        setInputData(
+          input_local && input_local != "[]"
+            ? input_local
+            : defaultExample.input
+        );
       }
     } catch (error) {
       console.error("Failed to parse URL: ", error);
