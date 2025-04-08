@@ -283,7 +283,7 @@ function MutatePolicyModalContent(props: {
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
             {props.policy?.source == "suggestions" &&
-              props.policy?.extra_metadata?.detection_rate &&
+              props.policy?.extra_metadata?.detection_rate !== undefined &&
               !props.policy?.extra_metadata?.from_rule_library && (
                 <div className="banner-note info">
                   <BsInfoCircleFill />

@@ -153,6 +153,103 @@ interface PlaygroundProps {
   resizeEditor?: boolean;
 }
 
+export function usePlaygroundExamples() {
+  const [policyLibrary, setPolicyLibrary] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchExamples() {
+      try {
+        const response = await fetch("/playground-examples.json", {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        setPolicyLibrary(data);
+      } catch (error) {
+        console.error("Error fetching examples:", error);
+      }
+    }
+
+    fetchExamples();
+  }, []);
+
+  return policyLibrary || [];
+}
+
+/**
+ * Button to show the examples popover.
+ *
+ * This button will show a list of example policies and input data
+ * when clicked. The user can select an example to load it into the
+ * policy editor and input data field.
+ */
+export function ExamplesButton({
+  setPolicyCode,
+  setInputData,
+}: {
+  setPolicyCode: (policy: string) => void;
+  setInputData: (input: string) => void;
+}) {
+  const [showExamples, setShowExamples] = useState(false);
+  const policyLibrary = usePlaygroundExamples();
+
+  return (
+    <>
+      <button
+        className={"inline " + (showExamples ? "triggered" : "")}
+        onClick={() => setShowExamples(!showExamples)}
+      >
+        Examples
+        <BsChevronDown />
+      </button>
+      {showExamples && (
+        <div className={"popover " + (showExamples ? "is-open" : "")}>
+          <button onClick={() => setShowExamples(false)} className="close">
+            Close
+          </button>
+          <header>
+            <h1>Invariant Guardrailing Rules</h1>
+            <p>
+              Browse a library of example guardrailing rules to get started.
+            </p>
+          </header>
+          <ul>
+            {policyLibrary.length === 0 && (
+              <li>
+                <p className="empty">No examples found.</p>
+              </li>
+            )}
+            {policyLibrary.map((example, index) => (
+              <li key={index} className={!example.policy ? "header" : ""}>
+                <div
+                  className="example"
+                  onClick={() => {
+                    const policy = example.policy || "";
+                    const input = example.input || "";
+                    if (!policy || !input) {
+                      return;
+                    }
+                    setPolicyCode(policy);
+                    setInputData(input);
+                    setShowExamples(false);
+                  }}
+                >
+                  <b>{example.name}</b>
+                  <p>{example.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
 const Playground = ({
   editable = true,
   runnable = true,
@@ -165,11 +262,21 @@ const Playground = ({
   resizeEditor = false,
 }: PlaygroundProps) => {
   // get search params from URL
-  const [policyCode, setPolicyCode] = useState<string | null>(null);
-  const [inputData, setInputData] = useState<string | null>(null);
+  const [policyCode, _setPolicyCode] = useState<string | null>(null);
+  const [inputData, _setInputData] = useState<string | null>(null);
+
+  const setPolicyCode = (policy: string | null) => {
+    _setPolicyCode(policy);
+    localStorage.setItem("policy", policy || "");
+  };
+
+  const setInputData = (input: string | null) => {
+    _setInputData(input);
+    setAnalysisResult(null);
+    localStorage.setItem("input", input || "");
+  };
 
   useEffect(() => {
-    console.log("loading playground");
     try {
       const searchParams = new URLSearchParams(window.location.search);
       let policy_url = searchParams.get("policy");
@@ -326,7 +433,15 @@ const Playground = ({
       <div className="playground">
         <h2 className={`header-${headerStyle}`}>
           {headerStyle === "full" && (
-            <div className="playground-title">Guardrail Playground</div>
+            <>
+              <div className="playground-title">
+                <span>Guardrails Playground</span>
+                <ExamplesButton
+                  setPolicyCode={setPolicyCode}
+                  setInputData={setInputData}
+                />
+              </div>
+            </>
           )}
 
           {deployable && (

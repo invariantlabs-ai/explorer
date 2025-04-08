@@ -23,9 +23,9 @@ _LIBRARY_CACHE = {"timestamp": 0, "data": None}
 RULE_LIBRARY_URL = "https://preview-explorer.invariantlabs.ai/rules/library.json"
 
 
-@router.get("/byid/{id}/library-policies")
+@router.get("/library-policies")
 async def get_rule_library_guardrails(
-    id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
 ):
     """
     Get all library policies, i.e. non-generated ones but potentially useful still for any agent/dataset.

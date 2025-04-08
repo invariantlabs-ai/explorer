@@ -189,6 +189,41 @@ function PolicySynthesisModalContent(props) {
   );
 }
 
+export function usePolicyLibrary() {
+  const [libraryPolicies, setLibraryPolicies] = React.useState<
+    GuardrailSuggestion[]
+  >([]);
+
+  // refreshes the list of standard suggested guardrails (@dataset.get("/byid/{id}/suggested-policies"))
+  const refreshStandardPolicies = async () => {
+    try {
+      const libraryPoliciesResponse = await fetch(
+        `/api/v1/dataset/library-policies`
+      );
+
+      if (!libraryPoliciesResponse.ok) {
+        console.error(
+          "Failed to fetch standard policies:",
+          libraryPoliciesResponse.status
+        );
+        return;
+      }
+
+      const libraryPoliciesData = await libraryPoliciesResponse.json();
+      setLibraryPolicies(libraryPoliciesData || []);
+    } catch (error) {
+      console.error("Error fetching standard policies:", error);
+    }
+  };
+
+  // on mount, refresh
+  React.useEffect(() => {
+    refreshStandardPolicies();
+  }, []);
+
+  return libraryPolicies;
+}
+
 export function GuardrailSuggestions({
   dataset,
   setSelectedPolicySuggestion,
@@ -206,35 +241,13 @@ export function GuardrailSuggestions({
   const [storedPolicies, setStoredPolicies] = React.useState<
     GuardrailSuggestion[]
   >([]);
-  const [libraryPolicies, setLibraryPolicies] = React.useState<
-    GuardrailSuggestion[]
-  >([]);
 
   // policy synthesis state
   const [showPolicySynthesisModal, setShowPolicySynthesisModal] =
     React.useState(false);
 
-  // refreshes the list of standard suggested guardrails (@dataset.get("/byid/{id}/suggested-policies"))
-  const refreshStandardPolicies = async () => {
-    try {
-      const libraryPoliciesResponse = await fetch(
-        `/api/v1/dataset/byid/${dataset.id}/library-policies`
-      );
-
-      if (!libraryPoliciesResponse.ok) {
-        console.error(
-          "Failed to fetch standard policies:",
-          libraryPoliciesResponse.status
-        );
-        return;
-      }
-
-      const libraryPoliciesData = await libraryPoliciesResponse.json();
-      setLibraryPolicies(libraryPoliciesData || []);
-    } catch (error) {
-      console.error("Error fetching standard policies:", error);
-    }
-  };
+  // library policies
+  const libraryPolicies = usePolicyLibrary();
 
   // refreshes the list of stored suggested guardrails
   const refreshStoredPolicies = async () => {
@@ -294,8 +307,6 @@ export function GuardrailSuggestions({
     // fetch active jobs and stored policies
     refreshStoredPolicies();
     refreshActiveJobs();
-    // load standard policies once
-    refreshStandardPolicies();
   }, [dataset]);
 
   // when there are pending policy jobs, regularly refresh stored and active jobs
@@ -448,7 +459,9 @@ export function GuardrailSuggestions({
                       <div className={"job-info"}>
                         <h1>
                           <BsShieldCheck />
-                          <span>{policy.policy_name || policy.cluster_name}</span>
+                          <span>
+                            {policy.policy_name || policy.cluster_name}
+                          </span>
                           {!policy.extra_metadata?.from_rule_library && (
                             <span className="badge blue">
                               <BsStars /> Generated

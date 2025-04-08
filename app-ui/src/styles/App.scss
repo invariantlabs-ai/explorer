@@ -2771,8 +2771,7 @@ p.footer-links {
 }
 
 .home-banner {
-  background: linear-gradient(92deg, #434da6 7.93%, #10135c 94.43%);
-  color: white;
+  background: linear-gradient(92deg, #b3baf7 7.93%, #e2e3f7 94.43%);
   padding: 10pt 20pt;
   border-radius: 5pt;
   margin: 0 10pt 10pt 10pt;
@@ -2781,6 +2780,7 @@ p.footer-links {
   justify-content: space-between;
   align-items: center;
   gap: 10pt; /* Add spacing between items when wrapping */
+  border: 1pt solid #ddd;
 }
 
 .home-banner-content {
@@ -2820,6 +2820,12 @@ p.footer-links {
   line-height: normal;
   height: 35px;
   padding: 5pt 15pt;
+
+  svg {
+    margin-right: 8pt;
+    position: relative;
+    top: 1pt;
+  }
 }
 
 .home-banner-button:hover {

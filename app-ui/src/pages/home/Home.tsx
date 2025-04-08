@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useUserInfo } from "../../utils/UserInfo";
-import { BsGlobe, BsDatabase, BsJustify } from "react-icons/bs";
+import { BsGlobe, BsDatabase, BsJustify, BsTerminal } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "../../components/Modal";
 import { Time } from "../../components/Time";
@@ -153,25 +153,27 @@ function Home() {
       <h2 className="home">Home</h2>
       <div className="home-banner">
         <div className="home-banner-content">
-          <h2>Explorer helps you understand your AI agents</h2>
-          <p>Learn More about using Explorer for AI agent debugging.</p>
+          <h2>Guardrail your Agent with Invariant</h2>
+          <p>
+            Invariant is a platform that helps you create, manage, and evaluate
+            guardrails for your agents.
+          </p>
         </div>
         <div className="home-banner-buttons">
           <button
             className="home-banner-button"
-            onClick={() =>
-              (window.location.href = "https://explorer.invariantlabs.ai/docs/")
-            }
+            onClick={() => (window.location.href = "/playground")}
           >
-            Learn More →
+            <BsTerminal />
+            Open Playground
           </button>
           <button
             className="home-banner-button"
             onClick={() =>
-              (window.location.href = "https://discord.gg/dZuZfhKnJ4")
+              (window.location.href = "https://explorer.invariantlabs.ai/docs")
             }
           >
-            Join the Discord →
+            Learn More →
           </button>
         </div>
       </div>

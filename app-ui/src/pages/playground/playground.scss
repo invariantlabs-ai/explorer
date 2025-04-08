@@ -130,10 +130,134 @@
     &.header-full {
       padding: 0pt 8pt;
       height: 35pt;
+      overflow: visible;
 
       .playground-title {
         font-weight: bold;
         margin-left: -10pt;
+        position: relative;
+
+        button.inline.triggered {
+          background-color: rgb(232, 232, 232);
+        }
+
+        .popover {
+          width: 60vw;
+          max-width: 700pt;
+          height: calc(max(400pt, 60vh));
+          background-color: white;
+          position: absolute;
+          top: 45pt;
+          right: 0pt;
+          z-index: 9999;
+          box-shadow: 0 0 10pt rgba(0, 0, 0, 0.1);
+          border-radius: 4pt;
+          border: 1pt solid $border-color;
+          transform: translateY(50pt) translateX(calc(100% - 130pt));
+          transition:
+            transform 0.1s ease-in-out,
+            opacity 0.1s ease-in-out;
+          opacity: 0;
+          display: flex;
+          flex-direction: column;
+
+          &.is-open {
+            transform: translateX(calc(100% - 130pt));
+            opacity: 1;
+          }
+
+          header {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding-left: 10pt;
+
+            h1 {
+              font-size: 12pt;
+              margin: 0pt;
+              padding: 0pt;
+              line-height: 20pt;
+              font-weight: bold;
+            }
+
+            p {
+              font-size: 10pt;
+              font-weight: normal;
+              margin: 0pt;
+              padding: 0pt;
+              color: $text-color;
+            }
+          }
+
+          ul {
+            margin: 0pt;
+            padding: 0pt;
+            margin: 0pt 5pt;
+            margin-right: 0pt;
+            overflow-y: auto;
+            flex: 1;
+
+            li {
+              padding: 2pt 5pt;
+              list-style: none;
+              border-radius: 5pt;
+              margin-bottom: 5pt;
+              line-height: 1em;
+              transition: background-color 0.05s ease-in-out;
+
+              &:hover {
+                background-color: rgb(238, 238, 238);
+                cursor: pointer;
+              }
+
+              &.header {
+                background: none;
+                opacity: 0.7;
+                font-weight: bold;
+                margin-bottom: -5pt;
+              }
+
+              b {
+                margin-top: 5pt;
+                display: block;
+                font-weight: normal;
+              }
+
+              p {
+                font-weight: normal;
+                margin-top: 7pt;
+                margin-bottom: 7pt;
+                opacity: 0.5;
+              }
+            }
+          }
+
+          .close {
+            position: absolute;
+            top: 15pt;
+            right: 5pt;
+            margin: 0pt;
+            background: none;
+            font-size: 10pt;
+            color: $text-color;
+
+            &:hover {
+              cursor: pointer;
+              opacity: 0.5;
+            }
+          }
+        }
+
+        button {
+          display: inline;
+          margin-left: 10pt;
+          height: 30pt;
+          border-radius: 4pt;
+
+          svg {
+            margin-left: 10pt;
+          }
+        }
       }
 
       button {
@@ -310,6 +434,7 @@
     font-size: 10pt;
     font-weight: normal;
     margin-left: 5pt;
+    white-space: pre-wrap;
   }
 
   h3 {
