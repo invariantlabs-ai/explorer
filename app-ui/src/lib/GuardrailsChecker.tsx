@@ -2,12 +2,12 @@ import { useUserInfo } from "../utils/UserInfo";
 import { config } from "../utils/Config";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Modal } from "./../components/Modal";
+import { Modal } from "../components/Modal";
 import { useHostedExplorerAPIKey } from "../components/AutoAPIKey";
 
 const key = "invariant.explorer.production.apikey";
 
-function useVerify() {
+function useGuardrailsChecker() {
   const userInfo = useUserInfo();
   const navigate = useNavigate();
   const isLocal = config("instance_name") === "local";
@@ -21,8 +21,12 @@ function useVerify() {
     setIsModalVisible(false);
   };
 
-  const verify = async (messages: any, policy: string): Promise<Response> => {
-    if (isLocal) {
+  const check = async (messages: any, policy: string): Promise<Response> => {
+    // we need to use API keys if we are not on the explorer.invariantlabs.ai domain, or if we are local
+    const requiresApiKey =
+      isLocal || window.location.hostname !== "explorer.invariantlabs.ai";
+
+    if (requiresApiKey) {
       // if we are local, use an API key from local storage -- if it is not there, ask the user
       if (!apiKey) {
         // Display a modal to ask for the API key
@@ -42,8 +46,7 @@ function useVerify() {
         }),
       });
     } else if (userInfo?.signedUp) {
-      // If we are not local and the user is signed up
-      // Use the session cookies instead for authentication
+      // If we are on the production instance, we can use session cookies instead for authentication
       // No explicit Authorization header needed if using session cookies
 
       return fetch("https://explorer.invariantlabs.ai/api/v1/policy/check", {
@@ -59,7 +62,7 @@ function useVerify() {
       });
     } else {
       // If not local, and not signed in, redirect to sign-in
-      navigate("/signin");
+      window.location.href = "/login";
       return Promise.reject(new Error("Authentication required"));
     }
   };
@@ -99,7 +102,7 @@ function useVerify() {
     );
   };
 
-  return { verify, ApiKeyModal };
+  return { check, ApiKeyModal };
 }
 
-export default useVerify;
+export default useGuardrailsChecker;

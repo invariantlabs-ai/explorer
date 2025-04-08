@@ -19,7 +19,6 @@ export function UploadDatasetModalContent(props) {
   const [contentType, setContentType] = React.useState("empty"); // Tracks selected content type
 
   const handleAccessChange = (event) => {
-    console.log("Access changed to: ", event.target.value);
     setIsPublic(event.target.value === "public");
   };
 

@@ -14,7 +14,6 @@ import UserIcon from "../../lib/UserIcon";
 import { Time } from "../../components/Time";
 import { Metadata } from "../../lib/metadata";
 import { AnalysisResult } from "../../lib/analysis_result";
-import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
 import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
@@ -26,6 +25,8 @@ import { HighlightsNavigator } from "./HighlightsNavigator";
 
 import { AnalyzerPreview, AnalyzerSidebar, useAnalyzer } from "./Analyzer";
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
+
+import { openInPlayground } from "../playground/playground";
 
 import "./Analyzer.scss";
 
@@ -61,10 +62,15 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotate`
     );
     this.traceId = traceId;
+    this.isNone = traceId == "<none>";
   }
 
   transform(data) {
     if (!data) {
+      return [];
+    }
+    // not a valid response (likely an error)
+    if (!Array.isArray(data)) {
       return [];
     }
     let annotations = {};

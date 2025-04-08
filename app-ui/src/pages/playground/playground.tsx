@@ -15,7 +15,6 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import useVerify from "../../lib/verify";
 import { beautifyJson } from "./utils";
 import type { AnalysisResult, PolicyError } from "./types";
 import { TraceView } from "../../lib/traceview/traceview";
@@ -33,30 +32,115 @@ import {
   GuardrailFailureHighlightDetail,
 } from "../traces/HighlightDetails";
 import { GuardrailsIcon } from "../../components/Icons";
+import useGuardrailsChecker from "../../lib/GuardrailsChecker";
 
 const defaultPolicy = "";
 const defaultInput = "[]";
 
-function useLocallyStoredState<T>(key: string, defaultValue: T) {
-  const [state, _setState] = useState(defaultValue);
+/**
+ * Tries to find the name of a tool call in the given messages.
+ */
+function findSomeToolCallName(messages) {
+  let tool_call_msg = messages.find((msg) => msg.tool_calls);
+  if (!tool_call_msg) return null;
 
-  const store = (value: T) => {
-    if (typeof value === "string") {
-      localStorage.setItem(key, value);
-    } else {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-  };
+  let tool_call = tool_call_msg.tool_calls.find((tc) => tc.function.name);
+  if (!tool_call) return null;
 
-  const setState = (value: T) => {
-    _setState(value);
-    store(value);
-  };
-
-  store(defaultValue);
-  return [state, setState] as const;
+  return tool_call.function.name;
 }
 
+/**
+ * Tries to create a policy that is compatible with the Invariant Playground
+ * from the given messages (i.e. that matches some specific pattern in the
+ * list of messages).
+ *
+ * Returns null if no compatible policy could be created.
+ */
+function makeCompatibleInvariantPolicy(messages) {
+  let tool_call = findSomeToolCallName(messages);
+  if (tool_call) {
+    return "(call: ToolCall)\n    call is tool:" + tool_call;
+  } else {
+    // find some random message with text content and create policy to match some word
+    let message = messages.find((msg) => msg.content);
+    if (!message) return null;
+    let content = message.content;
+    let word = content.split(" ")[0];
+    let msg_type =
+      message.role == "tool" ? ["out", "ToolOutput"] : ["msg", "Message"];
+    return `(${msg_type[0]}: ${msg_type[1]})\n    "${word}" in ${msg_type[0]}.content`;
+  }
+}
+
+/**
+ * Open the given messages in the Invariant Playground.
+ *
+ * @param messages The list of trace events to open in the playground.
+ * Messages must be serializable to JSON and then Base64. Messages must
+ * not exceed size of what a browser can handle in a URL.
+ *
+ * This function will try to automatically synthesize a policy that matches
+ * some pattern in the given messages to showcase the Invariant Playground.
+ */
+export function openInPlayground(
+  messages: any[],
+  navigate: ((url: string) => void) | null = null
+) {
+  if (!messages) {
+    alert("Failed to send to Invariant: No messages");
+    return;
+  }
+
+  try {
+    // translate tool_call_ids and ids to strings if needed (analyzer expects strings)
+    messages = messages.map((message) => {
+      message = JSON.parse(JSON.stringify(message));
+      if (typeof message.tool_call_id !== "undefined") {
+        message.tool_call_id = message.tool_call_id.toString();
+      }
+      (message.tool_calls || []).forEach((tool_call) => {
+        if (typeof tool_call.id !== "undefined") {
+          tool_call.id = tool_call.id.toString();
+        }
+      });
+      return message;
+    });
+
+    const policyCode = `raise "Detected issue" if:
+    # specify your conditions here
+    # To learn more about Invariant policies go to https://github.com/invariantlabs-ai/invariant
+    
+    # example query
+    ${makeCompatibleInvariantPolicy(messages) || "True"}`;
+
+    const json_object = JSON.stringify(messages || []);
+    const bytes = new TextEncoder().encode(json_object);
+    const encoded_string = Array.from(bytes, (byte) =>
+      String.fromCodePoint(byte)
+    ).join("");
+    const b64_object = Base64.encode(encoded_string);
+
+    const url = `/playground?policy=${Base64.encode(policyCode)}&input=${encodeURIComponent(b64_object)}`;
+
+    if (navigate) {
+      navigate(url);
+    } else {
+      // open the URL
+      window.open(url, "_blank");
+    }
+  } catch (e) {
+    alert("Failed to send to Invariant: " + e);
+  }
+}
+
+export function decodePlaygroundInput(encoded_input: string) {
+  const decoded = Base64.decode(encoded_input);
+  const bytes = new Uint8Array(
+    Array.from(decoded, (c) => c.codePointAt(0) || 0)
+  );
+  return new TextDecoder().decode(bytes);
+}
 interface PlaygroundProps {
   editable?: boolean;
   runnable?: boolean;
@@ -81,39 +165,56 @@ const Playground = ({
   resizeEditor = false,
 }: PlaygroundProps) => {
   // get search params from URL
-  const searchParams = new URLSearchParams(window.location.search);
-  let policy_url = searchParams.get("policy");
-  if (policy_url) {
-    policy_url = Base64.decode(policy_url);
-  }
-  let input_url = searchParams.get("input");
-  if (input_url) {
-    input_url = Base64.decode(input_url);
-    input_url = beautifyJson(input_url);
-  }
-  const policy_local = localStorage.getItem("policy");
-  const input_local = localStorage.getItem("input");
-  let policy: string | null = null;
-  let input: string | null = null;
-  if (policy_url || input_url) {
-    policy = policy_url || defaultPolicy;
-    input = input_url || defaultInput;
-  } else {
-    policy = policy_local || defaultPolicy;
-    input = input_local || defaultInput;
-  }
+  const [policyCode, setPolicyCode] = useState<string | null>(null);
+  const [inputData, setInputData] = useState<string | null>(null);
 
-  const [policyCode, setPolicyCode] = useLocallyStoredState<string>(
-    "policy",
-    policy
-  );
-  const [inputData, setInputData] = useLocallyStoredState<string>(
-    "input",
-    input
-  );
+  useEffect(() => {
+    console.log("loading playground");
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      let policy_url = searchParams.get("policy");
+      if (policy_url) {
+        policy_url = Base64.decode(policy_url);
+      }
+      let input_url = searchParams.get("input");
+      if (input_url) {
+        input_url = decodePlaygroundInput(input_url);
+        input_url = beautifyJson(input_url);
+      }
+      const policy_local = localStorage.getItem("policy");
+      const input_local = localStorage.getItem("input");
+
+      if (policy_url || input_url) {
+        setPolicyCode(policy_url || defaultPolicy);
+        setInputData(input_url || defaultInput);
+
+        localStorage.setItem("policy", policy_url || defaultPolicy);
+        localStorage.setItem("input", input_url || defaultInput);
+
+        // remove data from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("policy");
+        url.searchParams.delete("input");
+        window.history.replaceState({}, document.title, url.toString());
+      } else {
+        setPolicyCode(policy_local || defaultPolicy);
+        setInputData(input_local || defaultInput);
+      }
+    } catch (error) {
+      console.error("Failed to parse URL: ", error);
+      // clear URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("policy");
+      url.searchParams.delete("input");
+      window.history.replaceState({}, document.title, url.toString());
+
+      setPolicyCode(defaultPolicy);
+      setInputData(defaultInput);
+    }
+  }, []);
 
   const { width: screenWidth } = useWindowSize();
-  const { verify, ApiKeyModal } = useVerify();
+  const { check, ApiKeyModal } = useGuardrailsChecker();
   const [policyEditorHeight, setPolicyEditorHeight] = useState<
     number | undefined
   >(undefined);
@@ -123,6 +224,7 @@ const Playground = ({
   const [analysisResult, setAnalysisResult] = useState<PolicyError[] | null>(
     null
   );
+  const [error, setError] = useState<string | null>(null);
   const [analysisResultIdx, setAnalysisResultIdx] = useState<number>(0);
   const highlights =
     analysisResult && analysisResult[analysisResultIdx]
@@ -134,14 +236,27 @@ const Playground = ({
   const handleEvaluate = async () => {
     setLoading(true); // Start loading
     setAnalysisResult(null);
+    setError(null);
+
+    if (!policyCode) {
+      setLoading(false);
+      return;
+    }
 
     try {
       // Analyze the policy with the input data
-      const analyzeResponse = await verify(JSON.parse(inputData), policyCode);
+      const analyzeResponse = await check(
+        JSON.parse(inputData || "[]"),
+        policyCode || ""
+      );
       if (analyzeResponse.status !== 200) {
         analyzeResponse.json().then((text) => {
           setLoading(false);
           console.error("Failed to evaluate policy:", text);
+          setError(
+            "Failed to evaluate policy: " +
+              (text?.detail || JSON.stringify(text))
+          );
         });
         throw new Error(
           analyzeResponse.status + " " + analyzeResponse.statusText
@@ -161,6 +276,7 @@ const Playground = ({
       setAnalysisResultIdx(0);
     } catch (error) {
       console.error("Failed to evaluate policy:", error);
+      setError("Failed to evaluate policy: " + (error as Error).message);
     } finally {
       setLoading(false); // End loading
     }
@@ -196,7 +312,7 @@ const Playground = ({
   const handleDeploy = () => {
     const location =
       "/deploy-guardrail#policy-code=" +
-      encodeURIComponent(policyCode) +
+      encodeURIComponent(policyCode || "") +
       "&name=" +
       "New Rule";
     window.open(location, "_blank");
@@ -266,7 +382,7 @@ const Playground = ({
                 <PolicyEditor
                   height="100%"
                   defaultLanguage="python"
-                  value={policyCode}
+                  value={policyCode || ""}
                   fontSize={16}
                   readOnly={!editable}
                   onChange={(value?: string) => setPolicyCode(value || "")}
@@ -320,12 +436,15 @@ const Playground = ({
                   {analysisResult &&
                     Object.keys(analysisResult).length == 0 && (
                       <div
-                        className={"no-result " + (loading ? "is-loading" : "")}
+                        className={
+                          "no-result error " + (loading ? "is-loading" : "")
+                        }
                         onClick={handleEvaluate}
                       >
                         {loading ? <>Evaluating...</> : <>No matches found.</>}
                       </div>
                     )}
+                  {error && <div className="error">{error}</div>}
                   {analysisResult && Object.keys(analysisResult).length > 0 && (
                     <>
                       <div className="control-indicator">
@@ -378,7 +497,7 @@ const Playground = ({
                   )}
                 </div>
                 <TraceView
-                  inputData={inputData}
+                  inputData={inputData || "[]"}
                   traceId={"<none>"}
                   handleInputChange={handleInputChange}
                   highlights={highlights}

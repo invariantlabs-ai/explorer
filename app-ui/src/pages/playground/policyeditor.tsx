@@ -21,7 +21,6 @@ interface PolicyEditorProps {
 
 export function PolicyEditor(props: PolicyEditorProps) {
   const onMount = (editor: any, monaco: any) => {
-    console.log("editor", editor);
     // register completion item provider
     monaco.languages.registerCompletionItemProvider("python", {
       provideCompletionItems: function (model, position) {

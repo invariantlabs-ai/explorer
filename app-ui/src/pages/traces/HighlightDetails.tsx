@@ -23,7 +23,6 @@ import { GuardrailsIcon } from "../../components/Icons";
 
  */
 export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
-  console.log(props.highlights);
   let highlightsByKey: Record<string, HighlightData> = {};
   for (const highlight of props.highlights) {
     for (const highlightData of highlight.content || []) {
@@ -291,9 +290,13 @@ export function GuardrailHighlightDetail(props: {
 export function GuardrailFailureHighlightDetail(props: {
   highlight: HighlightData;
 }) {
-  return <GuardrailHighlightDetail highlight={props.highlight} text="Guardrail Failure" />;
+  return (
+    <GuardrailHighlightDetail
+      highlight={props.highlight}
+      text="Guardrail Failure"
+    />
+  );
 }
-
 
 /**
  * Details failed test highlights in the selected line of the trace view.
