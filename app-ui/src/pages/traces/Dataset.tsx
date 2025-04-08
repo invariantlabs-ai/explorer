@@ -200,6 +200,7 @@ function DatasetView() {
   const currentUserOwnsDataset = dataset?.user?.id == userInfo?.id;
   const hasAnalysis = currentUserOwnsDataset;
   const hasGuardrails = currentUserOwnsDataset;
+  const hasChat = currentUserOwnsDataset;
 
   // callback for when a user toggles the public/private status of a dataset
   const onPublicChange = (e) => {
@@ -464,7 +465,7 @@ function DatasetView() {
           </>
         )}
         {/* show chat side pane */}
-        <Chat dataset={dataset.name} />
+        {hasChat && <Chat dataset={dataset.name} />}
       </div>
     </div>
   );
