@@ -4,7 +4,7 @@ import { BsGlobe, BsDatabase, BsJustify, BsTerminal } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import { Modal } from "../../components/Modal";
 import { Time } from "../../components/Time";
-import { useDatasetList } from "../../service/DatasetOperations";
+import { createDataset, useDatasetList } from "../../service/DatasetOperations";
 import { UploadDatasetModalContent } from "./NewDataset";
 import { DatasetLinkList } from "../user/DatasetList";
 import HomepageDatasetsNames from "../../assets/HomepageDatasetsNames.json";
@@ -14,6 +14,8 @@ import "./Home.scss";
 import { CompactSnippetList } from "../snippets/Snippets";
 import HomePageNUX from "./NUX";
 import { config } from "../../utils/Config";
+import { UploadOptions } from "../../components/EmptyDataset";
+import { generateNewProjectName } from "./ProjectNames";
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {
@@ -135,6 +137,8 @@ function Home() {
   // used to navigate to a new page
   const navigate = useNavigate();
 
+  const [newProjectName, setNewProjectName] = React.useState("");
+
   return (
     <>
       {/* upload modal */}
@@ -155,8 +159,8 @@ function Home() {
         <div className="home-banner-content">
           <h2>Guardrail your Agent with Invariant</h2>
           <p>
-            Invariant is a platform that helps you create, manage, and evaluate
-            guardrails for your agents.
+            Integrate Invariant to guardrail, secure and debug your agent. your
+            agent.
           </p>
         </div>
         <div className="home-banner-buttons">
@@ -176,6 +180,35 @@ function Home() {
             Learn More →
           </button>
         </div>
+        <UploadOptions
+          excluded={["JSON Upload"]}
+          onSuccess={() => {}}
+          className="wide"
+          onChangeName={setNewProjectName}
+        />
+        <button
+          className="create inline primary"
+          onClick={() => {
+            if (!userInfo) {
+              window.location.href = "/login";
+              return;
+            }
+            createDataset(newProjectName, false)
+              .then((data) => {
+                console.log("Created dataset", data);
+                navigate(
+                  "/u/" + userInfo!.username + "/" + newProjectName + "/t"
+                );
+              })
+              .catch((error) => {
+                alert(
+                  "Error creating dataset: Make sure you entered a valid name (e.g. 'my-project')."
+                );
+              });
+          }}
+        >
+          Create Project
+        </button>
       </div>
       {/* user-personal snippets and datasets */}
       {userInfo?.loggedIn && (

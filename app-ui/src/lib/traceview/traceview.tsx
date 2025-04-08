@@ -42,6 +42,9 @@ interface TraceViewProps {
   // when the trace editor changes, this function is called with the new JSON string
   handleInputChange: (value: string | undefined) => void;
 
+  // callback when the trace view is mounted
+  onMount?: (events: Record<string, BroadcastEvent>) => void;
+
   // highlights to highlight in the trace view
   highlights: Record<string, string>;
   // ID of the trace
@@ -223,6 +226,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>
@@ -243,6 +247,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>
@@ -255,6 +260,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>

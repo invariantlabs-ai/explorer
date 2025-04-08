@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
@@ -13,6 +13,7 @@ import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
 import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
+import { generateNewProjectName } from "../pages/home/ProjectNames";
 
 function ChatStart() {
   return (
@@ -32,6 +33,44 @@ function ChatStart() {
         <BsChatFill /> Simulated Agent
       </button>
     </div>
+  );
+}
+
+function TypedInput({
+  initialValue,
+  onChange,
+}: {
+  initialValue: string;
+  onChange: (val: string) => void;
+}) {
+  const [value, setValue] = React.useState("");
+  const hasTyped = useRef(false);
+
+  useEffect(() => {
+    if (hasTyped.current) return;
+    if (value.length < initialValue.length) {
+      const timeout = setTimeout(() => {
+        setValue((v) => v + initialValue[value.length]);
+        if (value.length === initialValue.length - 1) {
+          hasTyped.current = true;
+        }
+      }, 20);
+      return () => clearTimeout(timeout);
+    } else {
+      hasTyped.current = true;
+    }
+  }, [value, initialValue]);
+
+  return (
+    <input
+      type="text"
+      value={hasTyped.current ? value : value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        onChange(e.target.value);
+        hasTyped.current = true;
+      }}
+    />
   );
 }
 
@@ -186,21 +225,38 @@ export function EmptyDatasetInstructions(props: {
  * A component to show the upload options for a dataset (different frameworks and the JSONL upload).
  */
 export function UploadOptions({
-  dataset,
+  dataset: givenDatasetName,
   onSuccess,
   excluded,
+  className,
+  onChangeName,
 }: {
   // the name of the dataset
-  dataset: string;
+  dataset?: string;
   // function to call on success (e.g. when file upload is complete)
   onSuccess: () => void;
   // list of excluded options
   excluded?: string[];
+  // optional class name
+  className?: string;
+  // optional create button
+  onChangeName?: (name: string) => void;
 }) {
   const telemetry = useTelemetry();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
+
+  const [customDatasetName, setCustomDatasetName] = React.useState<string>(
+    generateNewProjectName()
+  );
+
+  // update name on change
+  useEffect(() => {
+    onChangeName?.(customDatasetName);
+  }, [customDatasetName]);
+
+  const dataset = givenDatasetName || customDatasetName;
 
   const onSubmit = () => {
     if (!file) {
@@ -254,7 +310,16 @@ export function UploadOptions({
   ) : null;
 
   return (
-    <div className="options">
+    <div className={"options " + (className || "")}>
+      {!givenDatasetName && (
+        <div className="upload-banner-input">
+          <label>Project Name</label>
+          <TypedInput
+            initialValue={customDatasetName}
+            onChange={(val) => setCustomDatasetName(val)}
+          />
+        </div>
+      )}
       <div className="options-tabs">
         {SNIPPETS.map((option) => (
           <div
