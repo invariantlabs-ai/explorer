@@ -12,6 +12,7 @@
     border-radius: 5pt;
     padding: 1pt 7pt;
     margin-right: 3pt;
+    cursor: pointer;
 
     &:hover {
       text-decoration: underline;
@@ -22,6 +23,32 @@
       border: 0pt solid $color-primary;
       color: white;
     }
+  }
+}
+
+.upload-banner-input {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 6pt;
+  padding-right: 5pt;
+  margin-top: 5pt;
+  margin-bottom: 10pt;
+  justify-content: center;
+
+  label {
+    margin-top: 7pt;
+    margin-bottom: 2pt;
+  }
+
+  input {
+    width: calc(100% - 12.5pt);
+    flex: 1;
+    display: block;
+    border-radius: 5pt;
+    border: 1pt solid $border-color;
+    padding: 10pt 5pt;
+    font-size: 10pt;
   }
 }
 
@@ -115,6 +142,11 @@
   }
 }
 
+.options.wide {
+  max-width: auto;
+  width: 100% !important;
+}
+
 .code-with-copy {
   position: relative;
   background-color: white;
@@ -126,7 +158,7 @@
   display: block;
 
   .rendered-tokens {
-    overflow-x: scroll;
+    overflow-x: auto;
   }
 
   // best monospace

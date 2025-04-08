@@ -2,7 +2,7 @@ import CodeHighlighter from "./plugins/code-highlighter";
 import ImageViewer from "./plugins/image-viewer";
 
 // globally-enabled rendering plugins
-let PLUGINS = [CodeHighlighter, ImageViewer];
+// let PLUGINS = [CodeHighlighter, ImageViewer];
 
 let DISABLED_PLUGINS: string[] = [];
 

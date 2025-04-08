@@ -232,7 +232,7 @@ function Layout(props: {
           <li className="logo">
             <h1>
               <img src={logo} alt="Invariant logo" className="logo" />
-              Invariant Explorer
+              Invariant
             </h1>
           </li>
           {!userInfo?.loggedIn && (
@@ -287,18 +287,14 @@ function Layout(props: {
             </li>
           )}
         </Sidebar>
-        <h1
-          onClick={() => navigate("/")}
-          className="title"
-          title="Invariant Explorer"
-        >
+        <h1 onClick={() => navigate("/")} className="title" title="Invariant">
           <img
             src={logo}
             alt="Invariant logo"
             className="logo"
             onClick={() => navigate("/")}
           />
-          Invariant Explorer
+          Invariant
         </h1>
         <DeploymentInfo />
         <div className="spacer" />
