@@ -159,8 +159,8 @@ function Home() {
         <div className="home-banner-content">
           <h2>Guardrail your Agent with Invariant</h2>
           <p>
-            Create a project to get started with Invariant and to deploy your
-            own guardrails.
+            Integrate Invariant to guardrail, secure and debug your agent. your
+            agent.
           </p>
         </div>
         <div className="home-banner-buttons">
@@ -201,7 +201,9 @@ function Home() {
                 );
               })
               .catch((error) => {
-                console.error("Error creating dataset", error);
+                alert(
+                  "Error creating dataset: Make sure you entered a valid name (e.g. 'my-project')."
+                );
               });
           }}
         >

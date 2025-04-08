@@ -2799,12 +2799,17 @@ p.footer-links {
     margin-bottom: 10pt;
   }
 
+  .rendered-tokens {
+    text-align: left;
+  }
+
   button.create {
     margin-top: -10pt;
     margin-left: auto;
     border-radius: 4pt;
     height: 25pt;
     padding: 0pt 5pt;
+    margin-bottom: 10pt;
   }
 }
 
