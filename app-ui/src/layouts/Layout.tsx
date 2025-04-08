@@ -251,7 +251,7 @@ function Layout(props: {
               Home
             </a>
           </li>
-          {userInfo?.loggedIn && (
+          {userInfo?.loggedIn ? (
             <>
               <li>
                 <a href={`/u/${userInfo.username}`}>
@@ -266,19 +266,26 @@ function Layout(props: {
                 </a>
               </li>
               <li>
+                <a href="/playground">
+                  <BsTerminal />
+                  Playground
+                </a>
+              </li>
+              <li>
                 <a href="/settings">
                   <BsGear />
                   Settings
                 </a>
               </li>
             </>
+          ) : (
+            <li>
+              <a href="/playground">
+                <BsTerminal />
+                Guardrails Playground
+              </a>
+            </li>
           )}
-          <li>
-            <a href="/playground">
-              <BsTerminal />
-              Guardrails Playground
-            </a>
-          </li>
         </Sidebar>
         <h1
           onClick={() => navigate("/")}

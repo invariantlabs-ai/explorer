@@ -1,38 +1,30 @@
 import { Base64 } from "js-base64";
 import { useEffect, useState } from "react";
 import {
-  BsPlayFill,
-  BsGithub,
-  BsShare,
+  BsArrowBarUp,
+  BsArrowsCollapse,
+  BsArrowsExpand,
+  BsChevronDown,
   BsChevronLeft,
   BsChevronRight,
-  BsArrowDown,
-  BsArrowUp,
-  BsCheckCircle,
-  BsChevronDown,
-  BsExclamationTriangle,
-  BsArrowBarUp,
-  BsPlus,
+  BsPlayFill,
+  BsShare,
 } from "react-icons/bs";
-import { useNavigate } from "react-router-dom";
-import { beautifyJson } from "./utils";
-import type { AnalysisResult, PolicyError } from "./types";
-import { TraceView } from "../../lib/traceview/traceview";
-import Spinning from "./spinning";
-import { PolicyEditor } from "./policyeditor";
+import { GuardrailsIcon } from "../../components/Icons";
+import useGuardrailsChecker from "../../lib/GuardrailsChecker";
 import useWindowSize from "../../lib/size";
+import { TraceView } from "../../lib/traceview/traceview";
+import { GuardrailFailureHighlightDetail } from "../traces/HighlightDetails";
 import "./playground.scss";
+import { PolicyEditor } from "./policyeditor";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "./resizable";
-import {
-  GuardrailHighlightDetail,
-  GuardrailFailureHighlightDetail,
-} from "../traces/HighlightDetails";
-import { GuardrailsIcon } from "../../components/Icons";
-import useGuardrailsChecker from "../../lib/GuardrailsChecker";
+import Spinning from "./spinning";
+import type { AnalysisResult, PolicyError } from "./types";
+import { beautifyJson } from "./utils";
 
 const defaultPolicy = "";
 const defaultInput = "[]";
@@ -340,6 +332,20 @@ const Playground = ({
         )
       : {};
 
+  const [events, setEvents] = useState<any>([]);
+
+  const [collapsed, setCollapsed] = useState(false);
+
+  const onCollapseAll = () => {
+    events.collapseAll?.fire();
+    setCollapsed(true);
+  };
+
+  const onExpandAll = () => {
+    events.expandAll?.fire();
+    setCollapsed(false);
+  };
+
   const handleEvaluate = async () => {
     setLoading(true); // Start loading
     setAnalysisResult(null);
@@ -496,18 +502,32 @@ const Playground = ({
                     : undefined
                 }
               >
-                <PolicyEditor
-                  height="100%"
-                  defaultLanguage="python"
-                  value={policyCode || ""}
-                  fontSize={16}
-                  readOnly={!editable}
-                  onChange={(value?: string) => setPolicyCode(value || "")}
-                  theme="vs-light"
-                  onDidContentSizeChange={(size) => {
-                    if (resizeEditor) setPolicyEditorHeight(size.contentHeight);
-                  }}
-                />
+                <ResizablePanelGroup
+                  direction="vertical"
+                  className="playground-editor"
+                >
+                  <ResizablePanel defaultSize={50} minSize={25}>
+                    <PolicyEditor
+                      height="100%"
+                      defaultLanguage="python"
+                      value={policyCode || ""}
+                      fontSize={16}
+                      readOnly={!editable}
+                      onChange={(value?: string) => setPolicyCode(value || "")}
+                      theme="vs-light"
+                      onDidContentSizeChange={(size) => {
+                        if (resizeEditor)
+                          setPolicyEditorHeight(size.contentHeight);
+                      }}
+                    />
+                  </ResizablePanel>
+
+                  {headerStyle === "full" && (
+                    <>
+                      <ResizableHandle />
+                    </>
+                  )}
+                </ResizablePanelGroup>
               </ResizablePanel>
 
               {showTrace && <ResizableHandle />}
@@ -600,22 +620,52 @@ const Playground = ({
                           </>
                         )}
                       </div>
-                      <GuardrailFailureHighlightDetail
-                        highlight={{
-                          content:
-                            analysisResult && analysisResult[analysisResultIdx]
-                              ? analysisResult[analysisResultIdx].args.join(" ")
-                              : "",
-                          source: "Guardrail",
-                          type: "guardrail",
-                        }}
-                      />
+                      {analysisResult.map((result, index) => {
+                        return (
+                          <GuardrailFailureHighlightDetail
+                            key={index}
+                            onHover={() => {
+                              setAnalysisResultIdx(index);
+                            }}
+                            highlight={{
+                              content: result.args.join(" "),
+                              source: "Guardrail",
+                              type: "guardrail",
+                            }}
+                          />
+                        );
+                      })}
                     </>
                   )}
                 </div>
                 <TraceView
+                  header={
+                    <>
+                      <div className="spacer" />
+                      {collapsed ? (
+                        <button
+                          className="inline icon"
+                          onClick={onExpandAll}
+                          data-tooltip-id="highlight-tooltip"
+                          data-tooltip-content="Expand All"
+                        >
+                          <BsArrowsExpand />
+                        </button>
+                      ) : (
+                        <button
+                          className="inline icon"
+                          onClick={onCollapseAll}
+                          data-tooltip-id="highlight-tooltip"
+                          data-tooltip-content="Collapse All"
+                        >
+                          <BsArrowsCollapse />
+                        </button>
+                      )}
+                    </>
+                  }
                   inputData={inputData || "[]"}
                   traceId={"<none>"}
+                  onMount={(events) => setEvents(events)}
                   handleInputChange={handleInputChange}
                   highlights={highlights}
                   sideBySide={false}

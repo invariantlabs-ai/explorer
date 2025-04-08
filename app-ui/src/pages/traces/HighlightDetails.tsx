@@ -224,6 +224,7 @@ export function TestSuccessHighlightDetail(props: {
 export function GuardrailHighlightDetail(props: {
   highlight: HighlightData;
   text: string;
+  onHover?: (hover: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const highlight = props.highlight;
@@ -263,12 +264,16 @@ export function GuardrailHighlightDetail(props: {
 
   return (
     <AnchorDiv
-      className={"event guardrail"}
+      className={"event guardrail flow-in"}
       onClick={() => guardrail_content && setExpanded(!expanded)}
       copyOnClick={false}
       id={safeAnchorId(highlight.annotationId || "")}
     >
-      <div className="content">
+      <div
+        className="content"
+        onMouseEnter={() => props.onHover?.(true)}
+        onMouseLeave={() => props.onHover?.(false)}
+      >
         <div className={"guardrail-header" + (expanded ? " expanded" : "")}>
           <GuardrailsIcon />
           <b>{props.text}</b> {highlight.content}
@@ -289,10 +294,12 @@ export function GuardrailHighlightDetail(props: {
  */
 export function GuardrailFailureHighlightDetail(props: {
   highlight: HighlightData;
+  onHover?: (hover: boolean) => void;
 }) {
   return (
     <GuardrailHighlightDetail
       highlight={props.highlight}
+      onHover={props.onHover}
       text="Guardrail Failure"
     />
   );
