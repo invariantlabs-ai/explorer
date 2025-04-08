@@ -783,7 +783,11 @@ function Annotation(props) {
         <header className="username">
           <BsCaretLeftFill className="caret" />
           <div>
-            <b>{props.user.username}</b>
+            <b>
+              {userInfo?.loggedIn && userInfo.username == props.user.username
+                ? "You"
+                : props.user.username}
+            </b>
             {source && (
               <span className="source">
                 {" "}

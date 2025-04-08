@@ -271,8 +271,12 @@ async def on_analysis_result(job: DatasetJob, results: CompletedJobResponse):
                     {
                         "content": annotation.content,
                         "address": annotation.location,
-                        "extra_metadata": {"source": source, "severity": annotation.severity},
-                    } for annotation in analysis.annotations
+                        "extra_metadata": {
+                            "source": source,
+                            "severity": annotation.severity,
+                        },
+                    }
+                    for annotation in analysis.annotations
                 ],
             )
         cost = sum(a.cost for a in results.analysis if a.cost is not None)
@@ -325,7 +329,7 @@ async def on_policy_synthesis_result(job: DatasetJob, results: CompletedJobRespo
                     match = re.search(r'raise.*?"([^"]*)".*?if:', results.policy_code)
                     if match:
                         policy_name = match.group(1)
-                
+
                 policy_data = {
                     "id": str(uuid.uuid4()),
                     "cluster_name": cluster_name,

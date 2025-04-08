@@ -2,6 +2,7 @@
 
 .panel-horizontal {
   min-width: 200px;
+  height: calc(100vh - 73pt);
 }
 
 .output-container {
@@ -166,6 +167,7 @@
     border-top: none;
     background-color: rgb(246, 246, 246);
     border-left: none;
+    max-height: 100%;
 
     .traces {
       padding: 0 5pt;

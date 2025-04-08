@@ -267,10 +267,12 @@ function Message({
                 <BsGear />
               </button> */}
               <div className="spacer" />
-              <span className="stat">
-                <BsSpeedometer2 />
-                {msg.time}ms
-              </span>
+              {!loading && (
+                <span className="stat">
+                  <BsSpeedometer2 />
+                  {msg.time}ms
+                </span>
+              )}
             </div>
           )}
       </div>
@@ -283,42 +285,51 @@ function isMessageVisible(message: any, loading: boolean) {
 }
 
 function GuardrailMessage({ error }: { error: any }) {
-  const err = error.details.errors[0];
-  const id = err.guardrail.id;
-  const name = err.guardrail.name;
-  const content = err.guardrail.content;
-  const message = err.args.map((arg: any) => arg.toString()).join(" ");
+  try {
+    const err = error.details.errors[0];
+    const id = err.guardrail.id;
+    const name = err.guardrail.name;
+    const content = err.guardrail.content;
+    const message = err.args.map((arg: any) => arg.toString()).join(" ");
 
-  return (
-    <>
-      <div className="event guardrail nofocus flow-in">
-        <div className="content">
-          <div className="guardrail-header expanded">
-            <GuardrailsIcon />
-            <b>Guardrail Failure</b> {message}
-            <span className="guardrail-id">{name}</span>
+    return (
+      <>
+        <div className="event guardrail nofocus flow-in">
+          <div className="content">
+            <div className="guardrail-header expanded">
+              <GuardrailsIcon />
+              <b>Guardrail Failure</b> {message}
+              <span className="guardrail-id">{name}</span>
+            </div>
+            <pre className="marked-line">
+              <div># id: {id}</div>
+              <div># action: {err.guardrail.action}</div>
+              <br />
+              {content.split("\n").map((line, i) => (
+                <div
+                  key={i}
+                  className={line.includes(message) ? "highlight" : undefined}
+                >
+                  {line}
+                </div>
+              ))}
+            </pre>
           </div>
-          <pre className="marked-line">
-            <div># id: {id}</div>
-            <div># action: {err.guardrail.action}</div>
-            <br />
-            {content.split("\n").map((line, i) => (
-              <div
-                key={i}
-                className={line.includes(message) ? "highlight" : undefined}
-              >
-                {line}
-              </div>
-            ))}
-          </pre>
         </div>
+        <div className="stat">
+          <BsSpeedometer2 />
+          {error.time}ms
+        </div>
+      </>
+    );
+  } catch (e) {
+    return (
+      <div className="error">
+        <BsExclamationCircleFill />
+        <code>{JSON.stringify(error)}</code>
       </div>
-      <div className="stat">
-        <BsSpeedometer2 />
-        {error.time}ms
-      </div>
-    </>
-  );
+    );
+  }
 }
 
 export function Chat(props: { dataset: string }) {

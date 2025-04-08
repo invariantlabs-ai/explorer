@@ -53,11 +53,11 @@ const event_schema = {
     content: { type: ["string", "null", "array"], items: content_schema },
     tool_call_id: { type: ["string", "number", "null"] },
     tool_calls: {
-      type: "array",
+      type: ["array", "null"],
       items: tool_call_schema,
     },
   },
-  required: ["role", "content"],
+  required: ["role"],
 };
 
 const ajv = new Ajv();

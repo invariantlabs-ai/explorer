@@ -173,7 +173,8 @@ async def queue_analysis(
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
-                            detail="Analysis service returned an error.",
+                            detail="Analysis service returned an error: "
+                            + str(response.status),
                         )
                     result = await response.json()
                     job_id = UUID(result)

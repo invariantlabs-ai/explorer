@@ -824,12 +824,15 @@ button {
   }
 
   input {
-    width: 100%;
     padding: 5pt;
     font-size: 12pt;
     border-radius: 5pt;
     border: 1pt solid $border-color;
     margin-top: 10pt;
+  }
+
+  input[type="text"] {
+    width: 100%;
   }
 }
 

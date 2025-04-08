@@ -95,7 +95,7 @@ export function AnalysisReport(props: {
   }, [jobs]);
 
   const onStartJob = async () => {
-    const { config, endpoint, apikey } = clientAnalyzerConfig("dataset");
+    const { config, endpoint, apikey } = clientAnalyzerConfig("single");
 
     const url = `/api/v1/dataset/byid/${props.dataset.id}/analysis`;
 
@@ -215,20 +215,23 @@ export function AnalysisReport(props: {
 function ClusterSummary({ clustering }: { clustering: any }) {
   if (!clustering || clustering.length === 0) {
     return (
-      <div className="empty-clustering" style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "160px",
-        height: "calc(100% - 40px)",
-        width: "100%",
-        color: "#6c757d",
-        fontSize: "1rem",
-        textAlign: "center",
-        flexDirection: "column",
-        gap: "0.75rem",
-        marginTop: "-20px"
-      }}>
+      <div
+        className="empty-clustering"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "160px",
+          height: "calc(100% - 40px)",
+          width: "100%",
+          color: "#6c757d",
+          fontSize: "1rem",
+          textAlign: "center",
+          flexDirection: "column",
+          gap: "0.75rem",
+          marginTop: "-20px",
+        }}
+      >
         <BsInfoCircle size={28} />
         <span>No issue patterns were found.</span>
       </div>

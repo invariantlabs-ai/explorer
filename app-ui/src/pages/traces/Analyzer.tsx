@@ -81,7 +81,7 @@ function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
 
   // take analyzer output as list and sort by severity key
   useEffect(() => {
-    let issues = annotations || [] as AnalyzerAnnotation[];
+    let issues = annotations || ([] as AnalyzerAnnotation[]);
 
     if (!issues) {
       setIssues([]);
@@ -95,7 +95,7 @@ function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
       }
       return 0;
     });
-  
+
     // if length > 1 and loading still in there, remove i
 
     setIssues(issues);
@@ -150,7 +150,7 @@ function createAnalysis(
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
   setDebug?: (debug: any) => void,
-  onAnnotationChange?: () => void,
+  onAnnotationChange?: () => void
 ): AbortController {
   const abortController = new AbortController();
 
@@ -168,8 +168,7 @@ function createAnalysis(
       const url = `/api/v1/trace/${trace_id}/analysis`;
       setRunning(true);
       setOutput((prev) => []);
-      if (onAnnotationChange)
-        onAnnotationChange()
+      if (onAnnotationChange) onAnnotationChange();
       const response = await fetch(url, {
         method: "POST",
         body,
@@ -193,15 +192,14 @@ function createAnalysis(
       let event: any = null;
 
       for await (event of stream) {
-        if (event.data === "update" && onAnnotationChange){
-          onAnnotationChange()
+        if (event.data === "update" && onAnnotationChange) {
+          onAnnotationChange();
         }
         if (event.data) {
           try {
             const chunk_data = JSON.parse(event.data);
             if (chunk_data.content) {
-              if (onAnnotationChange)
-                onAnnotationChange()
+              if (onAnnotationChange) onAnnotationChange();
             }
             if (chunk_data.debug) {
               if (setDebug) {
@@ -215,7 +213,6 @@ function createAnalysis(
                 alert("Analysis Error: " + chunk_data.error);
               }
             }
-
           } catch {
             setOutput((prev) => [
               ...(prev || []),
@@ -277,8 +274,7 @@ export function AnalyzerPreview(props: {
 
   const storedIsEmpty = numIssues === 0;
 
-  const notYetRun =
-    storedIsEmpty && !props.running && numIssues === 0;
+  const notYetRun = storedIsEmpty && !props.running && numIssues === 0;
 
   let content: React.ReactNode = null;
 
@@ -519,7 +515,7 @@ export function AnalyzerSidebar(props: {
         props.analyzer.setError,
         props.analyzer.setOutput,
         props.analyzer.setDebug,
-        props.onAnnotationChange,
+        props.onAnnotationChange
       );
       setAbortController(ctrl);
     } catch (error) {
@@ -600,13 +596,12 @@ export function AnalyzerSidebar(props: {
       )}
       <div className="status">{status}</div>
       <div className="issues">
-        {issues.map((output, i) =>(
-            <Issues
-              key={props.traceId + "-" + "issue-" + i + "-" + output.content}
-              issue={output}
-            />
-          )
-        )}
+        {issues.map((output, i) => (
+          <Issues
+            key={props.traceId + "-" + "issue-" + i + "-" + output.content}
+            issue={output}
+          />
+        ))}
       </div>
       {notYetRun && (
         <div className="output-empty">
@@ -679,9 +674,7 @@ function onMountConfigEditor(editor, monaco) {
   });
 }
 
-export function Issues(props: {
-  issue: AnalyzerAnnotation;
-}) {
+export function Issues(props: { issue: AnalyzerAnnotation }) {
   // content: [abc] content
   let errorContent = "";
   let content = props.issue.content;
