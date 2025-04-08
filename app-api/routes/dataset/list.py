@@ -6,15 +6,13 @@ from uuid import UUID
 
 from cachetools import TTLCache, cached
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import and_, or_, func, exists
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, Dataset, User, Trace, SavedQueries
-from models.queries import dataset_to_json, get_savedqueries
+from models.datasets_and_traces import Dataset, Trace, User, db
+from models.queries import dataset_to_json
 from routes.apikeys import UserOrAPIIdentity
 from routes.auth import UserIdentity
-
 from routes.dataset.utils import homepage_dataset_ids
+from sqlalchemy import and_, exists, func, or_
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

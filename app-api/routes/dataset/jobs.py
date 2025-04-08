@@ -1,15 +1,13 @@
 """Job management operations for datasets."""
 
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, DatasetJob
-from models.queries import load_jobs
+from models.datasets_and_traces import DatasetJob, db
 from routes.auth import UserIdentity
 from routes.jobs import cleanup_stale_jobs
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

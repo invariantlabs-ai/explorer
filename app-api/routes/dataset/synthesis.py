@@ -4,23 +4,22 @@ import asyncio
 import datetime
 import json
 import uuid
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import flag_modified
-
-from models.datasets_and_traces import db, Dataset, DatasetJob, User
 from models.analyzer_model import (
+    JobType,
     PolicyGenerationRequest,
     PolicySynthesisRequest,
-    JobType,
 )
+from models.datasets_and_traces import Dataset, DatasetJob, User, db
 from models.queries import AnalyzerTraceExporter, load_jobs
 from routes.auth import UserIdentity
-from routes.jobs import check_all_jobs, cancel_job
+from routes.jobs import cancel_job, check_all_jobs
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter()
 
