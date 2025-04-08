@@ -1,18 +1,14 @@
 """Dataset metadata operations."""
 
-from typing import Annotated, Dict, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import flag_modified
-
-from models.datasets_and_traces import db, Dataset, User
+from models.datasets_and_traces import User, db
 from routes.apikeys import APIIdentity, UserOrAPIIdentity
-from routes.auth import UserIdentity
-
 from routes.dataset.utils import load_dataset
 from routes.dataset_metadata import update_dataset_metadata
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

@@ -4,7 +4,7 @@ import datetime
 import json
 import re
 import uuid
-from typing import List, Any
+from typing import Any, List
 from uuid import UUID, uuid4
 
 import aiofiles
@@ -77,14 +77,18 @@ class AnalyzerTraceExporter:
 
     @classmethod
     def get_content_severity(cls, content: str) -> tuple[str, float]:
-        match = re.search(r"severity=([0-1](?:\.\d+)?)", content)  # Matches severity values from 0 to 1
+        match = re.search(
+            r"severity=([0-1](?:\.\d+)?)", content
+        )  # Matches severity values from 0 to 1
         if match:
             severity = float(match.group(1))
             content = re.sub(r",?\s*severity=[0-1](?:\.\d+)?", "", content).strip()
             return content, severity
-        return content, None # Return original string with severity=None if not found
+        return content, None  # Return original string with severity=None if not found
 
-    async def get_traces_by_ids(self, session: Session, trace_ids: list[str]) -> list[Any]:
+    async def get_traces_by_ids(
+        self, session: Session, trace_ids: list[str]
+    ) -> list[Any]:
         """
         Fetch raw traces by their IDs for policy generation.
 
@@ -118,7 +122,12 @@ class AnalyzerTraceExporter:
                 trace_contents.append(trace.content)
             except Exception as e:
                 import traceback
-                print(f"Error extracting trace content: {e}", traceback.format_exc(), flush=True)
+
+                print(
+                    f"Error extracting trace content: {e}",
+                    traceback.format_exc(),
+                    flush=True,
+                )
 
         return trace_contents
 
@@ -172,9 +181,13 @@ class AnalyzerTraceExporter:
                     and annotation.extra_metadata.get("source") == "analyzer-model"
                 ):
                     continue
-                if not AnalyzerTraceExporter.is_annotation_for_analyzer(annotation.content):
+                if not AnalyzerTraceExporter.is_annotation_for_analyzer(
+                    annotation.content
+                ):
                     continue
-                content, severity = AnalyzerTraceExporter.get_content_severity(annotation.content)
+                content, severity = AnalyzerTraceExporter.get_content_severity(
+                    annotation.content
+                )
                 samples_by_id[str(trace.id)].annotations.append(
                     AnalyzerAnnotation(
                         content=content,
@@ -639,7 +652,9 @@ async def images_to_base64(trace):
                     and content.get("image_url").get("url", "")
                     # Check if the image URL is a local image link
                     # Some older images are stored as base64 strings, so we skip those here
-                    and not content.get("image_url").get("url").startswith("data:image/")
+                    and not content.get("image_url")
+                    .get("url")
+                    .startswith("data:image/")
                 ):
                     image_tasks.append(
                         (
@@ -714,7 +729,9 @@ def dataset_to_json(dataset, user=None, latest_trace_time=None, **kwargs):
         "is_public": dataset.is_public,
         "user_id": dataset.user_id,
         "time_created": dataset.time_created,
-        "latest_trace_time": latest_trace_time if latest_trace_time is not None else dataset.time_created
+        "latest_trace_time": latest_trace_time
+        if latest_trace_time is not None
+        else dataset.time_created,
     }
     out = {**out, **kwargs}
     if user:

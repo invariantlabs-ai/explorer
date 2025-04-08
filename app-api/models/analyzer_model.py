@@ -1,10 +1,8 @@
 from enum import Enum
+from typing import Any, List, Literal
 from uuid import UUID
-from typing import List, Any
 
-from pydantic import BaseModel, RootModel, Field
-from enum import Enum
-from typing import Literal
+from pydantic import BaseModel, Field, RootModel
 
 
 class Annotation(BaseModel):
@@ -16,14 +14,14 @@ class Annotation(BaseModel):
 class Sample(BaseModel):
     trace: str
     id: str
-    domain: list[str] = Field(default_factory=list) # hierarchical domain of the trace
+    domain: list[str] = Field(default_factory=list)  # hierarchical domain of the trace
     annotations: list[Annotation]
 
 
 class InputSample(BaseModel):
     trace: str
     id: str
-    domain: list[str] = Field(default_factory=list) # hierarchical domain of the trace
+    domain: list[str] = Field(default_factory=list)  # hierarchical domain of the trace
 
 
 class TraceAnalysis(BaseModel):
@@ -34,14 +32,18 @@ class TraceAnalysis(BaseModel):
 
 class Cluster(BaseModel):
     name: str | None = None
-    issues_indexes: list[tuple[str, int]] # index of the issue, and then index of the annotation within the issue
+    issues_indexes: list[
+        tuple[str, int]
+    ]  # index of the issue, and then index of the annotation within the issue
 
     def issues(self, analysis_group: list[TraceAnalysis]) -> list[Annotation]:
         annotations: list[Annotation] = []
         for idx, j in self.issues_indexes:
             correct_analysis = [trace for trace in analysis_group if trace.id == idx]
             if len(correct_analysis) != 1:
-                raise ValueError(f"Expected 1 trace with id {idx}, found {len(correct_analysis)}")
+                raise ValueError(
+                    f"Expected 1 trace with id {idx}, found {len(correct_analysis)}"
+                )
             annotations.append(correct_analysis[0].annotations[j])
         return annotations
 
@@ -93,6 +95,7 @@ class TraceAnalysisResult(BaseModel):
     cost: float | None = None  # cost in usd of known
     trace_id: UUID
 
+
 class JobStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
@@ -119,9 +122,13 @@ class CompletedAnalysisJobResponse(CompletedJobResponse):
 
 class CompletedPolicySynthesisJobResponse(CompletedJobResponse):
     type: Literal[JobType.POLICY_SYNTHESIS] = JobType.POLICY_SYNTHESIS
-    success: bool = Field(..., description="Whether the policy synthesis was successful")
+    success: bool = Field(
+        ..., description="Whether the policy synthesis was successful"
+    )
     policy_code: str = Field(..., description="The generated policy code")
-    detection_rate: float = Field(..., description="The detection rate for the traces from the request")
+    detection_rate: float = Field(
+        ..., description="The detection rate for the traces from the request"
+    )
 
 
 class ErrorStep(BaseModel):
@@ -152,27 +159,42 @@ class PendingJobResponse(BaseModel):
 
 class PolicyGenerationRequest(BaseModel):
     """Request model for policy synthesis."""
-    problem_description: str = Field(..., description="Description of the problem class to detect")
-    traces: List[Any] = Field(..., description="List of traces exhibiting the problem, each trace is a list of dicts, each dict is one message in openai format")
+
+    problem_description: str = Field(
+        ..., description="Description of the problem class to detect"
+    )
+    traces: List[Any] = Field(
+        ...,
+        description="List of traces exhibiting the problem, each trace is a list of dicts, each dict is one message in openai format",
+    )
 
 
 class PolicySynthesisRequest(BaseModel):
     """Request model for policy synthesis API calls."""
+
     # model service connection information
-    apiurl: str = Field(..., description="The URL of the API to send policy synthesis requests to")
+    apiurl: str = Field(
+        ..., description="The URL of the API to send policy synthesis requests to"
+    )
     apikey: str = Field(..., description="The API key to use for authentication")
 
 
 JobResponseUnion = (
-    CompletedAnalysisJobResponse | CompletedPolicySynthesisJobResponse |
-    FailedJobResponse | RunningJobResponse | CancelledJobResponse | PendingJobResponse
+    CompletedAnalysisJobResponse
+    | CompletedPolicySynthesisJobResponse
+    | FailedJobResponse
+    | RunningJobResponse
+    | CancelledJobResponse
+    | PendingJobResponse
 )
+
 
 class JobResponseParser(RootModel):
     """
     Root model for parsing job responses based on their status and type.
     Uses a two-level discrimination approach - first by status, then by job type for completed jobs.
     """
+
     root: JobResponseUnion
 
     @classmethod
@@ -241,10 +263,12 @@ class JobResponseParser(RootModel):
             validated_data = self.validate_request(data)
             super().__init__(root=validated_data)
 
+
 class AnalysisRequestOptions(BaseModel):
     model_params: ModelParams
     concurrency: int | None = 10
     debug_options: DebugOptions | None = None
+
 
 class AnalysisRequest(BaseModel):
     # model service

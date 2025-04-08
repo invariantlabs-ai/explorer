@@ -3,6 +3,7 @@ import hashlib
 import os
 import uuid
 
+from database.database_manager import DatabaseManager
 from pydantic import BaseModel, Field
 from sqlalchemy import (
     ARRAY,
@@ -17,9 +18,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from database.database_manager import DatabaseManager
 
 
 class Base(DeclarativeBase):
