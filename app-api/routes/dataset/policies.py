@@ -8,15 +8,13 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
+from models.datasets_and_traces import DatasetPolicy, db
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import flag_modified
-
-from models.datasets_and_traces import db, DatasetPolicy
 from routes.apikeys import UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-
 from routes.dataset.utils import load_dataset
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter()
 
