@@ -37,6 +37,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from util.util import delete_images, parse_and_update_messages
+from util.validation import validate_annotation
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -580,6 +581,14 @@ async def append_messages(
             status_code=400,
             detail="Invalid messages format - expected a non-empty list of dictionaries",
         )
+    annotations = payload.get("annotations", []) or []
+    if not isinstance(annotations, list) or (
+        annotations and not all(isinstance(item, dict) for item in annotations)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid annotations format - expected a list of dictionaries or an empty list",
+        )
 
     # Validate timestamp format in new_messages
     # If timestamp exists, it should be in ISO 8601 format
@@ -649,6 +658,21 @@ async def append_messages(
 
                 trace_response.content = combined_messages
                 flag_modified(trace_response, "content")
+
+                for annotation_data in annotations:
+                    new_annotation = Annotation(
+                        trace_id=trace_id,
+                        user_id=user_id,
+                        content=annotation_data["content"],
+                        address=annotation_data["address"],
+                        extra_metadata=annotation_data.get("extra_metadata", None),
+                    )
+                    try:
+                        validate_annotation(new_annotation, trace_response)
+                    except Exception as e:
+                        # TODO: For now we just warn instead of throwing an error
+                        logger.warning(f"Error validating annotation: {str(e)}")
+                    session.add(new_annotation)
         return {"success": True}
     except SQLAlchemyError as e:
         logger.error("Database error when adding messages to existing trace: %s", e)
