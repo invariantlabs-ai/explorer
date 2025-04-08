@@ -3,24 +3,34 @@
 import asyncio
 import datetime
 import uuid
-from typing import Annotated, Optional, Dict, Any
+from typing import Annotated, Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, UploadFile, File
-from sqlalchemy import and_, exists, func, text
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, Dataset, Trace, User, Annotation, SavedQueries, SharedLinks
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from models.datasets_and_traces import (
+    Annotation,
+    Dataset,
+    SavedQueries,
+    SharedLinks,
+    Trace,
+    db,
+)
 from models.importers import import_jsonl
 from models.queries import dataset_to_json, get_savedqueries
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
-from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.apikeys import UserOrAPIIdentity
+from routes.auth import AuthenticatedUserIdentity
+from routes.dataset.utils import (
+    handle_dataset_creation_integrity_error,
+    load_dataset,
+    str_to_bool,
+)
+from sqlalchemy import and_, text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 from util.util import delete_images, validate_dataset_name
 
-from routes.dataset.utils import handle_dataset_creation_integrity_error, str_to_bool, load_dataset
-
 router = APIRouter()
+
 
 @router.post("/create")
 async def create(
@@ -80,11 +90,6 @@ async def upload_file(
     name = form.get("name")
     # is_public is a string because of Multipart request, convert to boolean
     is_public = str_to_bool("is_public", form.get("is_public", "false"))
-
-    if user_id is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to upload a dataset"
-        )
     validate_dataset_name(name)
 
     # Fail eagerly if a dataset with the same name already exists with some traces
@@ -201,9 +206,7 @@ def get_dataset(by: Dict[str, Any], user_id: UUID | None) -> Dict[str, Any]:
         )
 
 
-async def delete_dataset(
-    by: Dict[str, Any], user_id: UUID
-):
+async def delete_dataset(by: Dict[str, Any], user_id: UUID):
     """Delete a dataset and all associated data."""
     with Session(db()) as session:
         dataset = load_dataset(session, by, user_id)
