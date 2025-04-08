@@ -283,7 +283,9 @@ const Playground = ({
   };
 
   const getShareURL = () => {
-    return `${window.location.origin}${window.location.pathname.replace("/embed", "")}?policy=${Base64.encode(policyCode)}&input=${Base64.encode(inputData)}`;
+    let policy = policyCode || "";
+    let input = inputData || "";
+    return `${window.location.origin}${window.location.pathname.replace("/embed", "")}?policy=${Base64.encode(policy)}&input=${Base64.encode(input)}`;
   };
 
   const handleInputChange = (value: string | undefined) => {
