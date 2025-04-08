@@ -24,6 +24,7 @@ import {
   useLocalOpenAIAPIKey,
 } from "../../components/AutoAPIKey";
 import { ToggleButton } from "../../components/ToggleButton";
+import { useTelemetry } from "../../utils/Telemetry";
 
 // trigger this to open the chat pane
 export const TriggerChatOpenBroadcastEvent = new BroadcastEvent();
@@ -237,7 +238,14 @@ function Composer({
   );
 }
 
-function Message({ msg, index, loading, historyLength, loadingDotRef }: any) {
+function Message({
+  msgKey,
+  msg,
+  index,
+  loading,
+  historyLength,
+  loadingDotRef,
+}: any) {
   if (!isMessageVisible(msg, loading)) return null;
   return (
     <div
@@ -316,10 +324,13 @@ function GuardrailMessage({ error }: { error: any }) {
 }
 
 export function Chat(props: { dataset: string }) {
+  const telemetry = useTelemetry();
+
   const [show, _setShow] = useState(
     localStorage.getItem("chat-open") === "true"
   );
   const setShow = (show: boolean) => {
+    telemetry.capture("simulated-agent.open");
     _setShow(show);
     localStorage.setItem("chat-open", show.toString());
   };
@@ -368,6 +379,8 @@ export function Chat(props: { dataset: string }) {
   }, [settingsVisible, textareaRef]);
 
   const onSendMessage = async (msg: string, hist: any[] = history) => {
+    telemetry.capture("simulated-agent.send-message");
+
     let numChunks = 0;
 
     try {
@@ -576,7 +589,7 @@ export function Chat(props: { dataset: string }) {
             {history.map((msg, index) => (
               <>
                 <Message
-                  key={index}
+                  key={`msg-${index}`}
                   msg={msg}
                   index={index}
                   loading={loading}
@@ -585,6 +598,7 @@ export function Chat(props: { dataset: string }) {
                 />
                 <div
                   className={"post-message-anchor " + msg.role}
+                  key={`msg-anchor-${index}`}
                   style={{ position: "relative", top: "-70pt" }}
                 />
               </>

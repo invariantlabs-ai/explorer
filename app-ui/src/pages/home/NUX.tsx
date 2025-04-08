@@ -2,21 +2,7 @@ import Joyride, { CallBackProps, STATUS, Step, Placement } from "react-joyride";
 import { useEffect, useState } from "react";
 import { useUserInfo } from "../../utils/UserInfo";
 import { config } from "../../utils/Config";
-
-const defaultOptions = {
-  options: {
-    arrowColor: "#fff",
-    backgroundColor: "#fff",
-    beaconSize: 36,
-    overlayColor: "rgba(0, 0, 0, 0.5)",
-    primaryColor: "#8b89f7",
-    textColor: "#000",
-    zIndex: 100,
-  },
-  buttonBase: {
-    Cursor: "None",
-  },
-};
+import { NuxStyle } from "../../styles/NuxStyle";
 
 // This function returns the new user guide for the home page
 export default function HomePageNUX(props) {
@@ -32,7 +18,8 @@ export default function HomePageNUX(props) {
   if (userInfo?.loggedIn) {
     steps.push({
       target: ".box.dataset",
-      content: "We created a sample dataset for you to explore.",
+      title: "Welcome to Invariant",
+      content: "We created a sample project for you to explore.",
       disableBeacon: true,
       placement: "left",
     });
@@ -41,12 +28,14 @@ export default function HomePageNUX(props) {
   if (config("instance_name") != "local") {
     steps.push({
       target: ".box.featureddataset",
+      title: "Check Out a Public Dataset",
       content: "Explore public datasets from top agent benchmarks.",
       placement: "top",
       disableBeacon: true,
     });
     steps.push({
       target: ".box.activity",
+      title: "See What's Happening",
       content: "Once you annotate a trace the activity shows up here.",
       placement: "top",
     });
@@ -79,7 +68,7 @@ export default function HomePageNUX(props) {
           showProgress={true}
           showSkipButton={true}
           disableScrolling={true}
-          styles={defaultOptions}
+          styles={NuxStyle}
           callback={handleJoyrideCallback}
           locale={{
             last: "Finish Tour",

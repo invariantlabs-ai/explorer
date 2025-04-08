@@ -324,6 +324,7 @@ button.inline.danger {
   border: none;
   background: transparent;
   overflow-y: auto;
+  scrollbar-color: rgb(103, 103, 103) transparent;
 
   > .explorer.panel {
     margin-top: 0pt;

@@ -1,19 +1,8 @@
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useEffect, useState } from "react";
 import { config } from "../../utils/Config";
-
-const defaultOptions = {
-  options: {
-    arrowColor: "#fff",
-    backgroundColor: "#fff",
-    beaconSize: 36,
-    overlayColor: "rgba(0, 0, 0, 0.5)",
-    primaryColor: "#8b89f7",
-    textColor: "#000",
-    zIndex: 100,
-    Cursor: "None",
-  },
-};
+import "../../styles/NUX.scss";
+import { NuxStyle } from "../../styles/NuxStyle";
 
 export default function TracePageNUX() {
   const [run, setRun] = useState(true);
@@ -23,20 +12,30 @@ export default function TracePageNUX() {
   const steps: Step[] = [
     {
       target: ".sidebar",
-      content: "Explore and browse all traces from your dataset.",
+      title: "Explore Traces",
+      content: "Browse the captured agent trajectories in this dataset.",
       placement: "right",
       disableBeacon: true,
     },
-    {
-      target: "button.inline.nux-step-3",
-      content:
-        "Collapse All / Expand All messages in the current trace selected",
-      placement: "bottom",
-    },
+    // {
+    //   target: "button.inline.nux-step-3",
+    //   content:
+    //     "Collapse All / Expand All messages in the current trace selected",
+    //   placement: "bottom",
+    // },
     {
       target: className_event,
-      content: "Click on any line inside a message to add an annotation.",
+      title: "Inspect the Agent's Behavior",
+      content: "Inspect the different steps an agent took to reach this state.",
       placement: "top",
+    },
+    {
+      target: ".chat-button.tab",
+      title: "Simulate the Agent",
+      content:
+        "Once you're ready, you can also simulate the agent's behavior to generate more trajectories and see how it behaves in different situations.",
+      placement: "bottom",
+      locale: { next: "Next", skip: "Skip", back: "Back" },
     },
   ];
 
@@ -55,7 +54,7 @@ export default function TracePageNUX() {
     if (!localStorage.getItem(HAS_SEEN_NUX_TRACE_VIEW)) {
       // return the first event that's not test, metadata, but expanded
       // Note the expanded status is contracted, when the event is collapsed it has the class expanded
-      const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="metadata"]):not([class*="expanded"]):not([class*="analyzer-output"])`;
+      const selector = `.event:not([class*="test"]):not([class*="top-level"]):not([class*="analyzer-hint"]):not([class*="metadata"]):not([class*="expanded"]):not([class*="analyzer-output"])`;
       const eventFind = document.querySelector(selector);
       const new_className_event =
         "." + eventFind?.className.replace(/\s+/g, ".") || "";
@@ -90,7 +89,7 @@ export default function TracePageNUX() {
   };
 
   return (
-    <div>
+    <>
       {enableNux && config("nux") && (
         <Joyride
           steps={steps}
@@ -99,13 +98,13 @@ export default function TracePageNUX() {
           showProgress={true}
           showSkipButton={true}
           disableScrolling={true}
-          styles={defaultOptions}
+          styles={NuxStyle}
           callback={handleJoyrideCallback}
           locale={{
-            last: "Finish Tour",
+            last: "Complete Tour",
           }}
         ></Joyride>
       )}
-    </div>
+    </>
   );
 }
