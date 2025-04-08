@@ -158,10 +158,7 @@ function Home() {
       <div className="home-banner">
         <div className="home-banner-content">
           <h2>Guardrail your Agent with Invariant</h2>
-          <p>
-            Integrate Invariant to guardrail, secure and debug your agent. your
-            agent.
-          </p>
+          <p>Integrate Invariant to guardrail, secure and debug your agent.</p>
         </div>
         <div className="home-banner-buttons">
           <button
