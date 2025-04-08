@@ -6,12 +6,10 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pytest_lazy_fixtures import lf
-
 pytest_plugins = ("pytest_asyncio",)
 
 
-async def test_create_delete_snippet(context, url, screenshot):
+async def test_guardrails_flow(context, url, screenshot):
     """
     This test creates a new dataset, starts a simulated agent and runs it,
     creates a guardrail, and checks if the guardrail works by running
