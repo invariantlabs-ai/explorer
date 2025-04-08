@@ -147,6 +147,10 @@ interface PlaygroundProps {
 
 export function usePlaygroundExamples() {
   const [policyLibrary, setPolicyLibrary] = useState<any[]>([]);
+  const [defaultExample, setDefaultExample] = useState<{policy: string, input: string}>({
+    policy: "",
+    input: "[]"
+  });
 
   useEffect(() => {
     async function fetchExamples() {
@@ -161,6 +165,15 @@ export function usePlaygroundExamples() {
         }
         const data = await response.json();
         setPolicyLibrary(data);
+        
+        // Find first non-header example to use as default
+        const firstExample = data.find((example: any) => example.policy && example.input);
+        if (firstExample) {
+          setDefaultExample({
+            policy: firstExample.policy,
+            input: firstExample.input
+          });
+        }
       } catch (error) {
         console.error("Error fetching examples:", error);
       }
@@ -169,7 +182,7 @@ export function usePlaygroundExamples() {
     fetchExamples();
   }, []);
 
-  return policyLibrary || [];
+  return { policyLibrary, defaultExample };
 }
 
 /**
@@ -187,7 +200,7 @@ export function ExamplesButton({
   setInputData: (input: string) => void;
 }) {
   const [showExamples, setShowExamples] = useState(false);
-  const policyLibrary = usePlaygroundExamples();
+  const { policyLibrary } = usePlaygroundExamples();
 
   return (
     <>
@@ -256,6 +269,7 @@ const Playground = ({
   // get search params from URL
   const [policyCode, _setPolicyCode] = useState<string | null>(null);
   const [inputData, _setInputData] = useState<string | null>(null);
+  const { defaultExample } = usePlaygroundExamples();
 
   const setPolicyCode = (policy: string | null) => {
     _setPolicyCode(policy);
@@ -284,11 +298,11 @@ const Playground = ({
       const input_local = localStorage.getItem("input");
 
       if (policy_url || input_url) {
-        setPolicyCode(policy_url || defaultPolicy);
-        setInputData(input_url || defaultInput);
+        setPolicyCode(policy_url || defaultExample.policy);
+        setInputData(input_url || defaultExample.input);
 
-        localStorage.setItem("policy", policy_url || defaultPolicy);
-        localStorage.setItem("input", input_url || defaultInput);
+        localStorage.setItem("policy", policy_url || defaultExample.policy);
+        localStorage.setItem("input", input_url || defaultExample.input);
 
         // remove data from URL
         const url = new URL(window.location.href);
@@ -296,8 +310,8 @@ const Playground = ({
         url.searchParams.delete("input");
         window.history.replaceState({}, document.title, url.toString());
       } else {
-        setPolicyCode(policy_local || defaultPolicy);
-        setInputData(input_local || defaultInput);
+        setPolicyCode(policy_local || defaultExample.policy);
+        setInputData(input_local || defaultExample.input);
       }
     } catch (error) {
       console.error("Failed to parse URL: ", error);
@@ -307,12 +321,11 @@ const Playground = ({
       url.searchParams.delete("input");
       window.history.replaceState({}, document.title, url.toString());
 
-      setPolicyCode(defaultPolicy);
-      setInputData(defaultInput);
+      setPolicyCode(defaultExample.policy);
+      setInputData(defaultExample.input);
     }
-  }, []);
+  }, [defaultExample]);
 
-  const { width: screenWidth } = useWindowSize();
   const { check, ApiKeyModal } = useGuardrailsChecker();
   const [policyEditorHeight, setPolicyEditorHeight] = useState<
     number | undefined
