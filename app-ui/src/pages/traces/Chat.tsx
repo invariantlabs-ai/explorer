@@ -420,7 +420,7 @@ export function Chat(props: { dataset: string }) {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openAIAPIKey}`,
-            "Invariant-Authorization": `Bearer ${isLocalInstance() ? "dev-mode" : localInvariantAPIKey}}`,
+            "Invariant-Authorization": `Bearer ${isLocalInstance() ? "dev-mode" : localInvariantAPIKey}`,
             "Invariant-Guardrails-Authorization": `Bearer ${hostedInvariantAPIKey}`,
           },
           body: JSON.stringify({
