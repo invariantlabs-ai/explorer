@@ -17,10 +17,8 @@ import { DatasetRefreshBroadcastChannel } from "./Traces";
 import { BroadcastEvent } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
 import {
-  AutoAPIKeyInput,
   useAutoAPIKey,
   useHostedExplorerAPIKey,
-  useLocalAPIKey,
   useLocalOpenAIAPIKey,
 } from "../../components/AutoAPIKey";
 import { ToggleButton } from "../../components/ToggleButton";
@@ -30,7 +28,7 @@ import { useTelemetry } from "../../utils/Telemetry";
 export const TriggerChatOpenBroadcastEvent = new BroadcastEvent();
 
 export function isLocalInstance() {
-  return config("instance_name") != "local";
+  return config("instance_name") == "local";
 }
 
 function Text({
