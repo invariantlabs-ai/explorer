@@ -2871,6 +2871,33 @@ p.footer-links {
     flex-direction: column; /* Stack content and buttons vertically */
     text-align: center;
     padding: 15pt; /* Add more padding for better spacing */
+    margin-left: -10pt;
+    margin-right: -10pt;
+    border-radius: 0pt;
+  }
+
+  .home-banner .options {
+    text-align: left;
+
+    .options-tabs {
+      white-space: nowrap;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      max-width: 95%;
+
+      // hide scroll bar
+      scrollbar-width: none;
+    }
+
+    .tab {
+      font-size: 10pt;
+      padding: 0pt 5pt;
+      margin-bottom: 2pt;
+    }
+
+    .description {
+      font-size: 10pt;
+    }
   }
 
   .home-banner-content {
@@ -2885,26 +2912,6 @@ p.footer-links {
   .home-banner-button {
     width: 100%; /* Buttons take full width */
     max-width: none; /* Remove max-width restriction */
-  }
-}
-
-/* Additional Breakpoint for Extra Small Screens */
-@media (max-width: 480px) {
-  .home-banner {
-    padding: 10pt; /* Reduce padding for smaller devices */
-  }
-
-  .home-banner-content h2 {
-    font-size: 16pt; /* Adjust font size for smaller screens */
-  }
-
-  .home-banner-content p {
-    font-size: 10pt; /* Adjust font size for smaller screens */
-  }
-
-  .home-banner-button {
-    font-size: 9pt; /* Smaller font size for buttons */
-    padding: 5pt 10pt; /* Reduce padding to fit smaller screens */
   }
 }
 
