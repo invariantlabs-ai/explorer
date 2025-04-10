@@ -33,6 +33,19 @@
   flex-grow: 1;
 }
 
+svg.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .spinner-container {
   display: flex;
   justify-content: center;
@@ -417,6 +430,7 @@
     padding: 10pt;
     text-align: center;
     margin-bottom: 5pt;
+    width: calc(100% - 30pt);
 
     &.is-loading:hover {
       background-color: rgb(233, 233, 233);

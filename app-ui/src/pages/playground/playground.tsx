@@ -100,8 +100,7 @@ export function openInPlayground(
     });
 
     const policyCode = `raise "Detected issue" if:
-    # specify your conditions here
-    # To learn more about Invariant policies go to https://github.com/invariantlabs-ai/invariant
+    # specify your guardrailing rule here
     
     # example query
     ${makeCompatibleInvariantPolicy(messages) || "True"}`;
@@ -278,13 +277,17 @@ const Playground = ({
 
   const setPolicyCode = (policy: string | null) => {
     _setPolicyCode(policy);
-    localStorage.setItem("policy", policy || "");
+    if (headerStyle === "full") {
+      localStorage.setItem("policy", policy || "");
+    }
   };
 
   const setInputData = (input: string | null) => {
     _setInputData(input);
     setAnalysisResult(null);
-    localStorage.setItem("input", input || "");
+    if (headerStyle === "full") {
+      localStorage.setItem("input", input || "");
+    }
   };
 
   useEffect(() => {
@@ -306,8 +309,10 @@ const Playground = ({
         setPolicyCode(policy_url || defaultExample.policy);
         setInputData(input_url || defaultExample.input);
 
-        localStorage.setItem("policy", policy_url || defaultExample.policy);
-        localStorage.setItem("input", input_url || defaultExample.input);
+        if (headerStyle === "full") {
+          localStorage.setItem("policy", policy_url || defaultExample.policy);
+          localStorage.setItem("input", input_url || defaultExample.input);
+        }
 
         // remove data from URL
         const url = new URL(window.location.href);
@@ -419,8 +424,13 @@ const Playground = ({
 
   const getShareURL = () => {
     let policy = policyCode || "";
+    policy = Base64.encode(policy);
+    policy = encodeURIComponent(policy);
     let input = inputData || "";
-    return `${window.location.origin}${window.location.pathname.replace("/embed", "")}?policy=${Base64.encode(policy)}&input=${Base64.encode(input)}`;
+    input = Base64.encode(input);
+    input = encodeURIComponent(input);
+
+    return `${window.location.origin}${window.location.pathname.replace("/embed", "")}?policy=${policy}&input=${input}`;
   };
 
   const handleInputChange = (value: string | undefined) => {
@@ -595,9 +605,7 @@ const Playground = ({
                   {analysisResult &&
                     Object.keys(analysisResult).length == 0 && (
                       <div
-                        className={
-                          "no-result error " + (loading ? "is-loading" : "")
-                        }
+                        className={"no-result " + (loading ? "is-loading" : "")}
                         onClick={handleEvaluate}
                       >
                         {loading ? <>Evaluating...</> : <>No matches found.</>}

@@ -18,7 +18,7 @@
     "fetch-event-stream": "^0.1.5",
     "js-base64": "^3.7.7",
     "json-source-map": "^0.6.1",
-    "posthog-js": "1.181.0",
+    "posthog-js": "^1.235.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.1.0",
