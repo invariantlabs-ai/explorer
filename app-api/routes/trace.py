@@ -671,7 +671,7 @@ async def append_messages(
                     if address:
                         # Update the message index after "messages."
                         address = re.sub(
-                            r"messages\.(\d+)",
+                            r"^messages\.(\d+)",
                             lambda m: f"messages.{int(m.group(1)) + exising_messages_count}",
                             address,
                         )
