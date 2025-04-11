@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
@@ -626,6 +627,7 @@ async def append_messages(
                 if not trace_response:
                     raise HTTPException(status_code=404, detail="Trace not found")
 
+                exising_messages_count = len(trace_response.content)
                 # set timestamp for new messages
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
@@ -659,12 +661,26 @@ async def append_messages(
                 trace_response.content = combined_messages
                 flag_modified(trace_response, "content")
 
+                # The addresses in the annotations are relative to the new messages to append.
+                # When we append the new messages to the existing ones,
+                # we need to make sure that the
+                # addresses use the correct message offset.
                 for annotation_data in annotations:
+                    # Update the address to point to the new messages
+                    address = annotation_data.get("address")
+                    if address:
+                        # Update the message index after "messages."
+                        address = re.sub(
+                            r"messages\.(\d+)",
+                            lambda m: f"messages.{int(m.group(1)) + exising_messages_count}",
+                            address,
+                        )
+
                     new_annotation = Annotation(
                         trace_id=trace_id,
                         user_id=user_id,
                         content=annotation_data["content"],
-                        address=annotation_data["address"],
+                        address=address,
                         extra_metadata=annotation_data.get("extra_metadata", None),
                     )
                     try:
