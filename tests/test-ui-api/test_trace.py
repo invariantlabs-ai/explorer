@@ -375,17 +375,35 @@ async def test_append_messages_with_annotations(context, url, data_abc):
         initial_messages = await get_trace_messages(context, url, trace_id)
         assert len(initial_messages) == 2
 
-        # add annotations as we append new messages
+        # Add annotations as we append new messages
+        # This is for both new messages and existing messages.
         annotations = [
+            # Annotations for existing messages.
             {
                 "content": "test annotation",
-                "address": "messages.0:L0",
+                "address": "messages.0.content:L0",
                 "extra_metadata": {"source": "test-0"},
+            },
+            {
+                "content": "test annotation",
+                "address": "messages.0.content:0-1",
+                "extra_metadata": {"source": "test-0-0"},
             },
             {
                 "content": "test annotation",
                 "address": "messages.1.content:0-5",
                 "extra_metadata": {"source": "test-1"},
+            },
+            # Annotations for new messages.
+            {
+                "content": "test annotation",
+                "address": "messages.2.content:L0",
+                "extra_metadata": {"source": "test-2"},
+            },
+            {
+                "content": "test annotation",
+                "address": "messages.3.content:1-3",
+                "extra_metadata": {"source": "test-3"},
             },
         ]
         response = await append_messages(
@@ -412,22 +430,20 @@ async def test_append_messages_with_annotations(context, url, data_abc):
         del updated_trace[3]["timestamp"]
         assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
 
-        # verify that the annotation was added
+        # verify that the annotations were added
         response = await context.request.get(
             f"{url}/api/v1/trace/{trace_id}/annotations"
         )
         assert response.status == 200
         annotations_response = await response.json()
-        assert len(annotations_response) == 2
-        for i in range(2):
+        assert len(annotations_response) == 5
+        for i in range(5):
             assert annotations_response[i]["content"] == annotations[i]["content"]
             assert (
                 annotations_response[i]["extra_metadata"]["source"]
                 == annotations[i]["extra_metadata"]["source"]
             )
-        # Address is updated relative to existing messages.
-        assert annotations_response[0]["address"] == "messages.2:L0"
-        assert annotations_response[1]["address"] == "messages.3.content:0-5"
+            assert annotations_response[i]["address"] == annotations[i]["address"]
 
 
 async def test_add_and_get_simple_annotation(url, context, data_abc):
