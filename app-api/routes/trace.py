@@ -2,7 +2,6 @@
 
 import json
 import os
-import re
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
@@ -661,21 +660,13 @@ async def append_messages(
                 trace_response.content = combined_messages
                 flag_modified(trace_response, "content")
 
-                # The addresses in the annotations are relative to the new messages to append.
-                # When we append the new messages to the existing ones,
-                # we need to make sure that the
-                # addresses use the correct message offset.
+                # The annotations may not be for the new messages being appended only
+                # but also for the existing messages in the trace.
+                # This assumes that there are no concurrent calls to this endpoint when adding annotations.
+                # We intend to fix this long term by using message level ids (some sort of a uuid maybe?).
+                # We will not rely on messages indices then and this will be safe.
                 for annotation_data in annotations:
-                    # Update the address to point to the new messages
                     address = annotation_data.get("address")
-                    if address:
-                        # Update the message index after "messages."
-                        address = re.sub(
-                            r"^messages\.(\d+)",
-                            lambda m: f"messages.{int(m.group(1)) + exising_messages_count}",
-                            address,
-                        )
-
                     new_annotation = Annotation(
                         trace_id=trace_id,
                         user_id=user_id,
