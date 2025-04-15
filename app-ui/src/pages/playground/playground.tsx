@@ -280,7 +280,7 @@ export function WelcomeModal({ onClose, setPolicyCode, setInputData }: any) {
       if (!ex.policy) {
         acc[ex.name] = [];
       } else {
-        const lastHeader = Object.keys(acc).at(-1);
+        const lastHeader = Object.keys(acc)[Object.keys(acc).length - 1];
         if (lastHeader) acc[lastHeader].push(ex);
       }
       return acc;
