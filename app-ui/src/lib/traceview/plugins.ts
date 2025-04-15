@@ -1,8 +1,11 @@
 import CodeHighlighter from "./plugins/code-highlighter";
 import ImageViewer from "./plugins/image-viewer";
 
-// globally-enabled rendering plugins
-// let PLUGINS = [CodeHighlighter, ImageViewer];
+// make sure the image and code plugins are loaded
+window.addEventListener("load", () => {
+  // load the plugins
+  let PLUGINS = [CodeHighlighter, ImageViewer];
+}, false);
 
 let DISABLED_PLUGINS: string[] = [];
 

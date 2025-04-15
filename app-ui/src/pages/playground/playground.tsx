@@ -4,6 +4,7 @@ import {
   BsArrowBarUp,
   BsArrowsCollapse,
   BsArrowsExpand,
+  BsBook,
   BsChevronDown,
   BsChevronLeft,
   BsChevronRight,
@@ -25,9 +26,9 @@ import {
 import Spinning from "./spinning";
 import type { AnalysisResult, PolicyError } from "./types";
 import { beautifyJson } from "./utils";
-
-const defaultPolicy = "";
-const defaultInput = "[]";
+import CodeHighlightedView from "../../lib/traceview/plugins/code-highlighter";
+import ImageViewer from "../../lib/traceview/plugins/image-viewer";
+import { useTelemetry } from "../../utils/Telemetry";
 
 /**
  * Tries to find the name of a tool call in the given messages.
@@ -203,6 +204,7 @@ export function ExamplesButton({
   setPolicyCode: (policy: string) => void;
   setInputData: (input: string) => void;
 }) {
+  const telemetry = useTelemetry();
   const [showExamples, setShowExamples] = useState(false);
   const { policyLibrary } = usePlaygroundExamples();
 
@@ -242,6 +244,9 @@ export function ExamplesButton({
                     if (!policy || !input) {
                       return;
                     }
+                    telemetry.capture("playground.select-example", {
+                      example: example.name,
+                    });
                     setPolicyCode(policy);
                     setInputData(input);
                     setShowExamples(false);
@@ -259,6 +264,148 @@ export function ExamplesButton({
   );
 }
 
+export function WelcomeModal({ onClose, setPolicyCode, setInputData }: any) {
+  const telemetry = useTelemetry();
+
+  const { policyLibrary } = usePlaygroundExamples();
+
+  const onDocs = () => {
+    telemetry.capture("playground.welcome-dialog.open-docs");
+    window.open("https://explorer.invariantlabs.ai/docs", "_blank");
+  };
+
+  // Group examples by header
+  const groupedExamples = policyLibrary.reduce(
+    (acc: Record<string, any[]>, ex) => {
+      if (!ex.policy) {
+        acc[ex.name] = [];
+      } else {
+        const lastHeader = Object.keys(acc).at(-1);
+        if (lastHeader) acc[lastHeader].push(ex);
+      }
+      return acc;
+    },
+    {}
+  );
+
+  const onSelectExample = (example: any) => {
+    telemetry.capture("playground.select-example", {
+      example: example.name,
+    });
+    setPolicyCode(example.policy);
+    setInputData(example.input);
+    onClose();
+  };
+
+  return (
+    <div className="modal welcome">
+      <div className="modal-content view-options welcome">
+        <button className="close" onClick={onClose}>
+          Close
+        </button>
+        <div className="feature">
+          <div className="left">
+            <h1>Welcome to Invariant</h1>
+            <h2>
+              Invariant Guardrails offers contextual guardrailing for your
+              agentic AI systems, based on fuzzy and deterministic guardrailing
+              rules.
+              <br />
+              <br />
+              You can use this playground to experiment with guardrails and see
+              how they work in practice.
+            </h2>
+            <div className="buttons">
+              <button className="inline" onClick={onClose}>
+                Open Playground
+              </button>
+              <button className="inline primary" onClick={onDocs}>
+                Read Documentation
+              </button>
+            </div>
+          </div>
+          <div className="right">
+            <pre>
+              <code>
+                <span className="keyword" style={{ fontWeight: "bold" }}>
+                  raise
+                </span>{" "}
+                <span className="string">"Detected issue"</span>
+                <span className="keyword" style={{ fontWeight: "bold" }}>
+                  {" if"}
+                </span>
+                :<br />
+                {"  "}(<span className="var">msg</span>:{" "}
+                <span className="var">Message</span>)<br />
+                <span className="var">{"  "}msg</span>.
+                <span className="var">role</span> ==
+                <span className="string">"user"</span>
+                <br />
+                <span className="func">{"  "}prompt_injection</span>(
+                <span className="var">msg</span>.
+                <span className="var">content</span>)
+              </code>
+            </pre>
+          </div>
+        </div>
+        <hr />
+        <div className="examples-header">
+          <h3>Example Guardrailing Rules</h3>
+          <p>Browse a library of example guardrailing rules to get started.</p>
+        </div>
+        <div className="examples-scroll">
+          {policyLibrary.length === 0 && (
+            <p className="empty">No examples found.</p>
+          )}
+          {Object.entries(groupedExamples).map(([header, examples], i) => (
+            <div key={i} className="examples-section">
+              <h4>{header}</h4>
+              <div className="examples">
+                {examples.map((example, j) => (
+                  <div
+                    key={j}
+                    className="example"
+                    onClick={() => onSelectExample(example)}
+                  >
+                    <b>{example.name}</b>
+                    <p>
+                      {example.description.length > 100
+                        ? example.description.slice(0, 100) + "..."
+                        : example.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useWelcomeDialogState() {
+  // checks in local storage, if welcome dialog was dismissed previously
+  const [_showWelcomeDialog, setShowWelcomeDialog] = useState(
+    localStorage.getItem("welcome-dialog") !== "false"
+  );
+  const dismissWelcomeDialog = () => {
+    setShowWelcomeDialog(false);
+    localStorage.setItem("welcome-dialog", "false");
+  };
+
+  const showWelcomeDialog = () => {
+    // hows it locally, but does not reset the local storage
+    setShowWelcomeDialog(true);
+  };
+
+  return {
+    welcomeDialogShown: _showWelcomeDialog,
+    dismissWelcomeDialog,
+    showWelcomeDialog,
+  };
+}
+
 const Playground = ({
   editable = true,
   runnable = true,
@@ -274,6 +421,10 @@ const Playground = ({
   const [policyCode, _setPolicyCode] = useState<string | null>(null);
   const [inputData, _setInputData] = useState<string | null>(null);
   const { defaultExample } = usePlaygroundExamples();
+  const telemetry = useTelemetry();
+
+  const { welcomeDialogShown, dismissWelcomeDialog, showWelcomeDialog } =
+    useWelcomeDialogState();
 
   const setPolicyCode = (policy: string | null) => {
     _setPolicyCode(policy);
@@ -374,6 +525,11 @@ const Playground = ({
   };
 
   const handleEvaluate = async () => {
+    telemetry.capture("playground.evaluate", {
+      policy: policyCode,
+      input: inputData,
+    });
+
     setLoading(true); // Start loading
     setAnalysisResult(null);
     setError(null);
@@ -392,7 +548,13 @@ const Playground = ({
       if (analyzeResponse.status !== 200) {
         analyzeResponse.json().then((text) => {
           setLoading(false);
-          console.error("Failed to evaluate policy:", text);
+
+          telemetry.capture("playground.evaluate-failed", {
+            policy: policyCode,
+            input: inputData,
+            error: text,
+          });
+
           setError(
             "Failed to evaluate policy: " +
               (text?.detail || JSON.stringify(text))
@@ -465,8 +627,22 @@ const Playground = ({
     window.open(location, "_blank");
   };
 
+  const handleWelcome = () => {
+    telemetry.capture("playground.welcome-dialog", {
+      action: "show",
+    });
+    showWelcomeDialog();
+  };
+
   return (
     <>
+      {welcomeDialogShown && (
+        <WelcomeModal
+          onClose={() => dismissWelcomeDialog()}
+          setPolicyCode={setPolicyCode}
+          setInputData={setInputData}
+        />
+      )}
       <ApiKeyModal />
       <div className="playground">
         <h2 className={`header-${headerStyle}`}>
@@ -478,6 +654,10 @@ const Playground = ({
                   setPolicyCode={setPolicyCode}
                   setInputData={setInputData}
                 />
+                <a onClick={handleWelcome} className="docs-link">
+                  <BsBook />
+                  Learn More about Guardrails
+                </a>
               </div>
             </>
           )}

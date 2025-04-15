@@ -1,5 +1,25 @@
 @use "../../styles/Colors.scss" as *;
 
+.playground a.docs-link {
+  text-decoration: none;
+  font-size: 10pt;
+  font-weight: normal;
+  margin-left: -5pt;
+
+  &:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  svg {
+    margin-right: 5pt;
+    width: 12pt;
+    height: 10pt;
+    position: relative;
+    top: 1pt;
+  }
+}
+
 .panel-horizontal {
   min-width: 200px;
   height: calc(100vh - 73pt);
@@ -65,6 +85,11 @@ svg.spinner {
 
 .embed > .playground {
   height: 100% !important;
+}
+
+.embed.app.plain .traceview {
+  border-radius: 0pt;
+  border: none;
 }
 
 .playground {
@@ -161,7 +186,7 @@ svg.spinner {
           background-color: white;
           position: absolute;
           top: 45pt;
-          right: 0pt;
+          right: 145pt;
           z-index: 9999;
           box-shadow: 0 0 10pt rgba(0, 0, 0, 0.1);
           border-radius: 4pt;
@@ -469,5 +494,174 @@ svg.spinner {
     .content {
       margin: auto;
     }
+  }
+}
+
+.modal-content.welcome {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif !important;
+
+  padding: 0pt;
+
+  button.close {
+    font-size: 10pt;
+    margin-top: 0pt;
+    margin-right: 5pt;
+  }
+
+  h1 {
+    font-size: 25pt;
+    margin-top: 10pt;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 12pt;
+    font-weight: 400;
+  }
+
+  .buttons {
+    position: static;
+    display: flex;
+    margin-top: 20pt;
+
+    button {
+      height: 30pt;
+    }
+  }
+
+  .left {
+    padding-bottom: 50pt;
+    padding-left: 20pt;
+  }
+
+  .right {
+    padding-right: 15pt;
+  }
+
+  pre {
+    padding: 10pt;
+    font-size: 12pt;
+    margin: 20pt;
+    border-radius: 5pt;
+    background-color: rgb(241, 241, 241);
+    position: relative;
+  }
+
+  pre::before,
+  pre::after {
+    content: " ";
+    font-size: 12pt;
+    background-color: rgb(230, 230, 230);
+    border-radius: 5pt;
+    position: absolute;
+    top: -10pt;
+    left: 10pt;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    animation: pre-fade 0.25s ease-in-out;
+    animation-delay: 0.25s;
+    animation-fill-mode: forwards;
+    animation-name: pre-fade;
+    opacity: 0;
+  }
+
+  pre::after {
+    content: " ";
+    top: -5pt;
+    left: 5pt;
+    background-color: rgb(195, 195, 195);
+    animation-delay: 0s;
+  }
+
+  @keyframes pre-fade {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .feature {
+    display: flex;
+    flex-direction: row;
+    gap: 20pt;
+    align-items: center;
+    margin: 10pt;
+  }
+
+  hr {
+    border: 0.5pt solid #e2e8f0;
+  }
+
+  .examples-scroll {
+    max-height: 400pt;
+    overflow-y: auto;
+    padding: 20pt;
+    padding-top: 0pt;
+  }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10pt;
+
+    .example {
+      width: 115pt;
+      border: 1px solid #e2e8f0;
+      padding: 10pt;
+      border-radius: 4pt;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      transition: border-color 0.1s ease-in-out;
+
+      &:hover {
+        border: 1px solid $color-invariant;
+        cursor: pointer;
+      }
+
+      p {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  h4 {
+    width: 100% !important;
+    display: block;
+    opacity: 0.8;
+    height: 20pt;
+    flex: 1;
+    margin: 0pt;
+    padding: 0pt;
+    border: none;
+    margin-top: 15pt;
+    margin-bottom: 10pt;
+  }
+
+  .examples-header {
+    margin-left: 20pt;
+    margin-right: 20pt;
+    margin-bottom: -10pt;
+    padding-bottom: 10pt;
   }
 }
