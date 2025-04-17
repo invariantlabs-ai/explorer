@@ -113,6 +113,7 @@ async def import_jsonl(
     metadata: dict | None = None,
     existing_dataset=None,
     is_public: bool = False,
+    return_trace_data: bool = False,
 ):
     """
     Parses and reads a JSONL file and imports it into the database.
@@ -134,6 +135,20 @@ async def import_jsonl(
     ```
 
     The first line for dataset-level metadata is optional for both formats.
+
+    Args:
+        session: The database session
+        name: The name of the dataset
+        user_id: The user ID
+        lines: The lines of the JSONL file
+        metadata: Optional metadata to add to the dataset
+        existing_dataset: Optional existing dataset to add traces to
+        is_public: Whether the dataset is public
+        return_trace_data: Whether to return trace IDs and messages for tool call extraction
+
+    Returns:
+        If return_trace_data is False: The dataset object
+        If return_trace_data is True: Tuple of (dataset, trace_ids, messages)
     """
     metadata = {
         "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
@@ -148,6 +163,10 @@ async def import_jsonl(
         session.add(dataset)
     else:
         dataset = existing_dataset
+
+    # For tool call extraction if requested
+    trace_ids = []
+    all_messages = []
 
     i = 0
     for line in lines:
@@ -184,6 +203,11 @@ async def import_jsonl(
                 extra_metadata=trace_metadata,
             )
             session.add(trace)
+
+            if return_trace_data:
+                trace_ids.append(str(trace_id))
+                all_messages.append(parsed_line)
+
         elif validation_result["has_annotated_event_lists_format"]:
             trace_metadata = parsed_line.get("metadata", {})
             trace_id = uuid.uuid4()
@@ -232,5 +256,13 @@ async def import_jsonl(
                     extra_metadata=annotation.get("extra_metadata", {}),
                 )
                 session.add(annotation)
+
+            if return_trace_data:
+                trace_ids.append(str(trace_id))
+                all_messages.append(parsed_line["messages"])
+
         i = i + 1
+
+    if return_trace_data:
+        return dataset, trace_ids, all_messages
     return dataset

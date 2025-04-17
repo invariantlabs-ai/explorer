@@ -6,7 +6,7 @@ import uuid
 from typing import Annotated, Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, BackgroundTasks
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
@@ -24,10 +24,11 @@ from routes.dataset.utils import (
     load_dataset,
     str_to_bool,
 )
+from routes.dataset_metadata import extract_and_save_batch_tool_calls
 from sqlalchemy import and_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from util.util import delete_images, validate_dataset_name
+from util.util import delete_images, validate_dataset_name, parse_and_update_messages
 
 router = APIRouter()
 
@@ -82,6 +83,7 @@ async def create(
 async def upload_file(
     request: Request,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
 ):
     """Create a dataset via file upload."""
@@ -114,15 +116,26 @@ async def upload_file(
 
     with Session(db()) as session:
         lines = file.file.readlines()
-        dataset = await import_jsonl(
+        dataset, result_ids, messages = await import_jsonl(
             session,
             name,
             user_id,
             lines,
             existing_dataset=existing_dataset,
             is_public=is_public,
+            return_trace_data=True,
         )
         session.commit()
+        # Add background task to extract and save tool calls
+        if result_ids and messages:
+            background_tasks.add_task(
+                extract_and_save_batch_tool_calls,
+                result_ids,
+                messages,
+                dataset.id,
+                user_id
+            )
+
         return dataset_to_json(dataset)
 
 

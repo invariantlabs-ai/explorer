@@ -9,6 +9,7 @@ import {
   BsShieldCheck,
   BsShieldExclamation,
   BsStars,
+  BsTools,
   BsX,
 } from "react-icons/bs";
 import { Modal } from "../../components/Modal";
@@ -189,6 +190,74 @@ function PolicySynthesisModalContent(props) {
   );
 }
 
+/**
+ * Content to show in the modal for generating policies from tool templates.
+ */
+function ToolTemplateModalContent(props: {
+  dataset_id: string;
+  onClose: () => void;
+  onSuccess: (result?: any) => void;
+  generatePolicies: () => Promise<void>;
+}) {
+  // Get the API URL and key from the analyzer config
+  const { endpoint, apikey } = parseAnalyzerConfig();
+
+  const [apiUrl, setApiUrl] = React.useState(endpoint);
+  const [apiKey, setApiKey] = React.useState(apikey);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const onGenerate = async () => {
+    setLoading(true);
+    setError("");
+
+    if (apiKey === TEMPLATE_API_KEY) {
+      setLoading(false);
+      alertModelAccess(
+        "Please provide a valid API key in the Analyzer settings"
+      );
+      return;
+    }
+
+    try {
+      await props.generatePolicies();
+      props.onSuccess();
+      props.onClose();
+    } catch (error) {
+      setLoading(false);
+      setError("An error occurred: " + (error as Error).message);
+    }
+  };
+
+  return (
+    <div className="form tool-template-form">
+      <p>
+        Generate guardrail suggestions based on the tool templates found in your dataset.
+        This will create guardrails specifically for the tools used in your system.
+      </p>
+
+      <div className="banner-note">
+        <BsInfoCircle /> Policies will be generated based on the tool schemas in your dataset.
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="form-actions">
+        <button onClick={props.onClose}>Cancel</button>
+        <button
+          className="primary"
+          onClick={onGenerate}
+          disabled={
+            loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY
+          }
+        >
+          {loading ? "Generating..." : "Generate from Tool Templates"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function usePolicyLibrary() {
   const [libraryPolicies, setLibraryPolicies] = React.useState<
     GuardrailSuggestion[]
@@ -224,6 +293,107 @@ export function usePolicyLibrary() {
   return libraryPolicies;
 }
 
+export function useToolTemplatePolicies(datasetId) {
+  const [templatePolicies, setTemplatePolicies] = React.useState<GuardrailSuggestion[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const refreshTemplatePolicies = async () => {
+    if (!datasetId) return;
+
+    try {
+      setIsLoading(true);
+
+      // Fetch stored template-based policies from the new endpoint
+      const response = await fetch(
+        `/api/v1/dataset/byid/${datasetId}/templates-based-policies`
+      );
+
+      if (!response.ok) {
+        console.error("Failed to fetch template policies:", response.status);
+        setIsLoading(false);
+        return;
+      }
+
+      const policies = await response.json();
+
+      // Convert to GuardrailSuggestion format
+      const formattedPolicies = policies.map(policy => ({
+        id: `template_${policy.template_name}_${Date.now()}`,
+        policy_name: policy.template_name,
+        policy_code: policy.filled_policy,
+        cluster_name: policy.template_name,
+        created_on: new Date().toISOString(),
+        detection_rate: null,
+        success: true,
+        extra_metadata: {
+          from_tool_template: true
+        }
+      }));
+
+      setTemplatePolicies(formattedPolicies);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching template policies:", error);
+      setIsLoading(false);
+    }
+  };
+
+  // Function to generate new template policies
+  const generateTemplatePolicies = async () => {
+    if (!datasetId) return;
+
+    try {
+      setIsLoading(true);
+
+      // Get the API URL and key from the analyzer config
+      const { endpoint, apikey } = parseAnalyzerConfig();
+
+      // Validate API key before making the request
+      if (!apikey || apikey === TEMPLATE_API_KEY) {
+        console.error("Valid API key is required for template policy generation");
+        setIsLoading(false);
+        return;
+      }
+
+      // Prepare the request payload
+      const payload = {
+        apiurl: endpoint,
+        apikey: apikey,
+      };
+
+      // Make the API request to generate new policies
+      const response = await fetch(
+        `/api/v1/dataset/byid/${datasetId}/generate-policies-from-templates`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to generate policies from templates:", response.status);
+        setIsLoading(false);
+        return;
+      }
+
+      // After generating, refresh to get the latest policies
+      await refreshTemplatePolicies();
+    } catch (error) {
+      console.error("Error generating policies from tool templates:", error);
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    refreshTemplatePolicies();
+  }, [datasetId]);
+
+  return { templatePolicies, refreshTemplatePolicies, generateTemplatePolicies, isLoading };
+}
+
 export function GuardrailSuggestions({
   dataset,
   setSelectedPolicySuggestion,
@@ -245,9 +415,12 @@ export function GuardrailSuggestions({
   // policy synthesis state
   const [showPolicySynthesisModal, setShowPolicySynthesisModal] =
     React.useState(false);
+  // tool template policy generation state
+  const [showToolTemplateModal, setShowToolTemplateModal] = React.useState(false);
 
   // library policies
   const libraryPolicies = usePolicyLibrary();
+  const { templatePolicies, refreshTemplatePolicies, generateTemplatePolicies, isLoading: isLoadingTemplates } = useToolTemplatePolicies(dataset.id);
 
   // refreshes the list of stored suggested guardrails
   const refreshStoredPolicies = async () => {
@@ -364,6 +537,11 @@ export function GuardrailSuggestions({
   // // track whether synthesis is in progress
   const inProgress = policyJobs.length > 0;
 
+  const onToolTemplateSuccess = () => {
+    // Refresh template policies after generation
+    refreshTemplatePolicies();
+  };
+
   return (
     GUARDRAIL_SUGGESTIONS_ENABLED && (
       <>
@@ -381,11 +559,36 @@ export function GuardrailSuggestions({
             />
           </Modal>
         )}
+
+        {/* tool template modal */}
+        {showToolTemplateModal && (
+          <Modal
+            title="Generate from Tool Templates"
+            onClose={() => setShowToolTemplateModal(false)}
+            hasWindowControls
+          >
+            <ToolTemplateModalContent
+              dataset_id={dataset.id}
+              onClose={() => setShowToolTemplateModal(false)}
+              onSuccess={() => onToolTemplateSuccess()}
+              generatePolicies={generateTemplatePolicies}
+            />
+          </Modal>
+        )}
+
         <h3>
           <span>
             <BsStars /> Guardrail Suggestions
           </span>
           <div className="actions">
+            <button
+              aria-label="generate from tool templates"
+              className="button inline create-guardrail tool-template-btn"
+              onClick={() => setShowToolTemplateModal(true)}
+              style={{ marginRight: "5px" }}
+            >
+              <BsTools /> From Tools
+            </button>
             <button
               aria-label="generate guardrails"
               className="button inline create-guardrail"
@@ -401,14 +604,14 @@ export function GuardrailSuggestions({
           {/* Show no suggestions yet state */}
           {policyJobs.length === 0 &&
             storedPolicies.length === 0 &&
-            libraryPolicies.length === 0 && (
+            libraryPolicies.length === 0 &&
+            templatePolicies.length === 0 && (
               <div className="empty instructions box semi">
                 <h2>
                   <BsShieldExclamation /> No Guardrail Suggestions Yet
                 </h2>
                 <h3>
-                  Generate guardrail suggestions based on the clusters
-                  identified in analysis.
+                  Generate guardrail suggestions based on clusters or tool templates.
                 </h3>
               </div>
             )}
@@ -443,9 +646,9 @@ export function GuardrailSuggestions({
           )}
 
           {/* Show completed policies (if any) */}
-          {(storedPolicies.length > 0 || libraryPolicies.length > 0) && (
+          {(storedPolicies.length > 0 || libraryPolicies.length > 0 || templatePolicies.length > 0) && (
             <>
-              {[...storedPolicies, ...libraryPolicies].map(
+              {[...storedPolicies, ...templatePolicies, ...libraryPolicies].map(
                 (policy: GuardrailSuggestion, i: number) => {
                   const already_applied = suggestionJobIds.has(policy.id);
                   return (
@@ -462,7 +665,7 @@ export function GuardrailSuggestions({
                           <span>
                             {policy.policy_name || policy.cluster_name}
                           </span>
-                          {!policy.extra_metadata?.from_rule_library && (
+                          {!policy.extra_metadata?.from_rule_library && !policy.extra_metadata?.from_tool_template && (
                             <span className="badge blue">
                               <BsStars /> Generated
                             </span>
@@ -470,6 +673,11 @@ export function GuardrailSuggestions({
                           {policy.extra_metadata?.from_rule_library && (
                             <span className="badge">
                               <BsDatabaseFillLock /> Rule Library
+                            </span>
+                          )}
+                          {policy.extra_metadata?.from_tool_template && (
+                            <span className="badge purple">
+                              <BsTools /> Tool Template
                             </span>
                           )}
                         </h1>
