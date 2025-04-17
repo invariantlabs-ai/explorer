@@ -25,6 +25,29 @@ openai_client = OpenAI(
 )`,
   },
   {
+    name: "MCP",
+    description:
+      "Use Invariant via its MCP Gateway, to guardrail and log your MCP server interactions.",
+    link: "https://explorer.invariantlabs.ai/docs/",
+    snippet: (dataset, instance) => `{
+ "you-mcp-server": {
+  "command": "uvx",
+  "args": [
+    "invariant-gateway@latest",
+    "mcp",
+    "--project-name",
+    "${dataset}",
+    "--push-explorer",
+    "--exec",
+    "...(your MCP server command with npx or uvx)...",
+  ],
+  "env": {
+    "INVARIANT_API_KEY": "<INVARIANT_API_KEY>",${!instance.includes("https://explorer.invariantlabs.ai") ? '\n    "INVARIANT_API_ENDPOINT": "' + instance + '",' : ""}
+  }
+}
+`,
+  },
+  {
     name: "Anthropic",
     description: "Upload via Gateway and the Anthropic Python SDK.",
     link: "https://explorer.invariantlabs.ai/docs/gateway/llm-provider-integrations/anthropic/",
