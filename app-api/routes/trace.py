@@ -4,11 +4,11 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, Dict, List
+from typing import Annotated, Dict, List, Any
 from uuid import UUID
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import Response, StreamingResponse
 from logging_config import get_logger
 from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
@@ -32,6 +32,7 @@ from routes.apikeys import (
     UserOrAPIIdentity,
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
+from routes.dataset_metadata import extract_and_save_batch_tool_calls
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -557,6 +558,7 @@ def merge_sorted_messages(
 async def append_messages(
     request: Request,
     trace_id: str,
+    background_tasks: BackgroundTasks,
     user_id: Annotated[UUID, Depends(APIIdentity)],
 ):
     """
@@ -632,6 +634,7 @@ async def append_messages(
                 for message in new_messages:
                     message.setdefault("timestamp", timestamp_for_new_messages)
                 dataset_name = "!ROOT_DATASET_FOR_SNIPPETS"
+                dataset_id = None
                 if trace_response.dataset_id:
                     dataset_response = (
                         session.query(Dataset)
@@ -644,6 +647,7 @@ async def append_messages(
                         .first()
                     )
                     dataset_name = dataset_response.name
+                    dataset_id = trace_response.dataset_id
                 # parse images from new_messages and store them separately
                 new_messages = await parse_and_update_messages(
                     dataset=dataset_name,
@@ -680,6 +684,16 @@ async def append_messages(
                         # TODO: For now we just warn instead of throwing an error
                         logger.warning(f"Error validating annotation: {str(e)}")
                     session.add(new_annotation)
+
+                # Add background task to extract tool calls from new messages
+                background_tasks.add_task(
+                    extract_and_save_batch_tool_calls,
+                    trace_id,
+                    new_messages,
+                    dataset_id,
+                    user_id
+                )
+
         return {"success": True}
     except SQLAlchemyError as e:
         logger.error("Database error when adding messages to existing trace: %s", e)
