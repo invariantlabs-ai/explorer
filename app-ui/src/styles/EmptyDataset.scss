@@ -164,20 +164,31 @@
   // best monospace
   font-family: monospace;
 
-  button.copy {
+  div.language-selector{
     position: absolute;
     right: -5pt;
-    border-radius: 3pt;
     top: 0pt;
-    margin-top: 0pt !important;
-    width: 40pt;
-    height: 40pt;
-    transform: scale(0.8);
+  }
+
+  button{
+    margin-top: 5pt;
+    margin-left: 0pt;
+    margin-right: 3pt;
+    height: 25pt;
+    border-radius: 5pt;
+    border: 0pt;
+    vertical-align: top;
+  }
+
+  button.copy {
+    margin-right: 10pt;
+    padding-left: 5pt;
+    width: 25pt;
     background: none;
+    color: #000;
     opacity: 0.4;
     text-overflow: hidden;
     overflow: hidden;
-    border: 0pt;
 
     &:hover {
       background-color: rgb(234, 234, 234);
@@ -190,10 +201,32 @@
     }
 
     svg {
+      transform: scale(0.8);
       width: 15pt;
       height: 15pt;
     }
   }
+  button.language {
+    color: #000;
+    text-overflow: hidden;
+    font-size: 9pt;
+    font-family: monospace;
+    padding: 0pt 6pt;
+    opacity: 1;
+    border: 1pt solid rgb(255, 255, 255);
+    background-color: rgb(255, 255, 255);
+    border-color: rgb(255, 255, 255);
+
+    &:hover {
+      border-color: rgb(234, 234, 234);
+      opacity: 0.8;
+    }
+    &.active {
+      border-color: $color-button;
+      opacity: 1;
+    }
+  }
+
 }
 
 .jsonl-upload {
