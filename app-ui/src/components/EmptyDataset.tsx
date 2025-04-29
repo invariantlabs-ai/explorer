@@ -3,12 +3,12 @@ import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
 import {
-  BsChat,
   BsChatFill,
   BsClipboard2,
   BsClipboard2Check,
   BsCollection,
 } from "react-icons/bs";
+import { Tooltip } from "react-tooltip";
 import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
@@ -182,7 +182,14 @@ export function CodeWithCopyButton({ code }: { code: Record<string, string> }) {
       <button
         onClick={handleCopy}
         className={"copy " + (copied ? "copied" : "")}
+        data-tooltip-id="copy-code-tooltip"
+        data-tooltip-content={copied ? "Copied!" : "Copy"}
       >
+        <Tooltip
+            id="copy-code-tooltip"
+            place="bottom"
+            style={{ whiteSpace: "pre" }}
+          />
         {copied ? <BsClipboard2Check /> : <BsClipboard2 />}
       </button>
     </div>
