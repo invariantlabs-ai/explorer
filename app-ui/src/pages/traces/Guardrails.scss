@@ -339,11 +339,10 @@ button.policy-action {
 
   .guardrails-main {
     text-align: left;
-    width: 100%;
     align-items: flex-start;
     padding: 0pt;
     padding-left: 5pt;
-    width: calc(100% - 5pt);
+    width: calc(100% + 5pt);
     height: calc(100% - 30pt);
     padding-top: 2pt;
 
@@ -456,6 +455,10 @@ button.policy-action {
   overflow: hidden;
   flex: 1;
 
+  .box.empty {
+    margin-top: 100pt !important;
+  }
+
   .panel.fullscreen,
   .sidebyside {
     overflow: hidden;
@@ -488,8 +491,8 @@ button.policy-action {
     position: relative;
 
     .traces {
-      height: calc(100% - 10pt) !important;
-      padding-bottom: 10pt !important;
+      height: calc(100% - 75pt) !important;
+      padding-bottom: 50pt !important;
     }
   }
 
@@ -707,6 +710,11 @@ button .progress,
 }
 
 .box.empty {
+  h3 {
+    font-weight: normal;
+    margin-bottom: 10pt;
+  }
+
   svg {
     position: relative;
     top: 3pt !important;

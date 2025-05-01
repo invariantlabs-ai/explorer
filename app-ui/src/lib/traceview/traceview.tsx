@@ -15,6 +15,7 @@ import {
   BsChevronRight,
   BsCircle,
   BsCircleFill,
+  BsChevronDown,
 } from "react-icons/bs";
 
 import { HighlightedJSON, Highlight, GroupedHighlight, HighlightData } from "./highlights";
@@ -1128,22 +1129,6 @@ class MessageView extends React.Component<
             )}
             {!this.state.collapsed && (
               <>
-                {isHighlighted && (
-                  <ObjectLevelAnnotationIndicator
-                    highlights={this.props.highlights.rootHighlights}
-                    highlightContext={this.props.highlightContext}
-                    address={this.props.address}
-                    traceIndex={this.props.traceIndex}
-                    onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
-                    onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
-                  />
-                )}
-                <ObjectLevelAnnotationEditor
-                  highlights={this.props.highlights.rootHighlights}
-                  highlightContext={this.props.highlightContext}
-                  address={this.props.address}
-                  traceIndex={this.props.traceIndex}
-                />
                 {message.content && (
                   <div className={"content " + message.role}>
                     {typeof message.content === "object" ? (
@@ -1220,6 +1205,12 @@ class MessageView extends React.Component<
                     })}
                   </div>
                 )}
+                <ObjectLevelAnnotationIndicator
+                  highlights={this.props.highlights.rootHighlights}
+                  highlightContext={this.props.highlightContext}
+                  address={this.props.address}
+                  objectName={'message'}
+                />
               </>
             )}
           </AnchorDiv>
@@ -1233,27 +1224,27 @@ class MessageView extends React.Component<
 }
 
 /**
- * An extra line on top of the message content, that shows the object level highlights.
+ * Indicator to show object-level annotations (e.g. on message-level)
  */
 export function ObjectLevelAnnotationIndicator(props: {
   address: string;
   highlights: HighlightData[];
   highlightContext?: HighlightContext;
-  traceIndex?: number;
-  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
-  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
+  objectName?: string;
 }) {
   const highlights = useMemo(() => {
     let flattendHighlights = [] as HighlightData[];
+    let seen = new Set();
     for (const highlight of (props.highlights || [])) {
+      if (seen.has(highlight.content.annotationId)) {
+        continue;
+      }
       flattendHighlights.push({content: highlight.content.content!, extra_metadata: highlight.content.extra_metadata || {}, key: flattendHighlights.length, source: "guardrails-error", annotationId: highlight.content.annotationId})
+      seen.add(highlight.content.annotationId);
     }
+
     return flattendHighlights;
   }, [props.highlights]);
-
-  const grouped = useMemo(() => {
-    return {start: 0, end: 0, content: highlights}
-  }, [highlights]) as GroupedHighlight
 
   if (highlights.length == 0) {
     return null;
@@ -1271,13 +1262,23 @@ export function ObjectLevelAnnotationIndicator(props: {
     event.stopPropagation();
   } 
 
+  const InlineComponent: any = props.highlightContext?.decorator?.editorComponent;
+  const expanded = (props.address === props.highlightContext?.selectedHighlightAnchor)
+
   return (
     <>
-      <span className="object-level annotation-indicator" onClick={onExpand}>
+      <span className={"object-level annotation-indicator" + (expanded ? " active" : "") + (InlineComponent ? " expandable" : "")} onClick={onExpand}>
         <BsCircle/>
-        {highlights.length} object annotation{highlights.length > 1 ? "s" : ""}
-        <BsChevronRight className="chevron"/>
+        {highlights.length} {(props.objectName || "object")} annotation{highlights.length > 1 ? "s" : ""}
+        {!expanded ? <BsChevronRight className="chevron"/> : <BsChevronDown className="chevron"/>}
       </span>
+      {props.address === props.highlightContext?.selectedHighlightAnchor && (
+        <ObjectLevelAnnotationEditor
+          highlights={props.highlights}
+          highlightContext={props.highlightContext}
+          address={props.address}
+        />
+      )}
     </>
   );
 }
@@ -1289,9 +1290,6 @@ export function ObjectLevelAnnotationEditor(props: {
   address: string;
   highlights: HighlightData[];
   highlightContext?: HighlightContext;
-  traceIndex?: number;
-  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
-  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
 }) {
   const highlights = useMemo(() => {
     let flattendHighlights = [] as HighlightData[];
@@ -1315,13 +1313,17 @@ export function ObjectLevelAnnotationEditor(props: {
   }
 
   const InlineComponent: any = props.highlightContext?.decorator?.editorComponent;
-  const content = InlineComponent({
+  const content = InlineComponent ? InlineComponent({
     highlights: [grouped],
     address: props.address,
     onClose: () => {
       // nop
     },
-  });
+  }) : null;
+
+  if (!content) {
+    return null;
+  }
 
   return (
     <span className="object-level line">
@@ -1516,8 +1518,20 @@ function ToolCallView(props: {
             onUpvoteDownvoteCreate={props.onUpvoteDownvoteCreate}
             onUpvoteDownvoteDelete={props.onUpvoteDownvoteDelete}
           ></HighlightedJSONTable>
+          <ObjectLevelAnnotationIndicator
+            address={props.address + ".function.arguments"}
+            highlights={argumentHighlights.rootHighlights}
+            highlightContext={props.highlightContext}
+            objectName={'argument'}
+          />
         </pre>
       </div>
+      <ObjectLevelAnnotationIndicator
+        address={props.address}
+        highlights={highlights.rootHighlights}
+        highlightContext={props.highlightContext}
+        objectName={'tool call'}
+      />
     </AnchorDiv>
   );
 }

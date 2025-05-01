@@ -302,7 +302,7 @@
     }
   }
 
-  .event.guardrail + .stat {
+  .event.guardrail+.stat {
     margin-top: -10pt;
   }
 
@@ -337,7 +337,7 @@
   }
 }
 
-.flow-in {
+.chat .flow-in {
   // error shake
   animation: shake 0.2s ease-in-out;
   animation-fill-mode: forwards;

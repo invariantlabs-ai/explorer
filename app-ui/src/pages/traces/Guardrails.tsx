@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BsArrowsAngleContract,
   BsArrowsAngleExpand,
@@ -28,7 +28,7 @@ import {
 } from "./GuardrailSuggestions";
 import { Traces } from "./Traces";
 import { GuardrailsIcon } from "../../components/Icons";
-import { useDatasetGuardrailsChecker } from "../../lib/GuardrailsChecker";
+import { PolicyCheckResult, useDatasetGuardrailsChecker } from "../../lib/GuardrailsChecker";
 import { PolicyEditor } from "../playground/policyeditor";
 
 const GUARDRAIL_EVALUATION_ENABLED = true;
@@ -105,6 +105,23 @@ function DeletePolicyModalContent(props) {
       </button>
     </div>
   );
+}
+
+/**
+ * Transforms a list of results into a mapping of index to result.
+ */
+export function useResultsByIndex(results: PolicyCheckResult[]): Record<number, PolicyCheckResult> {
+  const [resultsByIndex, setResultsByIndex] = useState<Record<number, PolicyCheckResult>>({})
+
+  useEffect(() => {
+    const mapping = results.reduce((acc, result) => {
+      acc[result.index] = result
+      return acc
+    }, {} as Record<number, PolicyCheckResult>);
+    setResultsByIndex(mapping)
+  }, [results])
+
+  return resultsByIndex
 }
 
 /**
@@ -250,7 +267,46 @@ function MutatePolicyModalContent(props: {
       evaluator.stopCheck();
     }
   }, [modalRef, evaluator]);
+
+  const resultsByIndex = useResultsByIndex(evaluator.results)
   
+  const annotationsProvider = (trace: {index: number} | null) => {
+    if (!trace) {
+      return null
+    }
+    const result = resultsByIndex[trace.index]
+    
+    if (result) {
+      let annotations = {} as any[]
+      for (const error of result.errors || []) {
+        let annotationRages = [] as any[]
+
+        for (const range of error.ranges || []) {
+          annotationRages.push({
+            "content": error.args.join(" ") + Object.entries(error.kwargs).map(([k, v]) => `${k}=${v}`).join(" "),
+            "address": range,
+            "index": annotationRages.length,
+            "extra_metadata": {
+              "source": "guardrails-error"
+            }
+          })
+        }
+
+        // add all the annotation ranges to the annotations
+        for (const annotation of annotationRages) {
+          if (!annotations[annotation.address]) {
+            annotations[annotation.address] = []
+          }
+          annotations[annotation.address].push(annotation)
+        }
+      }
+
+      console.log("annotations", annotations)
+
+      return annotations
+    }
+    return null
+  }
 
   return (
     <div className="modal-content policy-editor-form " ref={modalRef}>
@@ -476,28 +532,7 @@ function MutatePolicyModalContent(props: {
                     toolbarItems={{
                       expandCollapse: true
                     }}
-                    annotationsProvider={(trace) => {
-                      const result = evaluator.results.find(r => r.index == trace?.index)
-                      if (result) {
-                        let annotations = {} as any[]
-                        for (const error of result.errors || []) {
-                          for (const range of error.ranges || []) {
-                            if (!annotations[range]) {
-                              annotations[range] = []
-                            }
-                            annotations[range].push({
-                              "content": error.args.join(" ") + Object.entries(error.kwargs).map(([k, v]) => `${k}=${v}`).join(" "),
-                              "address": range,
-                              "extra_metadata": {
-                                "source": "guardrails-error"
-                              }
-                            })
-                          }
-                        }
-                        return annotations
-                      }
-                      return null
-                    }}
+                    annotationsProvider={annotationsProvider}
                     indices={{"all": {"traces": triggered_traces.map(r => r.index)}}}
                   />
                 )}

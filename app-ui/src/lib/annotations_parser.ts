@@ -94,6 +94,10 @@ export class AnnotationsParser {
               extra_metadata: annotation.extra_metadata,
             }
 
+            // strip off trailing .content from the key
+            if (key.endsWith(".content")) {
+              key = key.slice(0, -8);
+            }
             highlights.push([key, highlight]);
           }
         }
