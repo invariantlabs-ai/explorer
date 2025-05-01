@@ -82,6 +82,21 @@ export class AnnotationsParser {
 
           highlights.push([key, highlight]);
         }
+      } else {
+        // if not character of bbox range but still guardrails-error, make it a object-level highlight
+        for (let i = 0; i < annotations[key].length; i++) {
+          let annotation = annotations[key][i];
+          if (annotation.extra_metadata && annotation.extra_metadata["source"] === "guardrails-error") {
+            let highlight: HighlightData = {
+              content: annotation.content,
+              source: annotation.extra_metadata["source"],
+              annotationId: key + ":" + i,
+              extra_metadata: annotation.extra_metadata,
+            }
+
+            highlights.push([key, highlight]);
+          }
+        }
       }
     }
 

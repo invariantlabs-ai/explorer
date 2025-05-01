@@ -6,11 +6,13 @@
   margin: 5pt;
   padding: 0pt;
   width: 100%;
+  flex-wrap: wrap;
 
   .tab {
     border-radius: 5pt;
     padding: 1pt 7pt;
     margin-right: 3pt;
+    cursor: pointer;
 
     &:hover {
       text-decoration: underline;
@@ -21,6 +23,32 @@
       border: 0pt solid $color-primary;
       color: white;
     }
+  }
+}
+
+.upload-banner-input {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 6pt;
+  padding-right: 5pt;
+  margin-top: 5pt;
+  margin-bottom: 10pt;
+  justify-content: center;
+
+  label {
+    margin-top: 7pt;
+    margin-bottom: 2pt;
+  }
+
+  input {
+    width: calc(100% - 12.5pt);
+    flex: 1;
+    display: block;
+    border-radius: 5pt;
+    border: 1pt solid $border-color;
+    padding: 10pt 5pt;
+    font-size: 10pt;
   }
 }
 
@@ -114,6 +142,11 @@
   }
 }
 
+.options.wide {
+  max-width: auto;
+  width: 100% !important;
+}
+
 .code-with-copy {
   position: relative;
   background-color: white;
@@ -125,26 +158,37 @@
   display: block;
 
   .rendered-tokens {
-    overflow-x: scroll;
+    overflow-x: auto;
   }
 
   // best monospace
   font-family: monospace;
 
-  button.copy {
+  div.language-selector{
     position: absolute;
     right: -5pt;
-    border-radius: 3pt;
     top: 0pt;
-    margin-top: 0pt !important;
-    width: 40pt;
-    height: 40pt;
-    transform: scale(0.8);
+  }
+
+  button{
+    margin-top: 5pt;
+    margin-left: 0pt;
+    margin-right: 3pt;
+    height: 25pt;
+    border-radius: 5pt;
+    border: 0pt;
+    vertical-align: top;
+  }
+
+  button.copy {
+    margin-right: 10pt;
+    padding-left: 5pt;
+    width: 25pt;
     background: none;
+    color: #000;
     opacity: 0.4;
     text-overflow: hidden;
     overflow: hidden;
-    border: 0pt;
 
     &:hover {
       background-color: rgb(234, 234, 234);
@@ -157,10 +201,32 @@
     }
 
     svg {
+      transform: scale(0.8);
       width: 15pt;
       height: 15pt;
     }
   }
+  button.language {
+    color: #000;
+    text-overflow: hidden;
+    font-size: 9pt;
+    font-family: monospace;
+    padding: 0pt 6pt;
+    opacity: 1;
+    border: 1pt solid rgb(255, 255, 255);
+    background-color: rgb(255, 255, 255);
+    border-color: rgb(255, 255, 255);
+
+    &:hover {
+      border-color: rgb(234, 234, 234);
+      opacity: 0.8;
+    }
+    &.active {
+      border-color: $color-button;
+      opacity: 1;
+    }
+  }
+
 }
 
 .jsonl-upload {
@@ -189,4 +255,53 @@
 .file-upload-mask {
   background-color: red;
   opacity: 1 !important;
+}
+
+.options.simulated-agent {
+  text-align: center;
+  max-width: calc(100% - 20pt);
+  margin: auto;
+  margin-top: 10pt;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20pt;
+  padding-left: 20pt;
+  padding-right: 20pt;
+  text-align: left;
+  white-space: nowrap;
+
+  font-size: 10pt;
+  padding: 10pt;
+
+  div {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  button {
+    width: 170pt;
+    font-size: 12pt;
+  }
+}
+
+.or-separator {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  margin: 10pt auto;
+  margin-bottom: -10pt;
+
+  .line {
+    height: 1pt;
+    background-color: $border-color !important;
+    display: block;
+    width: 30%;
+    margin-top: 0.2em;
+    margin-left: 10pt;
+    margin-right: 10pt;
+  }
 }

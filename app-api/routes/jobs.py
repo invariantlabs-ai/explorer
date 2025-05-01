@@ -15,6 +15,7 @@ from typing import Dict, List, Any, Optional
 import aiohttp
 import asyncio
 import json
+import re
 import uuid
 
 from sqlalchemy.orm import Session
@@ -270,8 +271,12 @@ async def on_analysis_result(job: DatasetJob, results: CompletedJobResponse):
                     {
                         "content": annotation.content,
                         "address": annotation.location,
-                        "extra_metadata": {"source": source, "severity": annotation.severity},
-                    } for annotation in analysis.annotations
+                        "extra_metadata": {
+                            "source": source,
+                            "severity": annotation.severity,
+                        },
+                    }
+                    for annotation in analysis.annotations
                 ],
             )
         cost = sum(a.cost for a in results.analysis if a.cost is not None)
@@ -317,12 +322,18 @@ async def on_policy_synthesis_result(job: DatasetJob, results: CompletedJobRespo
                 elif dataset.extra_metadata["generated_policies"] is None:
                     dataset.extra_metadata["generated_policies"] = []
 
-                # Extract policy data from results
+                cluster_name = job.extra_metadata.get("cluster_name", "Unnamed Cluster")
+                policy_name = cluster_name
+                if results.policy_code and results.success:
+                    # Look for the first string in quotes between 'raise' and 'if:'
+                    match = re.search(r'raise.*?"([^"]*)".*?if:', results.policy_code)
+                    if match:
+                        policy_name = match.group(1)
+
                 policy_data = {
                     "id": str(uuid.uuid4()),
-                    "cluster_name": job.extra_metadata.get(
-                        "cluster_name", "Unnamed Cluster"
-                    ),
+                    "cluster_name": cluster_name,
+                    "policy_name": policy_name,
                     "policy_code": results.policy_code,
                     "detection_rate": results.detection_rate,
                     "success": results.success,

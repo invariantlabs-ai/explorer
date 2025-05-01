@@ -14,7 +14,6 @@ import UserIcon from "../../lib/UserIcon";
 import { Time } from "../../components/Time";
 import { Metadata } from "../../lib/metadata";
 import { AnalysisResult } from "../../lib/analysis_result";
-import { openInPlayground } from "../../lib/playground";
 import { HighlightedJSON } from "../../lib/traceview/highlights";
 import { BroadcastEvent, RenderedTrace } from "../../lib/traceview/traceview";
 import { config } from "../../utils/Config";
@@ -26,6 +25,8 @@ import { HighlightsNavigator } from "./HighlightsNavigator";
 
 import { AnalyzerPreview, AnalyzerSidebar, useAnalyzer } from "./Analyzer";
 import { copyPermalinkToClipboard } from "../../lib/permalink-navigator";
+
+import { openInPlayground } from "../playground/playground";
 
 import "./Analyzer.scss";
 
@@ -44,6 +45,7 @@ import {
   BsTerminal,
   BsTrash,
 } from "react-icons/bs";
+import { useNavigate } from "react-router-dom";
 
 export const THUMBS_UP = ":feedback:thumbs-up";
 export const THUMBS_DOWN = ":feedback:thumbs-down";
@@ -60,9 +62,17 @@ export class Annotations extends RemoteResource {
       `/api/v1/trace/${traceId}/annotate`
     );
     this.traceId = traceId;
+    this.isNone = traceId == "<none>";
   }
 
   transform(data) {
+    if (!data) {
+      return [];
+    }
+    // not a valid response (likely an error)
+    if (!Array.isArray(data)) {
+      return [];
+    }
     let annotations = {};
     data.forEach((annotation) => {
       if (!(annotation.address in annotations)) {
@@ -166,21 +176,21 @@ function useHighlightDecorator(
           let importantHighlights = highlights.highlights
             .for_path(forAddressKey)
             .allHighlights();
-          const sources = importantHighlights.map(importantHighlight => 
-            importantHighlight[1].content?.source ?? "unknown"
+          const sources = importantHighlights.map(
+            (importantHighlight) =>
+              importantHighlight[1].content?.source ?? "unknown"
           );
           let counts_map = new Map();
           for (const source of sources) {
-             counts_map.set(source, (counts_map.get(source) || 0) + 1);
+            counts_map.set(source, (counts_map.get(source) || 0) + 1);
           }
-          
+
           for (const [s, c] of counts_map.entries()) {
-             counts.push({
-                 type: s,
-                 count: c,
-             });
+            counts.push({
+              type: s,
+              count: c,
+            });
           }
-          
         }
 
         // add user annotations
@@ -233,6 +243,8 @@ function useHighlightDecorator(
  * @param {boolean} props.enableNux - callback to enable the NUX
  * @param {boolean} props.enableAnalyzer - whether to enable the analyzer
  * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
+ * @param {Array} props.annotations - the annotations to show in the traceview (if null-ish, stored annotations are used)
+ * @param {boolean} props.toolbarItems - the toolbar items to show in the traceview (see TraceToolbarItems)
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -247,8 +259,10 @@ export function AnnotationAugmentedTraceView(props) {
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({});
   // loads and manages annotations as a remote resource (server CRUD)
-  const [annotations, annotationStatus, annotationsError, annotator] =
+  const [storedAnnotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, activeTraceId);
+
+  const annotations = props.annotations || storedAnnotations;
 
   // highlights to show in the traceview (e.g. because of analyzer or search results)
   const [highlights, setHighlights] = useState({
@@ -293,9 +307,11 @@ export function AnnotationAugmentedTraceView(props) {
     events.collapseAll?.fire();
   };
 
+  const navigate = useNavigate();
+
   // open in playground
   const onOpenInPlayground = () => {
-    openInPlayground(activeTrace?.messages || []);
+    openInPlayground(activeTrace?.messages || [], navigate);
     telemetry.capture("traceview.open-in-playground");
   };
 
@@ -323,11 +339,16 @@ export function AnnotationAugmentedTraceView(props) {
 
   // whenever annotations change, update mappings
   useEffect(() => {
-    let { highlights, errors, filtered_annotations, top_level_annotations, analyzer_annotations } =
-      AnnotationsParser.parse_annotations(
-        !props.hideAnnotations ? annotations : [],
-        props.mappings
-      );
+    let {
+      highlights,
+      errors,
+      filtered_annotations,
+      top_level_annotations,
+      analyzer_annotations,
+    } = AnnotationsParser.parse_annotations(
+      !props.hideAnnotations ? annotations : [],
+      props.mappings
+    );
     setHighlights({
       highlights: HighlightedJSON.from_entries(highlights),
       traceId: activeTraceId,
@@ -419,7 +440,8 @@ export function AnnotationAugmentedTraceView(props) {
         />
         {activeTrace && (
           <>
-            {is_all_expanded ? (
+            {props.toolbarItems?.expandCollapse && (
+            is_all_expanded ? (
               <button
                 className="inline icon nux-step-3"
                 onClick={onCollapseAll}
@@ -437,7 +459,8 @@ export function AnnotationAugmentedTraceView(props) {
               >
                 <BsArrowsExpand />
               </button>
-            )}
+            ))}
+            {props.toolbarItems?.download && (
             <button
               className="inline icon"
               onClick={(e) => {
@@ -450,15 +473,23 @@ export function AnnotationAugmentedTraceView(props) {
             >
               <BsDownload />
             </button>
+            )}
             {props.actions}
             <div className="vr" />
             {
-              <button className="inline" onClick={onOpenInPlayground}>
+              props.toolbarItems?.openInPlayground && (
+              <button
+                className="inline"
+                onClick={onOpenInPlayground}
+                data-tooltip-id="highlight-tooltip"
+                data-tooltip-content="Opens this trace in the Guardrails Playground"
+              >
                 {" "}
-                <BsTerminal /> Open In Invariant
+                <BsTerminal /> Open In Playground
               </button>
+              )
             }
-            {props.isUserOwned && config("sharing") && props.onShare && (
+            {props.toolbarItems?.share && (props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={
                   "inline nux-step-4" + (props.sharingEnabled ? "primary" : "")
@@ -475,14 +506,14 @@ export function AnnotationAugmentedTraceView(props) {
                   </>
                 )}
               </button>
-            )}
-            <button
+            ))}
+            {props.enableAnalyzer && props.toolbarItems?.analyzer && (<button
               className="inline analyzer-button"
               onClick={() => setAnalyzerOpen(!analyzerOpen)}
             >
               Analysis
               <BsLayoutSidebarInsetReverse />
-            </button>
+            </button>)}
           </>
         )}
       </header>
@@ -761,7 +792,11 @@ function Annotation(props) {
         <header className="username">
           <BsCaretLeftFill className="caret" />
           <div>
-            <b>{props.user.username}</b>
+            <b>
+              {userInfo?.loggedIn && userInfo.username == props.user.username
+                ? "You"
+                : props.user.username}
+            </b>
             {source && (
               <span className="source">
                 {" "}

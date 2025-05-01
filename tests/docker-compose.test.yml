@@ -14,13 +14,13 @@ services:
     networks:
       - invariant-explorer-web-test
     ports:
-      - '${PORT_HTTP:-80}:80'
+      - "${PORT_HTTP:-80}:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-http.entrypoints=invariant-explorer-web-test"
-  
+
   app-ui:
     container_name: "explorer-test-app-ui"
     build:
@@ -94,6 +94,23 @@ services:
       test: curl -X GET -I http://localhost:8000/api/v1 --fail
       interval: 1s
       timeout: 5s
+
+  gateway:
+    image: ghcr.io/invariantlabs-ai/invariant-gateway/gateway:latest
+    platform: linux/amd64
+    container_name: "explorer-local-gateway"
+    networks:
+      - invariant-explorer-web-test
+      - internal
+    environment:
+      - INVARIANT_API_URL=http://app-api:8000
+      - PORT=8002
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.explorer-local-gateway.rule=(Host(`localhost`) && PathPrefix(`/api/v1/gateway/`)) || (Host(`127.0.0.1`) && PathPrefix(`/api/v1/gateway/`)) || (Host(`host.docker.internal`) && PathPrefix(`/api/v1/gateway/`))"
+      - "traefik.http.routers.explorer-local-gateway.entrypoints=invariant-explorer-web-test"
+      - "traefik.http.services.explorer-local-gateway.loadbalancer.server.port=8002"
+      - "traefik.docker.network=invariant-explorer-web-test"
 
   database:
     image: postgres:16

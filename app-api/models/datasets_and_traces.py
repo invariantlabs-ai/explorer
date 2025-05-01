@@ -3,6 +3,7 @@ import hashlib
 import os
 import uuid
 
+from database.database_manager import DatabaseManager
 from pydantic import BaseModel, Field
 from sqlalchemy import (
     ARRAY,
@@ -17,9 +18,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from database.database_manager import DatabaseManager
 
 
 class Base(DeclarativeBase):
@@ -137,7 +137,7 @@ class Annotation(Base):
     # JSON object of the annotation
     content: Mapped[str] = mapped_column(String, nullable=False)
     # address within the trace that this annotation belongs to (e.g. message, offset, etc.)
-    address: Mapped[str] = mapped_column(String, nullable=False)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
     # timestamp of the creation of the comment
     time_created = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.now()

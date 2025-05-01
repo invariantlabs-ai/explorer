@@ -1,10 +1,13 @@
 import { BsSpeedometer2 } from "react-icons/bs";
 import Home from "./pages/home/Home.tsx";
 import Layout from "./layouts/Layout.tsx";
+import Embed from "./layouts/Embed.tsx";
 import { SingleTrace } from "./pages/traces/Traces.tsx";
 import "./styles/App.scss";
 import DatasetView from "./pages/traces/Dataset.tsx";
 import { NewTrace } from "./pages/new-trace/NewTrace.tsx";
+import { PlainTrace } from "./pages/new-trace/PlainTrace.tsx";
+import Playground from "./pages/playground/playground.tsx";
 import { SignUp } from "./pages/signup/SignUp.tsx";
 import User from "./pages/user/User.tsx";
 import { Snippets } from "./pages/snippets/Snippets.tsx";
@@ -100,6 +103,50 @@ export const routes = [
       };
     },
   },
+  {
+    path: "/traceview",
+    label: "Traceview",
+    element: (
+      <Layout needsLogin={false} fullscreen>
+        <PlainTrace />
+      </Layout>
+    ),
+  },
+  {
+    path: "/embed/traceview",
+    label: "Traceview",
+    element: (
+      <Embed>
+        <PlainTrace />
+      </Embed>
+    ),
+  },
+  {
+    path: "/playground",
+    label: "Playground",
+    element: (
+      <Layout needsLogin={false} fullscreen>
+        <Playground playgroundable={false} />
+      </Layout>
+    ),
+  },
+  {
+    path: "/embed/playground",
+    label: "Playground",
+    element: (
+      <Embed>
+        <Playground
+          showTrace={false}
+          runnable={false}
+          shareable={false}
+          headerStyle="minimal"
+          editable={false}
+          resizeEditor={true}
+        />
+      </Embed>
+    ),
+  },
+
   {
     path: "/new",
     label: "Upload New Trace",

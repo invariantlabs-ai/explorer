@@ -92,7 +92,7 @@ span.secondary-flashing {
 }
 
 .with-tabs .analyzer-sidebar {
-  top: 75pt;
+  top: 0pt;
   height: calc(100vh - 125pt) !important;
 }
 
@@ -102,11 +102,10 @@ span.secondary-flashing {
   overflow: hidden;
   transition: margin-right 0.1s !important;
   margin-right: 5pt !important;
-  position: fixed !important;
+  position: absolute !important;
   right: 5pt;
   overflow-x: hidden;
 
-  top: 40pt;
   height: calc(100vh - 90pt) !important;
 
   .logo {

@@ -8,17 +8,12 @@ from uuid import UUID
 
 import aiohttp
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, Dataset, DatasetJob, User
-from models.analyzer_model import (
-    JobRequest,
-    AnalysisRequest,
-    JobType,
-)
+from models.analyzer_model import AnalysisRequest, JobRequest, JobType
+from models.datasets_and_traces import Dataset, DatasetJob, User, db
 from models.queries import AnalyzerTraceExporter, load_jobs
 from routes.auth import UserIdentity
-from routes.jobs import check_all_jobs, cancel_job
+from routes.jobs import cancel_job, check_all_jobs
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -178,7 +173,8 @@ async def queue_analysis(
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
-                            detail="Analysis service returned an error.",
+                            detail="Analysis service returned an error: "
+                            + str(response.status),
                         )
                     result = await response.json()
                     job_id = UUID(result)

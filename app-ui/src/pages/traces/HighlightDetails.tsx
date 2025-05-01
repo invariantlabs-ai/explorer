@@ -15,6 +15,7 @@ import {
 import { AnalysisResult } from "../../lib/analysis_result";
 import { useState, useEffect } from "react";
 import { AnchorDiv } from "../../lib/permalink-navigator";
+import { GuardrailsIcon } from "../../components/Icons";
 
 /**
  * Renders details on specific highlights in the unfolding UI that is shown
@@ -37,7 +38,7 @@ export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
   let otherHighlights = highlights.filter(
     (highlight) => highlight.source != "analyzer"
   );
-
+  
   // test highlights
   const testHighlights = otherHighlights.filter((highlight) =>
     highlight.source?.startsWith("test-")
@@ -160,6 +161,9 @@ export function HighlightDetail(props: { highlight: HighlightData }) {
         severity={highlight.source.replace("test-", "")}
       />
     );
+  }
+  if (highlight.source == "guardrails-error") {
+    return <GuardrailFailureHighlightDetail highlight={highlight} />;
   } else if (highlight.source == "analyzer") {
     // ignore analyzer highlights (they are aggregated and shown in the separate analysis result)
   }
@@ -215,6 +219,93 @@ export function TestSuccessHighlightDetail(props: {
 }
 
 /**
+ * Visualizes a guardrail evaluation details when the corresponding line is selected in the trace view.
+ */
+export function GuardrailHighlightDetail(props: {
+  highlight: HighlightData;
+  text: string;
+  onHover?: (hover: boolean) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const highlight = props.highlight;
+
+  let guardrail_information = highlight.extra_metadata?.guardrail;
+  let guardrail_id = guardrail_information?.id;
+  let guardrail_action = guardrail_information?.action;
+  let guardrail_content = guardrail_information?.content;
+
+  // try to guess relevant line, but checking for exact match of the content with a line in guardrail_content (if present)
+  let line = -1;
+  if (guardrail_content) {
+    // determine line
+    const lines = guardrail_content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(highlight.content)) {
+        line = i;
+        break;
+      }
+    }
+
+    // in header include # id: nad #action: if available and update line accordingly. Also add spacing line between header and content if thereis a header
+    let header_lines: string[] = [];
+    if (guardrail_id) {
+      header_lines.push("# id: " + guardrail_id);
+    }
+    if (guardrail_action) {
+      header_lines.push("# action: " + guardrail_action);
+    }
+    if (header_lines.length > 0) {
+      header_lines.push("");
+    }
+    // add header to content
+    guardrail_content = header_lines.join("\n") + " " + guardrail_content;
+    line = line + header_lines.length - 1;
+  }
+
+  return (
+    <AnchorDiv
+      className={"event guardrail flow-in"}
+      onClick={() => guardrail_content && setExpanded(!expanded)}
+      copyOnClick={false}
+      id={safeAnchorId(highlight.annotationId || "")}
+    >
+      <div
+        className="content"
+        onMouseEnter={() => props.onHover?.(true)}
+        onMouseLeave={() => props.onHover?.(false)}
+      >
+        <div className={"guardrail-header" + (expanded ? " expanded" : "")}>
+          <GuardrailsIcon />
+          <b>{props.text}</b> {highlight.content}
+          {guardrail_id && <span className="guardrail-id">{guardrail_id}</span>}
+        </div>
+        {expanded && guardrail_content && (
+          <>
+            <MarkedLinePre line={line}>{guardrail_content}</MarkedLinePre>
+          </>
+        )}
+      </div>
+    </AnchorDiv>
+  );
+}
+
+/**
+ * Visualizes a guardrail failure when the corresponding line is selected in the trace view.
+ */
+export function GuardrailFailureHighlightDetail(props: {
+  highlight: HighlightData;
+  onHover?: (hover: boolean) => void;
+}) {
+  return (
+    <GuardrailHighlightDetail
+      highlight={props.highlight}
+      onHover={props.onHover}
+      text="Guardrail Failure"
+    />
+  );
+}
+
+/**
  * Details failed test highlights in the selected line of the trace view.
  */
 export function TestFailureHighlightDetail(props: {
@@ -265,12 +356,12 @@ export function TestFailureHighlightDetail(props: {
  * Simple code block where one specific line is highlighted in bold.
  */
 export function MarkedLinePre(props: {
-  line: number;
+  line?: number;
   children: React.ReactNode;
 }) {
   const lines = (props.children?.toString() || "").split("\n");
   return (
-    <pre className="marked-line">
+    <pre className={"marked-line " + ((props.line || -1) < 0 ? "no-line" : "")}>
       {lines.map((line, index) => {
         const highlighted = index == props.line;
         const className = index == props.line ? "highlight" : "";

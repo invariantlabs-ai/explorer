@@ -2,7 +2,6 @@ uvicorn
 fastapi
 aiohttp
 sse-starlette
-sqlalchemy[postgresql]
 pyyaml
 python-multipart
 fastapi-keycloak-middleware

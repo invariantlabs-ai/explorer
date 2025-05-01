@@ -1,19 +1,19 @@
 from typing import Annotated
 from uuid import UUID
+
 from fastapi import Depends, FastAPI, HTTPException, Request
-from models.datasets_and_traces import Dataset, User, db, Annotation, Trace, SharedLinks
+from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
 from models.queries import (
-    save_user,
-    user_to_json,
-    dataset_to_json,
     annotation_to_json,
+    dataset_to_json,
+    save_user,
     trace_to_json,
+    user_to_json,
 )
+from routes.apikeys import UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
-from util.util import get_gravatar_hash
-from routes.apikeys import APIIdentity, UserOrAPIIdentity
 
 user = FastAPI()
 
@@ -25,7 +25,6 @@ def user_by_id(user_id: UUID) -> User | None:
 
 @user.get("/info")
 def get_user(request: Request, user_id: Annotated[UUID | None, Depends(UserIdentity)]):
-    signedup = False
     if user_id is not None:
         session_user = user_by_id(user_id)
         if session_user is None:

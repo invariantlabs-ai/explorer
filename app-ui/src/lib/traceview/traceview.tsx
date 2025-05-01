@@ -12,12 +12,15 @@ import {
   BsFileEarmarkBreak,
   BsBracesAsterisk,
   BsShieldCheck,
+  BsChevronRight,
+  BsCircle,
+  BsCircleFill,
 } from "react-icons/bs";
 
-import { HighlightedJSON, Highlight, GroupedHighlight } from "./highlights";
+import { HighlightedJSON, Highlight, GroupedHighlight, HighlightData } from "./highlights";
 import { validate } from "./schema";
 import jsonMap from "json-source-map";
-import React, { useState, useEffect, useRef, Ref } from "react";
+import React, { useState, useEffect, useRef, Ref, useMemo } from "react";
 
 import { ViewportList } from "react-viewport-list";
 import { Plugins } from "./plugins";
@@ -41,6 +44,9 @@ interface TraceViewProps {
   inputData: string;
   // when the trace editor changes, this function is called with the new JSON string
   handleInputChange: (value: string | undefined) => void;
+
+  // callback when the trace view is mounted
+  onMount?: (events: Record<string, BroadcastEvent>) => void;
 
   // highlights to highlight in the trace view
   highlights: Record<string, string>;
@@ -181,7 +187,7 @@ export function TraceView(props: TraceViewProps) {
   return (
     <div className="traceview">
       {props.header != false && (
-        <h2>
+        <h2 className="traceview-header">
           <div>
             {props.title}
             {!sideBySide && (
@@ -223,6 +229,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>
@@ -243,6 +250,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>
@@ -255,6 +263,7 @@ export function TraceView(props: TraceViewProps) {
               highlights={highlightedJson || HighlightedJSON.empty()}
               decorator={props.decorator}
               traceId={props.traceId}
+              onMount={props.onMount}
             />
           </div>
         </div>
@@ -364,10 +373,14 @@ export function TraceEditor(props: {
       options={{
         // line break
         wordWrap: "on",
+        fontSize: 16,
         // background color
         minimap: { enabled: false },
         // custom theme with adapted background color
         theme: "vs-light",
+        stickyScroll: {
+          enabled: false,
+        },
       }}
     />
   );
@@ -743,6 +756,7 @@ function MessageHeader(props: {
   highlightContext?: HighlightContext;
   setExpanded: (state: boolean) => void;
   address: string;
+  children?: React.ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
   const [timeout, setTimeoutHandle] = useState(null as any);
@@ -768,6 +782,7 @@ function MessageHeader(props: {
         message={props.message}
       />
       <CompactView message={props} />
+      {props.children}
       <div
         className="address"
         onClick={(e) => {
@@ -981,7 +996,7 @@ class MessageView extends React.Component<
       // if all messages are expanded/collapsed, use that state
       // to initialize the expanded state of this message
       // even if we have all collapsed, we still want to show the user messages
-      collapsed = !props.allExpanded && this.props.message.role !== "user";
+      collapsed = !props.allExpanded
     }
 
     this.state = {
@@ -1019,7 +1034,7 @@ class MessageView extends React.Component<
       );
     }
 
-    const isHighlighted = this.props.highlights.rootHighlights.length;
+    const isHighlighted = this.props.highlights.rootHighlights.length > 0
 
     try {
       const message = this.props.message;
@@ -1108,10 +1123,27 @@ class MessageView extends React.Component<
                   this.setState({ collapsed: state })
                 }
                 address={this.props.address}
-              />
+              >
+                </MessageHeader>
             )}
             {!this.state.collapsed && (
               <>
+                {isHighlighted && (
+                  <ObjectLevelAnnotationIndicator
+                    highlights={this.props.highlights.rootHighlights}
+                    highlightContext={this.props.highlightContext}
+                    address={this.props.address}
+                    traceIndex={this.props.traceIndex}
+                    onUpvoteDownvoteCreate={this.props.onUpvoteDownvoteCreate}
+                    onUpvoteDownvoteDelete={this.props.onUpvoteDownvoteDelete}
+                  />
+                )}
+                <ObjectLevelAnnotationEditor
+                  highlights={this.props.highlights.rootHighlights}
+                  highlightContext={this.props.highlightContext}
+                  address={this.props.address}
+                  traceIndex={this.props.traceIndex}
+                />
                 {message.content && (
                   <div className={"content " + message.role}>
                     {typeof message.content === "object" ? (
@@ -1198,6 +1230,104 @@ class MessageView extends React.Component<
       return null;
     }
   }
+}
+
+/**
+ * An extra line on top of the message content, that shows the object level highlights.
+ */
+export function ObjectLevelAnnotationIndicator(props: {
+  address: string;
+  highlights: HighlightData[];
+  highlightContext?: HighlightContext;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
+}) {
+  const highlights = useMemo(() => {
+    let flattendHighlights = [] as HighlightData[];
+    for (const highlight of (props.highlights || [])) {
+      flattendHighlights.push({content: highlight.content.content!, extra_metadata: highlight.content.extra_metadata || {}, key: flattendHighlights.length, source: "guardrails-error", annotationId: highlight.content.annotationId})
+    }
+    return flattendHighlights;
+  }, [props.highlights]);
+
+  const grouped = useMemo(() => {
+    return {start: 0, end: 0, content: highlights}
+  }, [highlights]) as GroupedHighlight
+
+  if (highlights.length == 0) {
+    return null;
+  }
+
+  const onExpand = (event) => {
+    if (
+      props.address === props.highlightContext?.selectedHighlightAnchor
+    ) {
+      props.highlightContext?.setSelection(null);
+    } else {
+      props.highlightContext?.setSelection(props.address);
+    }
+
+    event.stopPropagation();
+  } 
+
+  return (
+    <>
+      <span className="object-level annotation-indicator" onClick={onExpand}>
+        <BsCircle/>
+        {highlights.length} object annotation{highlights.length > 1 ? "s" : ""}
+        <BsChevronRight className="chevron"/>
+      </span>
+    </>
+  );
+}
+
+/**
+ * An extra line on top of the message content, that shows the object level highlights.
+ */
+export function ObjectLevelAnnotationEditor(props: {
+  address: string;
+  highlights: HighlightData[];
+  highlightContext?: HighlightContext;
+  traceIndex?: number;
+  onUpvoteDownvoteCreate?: (traceIndex: number) => void;
+  onUpvoteDownvoteDelete?: (traceIndex: number) => void;
+}) {
+  const highlights = useMemo(() => {
+    let flattendHighlights = [] as HighlightData[];
+    for (const highlight of (props.highlights || [])) {
+      flattendHighlights.push({content: highlight.content.content!, extra_metadata: highlight.content.extra_metadata || {}, key: flattendHighlights.length, source: "guardrails-error", annotationId: highlight.content.annotationId})
+    }
+    return flattendHighlights;
+  }, [props.highlights]);
+
+  const grouped = useMemo(() => {
+    return {start: 0, end: 0, content: highlights}
+  }, [highlights]) as GroupedHighlight
+
+  if (highlights.length == 0) {
+    return null;
+  }
+
+  // if not selected, return null
+  if (props.address !== props.highlightContext?.selectedHighlightAnchor) {
+    return null;
+  }
+
+  const InlineComponent: any = props.highlightContext?.decorator?.editorComponent;
+  const content = InlineComponent({
+    highlights: [grouped],
+    address: props.address,
+    onClose: () => {
+      // nop
+    },
+  });
+
+  return (
+    <span className="object-level line">
+      <div className="inline-line-editor">{content}</div>
+    </span>
+  );
 }
 
 const extractBase64 = (url) => {

@@ -1,18 +1,22 @@
+"""Trace API routes for handling trace-related operations."""
+
 import json
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List
 from uuid import UUID
-from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
-import httpx
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from logging_config import get_logger
+from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
+from models.analyzer_model import Annotation as AnalyzerAnnotation
 from models.datasets_and_traces import Annotation, Dataset, SharedLinks, Trace, User, db
 from models.queries import (
+    AnalyzerTraceExporter,
+    DBJSONEncoder,
     annotation_to_json,
     has_link_sharing,
     load_annotations,
@@ -20,14 +24,8 @@ from models.queries import (
     load_trace,
     trace_to_exported_json,
     trace_to_json,
-    DBJSONEncoder,
-    AnalyzerTraceExporter,
 )
-from models.analyzer_model import (
-    AnalysisRequest,
-    SingleAnalysisRequest,
-    Annotation as AnalyzerAnnotation,
-)
+from pydantic import ValidationError
 from routes.apikeys import (
     APIIdentity,
     AuthenticatedUserOrAPIIdentity,
@@ -39,6 +37,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from util.util import delete_images, parse_and_update_messages
+from util.validation import validate_annotation
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -57,6 +56,7 @@ async def get_image(
     image_id: str,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
+    """Get an image for a trace."""
     with Session(db()) as session:
         _ = load_trace(session, trace_id, user_id, allow_public=True, allow_shared=True)
 
@@ -73,6 +73,7 @@ async def get_image(
 def get_trace_snippets(
     request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserOrAPIIdentity)]
 ):
+    """Get all trace snippets for a user."""
     limit = request.query_params.get("limit")
     limit = limit if limit != "" else None
 
@@ -92,6 +93,7 @@ def get_trace_snippets(
 async def delete_trace(
     id: str, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
+    """Delete a trace by ID."""
     with Session(db()) as session:
         # can only delete own traces
         trace = load_trace(session, id, user_id, allow_public=False, allow_shared=False)
@@ -123,6 +125,7 @@ def get_trace(
     include_annotations: bool = True,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
+    """Get a trace by ID."""
     with Session(db()) as session:
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
@@ -141,6 +144,7 @@ async def download_trace(
     id: str,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)] = None,
 ):
+    """Download a trace as JSONL."""
     with Session(db()) as session:
         trace = load_trace(session, id, user_id, allow_public=True, allow_shared=True)
 
@@ -171,8 +175,8 @@ def share_trace(
     id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Share a trace."""
     # never None (always authenticated)
-
     with Session(db()) as session:
         # load trace to check for auth
         trace = load_trace(session, id, user_id)
@@ -201,6 +205,7 @@ def unshare_trace(
     id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Unshare a trace."""
     with Session(db()) as session:
         _ = load_trace(session, id, user_id)  # load trace to check for auth
         shared_link = (
@@ -221,6 +226,7 @@ async def annotate_trace(
     id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Add an annotation to a trace."""
     with Session(db()) as session:
         trace = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -266,6 +272,7 @@ async def analyze_trace(
     analysis_request: AnalysisRequest,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Analyze a trace using the analyzer model."""
     with Session(db()) as session:
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
@@ -325,7 +332,7 @@ async def analyze_trace(
                                     session.commit()
                                 yield "data: update\n\n"
                         yield chunk
-        except httpx.ConnectError as e:
+        except httpx.ConnectError:
             error_message = f"Failed to connect to analyzer model at: {url}"
             yield f"data: {json.dumps({'error': error_message})}\n\n".encode("utf-8")
 
@@ -408,13 +415,12 @@ async def update_annotations(
         )
 
 
-# get all annotations of a trace
 @trace.get("/{id}/annotations")
 def get_annotations(
     request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
 ):
+    """Get all annotations of a trace."""
     # user_id may be None for anons
-
     with Session(db()) as session:
         _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -422,7 +428,6 @@ def get_annotations(
         return [annotation_to_json(a, u) for a, u in load_annotations(session, id)]
 
 
-# delete annotation
 @trace.delete("/{id}/annotation/{annotation_id}")
 def delete_annotation(
     request: Request,
@@ -430,6 +435,7 @@ def delete_annotation(
     annotation_id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Delete an annotation."""
     with Session(db()) as session:
         _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -458,6 +464,7 @@ async def update_annotation(
     annotation_id: str,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
+    """Update an annotation."""
     with Session(db()) as session:
         _ = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True
@@ -487,6 +494,7 @@ async def update_annotation(
 async def upload_new_single_trace(
     request: Request, user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)]
 ):
+    """Upload a new trace snippet."""
     with Session(db()) as session:
         payload = await request.json()
         content = payload.get("content", [])
@@ -547,7 +555,9 @@ def merge_sorted_messages(
 
 @trace.post("/{trace_id}/messages")
 async def append_messages(
-    request: Request, trace_id: str, user_id: Annotated[UUID, Depends(APIIdentity)]
+    request: Request,
+    trace_id: str,
+    user_id: Annotated[UUID, Depends(APIIdentity)],
 ):
     """
     Append messages to an existing trace.
@@ -559,10 +569,6 @@ async def append_messages(
     It is possible that the existing messages in the trace do not have timestamps - in this case,
     the trace creation timestamp is used as a reference for sorting.
     """
-    if user_id is None:
-        raise HTTPException(
-            status_code=401, detail="Must be authenticated to add messages"
-        )
 
     payload = await request.json()
     new_messages = payload.get("messages", [])
@@ -574,6 +580,14 @@ async def append_messages(
         raise HTTPException(
             status_code=400,
             detail="Invalid messages format - expected a non-empty list of dictionaries",
+        )
+    annotations = payload.get("annotations", []) or []
+    if not isinstance(annotations, list) or (
+        annotations and not all(isinstance(item, dict) for item in annotations)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid annotations format - expected a list of dictionaries or an empty list",
         )
 
     # Validate timestamp format in new_messages
@@ -612,6 +626,7 @@ async def append_messages(
                 if not trace_response:
                     raise HTTPException(status_code=404, detail="Trace not found")
 
+                exising_messages_count = len(trace_response.content)
                 # set timestamp for new messages
                 timestamp_for_new_messages = datetime.now(timezone.utc).isoformat()
                 for message in new_messages:
@@ -644,6 +659,27 @@ async def append_messages(
 
                 trace_response.content = combined_messages
                 flag_modified(trace_response, "content")
+
+                # The annotations may not be for the new messages being appended only
+                # but also for the existing messages in the trace.
+                # This assumes that there are no concurrent calls to this endpoint when adding annotations.
+                # We intend to fix this long term by using message level ids (some sort of a uuid maybe?).
+                # We will not rely on messages indices then and this will be safe.
+                for annotation_data in annotations:
+                    address = annotation_data.get("address")
+                    new_annotation = Annotation(
+                        trace_id=trace_id,
+                        user_id=user_id,
+                        content=annotation_data["content"],
+                        address=address,
+                        extra_metadata=annotation_data.get("extra_metadata", None),
+                    )
+                    try:
+                        validate_annotation(new_annotation, trace_response)
+                    except Exception as e:
+                        # TODO: For now we just warn instead of throwing an error
+                        logger.warning(f"Error validating annotation: {str(e)}")
+                    session.add(new_annotation)
         return {"success": True}
     except SQLAlchemyError as e:
         logger.error("Database error when adding messages to existing trace: %s", e)

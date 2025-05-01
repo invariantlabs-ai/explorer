@@ -51,11 +51,13 @@ MESSAGES_WITH_TOOL_CALLS = [
 ]
 
 
-async def append_messages(context, url, trace_id, messages, headers=None):
+async def append_messages(
+    context, url, trace_id, messages, annotations=[], headers=None
+):
     """Helper function to post messages to a trace."""
     return await context.request.post(
         f"{url}/api/v1/trace/{trace_id}/messages",
-        data={"messages": messages},
+        data={"messages": messages, "annotations": annotations},
         headers=headers or {},
     )
 
@@ -81,6 +83,14 @@ async def test_append_messages_incorrect_type(url, context):
         {"messages": "not a list"},
         {"messages": []},
         {"messages": ["1"]},
+        {
+            "messages": [{"role": "user", "content": "test XYZ test"}],
+            "annotations": "not a list",
+        },
+        {
+            "messages": [{"role": "user", "content": "test XYZ test"}],
+            "annotations": [{"content": "test annotation"}, "something else"],
+        },
     ]
 
     for data in invalid_inputs:
@@ -337,13 +347,10 @@ async def test_append_messages_succeeds_starting_with_empty_snippet_trace(contex
     for message in snippet["messages"]:
         assert "timestamp" in message
         del message["timestamp"]
-    assert (
-        DeepDiff(
-            snippet["messages"],
-            MESSAGES_WITHOUT_TOOL_CALLS + MESSAGES_WITH_TOOL_CALLS,
-            ignore_order=True,
-        )
-        == {}
+    assert not DeepDiff(
+        snippet["messages"],
+        MESSAGES_WITHOUT_TOOL_CALLS + MESSAGES_WITH_TOOL_CALLS,
+        ignore_order=True,
     )
 
     # Delete the snippet
@@ -351,7 +358,94 @@ async def test_append_messages_succeeds_starting_with_empty_snippet_trace(contex
     assert deletion_response.status == 200
 
 
-#
+async def test_append_messages_with_annotations(context, url, data_abc):
+    """Test that adding annotations works when we call append_messages."""
+    async with TemporaryExplorerDataset(url, context, data_abc) as dataset:
+        traces = await get_traces_for_dataset(context, url, dataset["id"])
+        trace_id = traces[0]["id"]
+
+        # get all annotations of a trace
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
+        assert response.status == 200
+        assert len(await response.json()) == 0
+
+        # Validate initial messages
+        initial_messages = await get_trace_messages(context, url, trace_id)
+        assert len(initial_messages) == 2
+
+        # Add annotations as we append new messages
+        # This is for both new messages and existing messages.
+        annotations = [
+            # Annotations for existing messages.
+            {
+                "content": "test annotation",
+                "address": "messages.0.content:L0",
+                "extra_metadata": {"source": "test-0"},
+            },
+            {
+                "content": "test annotation",
+                "address": "messages.0.content:0-1",
+                "extra_metadata": {"source": "test-0-0"},
+            },
+            {
+                "content": "test annotation",
+                "address": "messages.1.content:0-5",
+                "extra_metadata": {"source": "test-1"},
+            },
+            # Annotations for new messages.
+            {
+                "content": "test annotation",
+                "address": "messages.2.content:L0",
+                "extra_metadata": {"source": "test-2"},
+            },
+            {
+                "content": "test annotation",
+                "address": "messages.3.content:1-3",
+                "extra_metadata": {"source": "test-3"},
+            },
+        ]
+        response = await append_messages(
+            context,
+            url,
+            trace_id,
+            MESSAGES_WITHOUT_TOOL_CALLS,
+            annotations=annotations,
+        )
+        assert response.status == 200
+
+        # verify that the messages were appended
+        updated_trace = await get_trace_messages(context, url, trace_id)
+        assert len(updated_trace) == 4
+        # the first two messages are the original ones
+        assert updated_trace[0:2] == initial_messages
+        # the last two messages are the new ones we appended
+        assert (
+            "timestamp" in updated_trace[2]
+            and "timestamp" in updated_trace[3]
+            and updated_trace[2]["timestamp"] == updated_trace[3]["timestamp"]
+        )
+        del updated_trace[2]["timestamp"]
+        del updated_trace[3]["timestamp"]
+        assert updated_trace[2:] == MESSAGES_WITHOUT_TOOL_CALLS
+
+        # verify that the annotations were added
+        response = await context.request.get(
+            f"{url}/api/v1/trace/{trace_id}/annotations"
+        )
+        assert response.status == 200
+        annotations_response = await response.json()
+        assert len(annotations_response) == 5
+        for i in range(5):
+            assert annotations_response[i]["content"] == annotations[i]["content"]
+            assert (
+                annotations_response[i]["extra_metadata"]["source"]
+                == annotations[i]["extra_metadata"]["source"]
+            )
+            assert annotations_response[i]["address"] == annotations[i]["address"]
+
+
 async def test_add_and_get_simple_annotation(url, context, data_abc):
     """Test that adding and getting a simple annotation works."""
     async with TemporaryExplorerDataset(url, context, data_abc) as dataset:

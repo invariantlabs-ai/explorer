@@ -369,26 +369,6 @@ class CodeHighlightedView extends React.Component<
   }
 }
 
-// register the code-highlighter plugin
-register_plugin({
-  name: "code-highlighter",
-  component: (props) => <CodeHighlightedView {...props} />,
-  isCompatible: (address: string, msg: any, content: string) => {
-    if (
-      content.includes("s3_img_link") ||
-      content.includes("local_img_link") ||
-      content.includes("local_base64_img")
-    ) {
-      return false;
-    }
-    const lang = LANGUAGE_CLASSIFIER.derive_highlighting_language(content);
-    // if (lang === 'plaintext') {
-    //     return false;
-    // }
-    return true;
-  },
-});
-
 /**
  * Performs some basic cleaning on the content to make it easier to classify.
  *
@@ -552,5 +532,25 @@ class LanguageClassifier {
 }
 
 const LANGUAGE_CLASSIFIER = new LanguageClassifier();
+
+// register the code-highlighter plugin
+register_plugin({
+  name: "code-highlighter",
+  component: (props) => <CodeHighlightedView {...props} />,
+  isCompatible: (address: string, msg: any, content: string) => {
+    if (
+      content.includes("s3_img_link") ||
+      content.includes("local_img_link") ||
+      content.includes("local_base64_img")
+    ) {
+      return false;
+    }
+    const lang = LANGUAGE_CLASSIFIER.derive_highlighting_language(content);
+    // if (lang === 'plaintext') {
+    //     return false;
+    // }
+    return true;
+  },
+});
 
 export default CodeHighlightedView;

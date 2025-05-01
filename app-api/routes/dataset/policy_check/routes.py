@@ -19,7 +19,6 @@ logger = get_logger(__name__)
 
 router = APIRouter()
 
-
 @router.post("/byid/{id}/policy-check")
 async def queue_policy_check(
     id: str,

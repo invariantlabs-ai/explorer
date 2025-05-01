@@ -1,30 +1,26 @@
 """Trace related operations for datasets."""
 
-from enum import Enum
 import re
-from typing import Annotated, List, Optional, Dict, Any
+from typing import Annotated, Any, Dict, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, Dataset, Trace, Annotation, User
+from models.datasets_and_traces import Annotation, Dataset, Trace, User, db
 from models.queries import (
-    trace_to_json,
-    dataset_to_json,
-    query_traces,
-    search_term_mappings,
-    load_annotations,
+    AnalyzerTraceExporter,
     ExportConfig,
     TraceExporter,
-    AnalyzerTraceExporter
+    dataset_to_json,
+    load_annotations,
+    query_traces,
+    search_term_mappings,
+    trace_to_json,
 )
 from routes.apikeys import UserOrAPIIdentity
 from routes.auth import UserIdentity
-
 from routes.dataset.utils import load_dataset
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -275,7 +271,10 @@ async def download_annotated_traces_by_id(
 
 
 def get_traces(
-    request: Request, by: Dict[str, Any], user_id: UUID | None, indices: List[int] = None
+    request: Request,
+    by: Dict[str, Any],
+    user_id: UUID | None,
+    indices: List[int] = None,
 ):
     """
     Get all traces corresponding to a given filtering parameter 'by'.
@@ -310,6 +309,7 @@ def get_traces(
             ).add_columns(Annotation)
         except Exception as e:
             import traceback
+
             print("error", e, flush=True)
             traceback.print_exception()
         if limit is not None:
@@ -345,6 +345,7 @@ def get_traces(
                 output[trace.index]["annotations_by_source"][source] += 1
         except Exception:
             import traceback
+
             print(traceback.format_exc())
         return [output[k] for k in output]
 

@@ -1,11 +1,78 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
-import { BsClipboard2, BsClipboard2Check, BsCollection } from "react-icons/bs";
+import {
+  BsChatFill,
+  BsClipboard2,
+  BsClipboard2Check,
+  BsCollection,
+} from "react-icons/bs";
+import { Tooltip } from "react-tooltip";
 import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
+import { TriggerChatOpenBroadcastEvent } from "../pages/traces/Chat";
+import { generateNewProjectName } from "../pages/home/ProjectNames";
+
+function ChatStart() {
+  return (
+    <div className="simulated-agent options">
+      <div>
+        <b>Capture Traces with a Simulated Agent</b>
+        <div>
+          You can start experiment by chatting to a <i>simulated agent</i> that
+          logs to this dataset.
+        </div>
+      </div>
+      <button
+        className="primary"
+        onClick={() => TriggerChatOpenBroadcastEvent.fire({ open: true })}
+        aria-label="start-simulated-agent"
+      >
+        <BsChatFill /> Simulated Agent
+      </button>
+    </div>
+  );
+}
+
+function TypedInput({
+  initialValue,
+  onChange,
+}: {
+  initialValue: string;
+  onChange: (val: string) => void;
+}) {
+  const [value, setValue] = React.useState("");
+  const hasTyped = useRef(false);
+
+  useEffect(() => {
+    if (hasTyped.current) return;
+    if (value.length < initialValue.length) {
+      const timeout = setTimeout(() => {
+        setValue((v) => v + initialValue[value.length]);
+        if (value.length === initialValue.length - 1) {
+          hasTyped.current = true;
+        }
+      }, 20);
+      return () => clearTimeout(timeout);
+    } else {
+      hasTyped.current = true;
+    }
+  }, [value, initialValue]);
+
+  return (
+    <input
+      type="text"
+      value={hasTyped.current ? value : value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        onChange(e.target.value);
+        hasTyped.current = true;
+      }}
+    />
+  );
+}
 
 function JSONLUpload({
   file,
@@ -52,41 +119,80 @@ function JSONLUpload({
   );
 }
 
-async function highlightPythonCode(content: string) {
+async function highlightCode(content: string, language: string) {
+  const lang = {
+    python: "python",
+    javascript: "js",
+    typescript: "js",
+    bash: "bash",
+    css: "css",
+    json: "js",
+  }[language] || language;
   const highlighter = await createSharedHighlighter();
+
   const tokens = await highlighter.codeToTokensWithThemes(content, {
-    lang: "python",
+    lang: lang,
     themes: ["github-light"],
   });
   return tokens;
 }
 
-export function CodeWithCopyButton({ code }: { code: string }) {
+export function CodeWithCopyButton({ code }: { code: Record<string, string> }) {
+  const [language, setLanguage] = React.useState(Object.keys(code)[0]);
   const [copied, setCopied] = React.useState(false);
   const [tokens, setTokens] = React.useState<any[]>([]);
 
   useEffect(() => {
-    highlightPythonCode(code).then((tokens) => {
-      setTokens(tokens);
-    });
+    if (language in code) {
+      changeLanguage(language);
+    }
+    else {
+      changeLanguage(Object.keys(code)[0]);
+    }
   }, [code]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(code[language]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const changeLanguage = (language) => {
+    setLanguage(language);
+    highlightCode(code[language], language).then(
+      (tokens) => {
+        setTokens(tokens);
+      }
+    );
+  };
   return (
     <div className="code-with-copy">
       {/* {code} */}
       <RenderedTokens tokens={tokens} />
+      <div className="language-selector">
+        {Object.keys(code).map((lang) => (
+        <button
+          key={lang}
+          className={`language ${language === lang ? "active" : ""}`}
+          onClick={() => changeLanguage(lang)}
+        >
+          {lang}
+        </button>
+      ))}
       <button
         onClick={handleCopy}
-        className={"inline icon copy " + (copied ? "copied" : "")}
+        className={"copy " + (copied ? "copied" : "")}
+        data-tooltip-id="copy-code-tooltip"
+        data-tooltip-content={copied ? "Copied!" : "Copy"}
       >
+        <Tooltip
+            id="copy-code-tooltip"
+            place="bottom"
+            style={{ whiteSpace: "pre" }}
+          />
         {copied ? <BsClipboard2Check /> : <BsClipboard2 />}
       </button>
+    </div>
     </div>
   );
 }
@@ -133,40 +239,63 @@ export function EmptyDatasetInstructions(props: {
   const datasetname = props.datasetname;
 
   return (
-    <div className="empty instructions box left wide">
-      <h2>
-        <BsCollection />
-        No Traces Captured Yet
-      </h2>
-      <h3>
-        To start using Invariant, you need to connect your agent and capture
-        traces.
-        <br />
-        To generate a new Invariant API key, go <a href="/settings">here</a>.
-      </h3>
-      <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
-    </div>
+    <>
+      <div className="empty instructions box left wide">
+        <h2>
+          <BsCollection />
+          No Traces Captured Yet
+        </h2>
+        <h3>
+          Connect or simulate an agent to capture traces. To obtain an API key,
+          go <a href="/settings">here</a>.
+        </h3>
+        <ChatStart />
+        <div className="or-separator">
+          <span className="line" />
+          or
+          <span className="line" />
+        </div>
+        <UploadOptions dataset={datasetname} onSuccess={props.onSuccess} />
+      </div>
+    </>
   );
 }
 /**
  * A component to show the upload options for a dataset (different frameworks and the JSONL upload).
  */
 export function UploadOptions({
-  dataset,
+  dataset: givenDatasetName,
   onSuccess,
   excluded,
+  className,
+  onChangeName,
 }: {
   // the name of the dataset
-  dataset: string;
+  dataset?: string;
   // function to call on success (e.g. when file upload is complete)
   onSuccess: () => void;
   // list of excluded options
   excluded?: string[];
+  // optional class name
+  className?: string;
+  // optional create button
+  onChangeName?: (name: string) => void;
 }) {
   const telemetry = useTelemetry();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
+
+  const [customDatasetName, setCustomDatasetName] = React.useState<string>(
+    generateNewProjectName()
+  );
+
+  // update name on change
+  useEffect(() => {
+    onChangeName?.(customDatasetName);
+  }, [customDatasetName]);
+
+  const dataset = givenDatasetName || customDatasetName;
 
   const onSubmit = () => {
     if (!file) {
@@ -206,21 +335,34 @@ export function UploadOptions({
   // active option
   const activeOption = SNIPPETS.find((o) => o.name === activeTab);
 
-  // get the control
-  let snippet: any = activeOption?.snippet;
-  // if snippet is a function, call it with datasetname (it is a template based on the dataset name)
-  if (typeof snippet === "function") {
-    // instance url is location.protocol + "//" + location.host
-    const instance = `${location.protocol}//${location.host}`;
-    snippet = snippet(dataset, instance);
+  // get the code snippet per language
+  let raw_snippets: any = activeOption?.snippetPerLanguage;
+  const instance = `${location.protocol}//${location.host}`;
+  if (raw_snippets) {
+    for (const lang of Object.keys(raw_snippets)) {
+      const snippetFunc = raw_snippets[lang];
+      if (typeof snippetFunc === 'function') {
+        raw_snippets[lang] = snippetFunc(dataset, instance);
+      }
+    }
   }
-
+  const snippetPerLanguage = raw_snippets as Record<string, string>;
+  
   const link = activeOption?.link ? (
     <a href={activeOption?.link}> Learn More.</a>
   ) : null;
 
   return (
-    <div className="options">
+    <div className={"options " + (className || "")}>
+      {!givenDatasetName && (
+        <div className="upload-banner-input">
+          <label>Project Name</label>
+          <TypedInput
+            initialValue={customDatasetName}
+            onChange={(val) => setCustomDatasetName(val)}
+          />
+        </div>
+      )}
       <div className="options-tabs">
         {SNIPPETS.map((option) => (
           <div
@@ -237,7 +379,7 @@ export function UploadOptions({
           {SETUP_SNIPPETS.find((o) => o.name === activeTab)?.description}
           {link}
         </div>
-        {snippet == "<jsonl-upload>" ? (
+        {"json" in snippetPerLanguage && snippetPerLanguage["json"] === "<jsonl-upload>" ? (
           <JSONLUpload
             file={file}
             loading={loading}
@@ -246,7 +388,7 @@ export function UploadOptions({
             onSubmit={onSubmit}
           />
         ) : (
-          <CodeWithCopyButton code={snippet} />
+          <CodeWithCopyButton code={snippetPerLanguage} />
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-invariant-sdk
+invariant-sdk>=0.0.11
 pytest
 pytest-playwright
 pytest-asyncio

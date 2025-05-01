@@ -81,7 +81,7 @@ services:
   # launches an instance of Invariant Gateway as part of the Explorer stack (this allows to upload
   # traces by using Gateway's transparent LLM proxy)
   gateway:
-    image: ghcr.io/invariantlabs-ai/invariant-gateway/gateway:ghcr-testing
+    image: ghcr.io/invariantlabs-ai/invariant-gateway/gateway:latest
     platform: linux/amd64
     container_name: "explorer-local-gateway"
     networks:

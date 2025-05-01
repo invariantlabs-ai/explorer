@@ -32,10 +32,16 @@ async def create_apikey(user_id: Annotated[UUID, Depends(AuthenticatedUserIdenti
             hashed_key=hashed_key, user_id=user_id, time_created=datetime.datetime.now()
         )
 
-        id = str(apikey.id)
-
         session.add(apikey)
         session.commit()
+
+        # get the id of the new key
+        id = (
+            session.query(APIKey)
+            .filter(APIKey.hashed_key == str(hashed_key))
+            .first()
+            .id
+        )
 
     return {"id": id, "key": key}
 

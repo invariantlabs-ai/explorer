@@ -12,6 +12,7 @@ import {
   BsHouse,
   BsList,
   BsPerson,
+  BsTerminal,
   BsUpload,
   BsX,
 } from "react-icons/bs";
@@ -231,7 +232,7 @@ function Layout(props: {
           <li className="logo">
             <h1>
               <img src={logo} alt="Invariant logo" className="logo" />
-              Invariant Explorer
+              Invariant
             </h1>
           </li>
           {!userInfo?.loggedIn && (
@@ -250,7 +251,7 @@ function Layout(props: {
               Home
             </a>
           </li>
-          {userInfo?.loggedIn && (
+          {userInfo?.loggedIn ? (
             <>
               <li>
                 <a href={`/u/${userInfo.username}`}>
@@ -265,26 +266,35 @@ function Layout(props: {
                 </a>
               </li>
               <li>
+                <a href="/playground">
+                  <BsTerminal />
+                  Playground
+                </a>
+              </li>
+              <li>
                 <a href="/settings">
                   <BsGear />
                   Settings
                 </a>
               </li>
             </>
+          ) : (
+            <li>
+              <a href="/playground">
+                <BsTerminal />
+                Guardrails Playground
+              </a>
+            </li>
           )}
         </Sidebar>
-        <h1
-          onClick={() => navigate("/")}
-          className="title"
-          title="Invariant Explorer"
-        >
+        <h1 onClick={() => navigate("/")} className="title" title="Invariant">
           <img
             src={logo}
             alt="Invariant logo"
             className="logo"
             onClick={() => navigate("/")}
           />
-          Invariant Explorer
+          Invariant
         </h1>
         <DeploymentInfo />
         <div className="spacer" />

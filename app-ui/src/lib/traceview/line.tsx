@@ -130,6 +130,7 @@ export function Line(props: {
   const userInfo = useUserInfo();
 
   let traceId = props.highlightContext?.traceId;
+
   const [annotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, traceId);
   const [isThumbsUpHovered, setIsThumbsUpHovered] = useState(false);

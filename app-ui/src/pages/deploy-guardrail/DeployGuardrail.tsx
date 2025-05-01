@@ -1,38 +1,20 @@
-import { useEffect } from "react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useDatasetList } from "../../service/DatasetOperations";
 import { useUserInfo } from "../../utils/UserInfo";
+import { sharedFetch } from "../../service/SharedFetch";
 
 export function DeployGuardrail() {
   const userInfo = useUserInfo();
-
   const [privateDatasets, refreshPrivateDatasets] = useDatasetList(
     "private",
     8
   );
 
-  useEffect(() => {
-    if (userInfo?.loggedIn) {
-      refreshPrivateDatasets();
-    }
-  }, [userInfo?.loggedIn, refreshPrivateDatasets]);
+  const [validDatasetName, setValidDatasetName] = useState("");
+  const [dataset, setDataset] = useState(null);
+  const [error, setError] = useState(null);
 
-  // get most recent dataset
-  const mostRecentDataset = privateDatasets?.[0];
-  // get most recent dataset name
-  const mostRecentDatasetName = mostRecentDataset?.name;
-
-  // get dataset name that was last picked (via localStorage)
-  const lastPickedDatasetName = localStorage.getItem("last-picked-dataset");
-
-  const datasetName =
-    mostRecentDatasetName ||
-    lastPickedDatasetName ||
-    privateDatasets?.[0]?.name ||
-    "";
-
-  // state to track guardrail rule in url hash
-  const [proposedGuardrailRule, setProposedGuardrailRule] = React.useState({
+  const [proposedGuardrailRule] = useState({
     policy_code:
       new URLSearchParams(window.location.hash.substring(1)).get(
         "policy-code"
@@ -41,21 +23,60 @@ export function DeployGuardrail() {
       new URLSearchParams(window.location.hash.substring(1)).get("name") || "",
   });
 
-  const generatedGuardrailURL = (name: string, rule: string) => {
-    return `#policy-code=${encodeURIComponent(rule)}&name=${encodeURIComponent(name)}`;
-  };
+  const [url, setUrl] = useState(null as string | null);
+
+  useEffect(() => {
+    if (userInfo?.loggedIn) refreshPrivateDatasets();
+  }, [userInfo?.loggedIn, refreshPrivateDatasets]);
+
+  useEffect(() => {
+    if (!userInfo?.username || privateDatasets?.length === 0) return;
+
+    const lastPicked = localStorage.getItem("last-picked-dataset");
+    const candidates = [
+      lastPicked,
+      privateDatasets?.[0]?.name,
+      ...(privateDatasets || []).map((d) => d.name),
+    ];
+
+    (async () => {
+      for (const name of candidates) {
+        if (!name) continue;
+        try {
+          const data = await sharedFetch(
+            `/api/v1/dataset/byuser/${userInfo.username}/${name}`
+          );
+          setValidDatasetName(name);
+          setDataset(data);
+          setUrl(
+            `/u/${userInfo?.username}/${name}?tab=guardrails#${window.location.hash.substring(1)}`
+          );
+          break;
+        } catch (e: any) {
+          if (!isClientError(e.status)) setError(e);
+        }
+      }
+    })();
+  }, [privateDatasets, userInfo?.username]);
+
+  const generatedGuardrailURL = (name, rule) =>
+    `#policy-code=${encodeURIComponent(rule)}&name=${encodeURIComponent(name)}`;
   window["generatedGuardrailURL"] = generatedGuardrailURL;
 
-  // if dataset name is set, redirect to /u/<user>/<datasetName>?tab=guardrail#policy-code=<rule>&name=<name>
   useEffect(() => {
-    if (datasetName) {
-      const url = generatedGuardrailURL(
-        proposedGuardrailRule.name,
-        proposedGuardrailRule.policy_code
-      );
-      window.location.href = `/u/${userInfo?.username}/${datasetName}?tab=guardrails#${window.location.hash.substring(1)}`;
+    if (url) {
+      window.location.href = url;
     }
-  }, [datasetName, proposedGuardrailRule, userInfo?.username]);
+  }, [url]);
 
-  return <>{datasetName}</>;
+  return (
+    <>
+      {validDatasetName}
+      {url && <a href={url}>{url}</a>}
+    </>
+  );
+}
+
+function isClientError(status) {
+  return status >= 400 && status < 500;
 }

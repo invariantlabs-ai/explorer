@@ -4,12 +4,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-
-from models.datasets_and_traces import db, SavedQueries
+from models.datasets_and_traces import SavedQueries, db
 from routes.auth import AuthenticatedUserIdentity
-
 from routes.dataset.utils import load_dataset
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

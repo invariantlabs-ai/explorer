@@ -27,6 +27,9 @@ class RemoteResource {
     this.status = "initialized";
     this.data = null;
 
+    // set this if this is resource is not fetchable (e.g. <none> ID)
+    this.isNone = false;
+
     this.onLoadedPromises = [];
     this.onDataChangeListeners = [];
     this.errorListeners = [console.error];
@@ -46,7 +49,7 @@ class RemoteResource {
 
   offDataChange(listener) {
     this.onDataChangeListeners = this.onDataChangeListeners.filter(
-      (l) => l !== listener,
+      (l) => l !== listener
     );
   }
 
@@ -54,17 +57,22 @@ class RemoteResource {
     return this.fetch()
       .then(
         (data) => {},
-        (error) => {},
+        (error) => {}
       )
       .catch((error) =>
         this.errorListeners.forEach((listener) =>
-          listener("Failed to refresh: " + error),
-        ),
+          listener("Failed to refresh: " + error)
+        )
       );
   }
 
   fetch() {
     return new Promise((resolve, reject) => {
+      if (this.isNone) {
+        resolve(null);
+        return;
+      }
+
       // if already loading, just add listener
       if (this.status == "loading") {
         this.onLoadedListeners.push({ resolve, reject });

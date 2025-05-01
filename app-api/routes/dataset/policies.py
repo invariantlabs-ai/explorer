@@ -8,15 +8,13 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
+from models.datasets_and_traces import DatasetPolicy, db
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import flag_modified
-
-from models.datasets_and_traces import db, DatasetPolicy
 from routes.apikeys import UserOrAPIIdentity
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
-
 from routes.dataset.utils import load_dataset
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter()
 
@@ -25,9 +23,9 @@ _LIBRARY_CACHE = {"timestamp": 0, "data": None}
 RULE_LIBRARY_URL = "https://preview-explorer.invariantlabs.ai/rules/library.json"
 
 
-@router.get("/byid/{id}/library-policies")
+@router.get("/library-policies")
 async def get_rule_library_guardrails(
-    id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
+    user_id: Annotated[UUID | None, Depends(UserIdentity)],
 ):
     """
     Get all library policies, i.e. non-generated ones but potentially useful still for any agent/dataset.
@@ -109,6 +107,7 @@ async def create_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -191,6 +190,7 @@ async def update_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)
 
 
@@ -222,4 +222,5 @@ async def delete_policy(
         flag_modified(dataset, "extra_metadata")
         session.commit()
         from models.queries import dataset_to_json
+
         return dataset_to_json(dataset)

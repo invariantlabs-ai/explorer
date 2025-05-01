@@ -40,7 +40,10 @@ import { useTelemetry } from "../../utils/Telemetry.js";
 import { Time } from "../../components/Time";
 import { DeleteSnippetModal } from "../../lib/snippets";
 import { UserInfo } from "../../utils/UserInfo";
-import { AnnotationCounterBadge } from "../../lib/traceview/traceview";
+import {
+  AnnotationCounterBadge,
+  BroadcastEvent,
+} from "../../lib/traceview/traceview";
 import TracePageNUX from "./NUX";
 import {
   DatasetNotFound,
@@ -100,11 +103,31 @@ export interface DatasetData {
   is_public: boolean;
 }
 
+export interface TraceToolbarItems {
+  expandCollapse?: boolean;
+  download?: boolean;
+  deleteTrace?: boolean;
+  viewOptions?: boolean;
+  openInPlayground?: boolean;
+  analyzer?: boolean;
+  share?: boolean;
+}
+
+const DEFAULT_TOOLBAR_ITEMS: TraceToolbarItems = {
+  expandCollapse: true,
+  download: true,
+  deleteTrace: true,
+  viewOptions: true,
+  openInPlayground: true,
+  analyzer: true,
+  share: true,
+}
+
 /**
  * Hook to load the dataset metadata for a given user and dataset name.
  */
-function useDataset(
-  username: string,
+export function useDataset(
+  username: string | null,
   datasetname: string
 ): [DatasetData | null, Response | null] {
   const [dataset, setDataset] = React.useState(null);
@@ -120,6 +143,10 @@ function useDataset(
         }
       });
   }, [username, datasetname]);
+
+  if (!username) {
+    return [null, null];
+  }
 
   return [dataset, error];
 }
@@ -705,6 +732,8 @@ function useSearch() {
   ] as const;
 }
 
+export const DatasetRefreshBroadcastChannel = new BroadcastEvent();
+
 /**
  * Component for displaying the list of traces in a dataset.
  *
@@ -724,6 +753,9 @@ export function Traces(props) {
   // trigger whether trace deletion modal is shown
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
 
+  // use default toolbar items if not configured explicitly
+  const toolbarItems = props.toolbarItems || DEFAULT_TOOLBAR_ITEMS;
+
   // view options
   const {
     viewOptions,
@@ -741,7 +773,7 @@ export function Traces(props) {
   );
   // load the search state (filtered indices, highlights in shown traces, search query, search setter, search trigger, search status)
   const [
-    displayedIndices,
+    _displayedIndices,
     highlightMappings,
     searchQuery,
     setSearchQuery,
@@ -749,6 +781,9 @@ export function Traces(props) {
     searching,
     setHighlightMappings,
   ] = useSearch();
+
+  // check if we have a fixed set of indices to display, otherwise use the search results
+  const displayedIndices = props.indices ? props.indices : _displayedIndices;
 
   // tracks whether the current user owns the dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == dataset?.user_id;
@@ -763,6 +798,17 @@ export function Traces(props) {
       setSearchQuery(props.query);
     }
   }, [props.query]);
+
+  // subscribe to dataset refresh events
+  useEffect(() => {
+    const handleRefresh = (event) => {
+      refresh();
+    };
+    DatasetRefreshBroadcastChannel.on(handleRefresh);
+    return () => {
+      DatasetRefreshBroadcastChannel.off(handleRefresh);
+    };
+  }, []);
 
   // when the trace index changes, update the activeTrace
   useEffect(() => {
@@ -966,12 +1012,14 @@ export function Traces(props) {
             selectedTraceId={activeTrace?.id}
             selectedTraceIndex={activeTrace?.index}
             hideAnnotations={props.hideAnnotations}
+            annotations={props.annotationsProvider ? props.annotationsProvider(activeTrace) : null}
             // shown when no trace is selected
             empty={emptyView}
             collapsed={
               (isTest && viewOptions.autocollapseTestTraces) ||
               viewOptions.autocollapseAll
             }
+            toolbarItems={toolbarItems}
             // current search highlights
             mappings={highlightsFor(activeTrace)}
             // whether we are still loading the dataset's trace data
@@ -1012,7 +1060,7 @@ export function Traces(props) {
             // extra trace action buttons to show
             actions={
               <>
-                {isUserOwned && (
+                {isUserOwned && toolbarItems?.deleteTrace && (
                   <button
                     className="danger icon inline"
                     onClick={() => setShowDeleteModal(true)}
@@ -1022,7 +1070,7 @@ export function Traces(props) {
                     <BsTrash />
                   </button>
                 )}
-                <button
+                {isUserOwned && toolbarItems?.viewOptions && (<button
                   className="inline icon settings"
                   data-tooltip-id="button-tooltip"
                   data-tooltip-content="View Options"
@@ -1030,6 +1078,7 @@ export function Traces(props) {
                 >
                   <BsGear />
                 </button>
+                )}
               </>
             }
             onAnnotationCreate={onAnnotationCreate}
@@ -1904,6 +1953,9 @@ export function SingleTrace() {
   // tracks whether the current user owns this dataset/trace
   const isUserOwned = userInfo?.id && userInfo?.id == trace?.user_id;
 
+  // use default toolbar items if not configured explicitly
+  const toolbarItems = DEFAULT_TOOLBAR_ITEMS;
+
   // fetch trace data
   React.useEffect(() => {
     if (!props.traceId) {
@@ -1989,6 +2041,7 @@ export function SingleTrace() {
           loading={!trace}
           header={header}
           selectedTraceId={props.traceId}
+          toolbarItems={toolbarItems}
           onShare={
             sharingEnabled != null && trace?.user_id == userInfo?.id
               ? () => setShowShareModal(true)
@@ -2012,3 +2065,4 @@ export function SingleTrace() {
     </div>
   );
 }
+
