@@ -18,7 +18,12 @@ import {
   BsChevronDown,
 } from "react-icons/bs";
 
-import { HighlightedJSON, Highlight, GroupedHighlight, HighlightData } from "./highlights";
+import {
+  HighlightedJSON,
+  Highlight,
+  GroupedHighlight,
+  HighlightData,
+} from "./highlights";
 import { validate } from "./schema";
 import jsonMap from "json-source-map";
 import React, { useState, useEffect, useRef, Ref, useMemo } from "react";
@@ -997,7 +1002,7 @@ class MessageView extends React.Component<
       // if all messages are expanded/collapsed, use that state
       // to initialize the expanded state of this message
       // even if we have all collapsed, we still want to show the user messages
-      collapsed = !props.allExpanded
+      collapsed = !props.allExpanded;
     }
 
     this.state = {
@@ -1035,7 +1040,7 @@ class MessageView extends React.Component<
       );
     }
 
-    const isHighlighted = this.props.highlights.rootHighlights.length > 0
+    const isHighlighted = this.props.highlights.rootHighlights.length > 0;
 
     try {
       const message = this.props.message;
@@ -1124,8 +1129,7 @@ class MessageView extends React.Component<
                   this.setState({ collapsed: state })
                 }
                 address={this.props.address}
-              >
-                </MessageHeader>
+              ></MessageHeader>
             )}
             {!this.state.collapsed && (
               <>
@@ -1209,7 +1213,7 @@ class MessageView extends React.Component<
                   highlights={this.props.highlights.rootHighlights}
                   highlightContext={this.props.highlightContext}
                   address={this.props.address}
-                  objectName={'message'}
+                  objectName={"message"}
                 />
               </>
             )}
@@ -1235,11 +1239,16 @@ export function ObjectLevelAnnotationIndicator(props: {
   const highlights = useMemo(() => {
     let flattendHighlights = [] as HighlightData[];
     let seen = new Set();
-    for (const highlight of (props.highlights || [])) {
+    for (const highlight of props.highlights || []) {
       if (seen.has(highlight.content.annotationId)) {
         continue;
       }
-      flattendHighlights.push({content: highlight.content.content!, extra_metadata: highlight.content.extra_metadata || {}, key: flattendHighlights.length, source: "guardrails-error", annotationId: highlight.content.annotationId})
+      flattendHighlights.push({
+        content: highlight.content.content!,
+        extra_metadata: highlight.content.extra_metadata || {},
+        source: "guardrails-error",
+        annotationId: highlight.content.annotationId,
+      });
       seen.add(highlight.content.annotationId);
     }
 
@@ -1251,26 +1260,38 @@ export function ObjectLevelAnnotationIndicator(props: {
   }
 
   const onExpand = (event) => {
-    if (
-      props.address === props.highlightContext?.selectedHighlightAnchor
-    ) {
+    if (props.address === props.highlightContext?.selectedHighlightAnchor) {
       props.highlightContext?.setSelection(null);
     } else {
       props.highlightContext?.setSelection(props.address);
     }
 
     event.stopPropagation();
-  } 
+  };
 
-  const InlineComponent: any = props.highlightContext?.decorator?.editorComponent;
-  const expanded = (props.address === props.highlightContext?.selectedHighlightAnchor)
+  const InlineComponent: any =
+    props.highlightContext?.decorator?.editorComponent;
+  const expanded =
+    props.address === props.highlightContext?.selectedHighlightAnchor;
 
   return (
     <>
-      <span className={"object-level annotation-indicator" + (expanded ? " active" : "") + (InlineComponent ? " expandable" : "")} onClick={onExpand}>
-        <BsCircle/>
-        {highlights.length} {(props.objectName || "object")} annotation{highlights.length > 1 ? "s" : ""}
-        {!expanded ? <BsChevronRight className="chevron"/> : <BsChevronDown className="chevron"/>}
+      <span
+        className={
+          "object-level annotation-indicator" +
+          (expanded ? " active" : "") +
+          (InlineComponent ? " expandable" : "")
+        }
+        onClick={onExpand}
+      >
+        <BsCircle />
+        {highlights.length} {props.objectName || "object"} annotation
+        {highlights.length > 1 ? "s" : ""}
+        {!expanded ? (
+          <BsChevronRight className="chevron" />
+        ) : (
+          <BsChevronDown className="chevron" />
+        )}
       </span>
       {props.address === props.highlightContext?.selectedHighlightAnchor && (
         <ObjectLevelAnnotationEditor
@@ -1293,15 +1314,20 @@ export function ObjectLevelAnnotationEditor(props: {
 }) {
   const highlights = useMemo(() => {
     let flattendHighlights = [] as HighlightData[];
-    for (const highlight of (props.highlights || [])) {
-      flattendHighlights.push({content: highlight.content.content!, extra_metadata: highlight.content.extra_metadata || {}, key: flattendHighlights.length, source: "guardrails-error", annotationId: highlight.content.annotationId})
+    for (const highlight of props.highlights || []) {
+      flattendHighlights.push({
+        content: highlight.content.content!,
+        extra_metadata: highlight.content.extra_metadata || {},
+        source: "guardrails-error",
+        annotationId: highlight.content.annotationId,
+      });
     }
     return flattendHighlights;
   }, [props.highlights]);
 
   const grouped = useMemo(() => {
-    return {start: 0, end: 0, content: highlights}
-  }, [highlights]) as GroupedHighlight
+    return { start: 0, end: 0, content: highlights };
+  }, [highlights]) as GroupedHighlight;
 
   if (highlights.length == 0) {
     return null;
@@ -1312,14 +1338,17 @@ export function ObjectLevelAnnotationEditor(props: {
     return null;
   }
 
-  const InlineComponent: any = props.highlightContext?.decorator?.editorComponent;
-  const content = InlineComponent ? InlineComponent({
-    highlights: [grouped],
-    address: props.address,
-    onClose: () => {
-      // nop
-    },
-  }) : null;
+  const InlineComponent: any =
+    props.highlightContext?.decorator?.editorComponent;
+  const content = InlineComponent
+    ? InlineComponent({
+        highlights: [grouped],
+        address: props.address,
+        onClose: () => {
+          // nop
+        },
+      })
+    : null;
 
   if (!content) {
     return null;
@@ -1522,7 +1551,7 @@ function ToolCallView(props: {
             address={props.address + ".function.arguments"}
             highlights={argumentHighlights.rootHighlights}
             highlightContext={props.highlightContext}
-            objectName={'argument'}
+            objectName={"argument"}
           />
         </pre>
       </div>
@@ -1530,7 +1559,7 @@ function ToolCallView(props: {
         address={props.address}
         highlights={highlights.rootHighlights}
         highlightContext={props.highlightContext}
-        objectName={'tool call'}
+        objectName={"tool call"}
       />
     </AnchorDiv>
   );
