@@ -201,6 +201,7 @@ function MutatePolicyModalContent(props: {
     },
   ];
   const evaluator = useDatasetGuardrailsChecker(props.dataset_id);
+  const ApiKeyModal = evaluator.ApiKeyModal;
 
   const onEvaluate = () => {
     evaluator.startCheck(policyCode);
@@ -310,7 +311,7 @@ function MutatePolicyModalContent(props: {
     return null
   }
 
-  return (
+  return (<><ApiKeyModal/>
     <div className="modal-content policy-editor-form " ref={modalRef}>
       <header className={editMode ? "edit-mode" : ""}>
         <b>
@@ -578,7 +579,7 @@ function MutatePolicyModalContent(props: {
         />
       </div>
     </div>
-  );
+  </>);
 }
 
 /**

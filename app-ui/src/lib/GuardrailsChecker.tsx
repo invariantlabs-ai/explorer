@@ -20,7 +20,7 @@ export interface PolicyCheckResult {
   };
 }
 
-export interface DatasetPolicyCheck {
+export interface DatasetPolicyChecker {
   running: boolean;
   error: string | null;
   results: PolicyCheckResult[];
@@ -32,6 +32,48 @@ export interface DatasetPolicyCheck {
   numTraces: number;
   // progress of the evaluation (in number of traces evaluated)
   progress: number;
+  // a modal for configuring the API key
+  ApiKeyModal: React.FC<any>
+}
+
+// A self-contained ApiKeyModal component moved to top-level
+export function ApiKeyModal({ isModalVisible, setIsModalVisible, handleSubmit, APIKeyInput }: {
+  isModalVisible: boolean;
+  setIsModalVisible: (visible: boolean) => void;
+  handleSubmit: () => void;
+  APIKeyInput: React.ComponentType;
+}) {
+  return (
+    <div>
+      {isModalVisible && (
+        <Modal
+          title="Configure Guardrails API Key"
+          hasFooter={false}
+          className="view-options"
+          onClose={() => setIsModalVisible(false)}
+        >
+          <div className="options">
+            <h2>Guardrails API Key</h2>
+            <p>
+              To enable Guardrail evaluation, please obtain a Guardrails API
+              key from the hosted{" "}
+              <a href="https://explorer.invariantlabs.ai">
+                Invariant Explorer
+              </a>{" "}
+              instance.
+            </p>
+            <APIKeyInput />
+          </div>
+          <footer>
+            <button className="primary inline" onClick={handleSubmit}>
+              Save
+            </button>
+            <div className="spacer" />
+          </footer>
+        </Modal>
+      )}
+    </div>
+  );
 }
 
 function useGuardrailsChecker() {
@@ -94,48 +136,23 @@ function useGuardrailsChecker() {
     }
   };
 
-  // A self-contained ApiKeyModal component
-  const ApiKeyModal = () => {
-    return (
-      <div>
-        {isModalVisible && (
-          <Modal
-            title="Configure Guardrails API Key"
-            hasFooter={false}
-            className="view-options"
-            onClose={() => setIsModalVisible(false)}
-          >
-            <div className="options">
-              <h2>Guardrails API Key</h2>
-              <p>
-                To enable Guardrail evaluation, please obtain a Guardrails API
-                key from the hosted{" "}
-                <a href="https://explorer.invariantlabs.ai">
-                  Invariant Explorer
-                </a>{" "}
-                instance.
-              </p>
-              <APIKeyInput />
-            </div>
-            <footer>
-              <button className="primary inline" onClick={handleSubmit}>
-                Save
-              </button>
-              <div className="spacer" />
-            </footer>
-          </Modal>
-        )}
-      </div>
-    );
-  };
-
-  return { check, ApiKeyModal };
+  return { check, ApiKeyModal: (props: any) => <ApiKeyModal isModalVisible={isModalVisible} setIsModalVisible={setIsModalVisible} handleSubmit={handleSubmit} APIKeyInput={APIKeyInput} {...props} /> };
 }
 
-export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyCheck {
+export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChecker {
+  /**
+   * Returns a DatasetPolicyChecker object that allows you to check a whole dataset against
+   * a given guardrailing rule.
+   * 
+   * Evaluation can be stopped at any time by calling the stopCheck function.
+   * 
+   * Results are streamed and returned as they come in as part of the DatasetPolicyChecker object.
+   * 
+   * Track progress using .numTraces and .progress.
+   */
   const userInfo = useUserInfo();
   const isLocal = config("instance_name") === "local";
-  const { apiKey } = useHostedExplorerAPIKey();
+  const { apiKey, APIKeyInput } = useHostedExplorerAPIKey();
   
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +163,13 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
   const [numTraces, setNumTraces] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  // Modal state and handler for API key
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const handleSubmit = () => {
+    setIsModalVisible(false);
+  };
+
+  // stops the guardrails evaluation
   const stopCheck = useCallback(() => {
     if (abortController) {
       abortController.abort();
@@ -154,15 +178,18 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
     setRunning(false);
   }, [abortController]);
 
+  // starts the guardrails evaluation
   const startCheck = useCallback(async (policy: string) => {
     if (isEvaluating) {
       return;
     }
 
+    // check if we need an API key (e.g. non-production, or local)
     const requiresApiKey = isLocal || window.location.hostname !== "explorer.invariantlabs.ai";
 
     if (requiresApiKey && !apiKey) {
       setError("API key required");
+      setIsModalVisible(true);
       return;
     }
 
@@ -178,13 +205,12 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
     const controller = new AbortController();
     setAbortController(controller);
     setIsEvaluating(true);
-    
 
     try {
       let response: Response;
 
       // send request (with API key or session cookies)
-      if (false) {
+      if (requiresApiKey) {
         response = await fetch(`/api/v1/dataset/byid/${datasetId}/policy-check/stream`, {
           method: "POST",
           headers: {
@@ -271,7 +297,8 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
     stopCheck,
     isEvaluating,
     numTraces,
-    progress
+    progress,
+    ApiKeyModal: (props: any) => <ApiKeyModal isModalVisible={isModalVisible} setIsModalVisible={setIsModalVisible} handleSubmit={handleSubmit} APIKeyInput={APIKeyInput} {...props} />
   };
 }
 
