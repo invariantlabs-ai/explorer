@@ -89,7 +89,9 @@ function PolicySynthesisModalContent(props) {
   const [loadingStatus, setLoadingStatus] = React.useState("");
   const [error, setError] = React.useState("");
 
-  const onGenerate = async () => {
+  const [synthesisMode, setSynthesisMode] = React.useState("tools"); // 'analysis' or 'tools'
+
+  const onGenerateFromAnalysis = async () => {
     setLoading(true);
     setError("");
 
@@ -155,16 +157,73 @@ function PolicySynthesisModalContent(props) {
     }
   };
 
+  const onGenerateFromTools = async () => {
+    setLoading(true);
+    setError("");
+
+    if (apiKey === TEMPLATE_API_KEY) {
+      setLoading(false);
+      alertModelAccess(
+        "Please provide a valid API key in the Analyzer settings"
+      );
+      return;
+    }
+
+    try {
+      await props.generateToolGuardrails();
+      props.onSuccess({});
+      props.onClose();
+    } catch (error) {
+      setLoading(false);
+      setError("An error occurred: " + (error as Error).message);
+    }
+  };
+
   return (
     <div className="form policy-synthesis-form">
       <p>
-        Generate guardrail suggestions based on the clusters identified in your
-        dataset analysis. This will create guardrails tailored to the patterns
-        found in your data.
+        Invariant can generate guardrail suggestions based on Analysis and the
+        tools of of your agent, to help you safeguard your agent.
+      </p>
+
+      <p className="policy-type-selection">
+        <h3>Suggestion Type</h3>
+        <label>
+          <input
+            type="radio"
+            name="policy-synthesis-type"
+            value="tools"
+            onChange={(e) => {
+              setSynthesisMode(e.target.value);
+            }}
+            defaultChecked={synthesisMode === "tools"}
+          />
+          <h3>Based on Tool Definitions</h3>
+          <span className="subtext">
+            Generate guardrails based on the tools of your agent.
+          </span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="policy-synthesis-type"
+            value="analysis"
+            onChange={(e) => {
+              setSynthesisMode(e.target.value);
+            }}
+            defaultChecked={synthesisMode === "analysis"}
+          />
+          <h3>Based on Analysis Results</h3>
+          <span className="subtext">
+            Generate guardrails based on the error clusters identified by
+            Analysis.
+          </span>
+        </label>
       </p>
 
       <div className="banner-note">
-        <BsInfoCircle /> Only high-quality guardrail suggestions will be shown.
+        <BsInfoCircle /> Guardrail suggestions are derived from tool definitions
+        and historic data.
       </div>
 
       {loading && loadingStatus && (
@@ -178,80 +237,16 @@ function PolicySynthesisModalContent(props) {
         <button onClick={props.onClose}>Cancel</button>
         <button
           className="primary"
-          onClick={onGenerate}
+          onClick={
+            synthesisMode === "analysis"
+              ? onGenerateFromAnalysis
+              : onGenerateFromTools
+          }
           disabled={
             loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY
           }
         >
           {loading ? loadingStatus || "Generating..." : "Generate Suggestions"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Content to show in the modal for generating policies from tool templates.
- */
-function ToolTemplateModalContent(props: {
-  dataset_id: string;
-  onClose: () => void;
-  onSuccess: (result?: any) => void;
-  generatePolicies: () => Promise<void>;
-}) {
-  // Get the API URL and key from the analyzer config
-  const { endpoint, apikey } = parseAnalyzerConfig();
-
-  const [apiUrl, setApiUrl] = React.useState(endpoint);
-  const [apiKey, setApiKey] = React.useState(apikey);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-
-  const onGenerate = async () => {
-    setLoading(true);
-    setError("");
-
-    if (apiKey === TEMPLATE_API_KEY) {
-      setLoading(false);
-      alertModelAccess(
-        "Please provide a valid API key in the Analyzer settings"
-      );
-      return;
-    }
-
-    try {
-      await props.generatePolicies();
-      props.onSuccess();
-      props.onClose();
-    } catch (error) {
-      setLoading(false);
-      setError("An error occurred: " + (error as Error).message);
-    }
-  };
-
-  return (
-    <div className="form tool-template-form">
-      <p>
-        Generate guardrail suggestions based on the tool templates found in your dataset.
-        This will create guardrails specifically for the tools used in your system.
-      </p>
-
-      <div className="banner-note">
-        <BsInfoCircle /> Policies will be generated based on the tool schemas in your dataset.
-      </div>
-
-      {error && <div className="error">{error}</div>}
-
-      <div className="form-actions">
-        <button onClick={props.onClose}>Cancel</button>
-        <button
-          className="primary"
-          onClick={onGenerate}
-          disabled={
-            loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY
-          }
-        >
-          {loading ? "Generating..." : "Generate from Tool Templates"}
         </button>
       </div>
     </div>
@@ -294,7 +289,9 @@ export function usePolicyLibrary() {
 }
 
 export function useToolTemplatePolicies(datasetId) {
-  const [templatePolicies, setTemplatePolicies] = React.useState<GuardrailSuggestion[]>([]);
+  const [templatePolicies, setTemplatePolicies] = React.useState<
+    GuardrailSuggestion[]
+  >([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const refreshTemplatePolicies = async () => {
@@ -317,7 +314,7 @@ export function useToolTemplatePolicies(datasetId) {
       const policies = await response.json();
 
       // Convert to GuardrailSuggestion format
-      const formattedPolicies = policies.map(policy => ({
+      const formattedPolicies = policies.map((policy) => ({
         id: `template_${policy.template_name}_${Date.now()}`,
         policy_name: policy.template_name,
         policy_code: policy.filled_policy,
@@ -326,8 +323,8 @@ export function useToolTemplatePolicies(datasetId) {
         detection_rate: null,
         success: true,
         extra_metadata: {
-          from_tool_template: true
-        }
+          from_tool_template: true,
+        },
       }));
 
       setTemplatePolicies(formattedPolicies);
@@ -339,7 +336,7 @@ export function useToolTemplatePolicies(datasetId) {
   };
 
   // Function to generate new template policies
-  const generateTemplatePolicies = async () => {
+  const generateToolGuardrails = async () => {
     if (!datasetId) return;
 
     try {
@@ -350,7 +347,9 @@ export function useToolTemplatePolicies(datasetId) {
 
       // Validate API key before making the request
       if (!apikey || apikey === TEMPLATE_API_KEY) {
-        console.error("Valid API key is required for template policy generation");
+        console.error(
+          "Valid API key is required for template policy generation"
+        );
         setIsLoading(false);
         return;
       }
@@ -374,7 +373,10 @@ export function useToolTemplatePolicies(datasetId) {
       );
 
       if (!response.ok) {
-        console.error("Failed to generate policies from templates:", response.status);
+        console.error(
+          "Failed to generate policies from templates:",
+          response.status
+        );
         setIsLoading(false);
         return;
       }
@@ -391,7 +393,12 @@ export function useToolTemplatePolicies(datasetId) {
     refreshTemplatePolicies();
   }, [datasetId]);
 
-  return { templatePolicies, refreshTemplatePolicies, generateTemplatePolicies, isLoading };
+  return {
+    templatePolicies,
+    refreshTemplatePolicies,
+    generateToolGuardrails,
+    isLoading,
+  };
 }
 
 export function GuardrailSuggestions({
@@ -416,11 +423,17 @@ export function GuardrailSuggestions({
   const [showPolicySynthesisModal, setShowPolicySynthesisModal] =
     React.useState(false);
   // tool template policy generation state
-  const [showToolTemplateModal, setShowToolTemplateModal] = React.useState(false);
+  const [showToolTemplateModal, setShowToolTemplateModal] =
+    React.useState(false);
 
   // library policies
   const libraryPolicies = usePolicyLibrary();
-  const { templatePolicies, refreshTemplatePolicies, generateTemplatePolicies, isLoading: isLoadingTemplates } = useToolTemplatePolicies(dataset.id);
+  const {
+    templatePolicies,
+    refreshTemplatePolicies,
+    generateToolGuardrails,
+    isLoading: isLoadingTemplates,
+  } = useToolTemplatePolicies(dataset.id);
 
   // refreshes the list of stored suggested guardrails
   const refreshStoredPolicies = async () => {
@@ -548,7 +561,7 @@ export function GuardrailSuggestions({
         {/* policy synthesis modal */}
         {showPolicySynthesisModal && (
           <Modal
-            title="Generate Suggestions"
+            title="Guardrail Suggestions"
             onClose={() => setShowPolicySynthesisModal(false)}
             hasWindowControls
           >
@@ -556,22 +569,7 @@ export function GuardrailSuggestions({
               dataset_id={dataset.id}
               onClose={() => setShowPolicySynthesisModal(false)}
               onSuccess={(job_info) => onPolicySynthesisStart(job_info)}
-            />
-          </Modal>
-        )}
-
-        {/* tool template modal */}
-        {showToolTemplateModal && (
-          <Modal
-            title="Generate from Tool Templates"
-            onClose={() => setShowToolTemplateModal(false)}
-            hasWindowControls
-          >
-            <ToolTemplateModalContent
-              dataset_id={dataset.id}
-              onClose={() => setShowToolTemplateModal(false)}
-              onSuccess={() => onToolTemplateSuccess()}
-              generatePolicies={generateTemplatePolicies}
+              generateToolGuardrails={generateToolGuardrails}
             />
           </Modal>
         )}
@@ -582,14 +580,6 @@ export function GuardrailSuggestions({
           </span>
           <div className="actions">
             <button
-              aria-label="generate from tool templates"
-              className="button inline create-guardrail tool-template-btn"
-              onClick={() => setShowToolTemplateModal(true)}
-              style={{ marginRight: "5px" }}
-            >
-              <BsTools /> From Tools
-            </button>
-            <button
               aria-label="generate guardrails"
               className="button inline create-guardrail"
               onClick={() => setShowPolicySynthesisModal(true)}
@@ -599,7 +589,6 @@ export function GuardrailSuggestions({
             </button>
           </div>
         </h3>
-
         <div className="guardrail-list">
           {/* Show no suggestions yet state */}
           {policyJobs.length === 0 &&
@@ -611,7 +600,8 @@ export function GuardrailSuggestions({
                   <BsShieldExclamation /> No Guardrail Suggestions Yet
                 </h2>
                 <h3>
-                  Generate guardrail suggestions based on clusters or tool templates.
+                  Generate guardrail suggestions based on clusters or tool
+                  templates.
                 </h3>
               </div>
             )}
@@ -625,7 +615,7 @@ export function GuardrailSuggestions({
               </h2>
               <h3>
                 Invariant is analyzing your clusters and generating guardrail
-                suggestions to safeguard your agentic system.
+                suggestions to safeguard your agent.
               </h3>
               {/* cancel button */}
               <button
@@ -646,7 +636,9 @@ export function GuardrailSuggestions({
           )}
 
           {/* Show completed policies (if any) */}
-          {(storedPolicies.length > 0 || libraryPolicies.length > 0 || templatePolicies.length > 0) && (
+          {(storedPolicies.length > 0 ||
+            libraryPolicies.length > 0 ||
+            templatePolicies.length > 0) && (
             <>
               {[...storedPolicies, ...templatePolicies, ...libraryPolicies].map(
                 (policy: GuardrailSuggestion, i: number) => {
@@ -665,11 +657,12 @@ export function GuardrailSuggestions({
                           <span>
                             {policy.policy_name || policy.cluster_name}
                           </span>
-                          {!policy.extra_metadata?.from_rule_library && !policy.extra_metadata?.from_tool_template && (
-                            <span className="badge blue">
-                              <BsStars /> Generated
-                            </span>
-                          )}
+                          {!policy.extra_metadata?.from_rule_library &&
+                            !policy.extra_metadata?.from_tool_template && (
+                              <span className="badge blue">
+                                <BsStars /> Generated
+                              </span>
+                            )}
                           {policy.extra_metadata?.from_rule_library && (
                             <span className="badge">
                               <BsDatabaseFillLock /> Rule Library

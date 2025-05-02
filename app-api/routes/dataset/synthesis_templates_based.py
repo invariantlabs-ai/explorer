@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ToolTemplateGenerationRequest(BaseModel):
     """Request model for policy generation from tool templates."""
+
     apiurl: str
     apikey: str
 
@@ -38,10 +39,7 @@ async def get_templates_based_policies(
         logger.info(f"Retrieving template-based policies for dataset {id}")
         # Check if the user has access to the dataset
         dataset = load_dataset(
-            session,
-            {"id": id, "user_id": user_id},
-            user_id,
-            allow_public=False
+            session, {"id": id, "user_id": user_id}, user_id, allow_public=False
         )
 
         if not dataset:
@@ -66,12 +64,11 @@ async def generate_policies_from_tool_templates(
     """
     with Session(db()) as session:
         # Check if the user has access to the dataset
-        logger.info(f"Generating policies from tool templates for dataset {id} through {request_data.apiurl.rstrip('/')}/api/v1/trace-analyzer/generate-policies-from-templates")
+        logger.info(
+            f"Generating policies from tool templates for dataset {id} through {request_data.apiurl.rstrip('/')}/api/v1/trace-analyzer/generate-policies-from-templates"
+        )
         dataset = load_dataset(
-            session,
-            {"id": id, "user_id": user_id},
-            user_id,
-            allow_public=False
+            session, {"id": id, "user_id": user_id}, user_id, allow_public=False
         )
 
         if not dataset:
@@ -83,13 +80,11 @@ async def generate_policies_from_tool_templates(
         if not tool_calls:
             raise HTTPException(
                 status_code=400,
-                detail="No tool calls found in dataset metadata. Make sure traces have been processed with tool call extraction."
+                detail="No tool calls found in dataset metadata. Make sure traces have been processed with tool call extraction.",
             )
 
         # Format the request for the template-based policy generation
-        template_request = {
-            "tools_description": tool_calls
-        }
+        template_request = {"tools_description": tool_calls}
 
         try:
             # Send the request to the policy generation endpoint
@@ -106,7 +101,7 @@ async def generate_policies_from_tool_templates(
                         error_text = await response.text()
                         raise HTTPException(
                             status_code=response.status,
-                            detail=f"Policy generation service returned an error: {error_text}"
+                            detail=f"Policy generation service returned an error: {error_text}",
                         )
 
                     policies = await response.json()
@@ -121,5 +116,5 @@ async def generate_policies_from_tool_templates(
         except Exception as e:
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to generate policies from templates: {str(e)}"
+                detail=f"Failed to generate policies from templates: {str(e)}",
             )

@@ -276,7 +276,7 @@ async def extract_and_save_batch_tool_calls(
     trace_ids: List[str] | str,
     messages_list: List[List[Dict[str, Any]]] | List[Dict[str, Any]],
     dataset_id: str = None,
-    user_id: UUID = None
+    user_id: UUID = None,
 ):
     """
     Extract tool names from messages and save them as a set in trace metadata.
@@ -316,24 +316,30 @@ async def extract_and_save_batch_tool_calls(
 
                 # Extract tool calls from messages
                 for message in messages:
-                    if "tool_calls" in message:
+                    if "tool_calls" in message and message["tool_calls"]:
                         message_tool_count = len(message["tool_calls"])
                         tool_count += message_tool_count
-                        logger.info(f"Found {message_tool_count} tool calls in message: {message['tool_calls']}")
+                        logger.info(
+                            f"Found {message_tool_count} tool calls in message: {message['tool_calls']}"
+                        )
 
                         for tool_call in message["tool_calls"]:
                             tool_call = tool_call.get("function", {})
                             if "name" in tool_call:
                                 tool_info = {
                                     "name": tool_call["name"],
-                                    "arguments": [k for k in tool_call.get("arguments", {}).keys()],
+                                    "arguments": [
+                                        k for k in tool_call.get("arguments", {}).keys()
+                                    ],
                                 }
                                 tool_names[tool_call["name"]] = tool_info
                                 # Also add to dataset-level registry
                                 all_dataset_tools[tool_call["name"]] = tool_info
 
                 if tool_names:
-                    logger.info(f"Extracted {len(tool_names)} unique tools from trace {trace_id}: {', '.join(tool_names.keys())}")
+                    logger.info(
+                        f"Extracted {len(tool_names)} unique tools from trace {trace_id}: {', '.join(tool_names.keys())}"
+                    )
 
                     # Update the trace with the extracted tool names
                     trace = session.query(Trace).filter(Trace.id == trace_id).first()
@@ -347,9 +353,13 @@ async def extract_and_save_batch_tool_calls(
                         updated_tool_names = existing_tool_names | tool_names
 
                         # Log if new tools were added
-                        new_tools = set(updated_tool_names.keys()) - set(existing_tool_names.keys())
+                        new_tools = set(updated_tool_names.keys()) - set(
+                            existing_tool_names.keys()
+                        )
                         if new_tools:
-                            logger.info(f"Adding {len(new_tools)} new tools to trace {trace_id}")
+                            logger.info(
+                                f"Adding {len(new_tools)} new tools to trace {trace_id}"
+                            )
 
                         # Store in metadata
                         trace.extra_metadata["tool_calls"] = updated_tool_names
@@ -362,7 +372,9 @@ async def extract_and_save_batch_tool_calls(
 
             # Update dataset tool registry if we have a dataset and tools were found
             if dataset_id and user_id and all_dataset_tools:
-                logger.info(f"Updating tool registry for dataset {dataset_id} with {len(all_dataset_tools)} tools")
+                logger.info(
+                    f"Updating tool registry for dataset {dataset_id} with {len(all_dataset_tools)} tools"
+                )
 
                 try:
                     # Load the dataset
@@ -371,7 +383,7 @@ async def extract_and_save_batch_tool_calls(
                         {"id": dataset_id, "user_id": user_id},
                         user_id,
                         allow_public=True,
-                        return_user=False
+                        return_user=False,
                     )
 
                     if dataset:
