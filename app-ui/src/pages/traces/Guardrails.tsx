@@ -6,12 +6,15 @@ import {
   BsBan,
   BsCardList,
   BsCode,
+  BsFillSignTurnSlightRightFill,
   BsGearWideConnected,
   BsInfoCircleFill,
+  BsMask,
   BsPauseCircle,
   BsPencilFill,
   BsShieldCheck,
   BsTerminal,
+  BsTransparency,
   BsTrash,
   BsX,
   BsXCircle,
@@ -199,6 +202,24 @@ function MutatePolicyModalContent(props: {
       icon: <BsPauseCircle />,
       enabled: false,
     },
+    // {
+    //   title: "Mask",
+    //   description: "The guardrail will lead to a masked response.",
+    //   value: "mask",
+    //   actionValue: "mask",
+    //   icon: <BsTransparency />,
+    //   enabled: false,
+    //   disabled: true,
+    // },
+    // {
+    //   title: "Steer",
+    //   description: "The guardrail will attempt to steer the agent to take a different action.",
+    //   value: "steer",
+    //   actionValue: "steer",
+    //   icon: <BsFillSignTurnSlightRightFill />,
+    //   enabled: false,
+    //   disabled: true,
+    // },
   ];
   const evaluator = useDatasetGuardrailsChecker(props.dataset_id);
   const ApiKeyModal = evaluator.ApiKeyModal;
@@ -263,9 +284,9 @@ function MutatePolicyModalContent(props: {
       }
     });
   };
-  
+
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   // on hiding of modal, stop evaluator
   useEffect(() => {
     if (!modalRef.current && evaluator.isEvaluating) {
@@ -274,13 +295,13 @@ function MutatePolicyModalContent(props: {
   }, [modalRef, evaluator]);
 
   const resultsByIndex = useResultsByIndex(evaluator.results)
-  
-  const annotationsProvider = (trace: {index: number} | null) => {
+
+  const annotationsProvider = (trace: { index: number } | null) => {
     if (!trace) {
       return null
     }
     const result = resultsByIndex[trace.index]
-    
+
     if (result) {
       let annotations = {} as any[]
       for (const error of result.errors || []) {
@@ -311,7 +332,7 @@ function MutatePolicyModalContent(props: {
     return null
   }
 
-  return (<><ApiKeyModal/>
+  return (<><ApiKeyModal />
     <div className="modal-content policy-editor-form " ref={modalRef}>
       <header className={editMode ? "edit-mode" : ""}>
         <b>
@@ -335,7 +356,7 @@ function MutatePolicyModalContent(props: {
                 aria-label="delete guardrail"
                 className="inline icon secondary danger"
                 disabled={loading}
-                onClick={props.onDelete || (() => {})}
+                onClick={props.onDelete || (() => { })}
               >
                 <BsTrash />
               </button>
@@ -361,14 +382,32 @@ function MutatePolicyModalContent(props: {
         )}
         {editMode && (
           <>
+            {action == "update" && (
+              <button
+                aria-label="delete guardrail"
+                className="inline icon secondary danger"
+                disabled={loading}
+                onClick={props.onDelete || (() => { })}
+              >
+                <BsTrash />
+              </button>
+            )}
+            <button className="button inline" onClick={props.onClose}>
+              Cancel
+            </button>
             <button
-              className="inline icon secondary editmode"
-              onClick={() => setEditMode(!editMode)}
-              data-tooltip-id="edit-mode"
-              data-tooltip-content="Smaller Rule Editor"
-              data-tooltip-place="top"
+              aria-label={"modal " + action}
+              className="primary inline"
+              disabled={loading || !name || !policyCode || !policyCode.trim()}
+              onClick={onMutate}
             >
-              <BsArrowsAngleContract />
+              {action == "update"
+                ? loading
+                  ? "Updating..."
+                  : "Save"
+                : loading
+                  ? "Creating..."
+                  : "Create"}
             </button>
           </>
         )}
@@ -498,29 +537,43 @@ function MutatePolicyModalContent(props: {
               style={{ flex: GUARDRAIL_EVALUATION_ENABLED ? 0 : 1 }}
             >
               <PolicyEditor
-                  width="100%"
-                  defaultLanguage="python"
-                  value={policyCode}
-                  fontSize={14}
-                  onChange={(value?: string) => setPolicyCode(value || "")}
-                  theme="vs-light"
-                  className="policy-editor full"
-                />
+                width="100%"
+                defaultLanguage="python"
+                value={policyCode}
+                fontSize={14}
+                onChange={(value?: string) => setPolicyCode(value || "")}
+                theme="vs-light"
+                className="policy-editor full"
+              />
               {GUARDRAIL_EVALUATION_ENABLED && (
                 <>
                   <div className="evaluator-controls">
-                  <button
-                    className="inline primary evaluate"
-                    onClick={!evaluator.isEvaluating ? onEvaluate : evaluator.stopCheck}>
-                    {evaluator.isEvaluating ? 
-                      <><BsX /> Cancel</> : 
-                      <><BsTerminal /> Evaluate</>}
-                    {evaluator.isEvaluating && (
-                      <span className="progress">
-                        {evaluator.progress} / {evaluator.numTraces}
+                    {evaluator.progress > 0 && (
+                      <span className="secondary">
+                        {evaluator.numMatches} matches
                       </span>
                     )}
-                  </button>
+                    <button
+                      className="inline primary evaluate"
+                      onClick={!evaluator.isEvaluating ? onEvaluate : evaluator.stopCheck}>
+                      {evaluator.isEvaluating ?
+                        <><BsX /> Cancel</> :
+                        <><BsTerminal /> Evaluate</>}
+                      {evaluator.isEvaluating && (
+                        <span className="progress">
+                          {evaluator.progress} / {evaluator.numTraces}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      className="icon inline editmode"
+                      onClick={() => setEditMode(!editMode)}
+                      data-tooltip-id="edit-mode"
+                      data-tooltip-content="Larger Rule Editor"
+                      data-tooltip-place="top"
+                    >
+                      <BsArrowsAngleContract />
+                    </button>
                   </div>
                 </>
               )}
@@ -536,13 +589,13 @@ function MutatePolicyModalContent(props: {
                       expandCollapse: true
                     }}
                     annotationsProvider={annotationsProvider}
-                    indices={{"all": {"traces": triggered_traces.map(r => r.index)}}}
+                    indices={{ "all": { "traces": triggered_traces.map(r => r.index) } }}
                   />
                 )}
                 {triggered_traces.length == 0 && !evaluator.isEvaluating && (
                   <div className="empty instructions box no-policies">
                     <h2>
-                      <BsXCircle/> No Matches
+                      <BsXCircle /> No Matches
                     </h2>
                     <h3>
                       Your guardrailing rule does not match any traces.
@@ -578,7 +631,7 @@ function MutatePolicyModalContent(props: {
           className="tooltip"
         />
       </div>
-    </div>
+    </div >
   </>);
 }
 
@@ -598,6 +651,7 @@ export function LabelSelect(props: {
     title: string;
     description: string;
     value: any;
+    disabled?: boolean;
   }[];
   onChange: (value: any) => void;
 }) {
@@ -606,9 +660,8 @@ export function LabelSelect(props: {
       {props.options.map((option) => (
         <div
           key={option.value}
-          className={`guardrail-action-select-option ${
-            option.value === props.value ? "selected" : ""
-          }`}
+          className={`guardrail-action-select-option ${option.value === props.value ? "selected" : ""
+            } ${option.disabled ? "disabled" : ""}`}
           onClick={() => props.onChange(option.value)}
           aria-label={option.value}
         >
@@ -762,7 +815,7 @@ export function Guardrails(props: {
       <header className="toolbar">
         <h1>
           <Link to="/"> /</Link>
-          <Link to={`/u/${props.username}`}>{props.username}</Link>/
+          <Link to={`/ u / ${props.username}`}>{props.username}</Link>/
           {props.datasetname}
           <span> </span>
         </h1>
@@ -787,16 +840,16 @@ export function Guardrails(props: {
         <div className="guardrail-list">
           {(!dataset.extra_metadata?.policies ||
             dataset.extra_metadata.policies.length === 0) && (
-            <div className="empty instructions box no-policies">
-              <h2>
-                <GuardrailsIcon /> No Guardrails Configured
-              </h2>
-              <h3>
-                Guardrails are rules to secure and steer the actions of your
-                agent, and to avoid unintended behavior during operation.
-              </h3>
-            </div>
-          )}
+              <div className="empty instructions box no-policies">
+                <h2>
+                  <GuardrailsIcon /> No Guardrails Configured
+                </h2>
+                <h3>
+                  Guardrails are rules to secure and steer the actions of your
+                  agent, and to avoid unintended behavior during operation.
+                </h3>
+              </div>
+            )}
           {guardrails.length > 0 &&
             guardrails.map((policy) => {
               return (

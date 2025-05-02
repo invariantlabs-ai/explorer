@@ -249,7 +249,12 @@ button.policy-action {
     cursor: pointer;
     overflow: hidden;
 
-    &:hover {
+    &.disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    &:not(.disabled):hover {
       background-color: #ebebeb;
       border: 1pt solid $color-primary;
     }
@@ -438,10 +443,16 @@ button.policy-action {
     right: -7.5pt;
     padding: 8pt;
     top: auto;
-    z-index: 100;
+    z-index: 0;
     bottom: 0pt;
     display: flex;
     flex-direction: row;
+
+    >.secondary {
+      line-height: 25pt;
+      margin-right: 10pt;
+      font-size: 10pt;
+    }
 
     button {
       height: 25pt;
@@ -454,9 +465,13 @@ button.policy-action {
   height: calc(70vh) !important;
   overflow: hidden;
   flex: 1;
+  position: relative;
 
   .box.empty {
-    margin-top: 100pt !important;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .panel.fullscreen,

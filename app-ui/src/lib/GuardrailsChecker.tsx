@@ -30,6 +30,8 @@ export interface DatasetPolicyChecker {
   isEvaluating: boolean;
   // number of traces to evaluate
   numTraces: number;
+  // number of matches
+  numMatches: number;
   // progress of the evaluation (in number of traces evaluated)
   progress: number;
   // a modal for configuring the API key
@@ -153,7 +155,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
   const userInfo = useUserInfo();
   const isLocal = config("instance_name") === "local";
   const { apiKey, APIKeyInput } = useHostedExplorerAPIKey();
-  
+
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<PolicyCheckResult[]>([]);
@@ -161,6 +163,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   const [numTraces, setNumTraces] = useState(0);
+  const [numMatches, setNumMatches] = useState(0);
   const [progress, setProgress] = useState(0);
 
   // Modal state and handler for API key
@@ -242,6 +245,10 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
+      // reset stats
+      setProgress(0);
+      setNumMatches(0);
+
       if (!response.body) throw new Error("Response body is null");
 
       const stream = events(response, controller.signal);
@@ -250,14 +257,15 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
         if (event.data) {
           try {
             const result: PolicyCheckResult = JSON.parse(event.data);
-            
+
             // check for metadata result
             if (result.metadata) {
               setNumTraces(result.metadata.num_traces);
               setProgress(0);
+              setNumMatches(0);
               continue;
             }
-            
+
             // process as trace result
             if (result.error) {
               setError(result.error);
@@ -265,6 +273,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
               setResults(prev => [...prev, result]);
             }
             setProgress(prev => prev + 1);
+            setNumMatches(prev => prev + (result.triggered ? 1 : 0));
           } catch (e) {
             console.error("Failed to parse policy check result:", e);
           }
@@ -278,7 +287,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
 
       if (error.toString().includes("Fetch is aborted")) {
         setError("guardrails evaluation was aborted");
-      } else if (error.toString().includes("was aborted")) { 
+      } else if (error.toString().includes("was aborted")) {
         return;
       } else {
         const errorMessage = error.message || "Unknown error occurred";
@@ -297,6 +306,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
     stopCheck,
     isEvaluating,
     numTraces,
+    numMatches,
     progress,
     ApiKeyModal: (props: any) => <ApiKeyModal isModalVisible={isModalVisible} setIsModalVisible={setIsModalVisible} handleSubmit={handleSubmit} APIKeyInput={APIKeyInput} {...props} />
   };
