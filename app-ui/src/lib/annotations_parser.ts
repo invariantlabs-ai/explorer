@@ -83,7 +83,9 @@ export class AnnotationsParser {
           highlights.push([key, highlight]);
         }
       } else {
-        // if not character of bbox range but still guardrails-error, make it a object-level highlight
+        // if not character of bbox range but still a guardrails-error, make it am object-level highlight
+        // NOTE: these annotations are sometimes emitted by the guardrails runtime, e.g. when we can pinpoint
+        // the failure only to an object, not a specific character range or image region.
         for (let i = 0; i < annotations[key].length; i++) {
           let annotation = annotations[key][i];
           if (annotation.extra_metadata && annotation.extra_metadata["source"] === "guardrails-error") {

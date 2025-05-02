@@ -208,7 +208,11 @@ function MutatePolicyModalContent(props: {
 
   useEffect(() => {
     if (evaluator.error) {
-      alert(evaluator.error);
+      if (evaluator.error.includes("aborted")) {
+        // when aborted by the user, do not show an error
+        return;
+      }
+      alert("Error during guardrail evaluation: " + evaluator.error);
     }
   }, [evaluator.error]);
 
@@ -300,8 +304,6 @@ function MutatePolicyModalContent(props: {
           annotations[annotation.address].push(annotation)
         }
       }
-
-      console.log("annotations", annotations)
 
       return annotations
     }

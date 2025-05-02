@@ -26,6 +26,7 @@ async def process_single_trace(
     policy: str,
     policy_check_url: str,
     headers: Dict[str, str],
+    cookie: str,
     parameters: Dict[str, Any],
     client_session: aiohttp.ClientSession,
 ) -> Dict[str, Any]:
@@ -37,13 +38,17 @@ async def process_single_trace(
         "parameters": parameters
     }
 
+    print(cookie)
+
     try:
         # Send the request for this trace
         async with client_session.post(
             policy_check_url,
             headers=headers,
             json=payload,
-            timeout=30
+            timeout=30,
+            # set cookies
+            cookies=cookie,
         ) as response:
             result = {
                 "traceId": str(trace.id),
@@ -118,7 +123,7 @@ async def policy_check_stream(
                 if await request.is_disconnected():
                     return None
                 return await process_single_trace(
-                    trace, policy, policy_check_url, headers, parameters, client_session
+                    trace, policy, policy_check_url, headers, cookie, parameters, client_session
                 )
 
         tasks = [process_with_semaphore(trace) for trace in traces]
@@ -153,26 +158,28 @@ async def stream_policy_check(
 ):
     """
     Stream policy check results for each trace in a dataset.
-    Returns Server-Sent Events with results as they become available.
-    Processes multiple traces concurrently for improved performance.
+
+    Returns SSE Events with results as they become available.
+
+    When the request is dropped, or streaming stops, the guardrails
+    evaluation is also stopped.
     """
     try:
         policy = policy_check_request.policy
         policy_check_url = policy_check_request.policy_check_url
-        max_concurrent = 20
+        max_concurrent = 5
         
         api_key = request.headers.get("Authorization")
-        cookie = None
+        cookie = request.cookies
         parameters = policy_check_request.parameters
 
         with Session(db()) as session:
             # Get dataset and verify access
-            dataset, user = load_dataset(
+            dataset = load_dataset(
                     session,
                     {"id": dataset_id},
                     user_id,
-                    allow_public=False,
-                    return_user=True,
+                    allow_public=False
                 )
             
             if parameters is None:

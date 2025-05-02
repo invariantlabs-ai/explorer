@@ -11,10 +11,8 @@ import {
   BsPencilFill,
   BsFileEarmarkBreak,
   BsBracesAsterisk,
-  BsShieldCheck,
   BsChevronRight,
   BsCircle,
-  BsCircleFill,
   BsChevronDown,
 } from "react-icons/bs";
 
@@ -1305,7 +1303,7 @@ export function ObjectLevelAnnotationIndicator(props: {
 }
 
 /**
- * An extra line on top of the message content, that shows the object level highlights.
+ * Inline editor to show more details about object-level highlights.
  */
 export function ObjectLevelAnnotationEditor(props: {
   address: string;
@@ -1344,6 +1342,7 @@ export function ObjectLevelAnnotationEditor(props: {
     ? InlineComponent({
         highlights: [grouped],
         address: props.address,
+        annotationsDisabled: true,
         onClose: () => {
           // nop
         },

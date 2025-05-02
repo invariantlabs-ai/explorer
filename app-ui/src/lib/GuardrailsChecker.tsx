@@ -178,20 +178,38 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
     const controller = new AbortController();
     setAbortController(controller);
     setIsEvaluating(true);
+    
 
     try {
-      const response = await fetch(`/api/v1/dataset/byid/${datasetId}/policy-check/stream`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          policy,
-          policy_check_url: "https://explorer.invariantlabs.ai/api/v1/policy/check"
-        }),
-        signal: controller.signal
-      });
+      let response: Response;
+
+      // send request (with API key or session cookies)
+      if (false) {
+        response = await fetch(`/api/v1/dataset/byid/${datasetId}/policy-check/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            policy,
+            policy_check_url: "https://explorer.invariantlabs.ai/api/v1/policy/check"
+          }),
+          signal: controller.signal
+        });
+      } else {
+        response = await fetch(`/api/v1/dataset/byid/${datasetId}/policy-check/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            policy,
+            policy_check_url: "https://explorer.invariantlabs.ai/api/v1/policy/check"
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -233,7 +251,7 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
       setRunning(false);
 
       if (error.toString().includes("Fetch is aborted")) {
-        setError("Policy check was aborted");
+        setError("guardrails evaluation was aborted");
       } else if (error.toString().includes("was aborted")) { 
         return;
       } else {
@@ -244,13 +262,6 @@ export function useDatasetGuardrailsChecker(datasetId: string): DatasetPolicyChe
       setIsEvaluating(false);
     }
   }, [datasetId, apiKey, userInfo, isLocal, isEvaluating]);
-
-  // // Cleanup on unmount
-  // useEffect(() => {
-  //   return () => {
-  //     stopCheck();
-  //   };
-  // }, [stopCheck]);
 
   return {
     running,

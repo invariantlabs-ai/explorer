@@ -124,15 +124,17 @@ function useHighlightDecorator(
         return (
           <div className="comment-insertion-point">
             <HighlightDetails {...props} />
-            <AnnotationThread
-              {...props}
-              filter={noAnalyzerMessages}
-              traceId={activeTraceId}
-              traceIndex={activeTraceIndex}
-              onAnnotationCreate={onAnnotationCreate}
-              onAnnotationDelete={onAnnotationDelete}
-              numHighlights={props.highlights.length}
-            />
+            {!props.annotationsDisabled &&
+              <AnnotationThread
+                {...props}
+                filter={noAnalyzerMessages}
+                traceId={activeTraceId}
+                traceIndex={activeTraceIndex}
+                onAnnotationCreate={onAnnotationCreate}
+                onAnnotationDelete={onAnnotationDelete}
+                numHighlights={props.highlights.length}
+              />
+            }
           </div>
         );
       },
