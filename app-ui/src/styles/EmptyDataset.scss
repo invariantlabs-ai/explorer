@@ -111,7 +111,7 @@
     width: 100%;
     text-align: left;
 
-    button:not(.copy) {
+    button:not(.copy, .language) {
       margin-top: 20pt !important;
       display: block;
       margin: auto;
@@ -137,7 +137,7 @@
     height: 100pt;
   }
 
-  button {
+  button:not(.copy, .language) {
     width: 70%;
   }
 }
@@ -165,6 +165,7 @@
   font-family: monospace;
 
   div.language-selector{
+    display: flex;
     position: absolute;
     right: -5pt;
     top: 0pt;
