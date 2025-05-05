@@ -6,15 +6,16 @@ import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, List, Dict, Any
 
 import sqlalchemy as sa
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, BackgroundTasks
 from fastapi.exceptions import HTTPException
 from logging_config import get_logger
 from models.datasets_and_traces import Annotation, Trace, db
 from routes.apikeys import APIIdentity
 from routes.user import user_by_id
+from routes.dataset_metadata import extract_and_save_batch_tool_calls
 from sqlalchemy.orm import Session
 from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
@@ -29,7 +30,9 @@ Write-only API endpoint to push traces to the server.
 
 @push.post("/trace")
 async def push_trace(
-    request: Request, user_id: Annotated[uuid.UUID, Depends(APIIdentity)]
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user_id: Annotated[uuid.UUID, Depends(APIIdentity)]
 ):
     # extract payload
     payload = await request.json()
@@ -176,6 +179,16 @@ async def push_trace(
                             session.add(new_annotation)
 
                 session.commit()
+
+                # Add background task to extract and save tool calls
+                background_tasks.add_task(
+                    extract_and_save_batch_tool_calls,
+                    result_ids,
+                    messages,
+                    dataset_id,
+                    user_id
+                )
+
                 return {
                     "id": result_ids,
                     **({"dataset": dataset_name} if dataset_id else {}),

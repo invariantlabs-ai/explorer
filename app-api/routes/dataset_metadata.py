@@ -1,23 +1,26 @@
 """Defines routes for APIs related to dataset metadata."""
 
-from typing import Any
+from typing import Any, List, Dict
 from uuid import UUID
 
 from fastapi import HTTPException
-from models.datasets_and_traces import db
+from logging_config import get_logger
+from models.datasets_and_traces import Trace, db
 from models.queries import load_dataset
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
+logger = get_logger(__name__)
+
 """
-A metadata field is a field in a datasets 'extra_metadata' dictionary that can be updated via the API. 
+A metadata field is a field in a datasets 'extra_metadata' dictionary that can be updated via the API.
 
 A field is characterised by the following properties/methods:
 
-- .validate() for data validation 
+- .validate() for data validation
     - its type (e.g. int, float, str, dict, list, etc.)
-    - its custom validation properties (new values must be validated against these properties) 
-- .include_in_response: 
+    - its custom validation properties (new values must be validated against these properties)
+- .include_in_response:
     - whether it should be included in the response at the end of an update operation
 - .clear_on_replace:
     whether it should be cleared when it is not present in the new metadata that is supposed to 'replace_all' the current metadata
@@ -267,3 +270,147 @@ async def update_dataset_metadata(
 
         # return the updated metadata
         return updated_metadata
+
+
+async def extract_and_save_batch_tool_calls(
+    trace_ids: List[str] | str,
+    messages_list: List[List[Dict[str, Any]]] | List[Dict[str, Any]],
+    dataset_id: str = None,
+    user_id: UUID = None,
+):
+    """
+    Extract tool names from messages and save them as a set in trace metadata.
+
+    This function handles both single traces and batches of traces:
+    - For a single trace, pass a string trace_id and a list of messages
+    - For multiple traces, pass a list of trace_ids and a list of message lists
+
+    Args:
+        trace_ids: Either a single trace ID (str) or a list of trace IDs
+        messages_list: Either a list of messages for one trace or a list of message lists
+        dataset_id: Optional dataset ID for dataset-level tool registry
+        user_id: User ID needed for dataset operations
+    """
+    if isinstance(trace_ids, str):
+        logger.info(f"Processing single trace: {trace_ids}")
+    else:
+        logger.info(f"Extracting tool calls for {len(trace_ids)} traces")
+
+    # Handle single trace case by converting to batch format
+    if isinstance(trace_ids, str):
+        trace_ids = [trace_ids]
+        # Ensure messages_list is properly wrapped for a single trace
+        if not all(isinstance(m, list) for m in messages_list):
+            logger.info("Converting single message list to batch format")
+            messages_list = [messages_list]
+
+    try:
+        with Session(db()) as session:
+            # Track all tool names across all traces for dataset-level registry
+            all_dataset_tools = {}
+
+            for i, (trace_id, messages) in enumerate(zip(trace_ids, messages_list)):
+                logger.info(f"Processing trace {i+1}/{len(trace_ids)}: {trace_id}")
+                tool_names = {}
+                tool_count = 0
+
+                # Extract tool calls from messages
+                for message in messages:
+                    if "tool_calls" in message and message["tool_calls"]:
+                        message_tool_count = len(message["tool_calls"])
+                        tool_count += message_tool_count
+                        logger.info(
+                            f"Found {message_tool_count} tool calls in message: {message['tool_calls']}"
+                        )
+
+                        for tool_call in message["tool_calls"]:
+                            tool_call = tool_call.get("function", {})
+                            if "name" in tool_call:
+                                tool_info = {
+                                    "name": tool_call["name"],
+                                    "arguments": [
+                                        k for k in tool_call.get("arguments", {}).keys()
+                                    ],
+                                }
+                                tool_names[tool_call["name"]] = tool_info
+                                # Also add to dataset-level registry
+                                all_dataset_tools[tool_call["name"]] = tool_info
+
+                if tool_names:
+                    logger.info(
+                        f"Extracted {len(tool_names)} unique tools from trace {trace_id}: {', '.join(tool_names.keys())}"
+                    )
+
+                    # Update the trace with the extracted tool names
+                    trace = session.query(Trace).filter(Trace.id == trace_id).first()
+                    if trace:
+                        # Initialize metadata dict if needed
+                        if not trace.extra_metadata:
+                            trace.extra_metadata = {}
+
+                        # Merge with existing tool names
+                        existing_tool_names = trace.extra_metadata.get("tool_calls", {})
+                        updated_tool_names = existing_tool_names | tool_names
+
+                        # Log if new tools were added
+                        new_tools = set(updated_tool_names.keys()) - set(
+                            existing_tool_names.keys()
+                        )
+                        if new_tools:
+                            logger.info(
+                                f"Adding {len(new_tools)} new tools to trace {trace_id}"
+                            )
+
+                        # Store in metadata
+                        trace.extra_metadata["tool_calls"] = updated_tool_names
+                        flag_modified(trace, "extra_metadata")
+                        logger.info(f"Updated metadata for trace {trace_id}")
+                    else:
+                        logger.warning(f"Trace {trace_id} not found in database")
+                else:
+                    logger.info(f"No tool calls found in trace {trace_id}")
+
+            # Update dataset tool registry if we have a dataset and tools were found
+            if dataset_id and user_id and all_dataset_tools:
+                logger.info(
+                    f"Updating tool registry for dataset {dataset_id} with {len(all_dataset_tools)} tools"
+                )
+
+                try:
+                    # Load the dataset
+                    dataset = load_dataset(
+                        session,
+                        {"id": dataset_id, "user_id": user_id},
+                        user_id,
+                        allow_public=True,
+                        return_user=False,
+                    )
+
+                    if dataset:
+                        # Make sure extra_metadata exists
+                        if not dataset.extra_metadata:
+                            dataset.extra_metadata = {}
+
+                        # Get existing tool registry
+                        existing_tools = dataset.extra_metadata.get("tool_calls", {})
+
+                        # Merge with new tools
+                        updated_tools = existing_tools | all_dataset_tools
+
+                        # Update dataset metadata
+                        dataset.extra_metadata["tool_calls"] = updated_tools
+                        flag_modified(dataset, "extra_metadata")
+                        logger.info(f"Updated tool registry for dataset {dataset_id}")
+                    else:
+                        logger.warning(f"Dataset {dataset_id} not found in database")
+                except Exception as e:
+                    logger.error(f"Error updating dataset tool registry: {str(e)}")
+            elif dataset_id:
+                logger.info(f"No tools to update for dataset {dataset_id}")
+
+            # Commit all changes at once
+            session.commit()
+
+    except Exception as e:
+        logger.error(f"Error in tool call extraction: {str(e)}", exc_info=True)
+        raise
