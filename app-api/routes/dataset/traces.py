@@ -247,7 +247,7 @@ async def download_traces_as_analyzer_input(
             content=stream_analyzer_input(),
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename={dataset.name}_analyzer_input.json"
+                "Content-Disposition": f"attachment; filename={dataset.name}_analyzer_input.jsonl"
             },
         )
 
