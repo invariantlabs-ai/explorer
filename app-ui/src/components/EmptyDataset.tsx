@@ -3,12 +3,12 @@ import { FileUploadMask } from "../pages/home/NewDataset";
 import { uploadDataset } from "../service/DatasetOperations";
 import { useTelemetry } from "../utils/Telemetry";
 import {
-  BsChat,
   BsChatFill,
   BsClipboard2,
   BsClipboard2Check,
   BsCollection,
 } from "react-icons/bs";
+import { Tooltip } from "react-tooltip";
 import "../styles/EmptyDataset.scss";
 import { createSharedHighlighter } from "../lib/traceview/plugins/code-highlighter";
 import { SETUP_SNIPPETS } from "./SetupSnippets";
@@ -119,41 +119,80 @@ function JSONLUpload({
   );
 }
 
-async function highlightPythonCode(content: string) {
+async function highlightCode(content: string, language: string) {
+  const lang = {
+    python: "python",
+    javascript: "js",
+    typescript: "js",
+    bash: "bash",
+    css: "css",
+    json: "js",
+  }[language] || language;
   const highlighter = await createSharedHighlighter();
+
   const tokens = await highlighter.codeToTokensWithThemes(content, {
-    lang: "python",
+    lang: lang,
     themes: ["github-light"],
   });
   return tokens;
 }
 
-export function CodeWithCopyButton({ code }: { code: string }) {
+export function CodeWithCopyButton({ code }: { code: Record<string, string> }) {
+  const [language, setLanguage] = React.useState(Object.keys(code)[0]);
   const [copied, setCopied] = React.useState(false);
   const [tokens, setTokens] = React.useState<any[]>([]);
 
   useEffect(() => {
-    highlightPythonCode(code).then((tokens) => {
-      setTokens(tokens);
-    });
+    if (language in code) {
+      changeLanguage(language);
+    }
+    else {
+      changeLanguage(Object.keys(code)[0]);
+    }
   }, [code]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(code[language]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const changeLanguage = (language) => {
+    setLanguage(language);
+    highlightCode(code[language], language).then(
+      (tokens) => {
+        setTokens(tokens);
+      }
+    );
+  };
   return (
     <div className="code-with-copy">
       {/* {code} */}
       <RenderedTokens tokens={tokens} />
+      <div className="language-selector">
+        {Object.keys(code).map((lang) => (
+        <button
+          key={lang}
+          className={`language ${language === lang ? "active" : ""}`}
+          onClick={() => changeLanguage(lang)}
+        >
+          {lang}
+        </button>
+      ))}
       <button
         onClick={handleCopy}
-        className={"inline icon copy " + (copied ? "copied" : "")}
+        className={"copy " + (copied ? "copied" : "")}
+        data-tooltip-id="copy-code-tooltip"
+        data-tooltip-content={copied ? "Copied!" : "Copy"}
       >
+        <Tooltip
+            id="copy-code-tooltip"
+            place="bottom"
+            style={{ whiteSpace: "pre" }}
+          />
         {copied ? <BsClipboard2Check /> : <BsClipboard2 />}
       </button>
+    </div>
     </div>
   );
 }
@@ -296,15 +335,19 @@ export function UploadOptions({
   // active option
   const activeOption = SNIPPETS.find((o) => o.name === activeTab);
 
-  // get the control
-  let snippet: any = activeOption?.snippet;
-  // if snippet is a function, call it with datasetname (it is a template based on the dataset name)
-  if (typeof snippet === "function") {
-    // instance url is location.protocol + "//" + location.host
-    const instance = `${location.protocol}//${location.host}`;
-    snippet = snippet(dataset, instance);
+  // get the code snippet per language
+  let raw_snippets: any = activeOption?.snippetPerLanguage;
+  const instance = `${location.protocol}//${location.host}`;
+  if (raw_snippets) {
+    for (const lang of Object.keys(raw_snippets)) {
+      const snippetFunc = raw_snippets[lang];
+      if (typeof snippetFunc === 'function') {
+        raw_snippets[lang] = snippetFunc(dataset, instance);
+      }
+    }
   }
-
+  const snippetPerLanguage = raw_snippets as Record<string, string>;
+  
   const link = activeOption?.link ? (
     <a href={activeOption?.link}> Learn More.</a>
   ) : null;
@@ -336,7 +379,7 @@ export function UploadOptions({
           {SETUP_SNIPPETS.find((o) => o.name === activeTab)?.description}
           {link}
         </div>
-        {snippet == "<jsonl-upload>" ? (
+        {"json" in snippetPerLanguage && snippetPerLanguage["json"] === "<jsonl-upload>" ? (
           <JSONLUpload
             file={file}
             loading={loading}
@@ -345,7 +388,7 @@ export function UploadOptions({
             onSubmit={onSubmit}
           />
         ) : (
-          <CodeWithCopyButton code={snippet} />
+          <CodeWithCopyButton code={snippetPerLanguage} />
         )}
       </div>
     </div>

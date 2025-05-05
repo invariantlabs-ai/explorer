@@ -82,6 +82,27 @@ export class AnnotationsParser {
 
           highlights.push([key, highlight]);
         }
+      } else {
+        // if not character of bbox range but still a guardrails-error, make it am object-level highlight
+        // NOTE: these annotations are sometimes emitted by the guardrails runtime, e.g. when we can pinpoint
+        // the failure only to an object, not a specific character range or image region.
+        for (let i = 0; i < annotations[key].length; i++) {
+          let annotation = annotations[key][i];
+          if (annotation.extra_metadata && annotation.extra_metadata["source"] === "guardrails-error") {
+            let highlight: HighlightData = {
+              content: annotation.content,
+              source: annotation.extra_metadata["source"],
+              annotationId: key + ":" + i,
+              extra_metadata: annotation.extra_metadata,
+            }
+
+            // strip off trailing .content from the key
+            if (key.endsWith(".content")) {
+              key = key.slice(0, -8);
+            }
+            highlights.push([key, highlight]);
+          }
+        }
       }
     }
 

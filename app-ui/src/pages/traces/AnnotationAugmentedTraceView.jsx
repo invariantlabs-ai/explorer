@@ -124,15 +124,17 @@ function useHighlightDecorator(
         return (
           <div className="comment-insertion-point">
             <HighlightDetails {...props} />
-            <AnnotationThread
-              {...props}
-              filter={noAnalyzerMessages}
-              traceId={activeTraceId}
-              traceIndex={activeTraceIndex}
-              onAnnotationCreate={onAnnotationCreate}
-              onAnnotationDelete={onAnnotationDelete}
-              numHighlights={props.highlights.length}
-            />
+            {!props.annotationsDisabled &&
+              <AnnotationThread
+                {...props}
+                filter={noAnalyzerMessages}
+                traceId={activeTraceId}
+                traceIndex={activeTraceIndex}
+                onAnnotationCreate={onAnnotationCreate}
+                onAnnotationDelete={onAnnotationDelete}
+                numHighlights={props.highlights.length}
+              />
+            }
           </div>
         );
       },
@@ -243,6 +245,8 @@ function useHighlightDecorator(
  * @param {boolean} props.enableNux - callback to enable the NUX
  * @param {boolean} props.enableAnalyzer - whether to enable the analyzer
  * @param {React.Component} props.prelude - extra prelude components to show at the top of the traceview (e.g. metadata)
+ * @param {Array} props.annotations - the annotations to show in the traceview (if null-ish, stored annotations are used)
+ * @param {boolean} props.toolbarItems - the toolbar items to show in the traceview (see TraceToolbarItems)
  */
 
 export function AnnotationAugmentedTraceView(props) {
@@ -257,8 +261,10 @@ export function AnnotationAugmentedTraceView(props) {
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({});
   // loads and manages annotations as a remote resource (server CRUD)
-  const [annotations, annotationStatus, annotationsError, annotator] =
+  const [storedAnnotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, activeTraceId);
+
+  const annotations = props.annotations || storedAnnotations;
 
   // highlights to show in the traceview (e.g. because of analyzer or search results)
   const [highlights, setHighlights] = useState({
@@ -436,7 +442,8 @@ export function AnnotationAugmentedTraceView(props) {
         />
         {activeTrace && (
           <>
-            {is_all_expanded ? (
+            {props.toolbarItems?.expandCollapse && (
+            is_all_expanded ? (
               <button
                 className="inline icon nux-step-3"
                 onClick={onCollapseAll}
@@ -454,7 +461,8 @@ export function AnnotationAugmentedTraceView(props) {
               >
                 <BsArrowsExpand />
               </button>
-            )}
+            ))}
+            {props.toolbarItems?.download && (
             <button
               className="inline icon"
               onClick={(e) => {
@@ -467,9 +475,11 @@ export function AnnotationAugmentedTraceView(props) {
             >
               <BsDownload />
             </button>
+            )}
             {props.actions}
             <div className="vr" />
             {
+              props.toolbarItems?.openInPlayground && (
               <button
                 className="inline"
                 onClick={onOpenInPlayground}
@@ -479,8 +489,9 @@ export function AnnotationAugmentedTraceView(props) {
                 {" "}
                 <BsTerminal /> Open In Playground
               </button>
+              )
             }
-            {props.isUserOwned && config("sharing") && props.onShare && (
+            {props.toolbarItems?.share && (props.isUserOwned && config("sharing") && props.onShare && (
               <button
                 className={
                   "inline nux-step-4" + (props.sharingEnabled ? "primary" : "")
@@ -497,14 +508,14 @@ export function AnnotationAugmentedTraceView(props) {
                   </>
                 )}
               </button>
-            )}
-            <button
+            ))}
+            {props.enableAnalyzer && props.toolbarItems?.analyzer && (<button
               className="inline analyzer-button"
               onClick={() => setAnalyzerOpen(!analyzerOpen)}
             >
               Analysis
               <BsLayoutSidebarInsetReverse />
-            </button>
+            </button>)}
           </>
         )}
       </header>

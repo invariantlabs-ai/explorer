@@ -38,7 +38,7 @@ export function HighlightDetails(props: { highlights: GroupedHighlight[] }) {
   let otherHighlights = highlights.filter(
     (highlight) => highlight.source != "analyzer"
   );
-
+  
   // test highlights
   const testHighlights = otherHighlights.filter((highlight) =>
     highlight.source?.startsWith("test-")

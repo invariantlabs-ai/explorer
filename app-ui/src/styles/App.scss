@@ -69,7 +69,7 @@ header.top {
       height: 100vh;
     }
 
-    > ul {
+    >ul {
       background-color: white;
       border-right: 1pt solid $border-color;
       width: auto;
@@ -310,7 +310,7 @@ header.top {
       }
     }
 
-    > p {
+    >p {
       z-index: 2;
     }
 
@@ -575,10 +575,10 @@ button {
     }
   }
 
-  .modal-content {
+  >.modal-content {
     background-color: white;
     max-width: 90%;
-    width: 800pt;
+    width: 1200pt;
     height: calc(100% - 20pt);
     position: absolute;
     top: 10pt;
@@ -641,6 +641,7 @@ button {
   0% {
     right: -70%;
   }
+
   100% {
     right: 0%;
   }
@@ -804,6 +805,10 @@ button {
       position: relative;
       top: -2pt;
     }
+
+    input[type='radio'] {
+      top: 0pt !important;
+    }
   }
 
   h1 {
@@ -940,7 +945,7 @@ button.tool {
     margin-bottom: 15pt;
   }
 
-  > button {
+  >button {
     margin-bottom: 15pt;
   }
 
@@ -1079,7 +1084,7 @@ div.empty {
     transition: background-color 0.1s;
     border: 1pt solid $border-color;
 
-    > a {
+    >a {
       text-decoration: none;
       color: $text-color;
     }
@@ -1150,7 +1155,7 @@ div.panel.explorer {
 }
 
 div.panel {
-  > h2 {
+  >h2 {
     font-size: 12pt;
     margin-top: 10pt;
     font-weight: bold;
@@ -1265,7 +1270,7 @@ button.primary .shortcut {
         padding: 0pt 2pt;
         border-left: 2pt solid transparent;
 
-        & > * {
+        &>* {
           white-space: nowrap;
           overflow-x: hidden;
           text-overflow: ellipsis;
@@ -1714,7 +1719,7 @@ button.share {
   margin: auto;
   border-radius: 5pt;
 
-  p > a {
+  p>a {
     color: $color-primary;
     text-decoration: none;
 
@@ -1744,6 +1749,7 @@ button.share {
 .thumbs-up-icon,
 .thumbs-down-icon {
   font-style: italic;
+
   svg {
     position: relative;
     bottom: -1.5pt;
@@ -1859,6 +1865,10 @@ button.share {
 
 .traceview span.line:hover {
   background-color: #ededed;
+}
+
+.traceview span.line.object-level {
+  background-color: transparent;
 }
 
 .traceview span.line.expanded {
@@ -2102,7 +2112,7 @@ table.data {
     font-size: 10pt;
   }
 
-  td > svg {
+  td>svg {
     position: relative;
     top: 1pt;
     margin-right: 4pt;
@@ -2169,7 +2179,7 @@ table.api-keys {
   border-bottom-left-radius: 0;
   background-color: white;
 
-  & > * {
+  &>* {
     display: inline-block;
     background-color: white;
     color: black;
@@ -2551,7 +2561,7 @@ table.api-keys {
     }
   }
 
-  > p {
+  >p {
     margin: 0pt 0pt;
     font-size: 14pt;
     padding: 0pt;
@@ -2677,9 +2687,11 @@ p.footer-links {
   h1 {
     font-size: 18pt;
   }
+
   h2 {
     font-size: 16pt;
   }
+
   h3 {
     font-size: 14pt;
   }
@@ -2725,6 +2737,7 @@ p.footer-links {
 
   user-select: none;
   -webkit-user-select: none;
+
   button {
     border: none;
     padding: 0pt;
@@ -2776,10 +2789,12 @@ p.footer-links {
   border-radius: 5pt;
   margin: 0 10pt 10pt 10pt;
   display: flex;
-  flex-wrap: wrap; /* Allow items to wrap if space is limited */
+  flex-wrap: wrap;
+  /* Allow items to wrap if space is limited */
   justify-content: space-between;
   align-items: center;
-  gap: 10pt; /* Add spacing between items when wrapping */
+  gap: 10pt;
+  /* Add spacing between items when wrapping */
   border: 1pt solid #ddd;
   font-family:
     system-ui,
@@ -2818,7 +2833,8 @@ p.footer-links {
   margin-top: 5pt;
   padding-left: 5pt;
   padding-right: 5pt;
-  flex: 1 1 auto; /* Allow content to resize based on available space */
+  flex: 1 1 auto;
+  /* Allow content to resize based on available space */
 }
 
 .home-banner-content h2 {
@@ -2834,9 +2850,11 @@ p.footer-links {
 
 .home-banner-buttons {
   display: flex;
-  flex-wrap: wrap; /* Allow buttons to stack if space is limited */
+  flex-wrap: wrap;
+  /* Allow buttons to stack if space is limited */
   gap: 10pt;
-  justify-content: flex-end; /* Align buttons to the end of their container */
+  justify-content: flex-end;
+  /* Align buttons to the end of their container */
 }
 
 .home-banner-button {
@@ -2868,9 +2886,11 @@ p.footer-links {
 /* Responsive Design for Small Screens */
 @media (max-width: 768px) {
   .home-banner {
-    flex-direction: column; /* Stack content and buttons vertically */
+    flex-direction: column;
+    /* Stack content and buttons vertically */
     text-align: center;
-    padding: 15pt; /* Add more padding for better spacing */
+    padding: 15pt;
+    /* Add more padding for better spacing */
     margin-left: -10pt;
     margin-right: -10pt;
     border-radius: 0pt;
@@ -2902,16 +2922,20 @@ p.footer-links {
 
   .home-banner-content {
     max-width: 100%;
-    margin-bottom: 15pt; /* Add spacing between content and buttons */
+    margin-bottom: 15pt;
+    /* Add spacing between content and buttons */
   }
 
   .home-banner-buttons {
-    justify-content: center; /* Center buttons on small screens */
+    justify-content: center;
+    /* Center buttons on small screens */
   }
 
   .home-banner-button {
-    width: 100%; /* Buttons take full width */
-    max-width: none; /* Remove max-width restriction */
+    width: 100%;
+    /* Buttons take full width */
+    max-width: none;
+    /* Remove max-width restriction */
   }
 }
 
@@ -2998,7 +3022,7 @@ p.footer-links {
     margin-bottom: 5pt;
   }
 
-  > button {
+  >button {
     margin-top: 15px;
     margin-bottom: 0px;
   }
@@ -3162,7 +3186,7 @@ p.footer-links {
     background-color: #f6f8fa;
   }
 
-  > details > div > button {
+  >details>div>button {
     border-radius: 0px;
   }
 }
@@ -3397,7 +3421,7 @@ span.highlight-dot {
   flex-direction: row;
   height: calc(100vh - 78pt);
 
-  > div.panel {
+  >div.panel {
     position: relative;
     overflow-y: auto;
 

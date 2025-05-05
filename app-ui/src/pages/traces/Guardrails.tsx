@@ -1,17 +1,23 @@
 import Editor from "@monaco-editor/react";
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BsArrowsAngleContract,
   BsArrowsAngleExpand,
   BsBan,
   BsCardList,
   BsCode,
+  BsFillSignTurnSlightRightFill,
+  BsGearWideConnected,
   BsInfoCircleFill,
+  BsMask,
   BsPauseCircle,
   BsPencilFill,
   BsShieldCheck,
   BsTerminal,
+  BsTransparency,
   BsTrash,
+  BsX,
+  BsXCircle,
 } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
@@ -25,8 +31,10 @@ import {
 } from "./GuardrailSuggestions";
 import { Traces } from "./Traces";
 import { GuardrailsIcon } from "../../components/Icons";
+import { PolicyCheckResult, useDatasetGuardrailsChecker } from "../../lib/GuardrailsChecker";
+import { PolicyEditor } from "../playground/policyeditor";
 
-const GUARDRAIL_EVALUATION_ENABLED = false;
+const GUARDRAIL_EVALUATION_ENABLED = true;
 
 function suggestion_to_guardrail(completedPolicy: GuardrailSuggestion) {
   return {
@@ -103,6 +111,23 @@ function DeletePolicyModalContent(props) {
 }
 
 /**
+ * Transforms a list of results into a mapping of index to result.
+ */
+export function useResultsByIndex(results: PolicyCheckResult[]): Record<number, PolicyCheckResult> {
+  const [resultsByIndex, setResultsByIndex] = useState<Record<number, PolicyCheckResult>>({})
+
+  useEffect(() => {
+    const mapping = results.reduce((acc, result) => {
+      acc[result.index] = result
+      return acc
+    }, {} as Record<number, PolicyCheckResult>);
+    setResultsByIndex(mapping)
+  }, [results])
+
+  return resultsByIndex
+}
+
+/**
  * Content to show in the modal when updating or creating a policy (from scratch or from a suggestion).
  */
 function MutatePolicyModalContent(props: {
@@ -143,7 +168,14 @@ function MutatePolicyModalContent(props: {
     (props.policy?.enabled || false) as boolean
   );
 
-  const [editMode, setEditMode] = React.useState(false);
+  const [editMode, _setEditMode] = React.useState(false);
+
+  const setEditMode = (value: boolean) => {
+    _setEditMode(value);
+    if (editMode && evaluator.isEvaluating) {
+      evaluator.stopCheck();
+    }
+  }
 
   const guardrailActions = [
     {
@@ -170,7 +202,43 @@ function MutatePolicyModalContent(props: {
       icon: <BsPauseCircle />,
       enabled: false,
     },
+    // {
+    //   title: "Mask",
+    //   description: "The guardrail will lead to a masked response.",
+    //   value: "mask",
+    //   actionValue: "mask",
+    //   icon: <BsTransparency />,
+    //   enabled: false,
+    //   disabled: true,
+    // },
+    // {
+    //   title: "Steer",
+    //   description: "The guardrail will attempt to steer the agent to take a different action.",
+    //   value: "steer",
+    //   actionValue: "steer",
+    //   icon: <BsFillSignTurnSlightRightFill />,
+    //   enabled: false,
+    //   disabled: true,
+    // },
   ];
+  const evaluator = useDatasetGuardrailsChecker(props.dataset_id);
+  const ApiKeyModal = evaluator.ApiKeyModal;
+
+  const onEvaluate = () => {
+    evaluator.startCheck(policyCode);
+  };
+
+  useEffect(() => {
+    if (evaluator.error) {
+      if (evaluator.error.includes("aborted")) {
+        // when aborted by the user, do not show an error
+        return;
+      }
+      alert("Error during guardrail evaluation: " + evaluator.error);
+    }
+  }, [evaluator.error]);
+
+  const triggered_traces = evaluator.results.filter(r => r.triggered)
 
   const onMutate = () => {
     if ((!props.policy || !props.policy.id) && action == "update") {
@@ -217,8 +285,55 @@ function MutatePolicyModalContent(props: {
     });
   };
 
-  return (
-    <div className="modal-content policy-editor-form ">
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // on hiding of modal, stop evaluator
+  useEffect(() => {
+    if (!modalRef.current && evaluator.isEvaluating) {
+      evaluator.stopCheck();
+    }
+  }, [modalRef, evaluator]);
+
+  const resultsByIndex = useResultsByIndex(evaluator.results)
+
+  const annotationsProvider = (trace: { index: number } | null) => {
+    if (!trace) {
+      return null
+    }
+    const result = resultsByIndex[trace.index]
+
+    if (result) {
+      let annotations = {} as any[]
+      for (const error of result.errors || []) {
+        let annotationRages = [] as any[]
+
+        for (const range of error.ranges || []) {
+          annotationRages.push({
+            "content": error.args.join(" ") + Object.entries(error.kwargs).map(([k, v]) => `${k}=${v}`).join(" "),
+            "address": range,
+            "index": annotationRages.length,
+            "extra_metadata": {
+              "source": "guardrails-error"
+            }
+          })
+        }
+
+        // add all the annotation ranges to the annotations
+        for (const annotation of annotationRages) {
+          if (!annotations[annotation.address]) {
+            annotations[annotation.address] = []
+          }
+          annotations[annotation.address].push(annotation)
+        }
+      }
+
+      return annotations
+    }
+    return null
+  }
+
+  return (<><ApiKeyModal />
+    <div className="modal-content policy-editor-form " ref={modalRef}>
       <header className={editMode ? "edit-mode" : ""}>
         <b>
           {!editMode && (
@@ -241,7 +356,7 @@ function MutatePolicyModalContent(props: {
                 aria-label="delete guardrail"
                 className="inline icon secondary danger"
                 disabled={loading}
-                onClick={props.onDelete || (() => {})}
+                onClick={props.onDelete || (() => { })}
               >
                 <BsTrash />
               </button>
@@ -267,19 +382,37 @@ function MutatePolicyModalContent(props: {
         )}
         {editMode && (
           <>
+            {action == "update" && (
+              <button
+                aria-label="delete guardrail"
+                className="inline icon secondary danger"
+                disabled={loading}
+                onClick={props.onDelete || (() => { })}
+              >
+                <BsTrash />
+              </button>
+            )}
+            <button className="button inline" onClick={props.onClose}>
+              Cancel
+            </button>
             <button
-              className="inline icon secondary editmode"
-              onClick={() => setEditMode(!editMode)}
-              data-tooltip-id="edit-mode"
-              data-tooltip-content="Smaller Rule Editor"
-              data-tooltip-place="top"
+              aria-label={"modal " + action}
+              className="primary inline"
+              disabled={loading || !name || !policyCode || !policyCode.trim()}
+              onClick={onMutate}
             >
-              <BsArrowsAngleContract />
+              {action == "update"
+                ? loading
+                  ? "Updating..."
+                  : "Save"
+                : loading
+                  ? "Creating..."
+                  : "Create"}
             </button>
           </>
         )}
       </header>
-      <div className="main">
+      <div className="guardrails-main">
         {!editMode && (
           <div className="collapsable" style={{ width: "100%" }}>
             {props.policy?.source == "suggestions" &&
@@ -373,26 +506,25 @@ function MutatePolicyModalContent(props: {
             >
               <BsArrowsAngleExpand />
             </button>
+            {/* evaluate button that also opens edit mode */}
+            <button
+              className="inline editmode primary"
+              onClick={() => {
+                setEditMode(true);
+                onEvaluate();
+              }}
+            >
+              <BsTerminal /> Evaluate
+            </button>
           </h3>
         )}
         {!editMode && (
           <div className="editor-container">
-            <Editor
+            <PolicyEditor
               width="100%"
               className="policy-editor"
               defaultLanguage="python"
               value={policyCode}
-              options={{
-                fontSize: 14,
-                minimap: {
-                  enabled: false,
-                },
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                lineNumbers: "on",
-                wordWrap: "on",
-                wrappingIndent: "same",
-              }}
               onChange={(value?: string) => setPolicyCode(value || "")}
               theme="vs-light"
             />
@@ -404,46 +536,90 @@ function MutatePolicyModalContent(props: {
               className="editor-container full"
               style={{ flex: GUARDRAIL_EVALUATION_ENABLED ? 0 : 1 }}
             >
-              <Editor
+              <PolicyEditor
                 width="100%"
-                className="policy-editor full"
                 defaultLanguage="python"
                 value={policyCode}
-                options={{
-                  fontSize: 14,
-                  minimap: {
-                    enabled: false,
-                  },
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  lineNumbers: "on",
-                  wordWrap: "on",
-                  wrappingIndent: "same",
-                }}
+                fontSize={14}
                 onChange={(value?: string) => setPolicyCode(value || "")}
                 theme="vs-light"
+                className="policy-editor full"
               />
               {GUARDRAIL_EVALUATION_ENABLED && (
                 <>
-                  <button
-                    className="inline primary evaluate"
-                    onClick={() =>
-                      alert("guardrail evaluation is not supported yet")
-                    }
-                  >
-                    <BsTerminal />
-                    Evaluate
-                  </button>
+                  <div className="evaluator-controls">
+                    {evaluator.progress > 0 && (
+                      <span className="secondary">
+                        {evaluator.numMatches} matches
+                      </span>
+                    )}
+                    <button
+                      className="inline primary evaluate"
+                      onClick={!evaluator.isEvaluating ? onEvaluate : evaluator.stopCheck}>
+                      {evaluator.isEvaluating ?
+                        <><BsX /> Cancel</> :
+                        <><BsTerminal /> Evaluate</>}
+                      {evaluator.isEvaluating && (
+                        <span className="progress">
+                          {evaluator.progress} / {evaluator.numTraces}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      className="icon inline editmode"
+                      onClick={() => setEditMode(!editMode)}
+                      data-tooltip-id="edit-mode"
+                      data-tooltip-content="Larger Rule Editor"
+                      data-tooltip-place="top"
+                    >
+                      <BsArrowsAngleContract />
+                    </button>
+                  </div>
                 </>
               )}
             </div>
             {GUARDRAIL_EVALUATION_ENABLED && (
               <div className="policy-traces">
-                <Traces
-                  dataset={props.dataset}
-                  datasetLoadingError={props.datasetLoadingError}
-                  enableAnalyzer={false}
-                />
+                {triggered_traces.length > 0 && (
+                  <Traces
+                    dataset={props.dataset}
+                    datasetLoadingError={props.datasetLoadingError}
+                    enableAnalyzer={false}
+                    toolbarItems={{
+                      expandCollapse: true
+                    }}
+                    annotationsProvider={annotationsProvider}
+                    indices={{ "all": { "traces": triggered_traces.map(r => r.index) } }}
+                  />
+                )}
+                {triggered_traces.length == 0 && !evaluator.isEvaluating && (
+                  <div className="empty instructions box no-policies">
+                    <h2>
+                      <BsXCircle /> No Matches
+                    </h2>
+                    <h3>
+                      Your guardrailing rule does not match any traces.
+                    </h3>
+                  </div>
+                )}
+                {evaluator.isEvaluating && triggered_traces.length == 0 && (
+                  <div className="empty instructions box no-policies">
+                    <h2>
+                      <BsGearWideConnected className="spin" /> Evaluating Guardrailing Rule <span className="progress"> {evaluator.progress} / {evaluator.numTraces}</span>
+                    </h2>
+                    <h3>
+                      Invariant is evaluating your guardrailing rule on your traces.
+                    </h3>
+                    {/* cancel button */}
+                    <button
+                      aria-label="cancel"
+                      className="policy-action inline secondary cancel"
+                      onClick={() => evaluator.stopCheck()}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -455,8 +631,8 @@ function MutatePolicyModalContent(props: {
           className="tooltip"
         />
       </div>
-    </div>
-  );
+    </div >
+  </>);
 }
 
 /**
@@ -475,6 +651,7 @@ export function LabelSelect(props: {
     title: string;
     description: string;
     value: any;
+    disabled?: boolean;
   }[];
   onChange: (value: any) => void;
 }) {
@@ -483,9 +660,8 @@ export function LabelSelect(props: {
       {props.options.map((option) => (
         <div
           key={option.value}
-          className={`guardrail-action-select-option ${
-            option.value === props.value ? "selected" : ""
-          }`}
+          className={`guardrail-action-select-option ${option.value === props.value ? "selected" : ""
+            } ${option.disabled ? "disabled" : ""}`}
           onClick={() => props.onChange(option.value)}
           aria-label={option.value}
         >
@@ -639,7 +815,7 @@ export function Guardrails(props: {
       <header className="toolbar">
         <h1>
           <Link to="/"> /</Link>
-          <Link to={`/u/${props.username}`}>{props.username}</Link>/
+          <Link to={`/ u / ${props.username}`}>{props.username}</Link>/
           {props.datasetname}
           <span> </span>
         </h1>
@@ -664,16 +840,16 @@ export function Guardrails(props: {
         <div className="guardrail-list">
           {(!dataset.extra_metadata?.policies ||
             dataset.extra_metadata.policies.length === 0) && (
-            <div className="empty instructions box no-policies">
-              <h2>
-                <GuardrailsIcon /> No Guardrails Configured
-              </h2>
-              <h3>
-                Guardrails are rules to secure and steer the actions of your
-                agent, and to avoid unintended behavior during operation.
-              </h3>
-            </div>
-          )}
+              <div className="empty instructions box no-policies">
+                <h2>
+                  <GuardrailsIcon /> No Guardrails Configured
+                </h2>
+                <h3>
+                  Guardrails are rules to secure and steer the actions of your
+                  agent, and to avoid unintended behavior during operation.
+                </h3>
+              </div>
+            )}
           {guardrails.length > 0 &&
             guardrails.map((policy) => {
               return (
