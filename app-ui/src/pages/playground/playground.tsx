@@ -839,7 +839,7 @@ const Playground = ({
                             }}
                             highlight={{
                               content: result.args.join(" "),
-                              source: "Guardrail",
+                              source: "guardrails-failure",
                               type: "guardrail",
                             }}
                           />

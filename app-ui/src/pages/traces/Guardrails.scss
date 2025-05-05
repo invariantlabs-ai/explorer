@@ -80,6 +80,7 @@
       ::-webkit-scrollbar {
         display: none !important;
       }
+
       // in all browsers
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -130,9 +131,11 @@
   0% {
     color: rgb(251, 151, 151);
   }
+
   50% {
     color: #f5f5f5;
   }
+
   100% {
     color: rgb(251, 151, 151);
   }
@@ -142,9 +145,11 @@
   0% {
     background-color: rgb(251, 151, 151);
   }
+
   50% {
     background-color: #f5f5f5;
   }
+
   100% {
     background-color: rgb(251, 151, 151);
   }
@@ -154,6 +159,7 @@
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0%);
   }
@@ -233,7 +239,7 @@ button.policy-action {
   flex-wrap: wrap;
   width: 100%;
 
-  > div {
+  >div {
     border: 1pt solid #e0e0e0;
     border-radius: 4pt;
     margin: 5pt;
@@ -243,7 +249,12 @@ button.policy-action {
     cursor: pointer;
     overflow: hidden;
 
-    &:hover {
+    &.disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    &:not(.disabled):hover {
       background-color: #ebebeb;
       border: 1pt solid $color-primary;
     }
@@ -293,7 +304,7 @@ button.policy-action {
     width: 100%;
     margin-top: 10pt;
 
-    > div {
+    >div {
       border-right: 1pt solid #e0e0e0;
       padding-left: 5pt;
       padding-right: 5pt;
@@ -331,13 +342,12 @@ button.policy-action {
     }
   }
 
-  .main {
+  .guardrails-main {
     text-align: left;
-    width: 100%;
     align-items: flex-start;
     padding: 0pt;
     padding-left: 5pt;
-    width: calc(100% - 5pt);
+    width: calc(100% + 5pt);
     height: calc(100% - 30pt);
     padding-top: 2pt;
 
@@ -422,39 +432,88 @@ button.policy-action {
 
 .editor-container.full {
   width: 100%;
-  // height: 300pt;
-  flex: 0;
+  height: calc(100vh - 70vh - 75pt);
+  min-height: 200pt !important;
+  flex: 1;
   border-bottom: 1pt solid #e0e0e0;
   position: relative;
 
-  button.evaluate {
+  .evaluator-controls {
     position: absolute;
-    right: 10pt;
+    right: -7.5pt;
     padding: 8pt;
     top: auto;
-    z-index: 100;
-    height: 30pt;
-    border-radius: 4pt;
-    bottom: 10pt;
+    z-index: 0;
+    bottom: 0pt;
+    display: flex;
+    flex-direction: row;
+
+    >.secondary {
+      line-height: 25pt;
+      margin-right: 10pt;
+      font-size: 10pt;
+    }
+
+    button {
+      height: 25pt;
+      border-radius: 4pt;
+    }
   }
 }
 
 .policy-traces {
-  height: calc(50vh) !important;
+  height: calc(70vh) !important;
+  overflow: hidden;
+  flex: 1;
+  position: relative;
+
+  .box.empty {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .panel.fullscreen,
+  .sidebyside {
+    overflow: hidden;
+    height: 100%;
+  }
 
   .sidebar {
-    height: calc(50vh) !important;
-    margin-top: 5pt !important;
+    height: calc(100% - 47.5pt) !important;
+    // margin-top: 5pt !important;
+
+    header {
+      display: none;
+    }
+
+    .test-result,
+    .annotation-indicator {
+      display: none;
+    }
+
+    input {
+      border: none;
+    }
   }
 
-  .traceview {
-    height: calc(50vh) !important;
-    margin-top: 5pt !important;
+  .panel.fullscreen,
+  .sidebyside>.traceview {
+    // margin-top: 5pt !important;
+    overflow: hidden;
+    height: calc(100% - 5pt) !important;
+    position: relative;
+
+    .traces {
+      height: calc(100% - 75pt) !important;
+      padding-bottom: 50pt !important;
+    }
   }
 
-  .toolbar {
-    display: none;
-  }
+  // .toolbar {
+  //   display: none;
+  // }
 }
 
 button.inline.icon-text {
@@ -550,9 +609,11 @@ button.create-guardrail {
   0% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 1;
   }
@@ -567,10 +628,12 @@ svg.spin {
     transform: rotate(0deg);
     opacity: 1;
   }
+
   50% {
     transform: rotate(180deg);
     opacity: 0.5;
   }
+
   100% {
     transform: rotate(360deg);
     opacity: 1;
@@ -642,5 +705,33 @@ span.policy-code {
       display: inline-block;
       top: -1pt;
     }
+  }
+}
+
+button .progress,
+.box.empty .progress {
+  background-color: #f5f5f5;
+  color: #555;
+  padding: 0pt 5pt;
+  border-radius: 4pt;
+  margin-left: 7.5pt;
+  position: relative;
+  top: -0.5pt;
+  opacity: 0.5;
+}
+
+.box.empty .progress {
+  background-color: rgba(0, 0, 0, 0.226);
+}
+
+.box.empty {
+  h3 {
+    font-weight: normal;
+    margin-bottom: 10pt;
+  }
+
+  svg {
+    position: relative;
+    top: 3pt !important;
   }
 }

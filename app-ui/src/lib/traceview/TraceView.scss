@@ -94,7 +94,7 @@ body {
     overflow: hidden;
     margin-bottom: 5pt !important;
 
-    > div {
+    >div {
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -104,7 +104,7 @@ body {
       height: 8pt;
     }
 
-    > div > button {
+    >div>button {
       display: inline-block;
       font-size: 10pt;
       padding: 4pt 12pt;
@@ -112,7 +112,7 @@ body {
       line-height: 12.5pt;
     }
 
-    > button:first-of-type {
+    >button:first-of-type {
       margin-left: 4pt;
     }
   }
@@ -447,6 +447,10 @@ body {
     }
   }
 
+  .content:has(+ .object-level.annotation-indicator) {
+    padding-bottom: 5pt;
+  }
+
   .content {
     padding: 10pt 5pt;
     // break anywhere if needed, otherwise break at word
@@ -474,13 +478,13 @@ body {
     position: relative;
     cursor: pointer;
 
-    > svg {
+    >svg {
       display: inline-block;
       position: relative;
       margin-right: 2pt;
     }
 
-    > svg:last-of-type {
+    >svg:last-of-type {
       margin-right: 3pt;
     }
 
@@ -525,6 +529,10 @@ body {
       .direct {
         margin-left: 5pt;
         margin-right: 5pt;
+      }
+
+      pre {
+        margin: 0pt;
       }
     }
 
@@ -706,6 +714,7 @@ body {
   overflow-y: auto;
 
   transition: padding 0.1s ease-in-out;
+  min-width: 300pt;
 
   div.address {
     text-transform: none;
@@ -767,6 +776,10 @@ table.json {
     border-bottom: 1pt solid var(--border-color);
     border-right: 1pt solid var(--border-color);
     vertical-align: top;
+
+    &.key {
+      padding-right: 5pt;
+    }
   }
 
   td.value div:not(.inline-line-editor) {
@@ -834,6 +847,9 @@ div.inline-line-editor {
   padding-right: 5pt;
   margin-left: -2pt;
   margin-right: -2pt;
+
+  text-transform: none;
+  font-weight: normal;
 }
 
 .validation-status {
@@ -915,6 +931,7 @@ pre.marked-line {
   div.highlight {
     font-weight: bold;
   }
+
   div:not(.highlight) {
     opacity: 0.5;
   }
@@ -990,6 +1007,7 @@ pre.marked-line {
     overflow: visible;
   }
 }
+
 .annotation-indicator {
   height: 18pt;
   line-height: 18pt;
@@ -1004,6 +1022,47 @@ pre.marked-line {
   background-color: rgba(88, 85, 246, 0.2);
   border-radius: 2.5pt;
   color: rgba(37, 36, 99, 0.761);
+
+  &.object-level {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 8pt;
+    font-weight: normal;
+    text-transform: none;
+    display: block;
+    padding-right: 15pt;
+    height: 15pt;
+    line-height: 14pt;
+    position: relative;
+    text-align: left;
+    background-color: transparent;
+
+    margin: 2pt;
+
+    &.expandable:hover,
+    &.expandable.active {
+      background-color: rgba(0, 0, 0, 0.056);
+      cursor: pointer;
+    }
+
+    svg {
+      margin-right: 3pt;
+      width: 5pt;
+      height: 10pt;
+      position: relative;
+      top: 1.5pt;
+    }
+
+    svg.chevron {
+      position: absolute;
+      right: 3pt;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+}
+
+.tool-call .annotation-indicator.object-level {
+  display: block;
 }
 
 .message-header.role .annotation-indicator {

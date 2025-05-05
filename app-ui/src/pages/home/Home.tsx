@@ -192,7 +192,6 @@ function Home() {
             }
             createDataset(newProjectName, false)
               .then((data) => {
-                console.log("Created dataset", data);
                 navigate(
                   "/u/" + userInfo!.username + "/" + newProjectName + "/t"
                 );

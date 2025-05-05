@@ -9,6 +9,7 @@ interface PolicyEditorProps {
 }
 
 interface PolicyEditorProps {
+  width?: string;
   height?: string;
   defaultLanguage?: string;
   theme?: string;
@@ -17,6 +18,7 @@ interface PolicyEditorProps {
   fontSize?: number;
   onChange?: (value: string | undefined) => void;
   onDidContentSizeChange?: (number) => void;
+  className?: string;
 }
 
 export function PolicyEditor(props: PolicyEditorProps) {
@@ -73,7 +75,8 @@ export function PolicyEditor(props: PolicyEditorProps) {
 
   return (
     <Editor
-      height="100%"
+      width={props.width}
+      height={props.height}
       defaultLanguage="python"
       options={{
         wordWrap: "on",
