@@ -10,6 +10,7 @@ import aiohttp
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+import traceback
 
 from logging_config import get_logger
 from models.datasets_and_traces import Dataset, Trace, db
@@ -31,14 +32,11 @@ async def process_single_trace(
     client_session: aiohttp.ClientSession,
 ) -> Dict[str, Any]:
     """Process a single trace and return its result."""
-    # Prepare payload for this trace
     payload = {
         "messages": trace.content,
         "policy": policy,
         "parameters": parameters
     }
-
-    print(cookie)
 
     try:
         # Send the request for this trace
@@ -90,7 +88,7 @@ async def policy_check_stream(
     max_concurrent: int = 4
 ):
     """Generate streaming policy check results with parallel processing."""
-    
+
     # Prepare headers for policy check API
     headers = {
         "Content-Type": "application/json",
@@ -168,7 +166,7 @@ async def stream_policy_check(
         policy = policy_check_request.policy
         policy_check_url = policy_check_request.policy_check_url
         max_concurrent = 5
-        
+
         api_key = request.headers.get("Authorization")
         cookie = request.cookies
         parameters = policy_check_request.parameters
@@ -181,7 +179,7 @@ async def stream_policy_check(
                     user_id,
                     allow_public=False
                 )
-            
+
             if parameters is None:
                 parameters = {}
 
@@ -198,8 +196,7 @@ async def stream_policy_check(
                     max_concurrent
                 ),
                 media_type="text/event-stream"
-            ) 
+            )
     except Exception as e:
-        import traceback
         traceback.print_exc()
         raise e

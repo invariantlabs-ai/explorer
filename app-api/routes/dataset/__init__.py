@@ -8,7 +8,6 @@ from routes.dataset.policies import router as policies_router
 from routes.dataset.analysis import router as analysis_router
 from routes.dataset.metadata import router as metadata_router
 from routes.dataset.synthesis import router as synthesis_router
-# from routes.dataset.policy_check import router as policy_check_router
 from routes.dataset.policy_checking import router as check_policy_on_dataset_router
 from routes.dataset.jobs import router as jobs_router
 from routes.dataset.list import router as list_router
