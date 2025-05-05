@@ -373,10 +373,14 @@ export function useToolTemplatePolicies(datasetId) {
       );
 
       if (!response.ok) {
-        console.error(
-          "Failed to generate policies from templates:",
-          response.status
-        );
+        // Extract the error details from the response
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || "Failed to generate policies from templates";
+        console.error(errorMessage);
+
+        // Display error message to the user using the app's alert system
+        window.alert(errorMessage);
+
         setIsLoading(false);
         return;
       }
@@ -385,6 +389,10 @@ export function useToolTemplatePolicies(datasetId) {
       await refreshTemplatePolicies();
     } catch (error) {
       console.error("Error generating policies from tool templates:", error);
+
+      // Show generic error message for unexpected errors
+      window.alert("Failed to generate policies from tool templates");
+
       setIsLoading(false);
     }
   };

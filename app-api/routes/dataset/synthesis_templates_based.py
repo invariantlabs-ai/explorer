@@ -80,7 +80,7 @@ async def generate_policies_from_tool_templates(
         if not tool_calls:
             raise HTTPException(
                 status_code=400,
-                detail="No tool calls found in dataset metadata. Make sure traces have been processed with tool call extraction.",
+                detail="No tool calls found in dataset metadata. Make sure your dataset contains traces with tool calls or try to reupload your dataset.",
             )
 
         # Format the request for the template-based policy generation
