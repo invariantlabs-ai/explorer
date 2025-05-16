@@ -4,6 +4,9 @@ import { useTelemetry } from "../../utils/Telemetry";
 import { config } from "../../utils/Config";
 import { BsLock, BsGlobe } from "react-icons/bs";
 import { createDataset, uploadDataset } from "../../service/DatasetOperations";
+
+export const DATASET_NAME_REGEX = /^[A-Za-z0-9-_]+$/;
+
 /**
  * Modal content for uploading a new dataset.
  */
@@ -14,7 +17,6 @@ export function UploadDatasetModalContent(props) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [isDatasetNameInvalid, setIsDatasetNameInvalid] = React.useState(false);
-  const DATASET_NAME_REGEX = /^[A-Za-z0-9-_]+$/;
   const [isPublic, setIsPublic] = React.useState(false);
   const [contentType, setContentType] = React.useState("empty"); // Tracks selected content type
 
