@@ -15,7 +15,7 @@ import { CompactSnippetList } from "../snippets/Snippets";
 import HomePageNUX from "./NUX";
 import { config } from "../../utils/Config";
 import { UploadOptions } from "../../components/EmptyDataset";
-import { generateNewProjectName } from "./ProjectNames";
+import { DATASET_NAME_REGEX } from "./NewDataset";
 
 // fetches user activity from backend
 function useActivity(): [any[], () => void] {
@@ -142,6 +142,9 @@ function Home() {
   const navigate = useNavigate();
 
   const [newProjectName, setNewProjectName] = React.useState("");
+  const isProjectNameValid = (name: string): boolean => {
+    return DATASET_NAME_REGEX.test(name);
+  };
 
   return (
     <>
@@ -186,9 +189,11 @@ function Home() {
           onSuccess={() => {}}
           className="wide"
           onChangeName={setNewProjectName}
+          isProjectNameValid={isProjectNameValid}
         />
         <button
           className="create inline primary"
+          disabled={!isProjectNameValid(newProjectName)}
           onClick={() => {
             if (!userInfo) {
               window.location.href = "/login";

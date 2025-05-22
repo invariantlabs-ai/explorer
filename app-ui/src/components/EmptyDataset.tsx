@@ -269,6 +269,7 @@ export function UploadOptions({
   excluded,
   className,
   onChangeName,
+  isProjectNameValid,
 }: {
   // the name of the dataset
   dataset?: string;
@@ -280,11 +281,14 @@ export function UploadOptions({
   className?: string;
   // optional create button
   onChangeName?: (name: string) => void;
+  // optional function to check if the project name is valid
+  isProjectNameValid?: (name: string) => boolean;
 }) {
   const telemetry = useTelemetry();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
+  const [isDatasetNameInvalid, setIsDatasetNameInvalid] = React.useState(false);
 
   const [customDatasetName, setCustomDatasetName] = React.useState<string>(
     generateNewProjectName()
@@ -293,6 +297,7 @@ export function UploadOptions({
   // update name on change
   useEffect(() => {
     onChangeName?.(customDatasetName);
+    setIsDatasetNameInvalid(!isProjectNameValid?.(customDatasetName));
   }, [customDatasetName]);
 
   const dataset = givenDatasetName || customDatasetName;
@@ -361,6 +366,11 @@ export function UploadOptions({
             initialValue={customDatasetName}
             onChange={(val) => setCustomDatasetName(val)}
           />
+          {isDatasetNameInvalid && customDatasetName && (
+            <span className="error">
+              Dataset name can only contain A-Z, a-z, 0-9, - and _
+            </span>
+          )}
         </div>
       )}
       <div className="options-tabs">
