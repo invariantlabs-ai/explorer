@@ -458,15 +458,59 @@ span.secondary-flashing {
   width: 350pt;
 }
 
+
+button.analysis-button {
+  overflow: visible;
+  position: relative;
+  margin-left: auto;
+  margin-top: -10pt;
+  height: 30pt;
+  border-radius: 5pt;
+
+  &.analysis-running {
+    background: none;
+   
+    .label {
+      opacity: 0.8;
+    }
+  }
+}
+
+@keyframes pulse-opacity {
+  0% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.8;
+  }
+}
+
 .analysis-job-controls {
+  position: absolute;
+  top: 32.5pt;
+  width: 420pt;
+  max-width: calc(100vw - 20pt);
+  height: 350pt !important;
+  background-color: white;
+  right: 0pt;
   flex-direction: column;
   display: flex;
+  box-shadow: 0 0 20pt rgba(0, 0, 0, 0.04);
+  color: black;
+  font-weight: normal;
 
   .analyzer-config {
     margin-bottom: 10pt;
   }
 
   h1 {
+    height: 40pt;
+
     button {
       margin-left: auto;
       height: 25pt;
@@ -526,6 +570,8 @@ span.secondary-flashing {
       justify-content: center !important;
       opacity: 0.5;
       padding-top: 70pt;
+
+      line-height: 1.5;
     }
 
     .progress {

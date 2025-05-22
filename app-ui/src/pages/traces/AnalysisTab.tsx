@@ -6,7 +6,9 @@ import {
   BsArrowCounterclockwise,
   BsExclamationCircle,
   BsExclamationCircleFill,
+  BsFileEarmarkBreak,
   BsGearFill,
+  BsGearWideConnected,
   BsInfoCircle,
 } from "react-icons/bs";
 
@@ -135,6 +137,8 @@ export function AnalysisReport(props: {
     refreshJobs();
   }, []);
 
+  const [showAnalysisControls, setShowAnalysisControls] = useState(false);
+
   return (
     <>
       <div className="panel">
@@ -150,6 +154,51 @@ export function AnalysisReport(props: {
               </span>
             )}
           </h1>
+          <button className={"inline analysis-button" + (analysisJobs.length > 0 ? " analysis-running" : " primary")}
+          onClick={() => setShowAnalysisControls(!showAnalysisControls)}>
+              <span className="label">
+                {analysisJobs.length > 0 ? (
+                  <><BsGearWideConnected className="spin" /> Analysing your traces...</>
+                ) : (
+                  <><BsFileEarmarkBreak /> Run Analysis Model</>
+                )}
+              </span>
+              {showAnalysisControls && (
+              <div className="tile analysis-job-controls" onClick={(e) => e.stopPropagation()}>
+                <h1>
+                  Analysis Model
+                  <div className="spacer" />
+                  <button
+                    className="inline icon"
+                    onClick={() => setShowConfigEditor(!showConfigEditor)}
+                  >
+                    <BsGearFill />
+                  </button>
+                  <button className="inline" onClick={refreshJobs}>
+                    <BsArrowCounterclockwise />
+                  </button>
+                </h1>
+                {showConfigEditor && <AnalyzerConfigEditor configType="single" />}
+                <Jobs jobs={jobs} />
+                <div className="spacer" />
+                {Array.isArray(jobs) && (
+                  <div className="actions">
+                    <CancelButton
+                      datasetId={props.dataset.id}
+                      onCancel={refreshJobs}
+                      disabled={analysisJobs.length === 0}
+                    />
+                    <button
+                      className="inline primary"
+                      onClick={onStartJob}
+                      disabled={analysisJobs.length > 0}
+                    >
+                      Start Analysis
+                    </button>
+                  </div>
+                )}
+              </div>)}
+            </button>
         </header>
         <div className="insights">
           <div className="tiles">
@@ -171,40 +220,6 @@ export function AnalysisReport(props: {
                 <pre>{rawReport}</pre>
               </div>
             )}
-            <div className="tile analysis-job-controls">
-              <h1>
-                Analysis
-                <div className="spacer" />
-                <button
-                  className="inline icon"
-                  onClick={() => setShowConfigEditor(!showConfigEditor)}
-                >
-                  <BsGearFill />
-                </button>
-                <button className="inline" onClick={refreshJobs}>
-                  <BsArrowCounterclockwise />
-                </button>
-              </h1>
-              {showConfigEditor && <AnalyzerConfigEditor configType="single" />}
-              <Jobs jobs={jobs} />
-              <div className="spacer" />
-              {Array.isArray(jobs) && (
-                <div className="actions">
-                  <CancelButton
-                    datasetId={props.dataset.id}
-                    onCancel={refreshJobs}
-                    disabled={analysisJobs.length === 0}
-                  />
-                  <button
-                    className="inline primary"
-                    onClick={onStartJob}
-                    disabled={analysisJobs.length > 0}
-                  >
-                    Queue
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -282,7 +297,7 @@ function Jobs({ jobs }: { jobs: any[] | null }) {
         <Job key={job.id} job={job} />
       ))}
       {analysisJobs.length === 0 && (
-        <li className="empty">No analysis jobs running</li>
+        <li className="empty">Invariant Analysis Models help you understand how your agents<br/> operate. To start, queue a new analysis job below.</li>
       )}
     </ul>
   );
