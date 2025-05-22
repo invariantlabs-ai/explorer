@@ -93,7 +93,6 @@ async def cancel_analysis(
             "jobs": [job.to_dict() for job in pending_jobs],
         }
 
-
 @router.post("/byid/{id}/analysis")
 async def queue_analysis(
     id: str,
@@ -103,6 +102,7 @@ async def queue_analysis(
     """
     Queue an analysis job for a dataset.
     """
+
 
     with Session(db()) as session:
         # Check if the user has access to the dataset
@@ -148,7 +148,6 @@ async def queue_analysis(
             input=analyser_input_samples,
             annotated_samples=analyser_context_samples,
             model_params=analysis_request.options.model_params,
-            owner=username,
             debug_options=analysis_request.options.debug_options,
             concurrency=analysis_request.options.concurrency,
         )

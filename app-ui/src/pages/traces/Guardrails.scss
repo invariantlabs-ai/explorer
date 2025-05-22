@@ -173,6 +173,8 @@ button.policy-action {
 
 .box.full.setting.guardrail-item {
   padding-right: 5pt;
+  position: relative;
+  overflow: hidden;
 
   &.applied {
     opacity: 0.4;
@@ -194,6 +196,10 @@ button.policy-action {
   }
 
   .guardrail-actions {
+    position: absolute;
+    right: 3pt;
+    top: 5.5pt;
+
     button {
       border-radius: 4pt;
     }
@@ -663,6 +669,11 @@ span.policy-code {
     white-space: nowrap;
   }
 
+  .job-info {
+    flex: 1;
+    max-width: calc(100% - 100pt);
+  }
+
   .badge {
     display: inline-block;
     line-height: 1.5em;
@@ -764,5 +775,18 @@ button .progress,
   svg {
     position: relative;
     top: 3pt !important;
+  }
+}
+
+.show-all-checkbox {
+  flex-direction: row;
+  display: inline-flex;
+  height: 20pt;
+  line-height: 20pt;
+  margin-left: 5pt;
+
+  label {
+    margin-top: -3pt;
+    margin-left: 5pt;
   }
 }

@@ -49,6 +49,7 @@ def list_datasets(
     request: Request,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
     limit: Optional[int] = None,
+    include_metadata: Optional[bool] = True
 ):
     with Session(db()) as session:
         if kind == DatasetKind.HOMEPAGE:
@@ -89,7 +90,7 @@ def list_datasets(
             .all()
         )
         return [
-            dataset_to_json(dataset, user, latest_trace_time=latest_trace_time)
+            dataset_to_json(dataset, user, latest_trace_time=latest_trace_time, include_metadata=include_metadata)
             for dataset, user, latest_trace_time in datasets
         ]
 

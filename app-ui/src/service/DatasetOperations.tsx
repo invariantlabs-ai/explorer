@@ -5,7 +5,8 @@ import { sharedFetch } from "./SharedFetch";
 export function useDatasetList(
   kind: "private" | "public" | "homepage" | "any",
   limit: number | null = null,
-  query: string = ""
+  query: string = "",
+  includeMetadata: boolean = true
 ): [any[] | null, () => void] {
   const [datasets, setDatasets] = React.useState<any[] | null>(null);
   const refresh = React.useCallback(() => {
@@ -13,6 +14,7 @@ export function useDatasetList(
       kind,
       ...(limit !== null && { limit: limit.toString() }),
       ...(query && { q: query }),
+      ...(!includeMetadata && { metadata: 'false'})
     }).toString();
 
     sharedFetch(`/api/v1/dataset/list?${queryParams}`)
