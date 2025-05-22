@@ -88,7 +88,9 @@ function Home() {
   // fetch datasets and snippets
   let [featuredDatasets, refreshFeaturedDatasets] = useDatasetList(
     "homepage",
-    8
+    8,
+    "",
+    false
   );
 
   useEffect(() => {
@@ -121,7 +123,9 @@ function Home() {
 
   const [privateDatasets, refreshPrivateDatasets] = useDatasetList(
     "private",
-    8
+    8,
+    "",
+    false
   );
 
   useEffect(() => {

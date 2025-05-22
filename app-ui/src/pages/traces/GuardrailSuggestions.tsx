@@ -443,12 +443,15 @@ export function GuardrailSuggestions({
     isLoading: isLoadingTemplates,
   } = useToolTemplatePolicies(dataset.id);
 
+  // show all suggestions (even low-quality ones)
+  const [showAll, setShowAll] = React.useState(false);
+  const minDetectionRate = showAll ? 0.0 : 0.7; // Filter out policies with detection rate below 70%
+
   // refreshes the list of stored suggested guardrails
   const refreshStoredPolicies = async () => {
     try {
       // Use query parameters to filter policies on the server side
-      const minDetectionRate = 0.7; // Filter out policies with detection rate below 70%
-      const successOnly = true; // Only include successful policies
+      const successOnly = !showAll; // Only include successful policies
 
       const storedPoliciesResponse = await fetch(
         `/api/v1/dataset/byid/${dataset.id}/generated-policies?min_detection_rate=${minDetectionRate}&success_only=${successOnly}`
@@ -468,6 +471,11 @@ export function GuardrailSuggestions({
       console.error("Error fetching stored policies:", error);
     }
   };
+
+  // whenever showAll changes, refresh stored policies
+  React.useEffect(() => {
+    refreshStoredPolicies();
+  }, [showAll]);
 
   // refreshes the list of active guardrail suggestion jobs
   const refreshActiveJobs = async () => {
@@ -585,6 +593,13 @@ export function GuardrailSuggestions({
         <h3>
           <span>
             <BsStars /> Guardrail Suggestions
+            <span className="show-all-checkbox">
+            <input type="checkbox" id="show-templates" checked={showAll} onChange={() => setShowAll(!showAll)} />
+            <label htmlFor="show-templates">
+              Show All
+            </label>
+            </span>
+
           </span>
           <div className="actions">
             <button
