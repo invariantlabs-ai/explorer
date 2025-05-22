@@ -46,6 +46,10 @@ async def test_create_delete_snippet(context, url, screenshot):
     # go back to the home page
     await page.goto(url)
     await screenshot(page)
+    
+    # wait for the home page to load
+    await page.wait_for_selector(".entity-list")
+    
     # get all displayed snippet ids
     traces = await retry_fetch(lambda: page.locator("css=span.traceid").all())
     traceids = [
