@@ -8,7 +8,8 @@ from typing import Annotated, Dict, List, Any
 from uuid import UUID
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi import Depends, FastAPI, HTTPException, Request,  BackgroundTasks
+from sqlalchemy import or_
 from fastapi.responses import Response, StreamingResponse
 from logging_config import get_logger
 from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
@@ -273,73 +274,92 @@ async def analyze_trace(
     analysis_request: AnalysisRequest,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    """Analyze a trace using the analyzer model."""
-    with Session(db()) as session:
-        trace, user = load_trace(
-            session, id, user_id, allow_public=True, allow_shared=True, return_user=True
-        )
-        trace_exporter = AnalyzerTraceExporter(
-            user_id=str(user_id),
-            dataset_id=str(trace.dataset_id),
-        )
-        input_sample, annotated_samples = await trace_exporter.analyzer_model_input(
-            session=session,
-            input_trace_id=id,
-        )
-        # delete existing annotations
-        _ = await replace_annotations(
-            session,
-            id,
-            user_id,
-            "analyzer-model",
-            [],
+    """Analyze a trace using the Analysis model."""
+    try:
+        with Session(db()) as session:
+            trace, user = load_trace(
+                session, id, user_id, allow_public=True, allow_shared=True, return_user=True
+            )
+            trace_exporter = AnalyzerTraceExporter(
+                user_id=str(user_id),
+                dataset_id=str(trace.dataset_id),
+            )
+            input_sample, annotated_samples = await trace_exporter.analyzer_model_input(
+                session=session,
+                input_trace_id=id,
+            )
+            # delete existing annotations
+            _ = await replace_annotations(
+                session,
+                id,
+                user_id,
+                "analyzer-model",
+                [],
+            )
+
+        sar = SingleAnalysisRequest(
+            input=input_sample[0].trace,
+            annotated_samples=annotated_samples,
+            model_params=analysis_request.options.model_params,
+            debug_options=analysis_request.options.debug_options,
+            id=input_sample[0].id,
         )
 
-    sar = SingleAnalysisRequest(
-        input=input_sample[0].trace,
-        annotated_samples=annotated_samples,
-        model_params=analysis_request.options.model_params,
-        debug_options=analysis_request.options.debug_options,
-    )
+        async def stream_response():
+            url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
+            try:
+                # get existing annotations
+                with Session(db()) as session:
+                    annotations: list[Annotation] = load_annotations(session, id)
+                
+                def already_stored(analyzer_annotation: AnalyzerAnnotation) -> bool:
+                    for annotation, user in annotations:
+                        if (
+                            annotation.content == analyzer_annotation.content
+                            and annotation.address == analyzer_annotation.location
+                        ):
+                            return True
+                    return False
 
-    async def stream_response():
-        url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
-        try:
-            async with httpx.AsyncClient() as client:
-                async with client.stream(
-                    method="POST",
-                    url=url,
-                    json=sar.model_dump(),
-                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
-                ) as streaming_response:
-                    async for chunk in streaming_response.aiter_text():
-                        # TODO: replace with robust chunk parsing
-                        # split by lines
-                        for line in chunk.strip().split("\n"):
-                            annotation = annotation_from_chunk(line)
-                            if isinstance(annotation, AnalyzerAnnotation):
-                                with Session(db()) as session:
-                                    new_annotation = Annotation(
-                                        trace_id=UUID(id),
-                                        user_id=user_id,
-                                        address=annotation.location or "",
-                                        content=annotation.content,
-                                        extra_metadata={
-                                            "source": "analyzer-model",
-                                            "severity": annotation.severity,
-                                        },
-                                    )
-                                    session.add(new_annotation)
-                                    session.commit()
-                                yield "data: update\n\n"
-                        yield chunk
-        except httpx.ConnectError:
-            error_message = f"Failed to connect to analyzer model at: {url}"
-            yield f"data: {json.dumps({'error': error_message})}\n\n".encode("utf-8")
+                async with httpx.AsyncClient() as client:
+                    async with client.stream(
+                        method="POST",
+                        url=url,
+                        json=sar.model_dump(),
+                        headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                        timeout=30,
+                    ) as streaming_response:
+                        async for chunk in streaming_response.aiter_text():
+                            # TODO: replace with robust chunk parsing
+                            # split by lines
+                            for line in chunk.strip().split("\n"):
+                                annotation = annotation_from_chunk(line)
+                                if isinstance(annotation, AnalyzerAnnotation) and not already_stored(
+                                    annotation
+                                ):
+                                    with Session(db()) as session:
+                                        new_annotation = Annotation(
+                                            trace_id=UUID(id),
+                                            user_id=user_id,
+                                            address=annotation.location or "",
+                                            content=annotation.content,
+                                            extra_metadata={
+                                                "source": "analyzer-model",
+                                                "severity": annotation.severity,
+                                            },
+                                        )
+                                        session.add(new_annotation)
+                                        session.commit()
+                                    yield "data: update\n\n"
+                            yield chunk
+            except Exception:
+                error_message = f"Failed to connect to the Analysis service at: {url}"
+                yield f"data: {json.dumps({'error': error_message})}\n\n".encode("utf-8")
 
-    print("streaming response")
-
-    return StreamingResponse(stream_response(), media_type="text/event-stream")
+        return StreamingResponse(stream_response(), media_type="text/event-stream")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
 
 
 async def replace_annotations(
@@ -348,34 +368,71 @@ async def replace_annotations(
     user_id: UUID,
     source: str,
     annotations: List[Dict],
+    # whether to exclude annotations which have been marked as 'accepted' or 'rejected' by the user
+    exclude_accepted_or_rejected: bool = True,
+    # whether to skip adding new annotations that are already present as 'accepted' or 'rejected' one (avoids duplicates)
 ) -> Dict[str, int]:
     """
-    Replaces all annotations of a given source with new ones.
+    Replaces all annotations of a given source with new ones (except accepted ones).
 
     This is used, e.g. to update the analysis model output, once a new run has completed.
     """
-
     if not isinstance(annotations, list):
         raise ValueError("Annotations must be a list")
     if not isinstance(source, str):
         raise ValueError("Source must be a string")
 
-    num_deleted = (
-        session.query(Annotation)
+    query = (session.query(Annotation)
         .filter(
             Annotation.trace_id == trace_id,
             Annotation.extra_metadata.op("->>")("source") == source,
         )
-        .delete()
     )
+
+    if exclude_accepted_or_rejected:
+        query = query.filter(
+            or_(
+                and_(
+                    Annotation.extra_metadata.op("->>")("status") != "accepted",
+                    Annotation.extra_metadata.op("->>")("status") != "rejected",
+                ),
+                Annotation.extra_metadata.op("->>")("status") == None,
+            )
+        )
+    
+    # delete all annotations of this source
+    num_deleted = query.delete()
+
+    print("deleted", num_deleted, "annotations of source")
+
+    # commit the changes
+    session.commit()
+
+    # get existing annotations
+    with Session(db()) as session:
+        existing_annotations: list[Annotation] = load_annotations(session, trace_id)
+    
+    def already_stored(analyzer_issue: dict) -> bool:
+        for annotation, user in existing_annotations:
+            print("analyzer issue", analyzer_issue)
+            if (
+                annotation.content == analyzer_issue.get("content", "")
+                and annotation.address == analyzer_issue.get("location", "")
+            ):
+                print("skipping already stored annotation", analyzer_issue)
+                return True
+        return False
 
     num_inserted = len(annotations)
 
     for annotation in annotations:
+        if already_stored(annotation):
+            continue
+        
         new_annotation = Annotation(
             trace_id=trace_id,
             user_id=user_id,
-            address=annotation.get("address"),
+            address=annotation.get("address", "messages[0]") or "messages[0]",
             content=str(annotation.get("content")),
             extra_metadata=annotation.get("extra_metadata"),
         )
@@ -485,8 +542,13 @@ async def update_annotation(
 
         payload = await request.json()
         content = payload.get("content")
+        extra_metadata = payload.get("extra_metadata", {})
+        updated_metadata = {**annotation.extra_metadata, **extra_metadata}
 
         annotation.content = content
+        annotation.extra_metadata = updated_metadata
+
+        print("annotation", annotation.extra_metadata)
         session.commit()
         return annotation_to_json(annotation, user)
 

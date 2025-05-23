@@ -171,16 +171,18 @@ class AnalyzerTraceExporter:
                         trace=json.dumps(trace.content),
                         id=str(trace.id),
                         annotations=[],
-                        domain=[push_ds_name] + trace.hierarchy_path,
+                        domain=[push_ds_name] + trace.hierarchy_path + [str(trace.id)],
                     ),
                 )
                 if not annotation:
                     continue
                 if (
                     annotation.extra_metadata
-                    and annotation.extra_metadata.get("source") == "analyzer-model"
+                    and (annotation.extra_metadata.get("source") == "analyzer-model" or annotation.extra_metadata.get("source") == "accepted-analyzer-model")
                 ):
-                    continue
+                    if annotation.extra_metadata.get("status") != "accepted" and annotation.extra_metadata.get("status") != "rejected":
+                        continue
+                
                 if not AnalyzerTraceExporter.is_annotation_for_analyzer(
                     annotation.content
                 ):
@@ -188,13 +190,22 @@ class AnalyzerTraceExporter:
                 content, severity = AnalyzerTraceExporter.get_content_severity(
                     annotation.content
                 )
+                status = "user-annotated"
+                if annotation.extra_metadata and annotation.extra_metadata.get("status") == "rejected":
+                    status = "user-rejected"
+                elif annotation.extra_metadata and annotation.extra_metadata.get("status") == "accepted":
+                    status = "user-accepted"
+                
+                # check for existing duplicates
                 samples_by_id[str(trace.id)].annotations.append(
                     AnalyzerAnnotation(
                         content=content,
                         location=annotation.address,
                         severity=severity,
+                        status=status,
                     )
                 )
+
             if input_trace_id:
                 if str(input_trace_id) not in samples_by_id:
                     raise HTTPException(
@@ -215,6 +226,7 @@ class AnalyzerTraceExporter:
                     for sample in samples_by_id.values()
                 ]
 
+
             # only send context with annotated samples
             analyser_context_samples = [
                 sample for sample in samples_by_id.values() if sample.annotations
@@ -225,6 +237,18 @@ class AnalyzerTraceExporter:
             print("Error handling job", e, traceback.format_exc(), flush=True)
         return analyser_input_samples, analyser_context_samples
 
+def deduplicate_annotations(annotations):
+    print(annotations, flush=True)
+    annotation_hash = {}
+    deduplicated = []
+    for annotation in annotations:
+        key = (annotation.content, annotation.location)
+        
+        if key not in annotation_hash:
+            annotation_hash[key] = annotation
+            deduplicated.append(annotation)
+        
+    return deduplicated
 
 class TraceExporter:
     def __init__(self, user_id: str, dataset_id: str, export_config: ExportConfig):
@@ -392,7 +416,6 @@ def get_all_jobs(session: Session, user_id: UUID = None) -> List[DatasetJob]:
     return result
 
 
-# TODO: Fix typo in the function name
 def load_annotations(session: Session, by):
     query_filter = get_query_filter(by, Annotation, User, default_key="trace_id")
     return (

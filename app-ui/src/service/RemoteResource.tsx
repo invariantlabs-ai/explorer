@@ -209,6 +209,8 @@ function useRemoteResource(
   const [data, setData] = useState(null);
 
   useEffect(() => {
+    setStatus("loading");
+    
     // if args are null
     if (args.some((a) => a === null || a === undefined)) {
       setStatus("uninitialized");

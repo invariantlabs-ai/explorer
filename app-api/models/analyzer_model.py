@@ -9,6 +9,7 @@ class Annotation(BaseModel):
     content: str
     location: str | None = None
     severity: float | None
+    status: str | None = None
 
 
 class Sample(BaseModel):
@@ -88,6 +89,8 @@ class SingleAnalysisRequest(BaseModel):
     annotated_samples: list[Sample]
     model_params: ModelParams
     debug_options: DebugOptions | None = None
+    # id of the input trace (if present)
+    id: str | None = None
 
 
 class TraceAnalysisResult(BaseModel):
