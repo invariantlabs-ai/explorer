@@ -264,7 +264,7 @@ export function AnnotationAugmentedTraceView(props) {
   const [storedAnnotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, activeTraceId);
 
-  const annotations = props.annotations || storedAnnotations;
+  const annotations = props.annotations || (annotationStatus == "ready" ? storedAnnotations : null);
 
   // highlights to show in the traceview (e.g. because of analyzer or search results)
   const [highlights, setHighlights] = useState({
@@ -404,6 +404,34 @@ export function AnnotationAugmentedTraceView(props) {
     analyzer.setOutput(null);
     // wait for delete to finish, then refresh the annotations
     window.setTimeout(() => annotator.refresh(), 20);
+  };
+
+  const onAcceptAnalysisResult = async (annotation) => {
+    // set the last pushed analyzer result to the current analysis result
+    await annotator.update(
+      annotation.id,
+      {
+        content: annotation.content,
+        extra_metadata: {
+          status: annotation.status == "accepted" ? "proposed" : "accepted",
+        },
+      }
+    )
+    await annotator.refresh();
+  };
+
+  const onRejectAnalysisResult = async (annotation) => {
+    // set the last pushed analyzer result to the current analysis result
+    await annotator.update(
+      annotation.id,
+      {
+        content: annotation.content,
+        extra_metadata: {
+          status: annotation.status == "rejected" ? "proposed" : "rejected",
+        },
+      }
+    )
+    await annotator.refresh();
   };
 
   const [analyzerOpen, _setAnalyzerOpen] = useState(
@@ -570,6 +598,8 @@ export function AnnotationAugmentedTraceView(props) {
             dataset={props.dataset}
             onAnalyzeEvent={onRunAnalyzerEvent}
             onAnnotationChange={() => annotator.refresh()}
+            onAcceptAnalysisResult={onAcceptAnalysisResult}
+            onRejectAnalysisResult={onRejectAnalysisResult}
           />
         )}
       </div>
@@ -724,6 +754,16 @@ function AnnotationThread(props) {
   );
 }
 
+function readableSourceName(source) {
+  if (source == "accepted-analyzer-model") {
+    return "Analysis Model";
+  }
+  if (source == "analyzer-model") {
+    return "Analysis Model";
+  }
+  return source;
+}
+
 // Annotation renders an annotation bubble with the ability to edit and delete
 function Annotation(props) {
   const annotator = props.annotator;
@@ -783,7 +823,7 @@ function Annotation(props) {
     );
   }
 
-  const source = props.extra_metadata?.source;
+  const source = readableSourceName(props.extra_metadata?.source);
 
   return (
     <div className="annotation">
@@ -801,7 +841,6 @@ function Annotation(props) {
             </b>
             {source && (
               <span className="source">
-                {" "}
                 via <b>{source}</b>{" "}
               </span>
             )}

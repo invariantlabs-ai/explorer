@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   BsArrowRight,
   BsBan,
+  BsCheck,
   BsGearFill,
   BsStars,
   BsXCircle,
@@ -85,18 +86,35 @@ function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
 
     if (!issues) {
       setIssues([]);
+      return;
     }
-    // sort by severity
+
+    // Define the sort order for status
+    const statusOrder = (status: string | undefined, reasoning: boolean) => {
+      // for 'reasoning' we show at the start
+      if (reasoning) return 0;
+      if (status === "accepted") return 1;
+      if (status === "rejected") return 3;
+      return 2; // Proposed (no status or other statuses)
+    };
+
+    // sort by status, then by severity
     issues.sort((a, b) => {
-      if (a.severity || 0 < (b.severity || 0)) {
+      const statusA = statusOrder(a.status, a.content.includes("[reasoning]"));
+      const statusB = statusOrder(b.status, b.content.includes("[reasoning]"));
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // If status is the same, sort by severity
+      if ((a.severity || 0) < (b.severity || 0)) {
         return 1;
-      } else if (a.severity || 0 > (b.severity || 0)) {
+      } else if ((a.severity || 0) > (b.severity || 0)) {
         return -1;
       }
       return 0;
     });
-
-    // if length > 1 and loading still in there, remove i
 
     setIssues(issues);
   }, [annotations]);
@@ -270,7 +288,7 @@ export function AnalyzerPreview(props: {
 }) {
   const issues = useIssues(props.annotations);
 
-  const numIssues = issues.length;
+  const numIssues = issues.filter((issue) => !issue.content.includes("[reasoning]")).length;
 
   const storedIsEmpty = numIssues === 0;
 
@@ -445,10 +463,14 @@ export function AnalyzerSidebar(props: {
   username: string;
   dataset: string;
   debugInfo: any;
+  // expects callback function to discard the analysis result
   onDiscardAnalysisResult?: (output: any) => void;
   // passes onRun to parent component in callback
   onAnalyzeEvent?: BroadcastEvent;
   onAnnotationChange?: () => void;
+  // callbacks to accept/reject issues
+  onAcceptAnalysisResult?: (output: any) => void;
+  onRejectAnalysisResult?: (output: any) => void;
 }) {
   const [abortController, setAbortController] = React.useState(
     new AbortController()
@@ -458,7 +480,7 @@ export function AnalyzerSidebar(props: {
   const [status, setStatus] = useState("Ready");
 
   const issues = useIssues(props.annotations);
-  const numIssues = issues.length;
+  const numIssues = issues.filter((issue) => !issue.content.includes("[reasoning]")).length;
 
   const userInfo = useUserInfo();
 
@@ -536,6 +558,8 @@ export function AnalyzerSidebar(props: {
     props.onAnalyzeEvent.listeners = [onRun];
   }
 
+  let currentGroup = "";
+
   return (
     <div
       className={"box analyzer-sidebar sidebar " + (props.open ? "open" : "")}
@@ -596,17 +620,48 @@ export function AnalyzerSidebar(props: {
       )}
       <div className="status">{status}</div>
       <div className="issues">
-        {issues.map((output, i) => (
-          <Issues
-            key={props.traceId + "-" + "issue-" + i + "-" + output.content}
-            issue={output}
-          />
-        ))}
+        {!props.running &&
+          issues.map((output, i) => {
+            let header = null as React.ReactNode | null;
+            if (output.status === "accepted" && currentGroup !== "accepted") {
+              currentGroup = "accepted";
+            } else if (
+              output.status === "rejected" &&
+              currentGroup !== "rejected"
+            ) {
+              header = <h3 className="issues-group-header">
+                <BsXCircle className="icon" />  
+                Rejected
+              </h3>;
+              currentGroup = "rejected";
+            } else if (
+              (!output.status || output.status === "proposed") &&
+              currentGroup !== "proposed"
+            ) {
+              currentGroup = "proposed";
+            }
+
+            return (
+              <React.Fragment key={props.traceId + "-" + "issue-" + i + "-" + output.content}>
+                {header}
+                <Issues
+                  issue={output}
+                  onAcceptAnalysisResult={props.onAcceptAnalysisResult}
+                  onRejectAnalysisResult={props.onRejectAnalysisResult}
+                />
+              </React.Fragment>
+            );
+          })}
       </div>
       {notYetRun && (
         <div className="output-empty">
           <br />
           Analyze the trace to identify issues
+        </div>
+      )}
+      {!notYetRun && !props.running && numIssues === 0 && (
+        <div className="output-empty">
+          No Issues Detected
         </div>
       )}
       <span className="debug-info">
@@ -674,7 +729,11 @@ function onMountConfigEditor(editor, monaco) {
   });
 }
 
-export function Issues(props: { issue: AnalyzerAnnotation }) {
+export function Issues(props: { 
+  issue: AnalyzerAnnotation, 
+  onAcceptAnalysisResult?: (output: any) => void, 
+  onRejectAnalysisResult?: (output: any) => void 
+}) {
   // content: [abc] content
   let errorContent = "";
   let content = props.issue.content;
@@ -704,28 +763,104 @@ export function Issues(props: { issue: AnalyzerAnnotation }) {
     setClickLocation(first_location);
   }, [props.issue]);
 
+  const onClickIssue = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    reveal(clickLocation);
+    onNextLocation();
+  }
+  
+  const onClickAccept = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (props.onAcceptAnalysisResult) {
+      props.onAcceptAnalysisResult(props.issue);
+    } 
+  }
+
+  const onClickReject = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (props.onRejectAnalysisResult) {
+      props.onRejectAnalysisResult(props.issue);
+    }
+  }
+
+  // whether the issue should be shown in collapsed mode (less info)
+  const collapsed = props.issue.status === "rejected";
+
+  // reasoning expanded
+  const [expanded, setExpanded] = useState(false);
+
+  // check for the case of errorContent == "reasoning"
+  // if so, show a special issue
+  if (errorContent === "reasoning") {
+    // check if there is an | in the content (if so, split it)
+    const splitContent = content.split("|", 2);
+    const reasoning = splitContent[1].trim();
+    const reasoningTime = splitContent[0].trim();
+
+    return (
+      <div className={"issue reasoning " + (expanded ? "expanded" : "")} onClick={() => setExpanded(!expanded)}>
+        <div className="issue-content">
+          {expanded ? <><b>{reasoningTime}</b>{reasoning}</> : <><b>{reasoningTime + " 〉"}</b></>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="issue"
-      onClick={() => {
-        reveal(clickLocation);
-        onNextLocation();
-      }}
+      className={"issue " + props.issue.status}
+      onClick={onClickIssue}
     >
       <div className="issue-content">
-        <b>[{errorContent}]</b> {content}
+        {!collapsed ? (
+          <><b>[{errorContent}]</b> {content}</>
+        ) : (
+          <><b>[{errorContent}]</b> <s>{truncate(content, 50)}</s></>
+        )}
       </div>
       <div className="issue-header">
-        <Location location={props.issue.address} />
+        {!collapsed && <Location location={props.issue.address} />}
         <br />
         {typeof props.issue.severity === "number" && (
           <span className="severity">
             Severity: {(props.issue.severity || 0.0).toString()}
           </span>
         )}
+        <div className={"issue-status " + props.issue.status}>
+          {props.issue.status === "accepted" && (
+            <>
+              <BsCheck className="icon" />
+              Confirmed
+            </>
+          )}
+          {props.issue.status === "rejected" && (
+            <>
+              <BsXCircle className="icon" />
+              Rejected
+            </>
+          )}
+        </div>
+        <div className="actions">
+        <button
+          className={"inline reject " + (props.issue.status === "rejected" ? " primary" : "")}
+          onClick={onClickReject}
+        >
+          <BsXCircle /> Reject
+        </button>
+        <button className={"inline" + (props.issue.status === "accepted" ? " primary" : "")} onClick={onClickAccept}>
+          <BsCheck /> Confirm
+        </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function truncate(str: string, maxLength: number) {
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return str.substring(0, maxLength) + "...";
 }
 
 export function Location(props: { location: string }) {
@@ -739,7 +874,7 @@ export function Location(props: { location: string }) {
           className="location"
           onClick={(e) => {
             e.stopPropagation();
-            reveal(location);
+            reveal(location, "annotations");
           }}
         >
           {location}

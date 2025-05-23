@@ -20,6 +20,7 @@ export interface AnalyzerAnnotation {
   address: string;
   severity: number | null;
   id: string;
+  status: string;
 }
 
 /** A single highlight, with a start and end offset in the source text or leaf string, and a content field. */

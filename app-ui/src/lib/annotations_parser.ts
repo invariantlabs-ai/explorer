@@ -123,11 +123,13 @@ export class AnnotationsParser {
     }
 
     let analyzer_annotations = [] as AnalyzerAnnotation[];
+    let analyzer_highlight_index = 0;
     for (let key in annotations) {
       for (let annotation of annotations[key]) {
         if (
           annotation.extra_metadata &&
-          annotation.extra_metadata["source"] === "analyzer-model"
+          annotation.extra_metadata["source"] === "analyzer-model"//  &&
+          // annotation.extra_metadata["status"] !== "accepted"
         ) {
           let analyzer_annotation: AnalyzerAnnotation = {
             source: "analyzer-model",
@@ -135,6 +137,7 @@ export class AnnotationsParser {
             address: annotation.address,
             severity: annotation.extra_metadata.severity,
             id: annotation.id,
+            status: annotation.extra_metadata.status || "proposed",
           };
           analyzer_annotations.push(analyzer_annotation);
         }

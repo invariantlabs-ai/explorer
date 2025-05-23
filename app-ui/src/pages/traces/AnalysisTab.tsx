@@ -208,16 +208,17 @@ export function AnalysisReport(props: {
                 <ClusterSummary clustering={report?.clustering} />
               </div>
             )}
-            {/* {report && (
-              <div className="tile scroll wide">
-                <h1>Metadata</h1>
-                <ReportMetadata report={report} />
-              </div>
-            )} */}
             {report && (
               <div className="tile wide">
                 <h1>Raw Report</h1>
                 <pre>{rawReport}</pre>
+              </div>
+            )}
+            {!report && (
+              <div className="empty" style={{ width: "100%" }}>
+                  <h3>
+                  No Analysis Available Yet
+                  </h3>
               </div>
             )}
           </div>
@@ -254,30 +255,6 @@ function ClusterSummary({ clustering }: { clustering: any }) {
   }
   return <IssuePieChart data={clustering} />;
 }
-// /**
-//  * Component to show the most important metadata of an analysis run based on the report JSON.
-//  */
-// function ReportMetadata({ report }: { report: ReportFormat }) {
-//   // total number of issues
-//   const numResults = report.clustering?.reduce(
-//     (acc: number, cluster: Cluster) => acc + cluster.issues_indexes.length,
-//     0
-//   );
-//   const guardrailSuggestions = report["guardrail-suggestions"];
-
-//   return (
-//     <table className="metadata">
-//       <tbody>
-//         <tr>
-//           <th>Results</th>
-//           <td>
-//             <pre>{numResults} issues</pre>
-//           </td>
-//         </tr>
-//       </tbody>
-//     </table>
-//   );
-// }
 
 /**
  * Component to show running analysis jobs.
