@@ -271,6 +271,7 @@ def annotation_from_chunk(chunk: str) -> AnalyzerAnnotation:
 async def analyze_trace(
     id: str,
     analysis_request: AnalysisRequest,
+    request: Request,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
     """Analyze a trace using the analyzer model."""
@@ -302,6 +303,14 @@ async def analyze_trace(
         debug_options=analysis_request.options.debug_options,
     )
 
+
+    headers = {}
+    cookies = None
+    if analysis_request.apikey:
+        headers["Authorization"] = f"Bearer {analysis_request.apikey}"
+    else:
+        cookies = {'jwt': request.cookies.get('jwt')}
+
     async def stream_response():
         url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
         try:
@@ -310,7 +319,9 @@ async def analyze_trace(
                     method="POST",
                     url=url,
                     json=sar.model_dump(),
-                    headers={"Authorization": f"Bearer {analysis_request.apikey}"},
+                    headers=headers,
+                    cookies=cookies,
+                    timeout=30,
                 ) as streaming_response:
                     async for chunk in streaming_response.aiter_text():
                         # TODO: replace with robust chunk parsing
