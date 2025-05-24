@@ -4,8 +4,9 @@ from enum import Enum
 from typing import Annotated, Optional
 from uuid import UUID
 
-from cachetools import TTLCache, cached
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool # Added
+from ...util.redis_client import cache_redis # Added
 from models.datasets_and_traces import Dataset, Trace, User, db
 from models.queries import dataset_to_json
 from routes.apikeys import UserOrAPIIdentity
@@ -24,11 +25,8 @@ class DatasetKind(Enum):
     ANY = "any"
 
 
-@cached(TTLCache(maxsize=1, ttl=1800))
-def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, any]]:
-    """
-    Fetches and caches the homepage datasets with a time-to-live (TTL) cache.
-    """
+# Synchronous helper function for DB query
+def _get_homepage_datasets_from_db(limit: Optional[int] = None) -> list[dict[str, any]]:
     if not homepage_dataset_ids:
         return []
 
@@ -43,8 +41,17 @@ def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, any]]
     return [dataset_to_json(dataset, user) for dataset, user in datasets]
 
 
+@cache_redis(ttl=1800)
+async def fetch_homepage_datasets(limit: Optional[int] = None) -> list[dict[str, any]]:
+    """
+    Fetches and caches the homepage datasets using Redis.
+    The actual database call is run in a threadpool.
+    """
+    return await run_in_threadpool(_get_homepage_datasets_from_db, limit=limit)
+
+
 @router.get("/list")
-def list_datasets(
+async def list_datasets(
     kind: DatasetKind,
     request: Request,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
@@ -54,7 +61,7 @@ def list_datasets(
     with Session(db()) as session:
         if kind == DatasetKind.HOMEPAGE:
             # Use cached results for HOMEPAGE datasets
-            return fetch_homepage_datasets(limit)
+            return await fetch_homepage_datasets(limit=limit)
 
         # check if there is a q=... parameter to match in the name
         q = request.query_params.get("q")

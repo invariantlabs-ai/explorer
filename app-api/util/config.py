@@ -17,4 +17,8 @@ def config(key: str):
     config_file = os.getenv("CONFIG_FILE", "explorer.config.yml")
     with open(config_file) as f:
         config_obj = yaml.safe_load(f)
+        # If the key is in the top-level of the config_obj, return the entire section.
+        # Otherwise, behave as before.
+        if key in config_obj:
+            return config_obj[key]
         return config_obj.get(key)

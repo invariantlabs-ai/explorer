@@ -11,3 +11,4 @@ prometheus-fastapi-instrumentator
 pillow
 aiofiles
 aiohttp
+redis~=5.0

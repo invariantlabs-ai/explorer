@@ -31,6 +31,15 @@ async def home():
 
 # mount the API under /api/v1
 app = fastapi.FastAPI()
+
+# Initialize Redis pool on startup
+from util.redis_client import init_redis_pool
+
+@app.on_event("startup")
+async def startup_event():
+    await init_redis_pool()
+    # Add other startup procedures here if any in the future
+
 app.mount("/api/v1", v1)
 
 
