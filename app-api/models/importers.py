@@ -7,12 +7,13 @@ It support both raw datasets and datasets with metadata and annotations.
 import datetime
 import json
 import uuid
-from typing import Dict
+from typing import Dict, Tuple, List # Added Tuple, List
 
 from fastapi import HTTPException
-from models.datasets_and_traces import Annotation, Dataset, Trace
+from models.datasets_and_traces import Annotation, Dataset, Trace, OTELSpan
 from sqlalchemy.orm import Session
 from util.util import parse_and_update_messages
+from util.validation import validate_otel_span # Added import
 
 
 def create_dataset(user_id, name, metadata, is_public: bool = False):
@@ -266,3 +267,85 @@ async def import_jsonl(
     if return_trace_data:
         return dataset, trace_ids, all_messages
     return dataset
+
+
+async def import_otel_trace(
+    session: Session,
+    name: str,
+    user_id: str,
+    lines: list[str],  # List of JSON strings, each representing an OTELSpan
+    metadata: dict | None = None,
+    existing_dataset: Dataset | None = None,
+    is_public: bool = False,
+) -> Tuple[Dataset, List[str]]: # Modified return type annotation
+    """
+    Parses and imports a list of OTELSpan JSON strings into the database.
+
+    Args:
+        session: The database session.
+        name: The name for the dataset (if creating a new one).
+        user_id: The user ID of the owner.
+        lines: A list of strings, where each string is a JSON representation of an OTELSpan.
+        metadata: Optional metadata to add to the dataset.
+        existing_dataset: Optional existing dataset to add traces to.
+        is_public: Whether the dataset (if created) should be public.
+
+    Returns:
+        A tuple containing the Dataset object (either existing or newly created)
+        and a list of stringified trace IDs created.
+    """
+    dataset_metadata = {
+        "importer_type": "otel",
+        "created_on": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        **(metadata or {}),
+    }
+
+    if existing_dataset is None:
+        dataset = create_dataset(user_id, name, dataset_metadata, is_public)
+        session.add(dataset)
+    else:
+        dataset = existing_dataset
+        # Optionally update metadata if new metadata is provided for an existing dataset
+        if metadata:
+            dataset.extra_metadata = {**dataset.extra_metadata, **dataset_metadata}
+
+    created_trace_ids: List[str] = [] # Initialize list to store trace IDs
+    for idx, line in enumerate(lines):
+        try:
+            otel_span_data = json.loads(line)
+            otel_span = OTELSpan(**otel_span_data)
+            validate_otel_span(otel_span) # Call the validation function
+        except json.JSONDecodeError as e:
+            # Truncate line for error message if too long
+            error_line_preview = line[:200] + "..." if len(line) > 200 else line
+            raise HTTPException(
+                status_code=400, detail=f"Invalid JSON in OTEL span data: {e}. Problematic line (first 200 chars): '{error_line_preview}'"
+            )
+        except ValueError as e: # Catch validation errors from validate_otel_span
+            error_line_preview = line[:200] + "..." if len(line) > 200 else line
+            raise HTTPException(
+                status_code=400, detail=f"Invalid OTEL Span: {e}. Problematic line (first 200 chars): '{error_line_preview}'"
+            )
+        except Exception as e:  # Pydantic validation error etc.
+            error_line_preview = line[:200] + "..." if len(line) > 200 else line
+            raise HTTPException(
+                status_code=400, detail=f"Error parsing OTELSpan: {e}. Problematic line (first 200 chars): '{error_line_preview}'"
+            )
+
+        trace = Trace(
+            id=uuid.uuid4(),
+            index=idx,
+            dataset_id=dataset.id,
+            user_id=user_id, # type: ignore
+            name=otel_span.name,
+            hierarchy_path=[
+                otel_span.name
+            ],  # Simple hierarchy path, can be refined
+            content=[attr.model_dump() for attr in otel_span.attributes],
+            extra_metadata=otel_span.model_dump(),
+            # time_created is handled by default in the Trace model
+        )
+        session.add(trace)
+        created_trace_ids.append(str(trace.id)) # Collect trace ID
+
+    return dataset, created_trace_ids # Modified return value

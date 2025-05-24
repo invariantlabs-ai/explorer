@@ -269,6 +269,24 @@ class DatasetJob(Base):
         }
 
 
+# OpenTelemetry Pydantic Models
+from typing import Any, List, Optional
+
+class OTELAttribute(BaseModel):
+    key: str
+    value: Any  # Can be string, int, float, bool
+
+class OTELSpan(BaseModel):
+    trace_id: str  # Identifier for the entire trace
+    span_id: str  # Identifier for this specific span
+    parent_span_id: Optional[str] = None  # ID of the parent span, if any
+    name: str  # Name of the span (e.g., "llm.request")
+    start_time_unix_nano: str # Start time in nanoseconds since epoch. Expected to be in ISO 8601 string format.
+    end_time_unix_nano: str # End time in nanoseconds since epoch. Expected to be in ISO 8601 string format.
+    attributes: List[OTELAttribute] = []
+    # Consider adding other common fields like 'kind', 'status', 'events' if deemed necessary for the application
+
+
 def db():
     """
     Returns a SQLAlchemy engine object that is connected to the database.

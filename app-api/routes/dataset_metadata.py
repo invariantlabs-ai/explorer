@@ -1,11 +1,12 @@
 """Defines routes for APIs related to dataset metadata."""
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional # Added Optional
 from uuid import UUID
+import json # Added json
 
 from fastapi import HTTPException
 from logging_config import get_logger
-from models.datasets_and_traces import Trace, db
+from models.datasets_and_traces import Trace, db, OTELSpan, OTELAttribute # Added OTELSpan, OTELAttribute
 from models.queries import load_dataset
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -273,13 +274,16 @@ async def update_dataset_metadata(
 
 
 async def extract_and_save_batch_tool_calls(
-    trace_ids: List[str] | str,
-    messages_list: List[List[Dict[str, Any]]] | List[Dict[str, Any]],
-    dataset_id: str = None,
-    user_id: UUID = None,
+    trace_ids: List[str] | str, # For OTEL, this will be List[str]
+    messages_batch: List[Any], # For OTEL, this will be List[str] (JSON strings of OTELSpans)
+    dataset_id: Optional[UUID] = None, # Changed to Optional[UUID]
+    user_id: Optional[UUID] = None, # Changed to Optional[UUID]
+    trace_format: str = "jsonl", # Added trace_format parameter
 ):
     """
     Extract tool names from messages and save them as a set in trace metadata.
+    For JSONL, messages_batch is List[List[Dict[str, Any]]].
+    For OTEL, messages_batch is List[str] where each string is a JSON representation of an OTELSpan.
 
     This function handles both single traces and batches of traces:
     - For a single trace, pass a string trace_id and a list of messages
@@ -291,126 +295,162 @@ async def extract_and_save_batch_tool_calls(
         dataset_id: Optional dataset ID for dataset-level tool registry
         user_id: User ID needed for dataset operations
     """
-    if isinstance(trace_ids, str):
-        logger.info(f"Processing single trace: {trace_ids}")
-    else:
-        logger.info(f"Extracting tool calls for {len(trace_ids)} traces")
-
-    # Handle single trace case by converting to batch format
-    if isinstance(trace_ids, str):
+    if isinstance(trace_ids, str): # Should not happen if push.py sends List[str]
         trace_ids = [trace_ids]
-        # Ensure messages_list is properly wrapped for a single trace
-        if not all(isinstance(m, list) for m in messages_list):
-            logger.info("Converting single message list to batch format")
-            messages_list = [messages_list]
+        if trace_format == "jsonl" and (not messages_batch or not isinstance(messages_batch[0], list)):
+             messages_batch = [messages_batch] # Wrap if it's a single list of messages for JSONL
+
+    if not trace_ids:
+        logger.info("No trace IDs provided for tool call extraction.")
+        return
+
+    logger.info(f"Extracting tool calls for {len(trace_ids)} traces, format: {trace_format}")
 
     try:
         with Session(db()) as session:
-            # Track all tool names across all traces for dataset-level registry
-            all_dataset_tools = {}
+            all_dataset_tools = {} # For dataset-level registry, common for both formats
 
-            for i, (trace_id, messages) in enumerate(zip(trace_ids, messages_list)):
-                logger.info(f"Processing trace {i+1}/{len(trace_ids)}: {trace_id}")
-                tool_names = {}
-                tool_count = 0
+            if trace_format == "jsonl":
+                if not all(isinstance(m_list, list) for m_list in messages_batch):
+                    logger.error("Invalid messages_batch format for JSONL: expected List[List[Dict]]")
+                    return
 
-                # Extract tool calls from messages
-                for message in messages:
-                    if "tool_calls" in message and message["tool_calls"]:
-                        message_tool_count = len(message["tool_calls"])
-                        tool_count += message_tool_count
-                        logger.info(
-                            f"Found {message_tool_count} tool calls in message: {message['tool_calls']}"
-                        )
+                for i, trace_id_str in enumerate(trace_ids):
+                    if i >= len(messages_batch):
+                        logger.warning(f"Skipping trace ID {trace_id_str} due to missing messages list.")
+                        continue
+                    
+                    current_messages = messages_batch[i]
+                    logger.info(f"Processing JSONL trace {i+1}/{len(trace_ids)}: {trace_id_str}")
+                    tool_names_for_trace = {} # Tools for this specific trace
 
-                        for tool_call in message["tool_calls"]:
-                            tool_call = tool_call.get("function", {})
-                            if "name" in tool_call:
-                                tool_info = {
-                                    "name": tool_call["name"],
-                                    "arguments": [
-                                        k for k in tool_call.get("arguments", {}).keys()
-                                    ],
-                                }
-                                tool_names[tool_call["name"]] = tool_info
-                                # Also add to dataset-level registry
-                                all_dataset_tools[tool_call["name"]] = tool_info
-
-                if tool_names:
-                    logger.info(
-                        f"Extracted {len(tool_names)} unique tools from trace {trace_id}: {', '.join(tool_names.keys())}"
-                    )
-
-                    # Update the trace with the extracted tool names
-                    trace = session.query(Trace).filter(Trace.id == trace_id).first()
-                    if trace:
-                        # Initialize metadata dict if needed
-                        if not trace.extra_metadata:
-                            trace.extra_metadata = {}
-
-                        # Merge with existing tool names
-                        existing_tool_names = trace.extra_metadata.get("tool_calls", {})
-                        updated_tool_names = existing_tool_names | tool_names
-
-                        # Log if new tools were added
-                        new_tools = set(updated_tool_names.keys()) - set(
-                            existing_tool_names.keys()
-                        )
-                        if new_tools:
-                            logger.info(
-                                f"Adding {len(new_tools)} new tools to trace {trace_id}"
-                            )
-
-                        # Store in metadata
-                        trace.extra_metadata["tool_calls"] = updated_tool_names
-                        flag_modified(trace, "extra_metadata")
-                        logger.info(f"Updated metadata for trace {trace_id}")
+                    for message_event in current_messages:
+                        if isinstance(message_event, dict) and "tool_calls" in message_event and message_event["tool_calls"]:
+                            for tool_call_data in message_event["tool_calls"]:
+                                function_data = tool_call_data.get("function", {})
+                                if "name" in function_data:
+                                    tool_name = function_data["name"]
+                                    arguments_dict = function_data.get("arguments", {})
+                                    # Ensure arguments is a dict before calling .keys()
+                                    arg_keys = list(arguments_dict.keys()) if isinstance(arguments_dict, dict) else []
+                                    
+                                    tool_info = {"name": tool_name, "arguments": arg_keys}
+                                    tool_names_for_trace[tool_name] = tool_info
+                                    all_dataset_tools[tool_name] = tool_info
+                    
+                    if tool_names_for_trace:
+                        trace = session.query(Trace).filter(Trace.id == UUID(trace_id_str)).first()
+                        if trace:
+                            if not trace.extra_metadata: trace.extra_metadata = {}
+                            existing_tool_calls = trace.extra_metadata.get("tool_calls", {})
+                            updated_tool_calls = {**existing_tool_calls, **tool_names_for_trace}
+                            if updated_tool_calls != existing_tool_calls:
+                                trace.extra_metadata["tool_calls"] = updated_tool_calls
+                                flag_modified(trace, "extra_metadata")
+                                logger.info(f"Updated tool_calls metadata for JSONL trace {trace_id_str}")
+                        else:
+                            logger.warning(f"JSONL Trace {trace_id_str} not found in database for tool_calls update.")
                     else:
-                        logger.warning(f"Trace {trace_id} not found in database")
-                else:
-                    logger.info(f"No tool calls found in trace {trace_id}")
+                        logger.info(f"No tool calls found in JSONL trace {trace_id_str}")
 
-            # Update dataset tool registry if we have a dataset and tools were found
-            if dataset_id and user_id and all_dataset_tools:
+            elif trace_format == "otel":
+                if not all(isinstance(m_str, str) for m_str in messages_batch):
+                    logger.error("Invalid messages_batch format for OTEL: expected List[str]")
+                    return
+
+                for i, trace_id_str in enumerate(trace_ids):
+                    if i >= len(messages_batch):
+                        logger.warning(f"Skipping trace ID {trace_id_str} due to missing OTEL span string.")
+                        continue
+
+                    otel_span_json_str = messages_batch[i]
+                    logger.info(f"Processing OTEL trace {i+1}/{len(trace_ids)}: {trace_id_str}")
+                    tool_names_for_trace = {}
+
+                    try:
+                        otel_span_data = json.loads(otel_span_json_str)
+                        # We don't instantiate OTELSpan Pydantic model here if only accessing attributes via dict.
+                        # However, using the model helps if there's complex logic/validation.
+                        # For direct attribute access:
+                        attributes = otel_span_data.get("attributes", [])
+                        tool_call_func_name_attr = next((attr for attr in attributes if attr.get("key") == "gen_ai.tool_call.function.name"), None)
+                        tool_call_args_attr = next((attr for attr in attributes if attr.get("key") == "gen_ai.tool_call.function.arguments"), None)
+
+                        if tool_call_func_name_attr and tool_call_args_attr:
+                            tool_name = tool_call_func_name_attr.get("value", {}).get("stringValue") # OTel attributes have typed values
+                            arguments_json_str = tool_call_args_attr.get("value", {}).get("stringValue")
+
+                            if tool_name and arguments_json_str:
+                                try:
+                                    args_dict = json.loads(arguments_json_str)
+                                    arg_keys = list(args_dict.keys()) if isinstance(args_dict, dict) else []
+                                    tool_info = {"name": tool_name, "arguments": arg_keys}
+                                    tool_names_for_trace[tool_name] = tool_info
+                                    all_dataset_tools[tool_name] = tool_info # For dataset registry
+                                except json.JSONDecodeError:
+                                    logger.warning(f"Failed to parse OTEL tool call arguments JSON for trace {trace_id_str}, span {otel_span_data.get('span_id')}. Args: {arguments_json_str}")
+                        
+                        if tool_names_for_trace:
+                            trace = session.query(Trace).filter(Trace.id == UUID(trace_id_str)).first()
+                            if trace:
+                                if not trace.extra_metadata: trace.extra_metadata = {}
+                                existing_tool_calls = trace.extra_metadata.get("tool_calls", {})
+                                updated_tool_calls = {**existing_tool_calls, **tool_names_for_trace}
+                                if updated_tool_calls != existing_tool_calls:
+                                    trace.extra_metadata["tool_calls"] = updated_tool_calls
+                                    flag_modified(trace, "extra_metadata")
+                                    logger.info(f"Updated tool_calls metadata for OTEL trace {trace_id_str}")
+                            else:
+                                logger.warning(f"OTEL Trace {trace_id_str} not found in database for tool_calls update.")
+                        else:
+                            logger.info(f"No qualifying tool call attributes found in OTEL trace {trace_id_str}")
+                            
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse OTELSpan JSON string for trace {trace_id_str}: {otel_span_json_str[:200]}")
+                    except Exception as e:
+                        logger.error(f"Error processing OTEL span for tool calls on trace {trace_id_str}: {e}. Span data (first 200 chars): {otel_span_json_str[:200]}")
+            
+            # Common logic for updating dataset tool registry
+            if dataset_id and user_id and all_dataset_tools: # user_id and dataset_id must be valid UUIDs
                 logger.info(
                     f"Updating tool registry for dataset {dataset_id} with {len(all_dataset_tools)} tools"
                 )
 
                 try:
                     # Load the dataset
-                    dataset = load_dataset(
-                        session,
-                        {"id": dataset_id, "user_id": user_id},
-                        user_id,
-                        allow_public=True,
-                        return_user=False,
-                    )
+                    try:
+                        # Ensure dataset_id and user_id are UUIDs for load_dataset
+                        ds_id_uuid = UUID(str(dataset_id)) if not isinstance(dataset_id, UUID) else dataset_id
+                        usr_id_uuid = UUID(str(user_id)) if not isinstance(user_id, UUID) else user_id
 
-                    if dataset:
-                        # Make sure extra_metadata exists
-                        if not dataset.extra_metadata:
-                            dataset.extra_metadata = {}
+                        dataset = load_dataset(
+                            session,
+                            {"id": ds_id_uuid, "user_id": usr_id_uuid}, # Use UUID typed values
+                            usr_id_uuid, # Use UUID typed values
+                            allow_public=True, # Assuming this should be true or configurable
+                            return_user=False,
+                        )
 
-                        # Get existing tool registry
-                        existing_tools = dataset.extra_metadata.get("tool_calls", {})
-
-                        # Merge with new tools
-                        updated_tools = existing_tools | all_dataset_tools
-
-                        # Update dataset metadata
-                        dataset.extra_metadata["tool_calls"] = updated_tools
-                        flag_modified(dataset, "extra_metadata")
-                        logger.info(f"Updated tool registry for dataset {dataset_id}")
-                    else:
-                        logger.warning(f"Dataset {dataset_id} not found in database")
-                except Exception as e:
-                    logger.error(f"Error updating dataset tool registry: {str(e)}")
-            elif dataset_id:
-                logger.info(f"No tools to update for dataset {dataset_id}")
-
-            # Commit all changes at once
-            session.commit()
+                        if dataset:
+                            if not dataset.extra_metadata: dataset.extra_metadata = {}
+                            existing_tools_registry = dataset.extra_metadata.get("tool_calls", {})
+                            updated_tools_registry = {**existing_tools_registry, **all_dataset_tools}
+                            if updated_tools_registry != existing_tools_registry:
+                                dataset.extra_metadata["tool_calls"] = updated_tools_registry
+                                flag_modified(dataset, "extra_metadata")
+                                logger.info(f"Updated tool registry for dataset {ds_id_uuid}")
+                        else:
+                            logger.warning(f"Dataset {ds_id_uuid} not found for tool registry update.")
+                    except ValueError: # Handles issues with UUID conversion if dataset_id/user_id are invalid strings
+                        logger.error(f"Invalid dataset_id '{dataset_id}' or user_id '{user_id}' for tool registry update.")
+                    except Exception as e:
+                        logger.error(f"Error updating dataset tool registry for dataset {dataset_id}: {str(e)}")
+            elif dataset_id: # dataset_id was provided but no tools found across all traces
+                logger.info(f"No new tools found across traces to update for dataset {dataset_id}")
+            
+            session.commit() # Commit all trace metadata changes and dataset registry changes
 
     except Exception as e:
-        logger.error(f"Error in tool call extraction: {str(e)}", exc_info=True)
-        raise
+        logger.error(f"Overall error in extract_and_save_batch_tool_calls: {str(e)}", exc_info=True)
+        # Depending on desired behavior, could re-raise or just log
+        # raise # Uncomment to propagate the error
