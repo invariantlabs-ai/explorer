@@ -65,7 +65,7 @@ async def generate_policies_from_tool_templates(
     with Session(db()) as session:
         # Check if the user has access to the dataset
         logger.info(
-            f"Generating policies from tool templates for dataset {id} through {request_data.apiurl.rstrip('/')}/api/v1/trace-analyzer/generate-policies-from-templates"
+            f"Generating policies from tool templates for dataset {id} through {request_data.apiurl.rstrip('/')}/api/v1/synthesis/generate-policies-from-templates"
         )
         dataset = load_dataset(
             session, {"id": id, "user_id": user_id}, user_id, allow_public=False
@@ -90,7 +90,7 @@ async def generate_policies_from_tool_templates(
             # Send the request to the policy generation endpoint
             async with aiohttp.ClientSession() as client:
                 async with client.post(
-                    f"{request_data.apiurl.rstrip('/')}/api/v1/trace-analyzer/generate-policies-from-templates",
+                    f"{request_data.apiurl.rstrip('/')}/api/v1/synthesis/generate-policies-from-templates",
                     json=template_request,
                     headers={
                         "Authorization": f"Bearer {request_data.apikey}",

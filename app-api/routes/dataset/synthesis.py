@@ -145,7 +145,7 @@ async def queue_policy_synthesis(
                 # Send the request to the policy synthesis endpoint
                 async with aiohttp.ClientSession() as client:
                     async with client.post(
-                        f"{synthesis_request.apiurl.rstrip('/')}/api/v1/trace-analyzer/generate-policy-async",
+                        f"{synthesis_request.apiurl.rstrip('/')}/api/v1/synthesis/generate-policy-async",
                         data=policy_request.model_dump_json(),
                         headers={
                             "Authorization": f"Bearer {synthesis_request.apikey}",
