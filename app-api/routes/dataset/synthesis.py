@@ -153,7 +153,7 @@ async def queue_policy_synthesis(
                     if response.status != 200:
                         raise HTTPException(
                             status_code=response.status,
-                            detail=f"Policy synthesis service returned an error for cluster {cluster_name}.",
+                            detail=f"Policy synthesis service returned an error: {await response.text()}",
                         )
 
                     result = await response.json()
@@ -187,10 +187,13 @@ async def queue_policy_synthesis(
                     session.add(job)
                     created_jobs.append(job)
             except Exception as e:
-                import traceback
-                traceback.print_exc()
+                status_code = 500
+                
+                if isinstance(e, HTTPException):
+                    status_code = e.status_code
+                
                 raise HTTPException(
-                    status_code=500,
+                    status_code=status_code,
                     detail=f"Failed to create policy synthesis job for cluster {cluster_name}: {str(e)}",
                 )
 

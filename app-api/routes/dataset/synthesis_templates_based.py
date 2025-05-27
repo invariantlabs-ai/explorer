@@ -1,10 +1,9 @@
 """Policy synthesis from tool templates for datasets."""
 
 import logging
-from typing import Annotated, Optional, List
+from typing import Annotated
 from uuid import UUID
 
-import aiohttp
 from fastapi import APIRouter, Depends, HTTPException
 from models.datasets_and_traces import db
 from models.queries import load_dataset
@@ -24,7 +23,7 @@ class ToolTemplateGenerationRequest(BaseModel):
     """Request model for policy generation from tool templates."""
 
     apiurl: str
-    apikey: str
+    apikey: str | None = None
 
 
 @router.get("/byid/{id}/templates-based-policies")
@@ -110,10 +109,11 @@ async def generate_policies_from_tool_templates(
             flag_modified(dataset, "extra_metadata")
             session.commit()
 
+
             return policies
 
         except Exception as e:
             raise HTTPException(
-                status_code=500,
+                status_code=getattr(e, 'status_code', 500),
                 detail=f"Failed to generate policies from templates: {str(e)}",
             )

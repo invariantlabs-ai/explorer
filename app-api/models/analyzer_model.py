@@ -180,7 +180,7 @@ class PolicySynthesisRequest(BaseModel):
     apiurl: str = Field(
         ..., description="The URL of the API to send policy synthesis requests to"
     )
-    apikey: str | None = Field(..., description="The API key to use for authentication")
+    apikey: str | None = None
 
 
 JobResponseUnion = (

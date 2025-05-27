@@ -52,6 +52,10 @@ export interface GuardrailSuggestion {
   extra_metadata: any;
 }
 
+function ensureString(value: any): string {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
 /**
  * Content to show in the modal for configuring policy synthesis.
  */
@@ -111,11 +115,15 @@ function PolicySynthesisModalContent(props) {
         setLoadingStatus("");
         props.onSuccess(job_info);
         props.onClose();
+      } else if (response.status === 401) {
+        setLoading(false);
+        setLoadingStatus("");
+        setError("Unauthorized: Please ensure that you have access to the Analysis API.");
       } else {
         const data = await response.json();
         setLoading(false);
         setLoadingStatus("");
-        setError(data.detail || "An error occurred while generating policies");
+        setError(ensureString(data.detail) || "An error occurred while generating policies");
       }
     } catch (error) {
       setLoading(false);
@@ -130,11 +138,12 @@ function PolicySynthesisModalContent(props) {
 
     try {
       await props.generateToolGuardrails();
+      setLoading(false);
       props.onSuccess({});
       props.onClose();
     } catch (error) {
       setLoading(false);
-      setError("An error occurred: " + (error as Error).message);
+      setError((error as Error).message);
     }
   };
 
@@ -325,25 +334,28 @@ export function useToolTemplatePolicies(datasetId) {
       if (!response.ok) {
         // Extract the error details from the response
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.detail || "Failed to generate policies from templates";
+        let errorMessage;
+        
+        if (response.status === 401) {
+          errorMessage = "Unauthorized: Please ensure that you have access to the Analysis API.";
+        } else {
+          errorMessage = errorData.detail || "Failed to generate policies from templates";
+        }
+        
         console.error(errorMessage);
 
-        // Display error message to the user using the app's alert system
-        window.alert(errorMessage);
-
         setIsLoading(false);
-        return;
+        throw new Error(errorMessage);
       }
 
       // After generating, refresh to get the latest policies
       await refreshTemplatePolicies();
     } catch (error) {
       console.error("Error generating policies from tool templates:", error);
-
-      // Show generic error message for unexpected errors
-      window.alert("Failed to generate policies from tool templates");
-
       setIsLoading(false);
+      
+      // Re-throw the error so it can be caught by the calling function
+      throw error;
     }
   };
 
