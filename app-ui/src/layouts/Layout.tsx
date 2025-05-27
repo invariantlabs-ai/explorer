@@ -122,6 +122,9 @@ function SidebarContent(props: {
           <a href="/terms" target="_blank">
             Terms of Use
           </a>
+          <a href="/policy" target="_blank">
+            Privacy Policy
+          </a>
           <RevokeConsent />
         </p>
       </ul>
