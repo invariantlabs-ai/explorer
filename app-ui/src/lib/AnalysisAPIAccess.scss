@@ -88,8 +88,14 @@ div.panel .analysis-config-editor,
     font-size: 8pt;
     padding: 0pt 5pt;
     margin-bottom: 5pt;
+    white-space: wrap;
+    text-align: left;
+    line-height: 1.5;
+    color: black;
+    opacity: 0.5;
     
     a {
+      color: blue;
       opacity: 0.5;
     }
   }

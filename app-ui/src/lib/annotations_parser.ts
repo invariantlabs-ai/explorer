@@ -96,6 +96,11 @@ export class AnnotationsParser {
               extra_metadata: annotation.extra_metadata,
             }
 
+            // if key ends on ':L<line_number>', skip it here, it will be shown as a 'user comment' highlight
+            if (key.match(/:L\d+$/)) {
+              continue;
+            }
+            
             // strip off trailing .content from the key
             if (key.endsWith(".content")) {
               key = key.slice(0, -8);

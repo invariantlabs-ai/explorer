@@ -584,8 +584,10 @@ function highlightsToMap(
     try {
       map[key] = highlightsToMap(highlightsPerKey[key], prefix + key + ".");
     } catch (e: any) {
-      throw new Error(
-        `Failed to parse highlights for key ${prefix + key}: ${e.message}`,
+      console.log(highlightsPerKey[key]);
+      console.error(
+        `Failed to parse highlights for key ${prefix + key}: ${highlightsPerKey[key]}`,
+        e,
       );
     }
   }
