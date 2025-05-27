@@ -33,9 +33,6 @@ async def test_guardrails_flow(context, url, screenshot):
     # set window size
     await page.set_viewport_size({"width": 1920, "height": 1080})
 
-    # go to explorer page
-    await page.goto("http://localhost")
-
     await screenshot(page)
 
     # click the New Dataset button

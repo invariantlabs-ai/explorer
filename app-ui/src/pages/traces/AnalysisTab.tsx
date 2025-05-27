@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Time } from "../../components/Time";
-import { AnalyzerConfigEditor, clientAnalyzerConfig } from "./Analyzer";
 import {
   BsArrowCounterclockwise,
   BsExclamationCircle,
@@ -14,6 +13,7 @@ import {
 
 import "./Analyzer.scss";
 import IssuePieChart from "./Charts";
+import { AnalysisConfigEditor, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 export function useJSONParse<T>(json: string | null): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -96,16 +96,19 @@ export function AnalysisReport(props: {
     return jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
   }, [jobs]);
 
+  const analysisConfig = useAnalysisConfig()[0];
+
   const onStartJob = async () => {
-    const { config, endpoint, apikey } = clientAnalyzerConfig("single");
+    const config = analysisConfig;
+    const endpoint = config.endpoint;
+    const apikey = config.apikey;
 
     const url = `/api/v1/dataset/byid/${props.dataset.id}/analysis`;
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apikey}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         apiurl: endpoint,
@@ -178,25 +181,27 @@ export function AnalysisReport(props: {
                     <BsArrowCounterclockwise />
                   </button>
                 </h1>
-                {showConfigEditor && <AnalyzerConfigEditor configType="single" />}
-                <Jobs jobs={jobs} />
-                <div className="spacer" />
-                {Array.isArray(jobs) && (
-                  <div className="actions">
-                    <CancelButton
-                      datasetId={props.dataset.id}
-                      onCancel={refreshJobs}
-                      disabled={analysisJobs.length === 0}
-                    />
-                    <button
-                      className="inline primary"
-                      onClick={onStartJob}
-                      disabled={analysisJobs.length > 0}
-                    >
-                      Start Analysis
-                    </button>
-                  </div>
-                )}
+                {showConfigEditor && <AnalysisConfigEditor/>}
+                {!showConfigEditor && <>
+                  <Jobs jobs={jobs} />
+                  <div className="spacer" />
+                  {Array.isArray(jobs) && (
+                    <div className="actions">
+                      <CancelButton
+                        datasetId={props.dataset.id}
+                        onCancel={refreshJobs}
+                        disabled={analysisJobs.length === 0}
+                      />
+                      <button
+                        className="inline primary"
+                        onClick={onStartJob}
+                        disabled={analysisJobs.length > 0}
+                      >
+                        Start Analysis
+                      </button>
+                    </div>
+                  )}
+                </>}
               </div>)}
             </button>
         </header>

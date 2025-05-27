@@ -539,6 +539,7 @@ export function AnnotationAugmentedTraceView(props) {
             ))}
             {props.enableAnalyzer && props.toolbarItems?.analyzer && (<button
               className="inline analyzer-button"
+              data-aria-label="open-analyzer-button"   
               onClick={() => setAnalyzerOpen(!analyzerOpen)}
             >
               Analysis

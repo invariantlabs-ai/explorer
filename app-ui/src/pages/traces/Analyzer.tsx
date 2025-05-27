@@ -1,4 +1,3 @@
-import { Editor } from "@monaco-editor/react";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   BsArrowRight,
@@ -19,6 +18,7 @@ import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
 import { useUserInfo } from "../../utils/UserInfo";
+import { AnalysisConfigEditor, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 // Job status values
 export const JOB_STATUS = {
@@ -123,32 +123,6 @@ function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
 }
 
 /**
- * Displays a loading bar while the analysis is running.
- */
-function Loading(props) {
-  return (
-    <div className="output-running">
-      Analyzing...
-      <div className="output-running-bar">
-        <div className="output-running-bar-inner" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Prepares the inputs for an analysis run. This is done client-side using the current user session, so the
- * analysis models do not need to pull in the data themselves (they are stateless).
- *
- * @param traceId ID of the analyzed trace
- * @param dataset_id ID of the dataset containing the trace
- * @param username Username of the current dataset.
- * @param dataset The current dataset name.
- */
-
-export const TEMPLATE_API_KEY = "<api key on the Explorer above>";
-
-/**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.
  *
  * @param config Configuration for the analysis
@@ -163,7 +137,7 @@ function createAnalysis(
   trace_id: string,
   options: string,
   apiurl: string,
-  apikey: string,
+  apikey: string | undefined,
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
@@ -180,9 +154,6 @@ function createAnalysis(
 
   async function startAnalysis() {
     try {
-      if (apikey == TEMPLATE_API_KEY) {
-        throw new Error("Unauthorized: Please provide a valid API key.");
-      }
       const url = `/api/v1/trace/${trace_id}/analysis`;
       setRunning(true);
       setOutput((prev) => []);
@@ -191,7 +162,6 @@ function createAnalysis(
         method: "POST",
         body,
         headers: {
-          Authorization: "Bearer " + apikey,
           "Content-Type": "application/json",
         },
         signal: abortController.signal,
@@ -255,9 +225,7 @@ function createAnalysis(
         return;
       } else if (
         // in case the server says the user is not whitelisted
-        error.message.includes("do not have access to this resource") ||
-        // in case a user just clicks 'Analyze' with an empty config
-        apikey == TEMPLATE_API_KEY
+        error.message.includes("do not have access to this resource")
       ) {
         capture("tried-analysis", { error: error.message });
         alertModelAccess("Please provide a valid API key (see settings)");
@@ -381,73 +349,6 @@ export function AnalyzerPreview(props: {
   );
 }
 
-function parseConfig(analyzerConfig: string | undefined): {
-  config: any;
-  endpoint: string;
-  apikey: string;
-} {
-  let config = "{}" as any;
-  try {
-    config = JSON.parse(analyzerConfig || "{}");
-  } catch (e) {
-    alert("Analyzer: invalid configuration " + e);
-    throw e;
-  }
-
-  let endpoint =
-    config.endpoint || "https://preview-explorer.invariantlabs.ai/";
-  let apikey = config.apikey || "";
-  delete config.apikey;
-  delete config.endpoint;
-  return { config, endpoint, apikey };
-}
-
-export function AnalyzerConfigEditor(props: { configType: string }) {
-  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
-    localStorage.getItem("analyzerConfig-" + props.configType) ||
-      (`{
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}` as string | undefined)
-  );
-
-  const setAnalyzerConfig = (value: string | undefined) => {
-    localStorage.setItem("analyzerConfig-" + props.configType, value || "{}");
-    _setAnalyzerConfig(value);
-  };
-
-  return (
-    <Editor
-      language="json"
-      theme="vs-dark"
-      className="analyzer-config"
-      value={analyzerConfig}
-      onMount={onMountConfigEditor}
-      onChange={(value, model) => setAnalyzerConfig(value)}
-      height="200pt"
-      options={{
-        minimap: {
-          enabled: false,
-        },
-        lineNumbers: "off",
-        wordWrap: "on",
-      }}
-    />
-  );
-}
-
-export function clientAnalyzerConfig(configType: string) {
-  return parseConfig(
-    localStorage.getItem("analyzerConfig-" + configType) || "{}"
-  );
-}
 
 /**
  * Sidebar for the analysis of a trace.
@@ -477,7 +378,6 @@ export function AnalyzerSidebar(props: {
   );
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [status, setStatus] = useState("Ready");
 
   const issues = useIssues(props.annotations);
   const numIssues = issues.filter((issue) => !issue.content.includes("[reasoning]")).length;
@@ -491,6 +391,8 @@ export function AnalyzerSidebar(props: {
 
   const notYetRun =
     storedIsEmpty && outputIsEmpty && !props.running && numIssues === 0;
+
+  const analysisConfig = useAnalysisConfig()[0];
 
   // on unmount, abort the analysis
   useEffect(() => {
@@ -521,7 +423,6 @@ export function AnalyzerSidebar(props: {
       },
     ]);
 
-    const { config, endpoint, apikey } = clientAnalyzerConfig("single");
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
       return;
@@ -530,9 +431,9 @@ export function AnalyzerSidebar(props: {
     try {
       let ctrl = createAnalysis(
         props.traceId,
-        config,
-        endpoint,
-        apikey,
+        analysisConfig as any,
+        analysisConfig.endpoint,
+        analysisConfig.apikey,
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
@@ -544,7 +445,6 @@ export function AnalyzerSidebar(props: {
       props.analyzer.setRunning(false);
       props.analyzer.setError(error + "");
       props.analyzer.setOutput(null);
-      setStatus(error + "");
     }
   }, [
     props.analyzer,
@@ -615,10 +515,10 @@ export function AnalyzerSidebar(props: {
       </h2>
       {settingsOpen && (
         <>
-          <AnalyzerConfigEditor configType="single" />
+          <AnalysisConfigEditor/>
         </>
       )}
-      <div className="status">{status}</div>
+      <div className="status">{props.analyzer.status}</div>
       <div className="issues">
         {!props.running &&
           issues.map((output, i) => {
@@ -687,48 +587,6 @@ export function AnalyzerSidebar(props: {
   );
 }
 
-function onMountConfigEditor(editor, monaco) {
-  // register completion item provider
-  monaco.languages.registerCompletionItemProvider("json", {
-    provideCompletionItems: function (model, position) {
-      return {
-        suggestions: [
-          {
-            label: "local",
-            kind: monaco.languages.CompletionItemKind.Text,
-            insertText: `{
-  "endpoint": "http://host.docker.internal:8010",
-  "apikey": "<api key on the Eplorer above>",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}`,
-          },
-          {
-            label: "preview",
-            kind: monaco.languages.CompletionItemKind.Text,
-            insertText: `{
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}`,
-          },
-        ],
-      };
-    },
-  });
-}
-
 export function Issues(props: { 
   issue: AnalyzerAnnotation, 
   onAcceptAnalysisResult?: (output: any) => void, 
@@ -791,7 +649,7 @@ export function Issues(props: {
 
   // check for the case of errorContent == "reasoning"
   // if so, show a special issue
-  if (errorContent === "reasoning") {
+  if (errorContent === "reasoning" && content.split("|", 2).length > 1) {
     // check if there is an | in the content (if so, split it)
     const splitContent = content.split("|", 2);
     const reasoning = splitContent[1].trim();

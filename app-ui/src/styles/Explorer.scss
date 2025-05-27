@@ -196,6 +196,15 @@ button.inline {
     height: 30pt;
   }
 
+  &.toggleable {
+    border-width: 0pt;
+  }
+
+  &.toggled {
+    border-width: 1pt;
+    background-color: rgb(225, 225, 225);
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1);
   }

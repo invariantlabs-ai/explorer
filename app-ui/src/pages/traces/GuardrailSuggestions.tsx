@@ -13,9 +13,10 @@ import {
   BsX,
 } from "react-icons/bs";
 import { Modal } from "../../components/Modal";
-import { JOB_STATUS, TEMPLATE_API_KEY } from "./Analyzer";
+import { JOB_STATUS } from "./Analyzer";
 import "./Guardrails.scss";
 import { alertModelAccess } from "./ModelModal";
+import { AnalysisConfigEditor } from "../../lib/AnalysisAPIAccess";
 
 // Enable the suggestions section for policy synthesis
 const GUARDRAIL_SUGGESTIONS_ENABLED = true;
@@ -81,10 +82,9 @@ function parseAnalyzerConfig(configType: string = "single"): {
  */
 function PolicySynthesisModalContent(props) {
   // Get the API URL and key from the analyzer config
-  const { endpoint, apikey } = parseAnalyzerConfig();
+  const { endpoint, apikey: apiKey } = parseAnalyzerConfig();
 
   const [apiUrl, setApiUrl] = React.useState(endpoint);
-  const [apiKey, setApiKey] = React.useState(apikey);
   const [loading, setLoading] = React.useState(false);
   const [loadingStatus, setLoadingStatus] = React.useState("");
   const [error, setError] = React.useState("");
@@ -94,14 +94,6 @@ function PolicySynthesisModalContent(props) {
   const onGenerateFromAnalysis = async () => {
     setLoading(true);
     setError("");
-
-    if (apiKey === TEMPLATE_API_KEY) {
-      setLoading(false);
-      alertModelAccess(
-        "Please provide a valid API key in the Analyzer settings"
-      );
-      return;
-    }
 
     try {
       // First, cancel any in-progress policy synthesis jobs
@@ -161,14 +153,6 @@ function PolicySynthesisModalContent(props) {
     setLoading(true);
     setError("");
 
-    if (apiKey === TEMPLATE_API_KEY) {
-      setLoading(false);
-      alertModelAccess(
-        "Please provide a valid API key in the Analyzer settings"
-      );
-      return;
-    }
-
     try {
       await props.generateToolGuardrails();
       props.onSuccess({});
@@ -221,10 +205,9 @@ function PolicySynthesisModalContent(props) {
         </label>
       </p>
 
-      <div className="banner-note">
-        <BsInfoCircle /> Guardrail suggestions are derived from tool definitions
-        and historic data.
-      </div>
+      <AnalysisConfigEditor collapsed={true}/>
+      
+      <p/>
 
       {loading && loadingStatus && (
         <div className="banner-note info">
@@ -242,9 +225,7 @@ function PolicySynthesisModalContent(props) {
               ? onGenerateFromAnalysis
               : onGenerateFromTools
           }
-          disabled={
-            loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY
-          }
+          disabled={loading || !apiUrl}
         >
           {loading ? loadingStatus || "Generating..." : "Generate Suggestions"}
         </button>
@@ -344,15 +325,6 @@ export function useToolTemplatePolicies(datasetId) {
 
       // Get the API URL and key from the analyzer config
       const { endpoint, apikey } = parseAnalyzerConfig();
-
-      // Validate API key before making the request
-      if (!apikey || apikey === TEMPLATE_API_KEY) {
-        console.error(
-          "Valid API key is required for template policy generation"
-        );
-        setIsLoading(false);
-        return;
-      }
 
       // Prepare the request payload
       const payload = {

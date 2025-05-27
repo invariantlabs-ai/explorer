@@ -3,6 +3,7 @@
 import json
 import os
 import uuid
+import aiohttp
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List, Any
 from uuid import UUID
@@ -40,6 +41,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from util.util import delete_images, parse_and_update_messages
 from util.validation import validate_annotation
+
+from util.analysis_api import AnalysisClient
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -272,94 +275,75 @@ def annotation_from_chunk(chunk: str) -> AnalyzerAnnotation:
 async def analyze_trace(
     id: str,
     analysis_request: AnalysisRequest,
+    request: Request,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
     """Analyze a trace using the Analysis model."""
-    try:
-        with Session(db()) as session:
-            trace, user = load_trace(
-                session, id, user_id, allow_public=True, allow_shared=True, return_user=True
-            )
-            trace_exporter = AnalyzerTraceExporter(
-                user_id=str(user_id),
-                dataset_id=str(trace.dataset_id),
-            )
-            input_sample, annotated_samples = await trace_exporter.analyzer_model_input(
-                session=session,
-                input_trace_id=id,
-            )
-            # delete existing annotations
-            _ = await replace_annotations(
-                session,
-                id,
-                user_id,
-                "analyzer-model",
-                [],
-            )
-
-        sar = SingleAnalysisRequest(
-            input=input_sample[0].trace,
-            annotated_samples=annotated_samples,
-            model_params=analysis_request.options.model_params,
-            debug_options=analysis_request.options.debug_options,
-            id=input_sample[0].id,
+    with Session(db()) as session:
+        trace, user = load_trace(
+            session, id, user_id, allow_public=True, allow_shared=True, return_user=True
+        )
+        trace_exporter = AnalyzerTraceExporter(
+            user_id=str(user_id),
+            dataset_id=str(trace.dataset_id),
+        )
+        input_sample, annotated_samples = await trace_exporter.analyzer_model_input(
+            session=session,
+            input_trace_id=id,
+        )
+        # delete existing annotations
+        _ = await replace_annotations(
+            session,
+            id,
+            user_id,
+            "analyzer-model",
+            [],
         )
 
-        async def stream_response():
-            url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
-            try:
-                # get existing annotations
-                with Session(db()) as session:
-                    annotations: list[Annotation] = load_annotations(session, id)
-                
-                def already_stored(analyzer_annotation: AnalyzerAnnotation) -> bool:
-                    for annotation, user in annotations:
-                        if (
-                            annotation.content == analyzer_annotation.content
-                            and annotation.address == analyzer_annotation.location
-                        ):
-                            return True
-                    return False
+    sar = SingleAnalysisRequest(
+        input=input_sample[0].trace,
+        annotated_samples=annotated_samples,
+        model_params=analysis_request.options.model_params,
+        debug_options=analysis_request.options.debug_options,
+        id=input_sample[0].id,
+    )
 
-                async with httpx.AsyncClient() as client:
-                    async with client.stream(
-                        method="POST",
-                        url=url,
-                        json=sar.model_dump(),
-                        headers={"Authorization": f"Bearer {analysis_request.apikey}"},
-                        timeout=30,
-                    ) as streaming_response:
-                        async for chunk in streaming_response.aiter_text():
-                            # TODO: replace with robust chunk parsing
-                            # split by lines
-                            for line in chunk.strip().split("\n"):
-                                annotation = annotation_from_chunk(line)
-                                if isinstance(annotation, AnalyzerAnnotation) and not already_stored(
-                                    annotation
-                                ):
-                                    with Session(db()) as session:
-                                        new_annotation = Annotation(
-                                            trace_id=UUID(id),
-                                            user_id=user_id,
-                                            address=annotation.location or "",
-                                            content=annotation.content,
-                                            extra_metadata={
-                                                "source": "analyzer-model",
-                                                "severity": annotation.severity,
-                                            },
-                                        )
-                                        session.add(new_annotation)
-                                        session.commit()
-                                    yield "data: update\n\n"
-                            yield chunk
-            except Exception:
-                error_message = f"Failed to connect to the Analysis service at: {url}"
-                yield f"data: {json.dumps({'error': error_message})}\n\n".encode("utf-8")
-
-        return StreamingResponse(stream_response(), media_type="text/event-stream")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    async def stream_response():
+        try:
+            async with AnalysisClient(analysis_request.apiurl, apikey=analysis_request.apikey, request=request) as client:
+                async for chunk in client.stream(
+                    method="POST",
+                    url="/api/v1/analysis/stream",
+                    json=sar.model_dump(),
+                    timeout=30
+                ):
+                    # TODO: replace with robust chunk parsing
+                    # split by lines
+                    for line in chunk.strip().split("\n"):
+                        annotation = annotation_from_chunk(line)
+                        if isinstance(annotation, AnalyzerAnnotation):
+                            with Session(db()) as session:
+                                new_annotation = Annotation(
+                                    trace_id=UUID(id),
+                                    user_id=user_id,
+                                    address=annotation.location or "",
+                                    content=annotation.content,
+                                    extra_metadata={
+                                        "source": "analyzer-model",
+                                        "severity": annotation.severity,
+                                    },
+                                )
+                                session.add(new_annotation)
+                                session.commit()
+                            yield "data: update\n\n"
+                    yield chunk
+        except aiohttp.ClientResponseError as e:
+            # emit error as part of stream
+            yield "data: " + json.dumps({
+                "error": f"{e.message}",
+                "status": e.status,
+            }) + "\n\n"
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 async def replace_annotations(
@@ -414,12 +398,10 @@ async def replace_annotations(
     
     def already_stored(analyzer_issue: dict) -> bool:
         for annotation, user in existing_annotations:
-            print("analyzer issue", analyzer_issue)
             if (
                 annotation.content == analyzer_issue.get("content", "")
                 and annotation.address == analyzer_issue.get("location", "")
             ):
-                print("skipping already stored annotation", analyzer_issue)
                 return True
         return False
 

@@ -42,7 +42,7 @@ async def playwright(scope="session"):
 
 @pytest.fixture
 async def browser(playwright, scope="session"):
-    browser = await playwright.firefox.launch(headless=True)
+    browser = await playwright.firefox.launch(headless=os.getenv("HEADLESS", "1") == "1")
     yield browser
     await browser.close()
 
@@ -127,6 +127,10 @@ def data_abc_with_trace_metadata():
     with open("./data/abc_with_trace_metadata.jsonl", "r") as f:
         return f.read()
 
+@pytest.fixture
+def data_trace_for_analysis():
+    with open("./data/trace_for_analysis.jsonl", "r") as f:
+        return f.read()
 
 @pytest.fixture
 def data_abc():

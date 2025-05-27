@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from models.analyzer_model import (
     JobType,
     PolicyGenerationRequest,
-    PolicySynthesisRequest,
+    PolicySynthesisRequest
 )
 from models.datasets_and_traces import Dataset, DatasetJob, User, db
 from models.queries import AnalyzerTraceExporter, load_jobs
@@ -21,19 +21,23 @@ from routes.jobs import cancel_job, check_all_jobs
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-router = APIRouter()
+from util.analysis_api import AnalysisClient
 
+router = APIRouter()
 
 @router.post("/byid/{id}/policy-synthesis")
 async def queue_policy_synthesis(
     id: str,
     synthesis_request: PolicySynthesisRequest,
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
+    request: Request,
     cluster_id: Optional[str] = None,
 ):
     """
     Queue a policy synthesis job for a dataset based on clusters from a previous analysis.
+    
     If cluster_id is provided, only generate policy for that specific cluster.
+    
     Otherwise, generate policies for all clusters.
     """
     with Session(db()) as session:
@@ -142,53 +146,49 @@ async def queue_policy_synthesis(
                     problem_description=problem_description, traces=cluster_traces
                 )
 
-                # Send the request to the policy synthesis endpoint
-                async with aiohttp.ClientSession() as client:
-                    async with client.post(
-                        f"{synthesis_request.apiurl.rstrip('/')}/api/v1/synthesis/generate-policy-async",
-                        data=policy_request.model_dump_json(),
-                        headers={
-                            "Authorization": f"Bearer {synthesis_request.apikey}",
-                            "Content-Type": "application/json",
-                        },
-                    ) as response:
-                        if response.status != 200:
-                            raise HTTPException(
-                                status_code=response.status,
-                                detail=f"Policy synthesis service returned an error for cluster {cluster_name}.",
-                            )
+                # call Invariant Analysis API to generate the policy
+                async with AnalysisClient(synthesis_request.apiurl.rstrip('/'), apikey=synthesis_request.apikey, request=request) as client:
+                    response = await client.post("/api/v1/trace-analyzer/generate-policy-async", json=policy_request.model_dump())
 
-                        result = await response.json()
-                        policy_job_id = UUID(result)
-
-                        # Create DatasetJob object to track this job
-                        job_metadata = {
-                            "name": f"Policy Synthesis for {cluster_name}",
-                            "type": JobType.POLICY_SYNTHESIS.value,
-                            "created_on": str(
-                                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            ),
-                            "endpoint": synthesis_request.apiurl,
-                            "status": "pending",
-                            "job_id": str(policy_job_id),
-                            "cluster_name": cluster_name,
-                        }
-
-                        secret_metadata = {
-                            "apikey": synthesis_request.apikey,
-                        }
-
-                        job = DatasetJob(
-                            id=uuid.uuid4(),
-                            user_id=user_id,
-                            dataset_id=id,
-                            extra_metadata=job_metadata,
-                            secret_metadata=secret_metadata,
+                    if response.status != 200:
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail=f"Policy synthesis service returned an error for cluster {cluster_name}.",
                         )
 
-                        session.add(job)
-                        created_jobs.append(job)
+                    result = await response.json()
+                    policy_job_id = UUID(result)
+
+                    # Create DatasetJob object to track this job
+                    job_metadata = {
+                        "name": f"Policy Synthesis for {cluster_name}",
+                        "type": JobType.POLICY_SYNTHESIS.value,
+                        "created_on": str(
+                            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        ),
+                        "endpoint": synthesis_request.apiurl,
+                        "status": "pending",
+                        "job_id": str(policy_job_id),
+                        "cluster_name": cluster_name,
+                    }
+
+                    secret_metadata = {
+                        "apikey": synthesis_request.apikey,
+                    }
+
+                    job = DatasetJob(
+                        id=uuid.uuid4(),
+                        user_id=user_id,
+                        dataset_id=id,
+                        extra_metadata=job_metadata,
+                        secret_metadata=secret_metadata,
+                    )
+
+                    session.add(job)
+                    created_jobs.append(job)
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Failed to create policy synthesis job for cluster {cluster_name}: {str(e)}",
@@ -237,7 +237,7 @@ async def cancel_policy_synthesis(
 
         # Try to cancel all pending jobs
         for job in pending_jobs:
-            await cancel_job(session, job)
+            await cancel_job(session, job, request)
 
         # Wait and check at most 2s
         wait_and_check_timeout = 2
@@ -246,7 +246,7 @@ async def cancel_policy_synthesis(
         # Wait and check for job status changes to be processed
         while len(pending_jobs) > 0:
             # Set off background task for checking jobs
-            asyncio.create_task(check_all_jobs())
+            asyncio.create_task(check_all_jobs(jwt=request.cookies.get('jwt')))
 
             # Get pending jobs again
             jobs_query = [
@@ -285,6 +285,7 @@ async def get_generated_policies(
     id: str,
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
     min_detection_rate: float = 0.0,
+    request: Request = None,    
     success_only: bool = False,
 ):
     """
@@ -296,7 +297,7 @@ async def get_generated_policies(
     """
     # refresh job statuses when client requests this endpoint (e.g. to process potentially
     # completed jobs, since the last check)
-    await check_all_jobs()
+    await check_all_jobs(jwt=request.cookies.get('jwt') if request else None)
 
     with Session(db()) as session:
         # Check if the user has access to the dataset

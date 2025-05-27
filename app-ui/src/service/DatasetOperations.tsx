@@ -14,7 +14,7 @@ export function useDatasetList(
       kind,
       ...(limit !== null && { limit: limit.toString() }),
       ...(query && { q: query }),
-      ...(!includeMetadata && { metadata: 'false'})
+      ...(!includeMetadata && { include_metadata: 'false'})
     }).toString();
 
     sharedFetch(`/api/v1/dataset/list?${queryParams}`)
