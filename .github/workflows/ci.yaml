@@ -29,6 +29,7 @@ jobs:
         run: ./run.sh tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          INVARIANT_API_KEY: ${{ secrets.INVARIANT_API_KEY }}
           PRODUCTION_EXPLORER_KEY: ${{ secrets.PRODUCTION_EXPLORER_KEY }}
 
       - name: tar screenshots
