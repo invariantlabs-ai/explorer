@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, List, Literal
 from uuid import UUID
+from typing import Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -9,6 +10,7 @@ class Annotation(BaseModel):
     content: str
     location: str | None = None
     severity: float | None
+    status: str | None = None
 
 
 class Sample(BaseModel):
@@ -88,6 +90,8 @@ class SingleAnalysisRequest(BaseModel):
     annotated_samples: list[Sample]
     model_params: ModelParams
     debug_options: DebugOptions | None = None
+    # id of the input trace (if present)
+    id: str | None = None
 
 
 class TraceAnalysisResult(BaseModel):
@@ -176,7 +180,7 @@ class PolicySynthesisRequest(BaseModel):
     apiurl: str = Field(
         ..., description="The URL of the API to send policy synthesis requests to"
     )
-    apikey: str = Field(..., description="The API key to use for authentication")
+    apikey: str | None = None
 
 
 JobResponseUnion = (
@@ -273,7 +277,22 @@ class AnalysisRequestOptions(BaseModel):
 class AnalysisRequest(BaseModel):
     # model service
     apiurl: str
-    apikey: str
+    apikey: str | None = None
 
     # analysis arguments
     options: AnalysisRequestOptions
+
+
+def cookies_xor_header(apikey: str | None = None, jwt: Optional[str] = None, default_headers: Optional[dict] = None) -> dict:
+    """
+    Helper function to create headers for analysis model requests.
+
+    Uses either an API key or JWT token for authentication (never both).
+    """
+    request_headers = default_headers.copy() if default_headers else {}
+    request_cookies = {}
+    if apikey:
+        request_headers["Authorization"] = f"Bearer {apikey}"
+    elif jwt:
+        request_headers["Cookie"] = f"jwt={jwt}"
+    return {'headers': request_headers, 'cookies': request_cookies}

@@ -955,9 +955,11 @@ button.tool {
   }
 
   .error {
-    color: #ed707b;
-    font-size: 18pt;
-    border-left: 2pt solid #ed707b;
+    font-size: 12pt;
+    padding: 5pt;
+    background-color: #ed707b;
+    color: white;
+    border-radius: 5pt;
     padding-left: 10pt;
     display: block;
     margin-bottom: 15pt;
@@ -3431,4 +3433,8 @@ span.highlight-dot {
       width: 100%;
     }
   }
+}
+
+#highlight-tooltip {
+  z-index: 9999999;
 }

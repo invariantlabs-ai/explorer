@@ -14,6 +14,7 @@ from models.queries import AnalyzerTraceExporter, load_jobs
 from routes.auth import UserIdentity
 from routes.jobs import cancel_job, check_all_jobs
 from sqlalchemy.orm import Session
+from util.analysis_api import AnalysisClient
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ async def get_dataset_jobs(
     """
     with Session(db()) as session:
         # create background task to check all jobs for progress
-        task = asyncio.create_task(check_all_jobs())
+        task = asyncio.create_task(check_all_jobs(request.cookies.get("jwt")))
         # see if we can already get some result as part of this request
         # (but don't wait for it too long, if it takes too long, we'll
         # just return the job status as is)
@@ -62,7 +63,7 @@ async def cancel_analysis(
 
         # try to cancel all pending jobs
         for job in pending_jobs:
-            await cancel_job(session, job)
+            await cancel_job(session, job, request.cookies.get("jwt"))
 
         # wait and check at most 2s
         wait_and_check_timeout = 2
@@ -97,6 +98,7 @@ async def cancel_analysis(
 async def queue_analysis(
     id: str,
     analysis_request: AnalysisRequest,
+    request: Request,
     user_id: Annotated[UUID | None, Depends(UserIdentity)],
 ):
     """
@@ -116,7 +118,6 @@ async def queue_analysis(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        username = user.username
         # first check for pending dataset jobs of type 'analysis'
         pending_jobs = [
             job
@@ -155,54 +156,49 @@ async def queue_analysis(
         # keep api key as secret metadata in the DB, so we can check and
         # retrieve the job status later (deleted once job is done)
         secret_metadata = {
-            "apikey": analysis_request.apikey,
+            "apikey": analysis_request.apikey or None,
         }
+
         try:
-            async with aiohttp.ClientSession() as client:
+            async with AnalysisClient(analysis_request.apiurl.rstrip('/'), apikey=analysis_request.apikey, request=request) as client:
                 # print the following request as curl
-                async with client.post(
-                    f"{analysis_request.apiurl.rstrip('/')}/api/v1/analysis/job",
-                    data=job_request.model_dump_json(),
-                    headers={
-                        "Authorization": f"Bearer {analysis_request.apikey}",
-                        "Content-Type": "application/json",
-                    },
-                ) as response:
-                    # if status is bad, raise exception
-                    if response.status != 200:
-                        raise HTTPException(
-                            status_code=response.status,
-                            detail="Analysis service returned an error: "
-                            + str(response.status),
-                        )
-                    result = await response.json()
-                    job_id = UUID(result)
-
-                    # create DatasetJob object to keep track of this job
-
-                    # basic job metadata
-                    job_metadata = {
-                        "name": "Analysis Run",
-                        "type": JobType.ANALYSIS.value,
-                        "created_on": str(
-                            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        ),
-                        "endpoint": analysis_request.apiurl,
-                        "status": "pending",
-                        "job_id": str(job_id),
-                    }
-
-                    job = DatasetJob(
-                        id=uuid.uuid4(),
-                        user_id=user_id,
-                        dataset_id=id,
-                        extra_metadata=job_metadata,
-                        secret_metadata=secret_metadata,
+                response = await client.post("/api/v1/analysis/job", data=job_request.model_dump_json(), headers={"Content-Type": "application/json"})
+                
+                # if status is bad, raise exception
+                if response.status != 200:
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail="Analysis service returned an error: "
+                        + str(response.status),
                     )
-                    session.add(job)
-                    session.commit()
+                result = await response.json()
+                job_id = UUID(result)
 
-                    return job.to_dict()
+                # create DatasetJob object to keep track of this job
+
+                # basic job metadata
+                job_metadata = {
+                    "name": "Analysis Run",
+                    "type": JobType.ANALYSIS.value,
+                    "created_on": str(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    ),
+                    "endpoint": analysis_request.apiurl,
+                    "status": "pending",
+                    "job_id": str(job_id),
+                }
+
+                job = DatasetJob(
+                    id=uuid.uuid4(),
+                    user_id=user_id,
+                    dataset_id=id,
+                    extra_metadata=job_metadata,
+                    secret_metadata=secret_metadata,
+                )
+                session.add(job)
+                session.commit()
+
+                return job.to_dict()
         except Exception as e:
             raise HTTPException(
                 status_code=500,

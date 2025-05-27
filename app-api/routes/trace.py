@@ -3,12 +3,14 @@
 import json
 import os
 import uuid
+import aiohttp
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List, Any
 from uuid import UUID
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi import Depends, FastAPI, HTTPException, Request,  BackgroundTasks
+from sqlalchemy import or_
 from fastapi.responses import Response, StreamingResponse
 from logging_config import get_logger
 from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
@@ -39,6 +41,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from util.util import delete_images, parse_and_update_messages
 from util.validation import validate_annotation
+
+from util.analysis_api import AnalysisClient
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -274,7 +278,7 @@ async def analyze_trace(
     request: Request,
     user_id: Annotated[UUID, Depends(AuthenticatedUserIdentity)],
 ):
-    """Analyze a trace using the analyzer model."""
+    """Analyze a trace using the Analysis model."""
     with Session(db()) as session:
         trace, user = load_trace(
             session, id, user_id, allow_public=True, allow_shared=True, return_user=True
@@ -301,55 +305,44 @@ async def analyze_trace(
         annotated_samples=annotated_samples,
         model_params=analysis_request.options.model_params,
         debug_options=analysis_request.options.debug_options,
+        id=input_sample[0].id,
     )
 
-
-    headers = {}
-    cookies = None
-    if analysis_request.apikey:
-        headers["Authorization"] = f"Bearer {analysis_request.apikey}"
-    else:
-        cookies = {'jwt': request.cookies.get('jwt')}
-
     async def stream_response():
-        url = f"{analysis_request.apiurl}/api/v1/analysis/stream"
         try:
-            async with httpx.AsyncClient() as client:
-                async with client.stream(
+            async with AnalysisClient(analysis_request.apiurl, apikey=analysis_request.apikey, request=request) as client:
+                async for chunk in client.stream(
                     method="POST",
-                    url=url,
+                    url="/api/v1/analysis/stream",
                     json=sar.model_dump(),
-                    headers=headers,
-                    cookies=cookies,
-                    timeout=30,
-                ) as streaming_response:
-                    async for chunk in streaming_response.aiter_text():
-                        # TODO: replace with robust chunk parsing
-                        # split by lines
-                        for line in chunk.strip().split("\n"):
-                            annotation = annotation_from_chunk(line)
-                            if isinstance(annotation, AnalyzerAnnotation):
-                                with Session(db()) as session:
-                                    new_annotation = Annotation(
-                                        trace_id=UUID(id),
-                                        user_id=user_id,
-                                        address=annotation.location or "",
-                                        content=annotation.content,
-                                        extra_metadata={
-                                            "source": "analyzer-model",
-                                            "severity": annotation.severity,
-                                        },
-                                    )
-                                    session.add(new_annotation)
-                                    session.commit()
-                                yield "data: update\n\n"
-                        yield chunk
-        except httpx.ConnectError:
-            error_message = f"Failed to connect to analyzer model at: {url}"
-            yield f"data: {json.dumps({'error': error_message})}\n\n".encode("utf-8")
-
-    print("streaming response")
-
+                    timeout=30
+                ):
+                    # TODO: replace with robust chunk parsing
+                    # split by lines
+                    for line in chunk.strip().split("\n"):
+                        annotation = annotation_from_chunk(line)
+                        if isinstance(annotation, AnalyzerAnnotation):
+                            with Session(db()) as session:
+                                new_annotation = Annotation(
+                                    trace_id=UUID(id),
+                                    user_id=user_id,
+                                    address=annotation.location or "",
+                                    content=annotation.content,
+                                    extra_metadata={
+                                        "source": "analyzer-model",
+                                        "severity": annotation.severity,
+                                    },
+                                )
+                                session.add(new_annotation)
+                                session.commit()
+                            yield "data: update\n\n"
+                    yield chunk
+        except aiohttp.ClientResponseError as e:
+            # emit error as part of stream
+            yield "data: " + json.dumps({
+                "error": f"{e.message}",
+                "status": e.status,
+            }) + "\n\n"
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
@@ -359,34 +352,67 @@ async def replace_annotations(
     user_id: UUID,
     source: str,
     annotations: List[Dict],
+    # whether to exclude annotations which have been marked as 'accepted' or 'rejected' by the user
+    exclude_accepted_or_rejected: bool = True,
 ) -> Dict[str, int]:
     """
-    Replaces all annotations of a given source with new ones.
+    Replaces all annotations of a given source with new ones (except accepted ones).
 
     This is used, e.g. to update the analysis model output, once a new run has completed.
     """
-
     if not isinstance(annotations, list):
         raise ValueError("Annotations must be a list")
     if not isinstance(source, str):
         raise ValueError("Source must be a string")
 
-    num_deleted = (
-        session.query(Annotation)
+    query = (session.query(Annotation)
         .filter(
             Annotation.trace_id == trace_id,
             Annotation.extra_metadata.op("->>")("source") == source,
         )
-        .delete()
     )
+
+    # keep user-confirmed/rejected annotations, if exclude_accepted_or_rejected is True
+    if exclude_accepted_or_rejected:
+        query = query.filter(
+            or_(
+                and_(
+                    Annotation.extra_metadata.op("->>")("status") != "accepted",
+                    Annotation.extra_metadata.op("->>")("status") != "rejected",
+                ),
+                Annotation.extra_metadata.op("->>")("status") == None,
+            )
+        )
+    
+    # delete all annotations of this source
+    num_deleted = query.delete()
+
+    # commit the changes
+    session.commit()
+
+    # get existing annotations
+    with Session(db()) as session:
+        existing_annotations: list[Annotation] = load_annotations(session, trace_id)
+    
+    def already_stored(analyzer_issue: dict) -> bool:
+        for annotation, user in existing_annotations:
+            if (
+                annotation.content == analyzer_issue.get("content", "")
+                and annotation.address == analyzer_issue.get("location", "")
+            ):
+                return True
+        return False
 
     num_inserted = len(annotations)
 
     for annotation in annotations:
+        if already_stored(annotation):
+            continue
+        
         new_annotation = Annotation(
             trace_id=trace_id,
             user_id=user_id,
-            address=annotation.get("address"),
+            address=annotation.get("address", "messages[0]") or "messages[0]",
             content=str(annotation.get("content")),
             extra_metadata=annotation.get("extra_metadata"),
         )
@@ -496,8 +522,12 @@ async def update_annotation(
 
         payload = await request.json()
         content = payload.get("content")
+        extra_metadata = payload.get("extra_metadata", {})
+        updated_metadata = {**annotation.extra_metadata, **extra_metadata}
 
         annotation.content = content
+        annotation.extra_metadata = updated_metadata
+
         session.commit()
         return annotation_to_json(annotation, user)
 

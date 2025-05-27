@@ -23,16 +23,16 @@ export function InvariantIcon() {
           y2="4.11940737%"
           id="linearGradient-1"
         >
-          <stop stop-color="#000000" offset="0%"></stop>
-          <stop stop-color="#000000" offset="100%"></stop>
+          <stop stopColor="currentColor" offset="0%"></stop>
+          <stop stopColor="currentColor" offset="50%"></stop>
         </linearGradient>
       </defs>
       <g
         id="Page-1"
         stroke="none"
-        stroke-width="1"
+        strokeWidth="1"
         fill="none"
-        fill-rule="evenodd"
+        fillRule="evenodd"
       >
         <g
           id="Group-2"

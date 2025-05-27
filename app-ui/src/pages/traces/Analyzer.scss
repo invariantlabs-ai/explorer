@@ -187,19 +187,26 @@ span.secondary-flashing {
   }
 
   .issue {
-    background-color: rgb(245, 245, 245);
+    background-color: rgba(245, 245, 245, 0.463);
+    border: 1px solid #ebebeb;
     margin-top: 5pt;
     border-radius: 5pt;
     padding: 5pt;
+    position: relative;
 
     font-size: 11pt;
     line-height: 1.5;
 
-    // animate in
-    animation: slideIn 0.2s;
-    position: relative;
-    right: -400pt;
-    animation-fill-mode: forwards;
+    s {
+      display: inline;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    &.rejected {
+      opacity: 0.9 !important;
+    }
 
     &:hover {
       background-color: #f0f0f0;
@@ -222,6 +229,23 @@ span.secondary-flashing {
     padding-top: 5pt;
     padding-left: 5pt;
     padding-right: 5pt;
+
+    h3 {
+      margin: 0pt;
+      padding: 0pt;
+      font-size: 11pt;
+      font-weight: bold;
+      margin-top: 5pt;
+
+      svg {
+        margin-left: 5pt;
+        margin-right: 5pt;
+        width: 13pt;
+        height: 11pt;
+        position: relative;
+        top: 1pt;
+      }
+    }
   }
 
   .severity {
@@ -314,9 +338,10 @@ span.secondary-flashing {
     background-color: #e6e6ff;
     padding: 2pt 5pt;
     font-size: 8pt;
-    border-radius: 50pt;
+    border-radius: 3pt;
     user-select: none;
     -webkit-user-select: none;
+    margin-right: 1pt;
 
     &:hover {
       background-color: #d9d9ff;
@@ -504,8 +529,8 @@ button.analysis-button {
   color: black;
   font-weight: normal;
 
-  .analyzer-config {
-    margin-bottom: 10pt;
+  .analysis-config-editor {
+    border-radius: 4pt;
   }
 
   h1 {
@@ -538,6 +563,7 @@ button.analysis-button {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+
 
     button {
       height: 30pt;
@@ -676,5 +702,104 @@ button.analysis-button {
     color: black;
     opacity: 1;
     font-size: 12pt;
+  }
+}
+
+.issue-content .icon {
+  display: inline-block;
+  margin-right: 2pt;
+  position: relative;
+  top: 2pt;
+}
+
+.issue-header .actions {
+  display: flex;
+  justify-content: flex-end;
+
+  opacity: 0.0;
+  margin-top: -19pt;
+
+  button {
+    border-radius: 4pt;
+    height: 22pt;
+
+    svg {
+      width: 12pt;
+      height: 9pt;
+      position: relative;
+      top: 0.5pt;
+    }
+  }
+}
+
+.issue:hover, .issue.rejected:hover {
+  .actions {
+    opacity: 1.0;
+    transition: opacity 0.1s;
+  }
+}
+
+.issue:hover .issue-status {
+  display: none;
+}
+
+.issue .issue-status {
+  position: absolute;
+  bottom: 7.5pt;
+  right: 10pt;
+  
+  &.accepted {
+    color: green;
+  }
+
+  &.rejected {
+    color: red;
+  }
+
+  svg {
+    margin-right: 3pt;
+    width: 10pt;
+    height: 12pt;
+    position: relative;
+    top: 2pt;
+  }
+}
+
+.issue.reasoning {
+  margin-bottom: 5pt;
+  margin-top: -5pt;
+  background-color: transparent;
+  border: none;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 10pt;
+
+  &:hover {
+    background-color: transparent;
+
+    b {
+      opacity: 0.5;
+    }
+  }
+  
+  &.expanded {
+    background-color: #f0f0f0;
+    
+    b {
+      margin-bottom: 5pt;
+    }
+  }
+
+  b {
+    opacity: 0.8;
+    display: block;
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  svg {
+    position: relative;
+    top: 2pt;
+    margin-left: 2pt;
   }
 }

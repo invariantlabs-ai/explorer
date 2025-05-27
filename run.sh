@@ -68,6 +68,7 @@ tests() {
     --network host \
     -e PRODUCTION_EXPLORER_KEY=${PRODUCTION_EXPLORER_KEY} \
     -e OPENAI_API_KEY=${OPENAI_API_KEY} \
+    -e INVARIANT_API_KEY=${INVARIANT_API_KEY} \
     explorer-test $@
 }
 

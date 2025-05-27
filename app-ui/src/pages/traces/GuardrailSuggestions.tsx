@@ -13,9 +13,9 @@ import {
   BsX,
 } from "react-icons/bs";
 import { Modal } from "../../components/Modal";
-import { JOB_STATUS, TEMPLATE_API_KEY } from "./Analyzer";
+import { JOB_STATUS } from "./Analyzer";
 import "./Guardrails.scss";
-import { alertModelAccess } from "./ModelModal";
+import { AnalysisConfigEditor, getAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 // Enable the suggestions section for policy synthesis
 const GUARDRAIL_SUGGESTIONS_ENABLED = true;
@@ -52,28 +52,8 @@ export interface GuardrailSuggestion {
   extra_metadata: any;
 }
 
-/**
- * Parse the analyzer configuration from localStorage
- */
-function parseAnalyzerConfig(configType: string = "single"): {
-  endpoint: string;
-  apikey: string;
-} {
-  try {
-    const storedConfig =
-      localStorage.getItem("analyzerConfig-" + configType) || "{}";
-    const config = JSON.parse(storedConfig);
-    const endpoint =
-      config.endpoint || "https://preview-explorer.invariantlabs.ai/";
-    const apikey = config.apikey || "";
-    return { endpoint, apikey };
-  } catch (e) {
-    console.error("Failed to parse analyzer config:", e);
-    return {
-      endpoint: "https://preview-explorer.invariantlabs.ai/",
-      apikey: "",
-    };
-  }
+function ensureString(value: any): string {
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 /**
@@ -81,10 +61,6 @@ function parseAnalyzerConfig(configType: string = "single"): {
  */
 function PolicySynthesisModalContent(props) {
   // Get the API URL and key from the analyzer config
-  const { endpoint, apikey } = parseAnalyzerConfig();
-
-  const [apiUrl, setApiUrl] = React.useState(endpoint);
-  const [apiKey, setApiKey] = React.useState(apikey);
   const [loading, setLoading] = React.useState(false);
   const [loadingStatus, setLoadingStatus] = React.useState("");
   const [error, setError] = React.useState("");
@@ -94,14 +70,6 @@ function PolicySynthesisModalContent(props) {
   const onGenerateFromAnalysis = async () => {
     setLoading(true);
     setError("");
-
-    if (apiKey === TEMPLATE_API_KEY) {
-      setLoading(false);
-      alertModelAccess(
-        "Please provide a valid API key in the Analyzer settings"
-      );
-      return;
-    }
 
     try {
       // First, cancel any in-progress policy synthesis jobs
@@ -119,11 +87,14 @@ function PolicySynthesisModalContent(props) {
         }
       );
 
+      // obtain api url and key from the analyzer config
+      const config = getAnalysisConfig();
+
       // Then, prepare the request payload for new policy synthesis
       setLoadingStatus("Starting policy generation...");
       const payload = {
-        apiurl: apiUrl,
-        apikey: apiKey,
+        apiurl: config.endpoint,
+        apikey: config.apikey
       };
 
       // Make the API request to start policy synthesis
@@ -144,11 +115,15 @@ function PolicySynthesisModalContent(props) {
         setLoadingStatus("");
         props.onSuccess(job_info);
         props.onClose();
+      } else if (response.status === 401) {
+        setLoading(false);
+        setLoadingStatus("");
+        setError("Unauthorized: Please ensure that you have access to the Analysis API.");
       } else {
         const data = await response.json();
         setLoading(false);
         setLoadingStatus("");
-        setError(data.detail || "An error occurred while generating policies");
+        setError(ensureString(data.detail) || "An error occurred while generating policies");
       }
     } catch (error) {
       setLoading(false);
@@ -161,21 +136,14 @@ function PolicySynthesisModalContent(props) {
     setLoading(true);
     setError("");
 
-    if (apiKey === TEMPLATE_API_KEY) {
-      setLoading(false);
-      alertModelAccess(
-        "Please provide a valid API key in the Analyzer settings"
-      );
-      return;
-    }
-
     try {
       await props.generateToolGuardrails();
+      setLoading(false);
       props.onSuccess({});
       props.onClose();
     } catch (error) {
       setLoading(false);
-      setError("An error occurred: " + (error as Error).message);
+      setError((error as Error).message);
     }
   };
 
@@ -221,10 +189,9 @@ function PolicySynthesisModalContent(props) {
         </label>
       </p>
 
-      <div className="banner-note">
-        <BsInfoCircle /> Guardrail suggestions are derived from tool definitions
-        and historic data.
-      </div>
+      <AnalysisConfigEditor collapsed={true}/>
+      
+      <p/>
 
       {loading && loadingStatus && (
         <div className="banner-note info">
@@ -242,9 +209,7 @@ function PolicySynthesisModalContent(props) {
               ? onGenerateFromAnalysis
               : onGenerateFromTools
           }
-          disabled={
-            loading || !apiUrl || !apiKey || apiKey === TEMPLATE_API_KEY
-          }
+          disabled={loading}
         >
           {loading ? loadingStatus || "Generating..." : "Generate Suggestions"}
         </button>
@@ -343,16 +308,10 @@ export function useToolTemplatePolicies(datasetId) {
       setIsLoading(true);
 
       // Get the API URL and key from the analyzer config
-      const { endpoint, apikey } = parseAnalyzerConfig();
-
-      // Validate API key before making the request
-      if (!apikey || apikey === TEMPLATE_API_KEY) {
-        console.error(
-          "Valid API key is required for template policy generation"
-        );
-        setIsLoading(false);
-        return;
-      }
+      const config = getAnalysisConfig();
+      const endpoint = config.endpoint;
+      const apikey = config.apikey;
+        
 
       // Prepare the request payload
       const payload = {
@@ -375,25 +334,28 @@ export function useToolTemplatePolicies(datasetId) {
       if (!response.ok) {
         // Extract the error details from the response
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.detail || "Failed to generate policies from templates";
+        let errorMessage;
+        
+        if (response.status === 401) {
+          errorMessage = "Unauthorized: Please ensure that you have access to the Analysis API.";
+        } else {
+          errorMessage = errorData.detail || "Failed to generate policies from templates";
+        }
+        
         console.error(errorMessage);
 
-        // Display error message to the user using the app's alert system
-        window.alert(errorMessage);
-
         setIsLoading(false);
-        return;
+        throw new Error(errorMessage);
       }
 
       // After generating, refresh to get the latest policies
       await refreshTemplatePolicies();
     } catch (error) {
       console.error("Error generating policies from tool templates:", error);
-
-      // Show generic error message for unexpected errors
-      window.alert("Failed to generate policies from tool templates");
-
       setIsLoading(false);
+      
+      // Re-throw the error so it can be caught by the calling function
+      throw error;
     }
   };
 

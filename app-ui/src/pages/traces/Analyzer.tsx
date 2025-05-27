@@ -1,8 +1,8 @@
-import { Editor } from "@monaco-editor/react";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   BsArrowRight,
   BsBan,
+  BsCheck,
   BsGearFill,
   BsStars,
   BsXCircle,
@@ -18,6 +18,7 @@ import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
 import { useUserInfo } from "../../utils/UserInfo";
+import { AnalysisConfigEditor, getAnalysisConfig, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 // Job status values
 export const JOB_STATUS = {
@@ -85,50 +86,41 @@ function useIssues(annotations?: AnalyzerAnnotation[]): AnalyzerAnnotation[] {
 
     if (!issues) {
       setIssues([]);
+      return;
     }
-    // sort by severity
+
+    // Define the sort order for status
+    const statusOrder = (status: string | undefined, reasoning: boolean) => {
+      // for 'reasoning' we show at the start
+      if (reasoning) return 0;
+      if (status === "accepted") return 1;
+      if (status === "rejected") return 3;
+      return 2; // Proposed (no status or other statuses)
+    };
+
+    // sort by status, then by severity
     issues.sort((a, b) => {
-      if (a.severity || 0 < (b.severity || 0)) {
+      const statusA = statusOrder(a.status, a.content.includes("[reasoning]"));
+      const statusB = statusOrder(b.status, b.content.includes("[reasoning]"));
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // If status is the same, sort by severity
+      if ((a.severity || 0) < (b.severity || 0)) {
         return 1;
-      } else if (a.severity || 0 > (b.severity || 0)) {
+      } else if ((a.severity || 0) > (b.severity || 0)) {
         return -1;
       }
       return 0;
     });
-
-    // if length > 1 and loading still in there, remove i
 
     setIssues(issues);
   }, [annotations]);
 
   return issues;
 }
-
-/**
- * Displays a loading bar while the analysis is running.
- */
-function Loading(props) {
-  return (
-    <div className="output-running">
-      Analyzing...
-      <div className="output-running-bar">
-        <div className="output-running-bar-inner" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Prepares the inputs for an analysis run. This is done client-side using the current user session, so the
- * analysis models do not need to pull in the data themselves (they are stateless).
- *
- * @param traceId ID of the analyzed trace
- * @param dataset_id ID of the dataset containing the trace
- * @param username Username of the current dataset.
- * @param dataset The current dataset name.
- */
-
-export const TEMPLATE_API_KEY = "<api key on the Explorer above>";
 
 /**
  * Creates a new analysis (streams in results) and returns an AbortController to cancel it.
@@ -145,7 +137,7 @@ function createAnalysis(
   trace_id: string,
   options: string,
   apiurl: string,
-  apikey: string,
+  apikey: string | undefined,
   setRunning: (running: boolean) => void,
   setError: (status: string | null) => void,
   setOutput: (output: any) => void,
@@ -162,9 +154,6 @@ function createAnalysis(
 
   async function startAnalysis() {
     try {
-      if (apikey == TEMPLATE_API_KEY) {
-        throw new Error("Unauthorized: Please provide a valid API key.");
-      }
       const url = `/api/v1/trace/${trace_id}/analysis`;
       setRunning(true);
       setOutput((prev) => []);
@@ -173,7 +162,6 @@ function createAnalysis(
         method: "POST",
         body,
         headers: {
-          Authorization: "Bearer " + apikey,
           "Content-Type": "application/json",
         },
         signal: abortController.signal,
@@ -237,9 +225,7 @@ function createAnalysis(
         return;
       } else if (
         // in case the server says the user is not whitelisted
-        error.message.includes("do not have access to this resource") ||
-        // in case a user just clicks 'Analyze' with an empty config
-        apikey == TEMPLATE_API_KEY
+        error.message.includes("do not have access to this resource")
       ) {
         capture("tried-analysis", { error: error.message });
         alertModelAccess("Please provide a valid API key (see settings)");
@@ -270,7 +256,7 @@ export function AnalyzerPreview(props: {
 }) {
   const issues = useIssues(props.annotations);
 
-  const numIssues = issues.length;
+  const numIssues = issues.filter((issue) => !issue.content.includes("[reasoning]")).length;
 
   const storedIsEmpty = numIssues === 0;
 
@@ -363,73 +349,6 @@ export function AnalyzerPreview(props: {
   );
 }
 
-function parseConfig(analyzerConfig: string | undefined): {
-  config: any;
-  endpoint: string;
-  apikey: string;
-} {
-  let config = "{}" as any;
-  try {
-    config = JSON.parse(analyzerConfig || "{}");
-  } catch (e) {
-    alert("Analyzer: invalid configuration " + e);
-    throw e;
-  }
-
-  let endpoint =
-    config.endpoint || "https://preview-explorer.invariantlabs.ai/";
-  let apikey = config.apikey || "";
-  delete config.apikey;
-  delete config.endpoint;
-  return { config, endpoint, apikey };
-}
-
-export function AnalyzerConfigEditor(props: { configType: string }) {
-  const [analyzerConfig, _setAnalyzerConfig] = React.useState(
-    localStorage.getItem("analyzerConfig-" + props.configType) ||
-      (`{
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}` as string | undefined)
-  );
-
-  const setAnalyzerConfig = (value: string | undefined) => {
-    localStorage.setItem("analyzerConfig-" + props.configType, value || "{}");
-    _setAnalyzerConfig(value);
-  };
-
-  return (
-    <Editor
-      language="json"
-      theme="vs-dark"
-      className="analyzer-config"
-      value={analyzerConfig}
-      onMount={onMountConfigEditor}
-      onChange={(value, model) => setAnalyzerConfig(value)}
-      height="200pt"
-      options={{
-        minimap: {
-          enabled: false,
-        },
-        lineNumbers: "off",
-        wordWrap: "on",
-      }}
-    />
-  );
-}
-
-export function clientAnalyzerConfig(configType: string) {
-  return parseConfig(
-    localStorage.getItem("analyzerConfig-" + configType) || "{}"
-  );
-}
 
 /**
  * Sidebar for the analysis of a trace.
@@ -445,20 +364,23 @@ export function AnalyzerSidebar(props: {
   username: string;
   dataset: string;
   debugInfo: any;
+  // expects callback function to discard the analysis result
   onDiscardAnalysisResult?: (output: any) => void;
   // passes onRun to parent component in callback
   onAnalyzeEvent?: BroadcastEvent;
   onAnnotationChange?: () => void;
+  // callbacks to accept/reject issues
+  onAcceptAnalysisResult?: (output: any) => void;
+  onRejectAnalysisResult?: (output: any) => void;
 }) {
   const [abortController, setAbortController] = React.useState(
     new AbortController()
   );
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [status, setStatus] = useState("Ready");
 
   const issues = useIssues(props.annotations);
-  const numIssues = issues.length;
+  const numIssues = issues.filter((issue) => !issue.content.includes("[reasoning]")).length;
 
   const userInfo = useUserInfo();
 
@@ -499,18 +421,19 @@ export function AnalyzerSidebar(props: {
       },
     ]);
 
-    const { config, endpoint, apikey } = clientAnalyzerConfig("single");
     if (!props.traceId) {
       console.error("analyzer: no trace ID provided");
       return;
     }
 
+    const analysisConfig = getAnalysisConfig();
+
     try {
       let ctrl = createAnalysis(
         props.traceId,
-        config,
-        endpoint,
-        apikey,
+        analysisConfig as any,
+        analysisConfig.endpoint,
+        analysisConfig.apikey,
         props.analyzer.setRunning,
         props.analyzer.setError,
         props.analyzer.setOutput,
@@ -522,7 +445,6 @@ export function AnalyzerSidebar(props: {
       props.analyzer.setRunning(false);
       props.analyzer.setError(error + "");
       props.analyzer.setOutput(null);
-      setStatus(error + "");
     }
   }, [
     props.analyzer,
@@ -535,6 +457,8 @@ export function AnalyzerSidebar(props: {
   if (props.onAnalyzeEvent) {
     props.onAnalyzeEvent.listeners = [onRun];
   }
+
+  let currentGroup = "";
 
   return (
     <div
@@ -562,6 +486,7 @@ export function AnalyzerSidebar(props: {
           className="inline icon"
           onClick={() => setSettingsOpen(!settingsOpen)}
           data-tooltip-id="highlight-tooltip"
+          aria-label="Toggle Settings"
           data-tooltip-content={
             settingsOpen ? "Hide Settings" : "Show Settings"
           }
@@ -591,22 +516,53 @@ export function AnalyzerSidebar(props: {
       </h2>
       {settingsOpen && (
         <>
-          <AnalyzerConfigEditor configType="single" />
+          <AnalysisConfigEditor/>
         </>
       )}
-      <div className="status">{status}</div>
+      <div className="status">{props.analyzer.status}</div>
       <div className="issues">
-        {issues.map((output, i) => (
-          <Issues
-            key={props.traceId + "-" + "issue-" + i + "-" + output.content}
-            issue={output}
-          />
-        ))}
+        {!props.running &&
+          issues.map((output, i) => {
+            let header = null as React.ReactNode | null;
+            if (output.status === "accepted" && currentGroup !== "accepted") {
+              currentGroup = "accepted";
+            } else if (
+              output.status === "rejected" &&
+              currentGroup !== "rejected"
+            ) {
+              header = <h3 className="issues-group-header">
+                <BsXCircle className="icon" />  
+                Rejected
+              </h3>;
+              currentGroup = "rejected";
+            } else if (
+              (!output.status || output.status === "proposed") &&
+              currentGroup !== "proposed"
+            ) {
+              currentGroup = "proposed";
+            }
+
+            return (
+              <React.Fragment key={props.traceId + "-" + "issue-" + i + "-" + output.content}>
+                {header}
+                <Issues
+                  issue={output}
+                  onAcceptAnalysisResult={props.onAcceptAnalysisResult}
+                  onRejectAnalysisResult={props.onRejectAnalysisResult}
+                />
+              </React.Fragment>
+            );
+          })}
       </div>
       {notYetRun && (
         <div className="output-empty">
           <br />
           Analyze the trace to identify issues
+        </div>
+      )}
+      {!notYetRun && !props.running && numIssues === 0 && (
+        <div className="output-empty">
+          No Issues Detected
         </div>
       )}
       <span className="debug-info">
@@ -632,49 +588,11 @@ export function AnalyzerSidebar(props: {
   );
 }
 
-function onMountConfigEditor(editor, monaco) {
-  // register completion item provider
-  monaco.languages.registerCompletionItemProvider("json", {
-    provideCompletionItems: function (model, position) {
-      return {
-        suggestions: [
-          {
-            label: "local",
-            kind: monaco.languages.CompletionItemKind.Text,
-            insertText: `{
-  "endpoint": "http://host.docker.internal:8010",
-  "apikey": "<api key on the Eplorer above>",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}`,
-          },
-          {
-            label: "preview",
-            kind: monaco.languages.CompletionItemKind.Text,
-            insertText: `{
-  "endpoint": "https://preview-explorer.invariantlabs.ai",
-  "apikey": "${TEMPLATE_API_KEY}",
-  "model_params": {
-    "model": "litellm",
-    "options":{
-      "lite_llm_model": "openai/gpt-4o",
-      "retriever": {"k" : 1}
-    }
-  }
-}`,
-          },
-        ],
-      };
-    },
-  });
-}
-
-export function Issues(props: { issue: AnalyzerAnnotation }) {
+export function Issues(props: { 
+  issue: AnalyzerAnnotation, 
+  onAcceptAnalysisResult?: (output: any) => void, 
+  onRejectAnalysisResult?: (output: any) => void 
+}) {
   // content: [abc] content
   let errorContent = "";
   let content = props.issue.content;
@@ -704,28 +622,104 @@ export function Issues(props: { issue: AnalyzerAnnotation }) {
     setClickLocation(first_location);
   }, [props.issue]);
 
+  const onClickIssue = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    reveal(clickLocation);
+    onNextLocation();
+  }
+  
+  const onClickAccept = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (props.onAcceptAnalysisResult) {
+      props.onAcceptAnalysisResult(props.issue);
+    } 
+  }
+
+  const onClickReject = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (props.onRejectAnalysisResult) {
+      props.onRejectAnalysisResult(props.issue);
+    }
+  }
+
+  // whether the issue should be shown in collapsed mode (less info)
+  const collapsed = props.issue.status === "rejected";
+
+  // reasoning expanded
+  const [expanded, setExpanded] = useState(false);
+
+  // check for the case of errorContent == "reasoning"
+  // if so, show a special issue
+  if (errorContent === "reasoning" && content.split("|", 2).length > 1) {
+    // check if there is an | in the content (if so, split it)
+    const splitContent = content.split("|", 2);
+    const reasoning = splitContent[1].trim();
+    const reasoningTime = splitContent[0].trim();
+
+    return (
+      <div className={"issue reasoning " + (expanded ? "expanded" : "")} onClick={() => setExpanded(!expanded)}>
+        <div className="issue-content">
+          {expanded ? <><b>{reasoningTime}</b>{reasoning}</> : <><b>{reasoningTime + " 〉"}</b></>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="issue"
-      onClick={() => {
-        reveal(clickLocation);
-        onNextLocation();
-      }}
+      className={"issue " + props.issue.status}
+      onClick={onClickIssue}
     >
       <div className="issue-content">
-        <b>[{errorContent}]</b> {content}
+        {!collapsed ? (
+          <><b>[{errorContent}]</b> {content}</>
+        ) : (
+          <><b>[{errorContent}]</b> <s>{truncate(content, 50)}</s></>
+        )}
       </div>
       <div className="issue-header">
-        <Location location={props.issue.address} />
+        {!collapsed && <Location location={props.issue.address} />}
         <br />
         {typeof props.issue.severity === "number" && (
           <span className="severity">
             Severity: {(props.issue.severity || 0.0).toString()}
           </span>
         )}
+        <div className={"issue-status " + props.issue.status}>
+          {props.issue.status === "accepted" && (
+            <>
+              <BsCheck className="icon" />
+              Confirmed
+            </>
+          )}
+          {props.issue.status === "rejected" && (
+            <>
+              <BsXCircle className="icon" />
+              Rejected
+            </>
+          )}
+        </div>
+        <div className="actions">
+        <button
+          className={"inline reject " + (props.issue.status === "rejected" ? " primary" : "")}
+          onClick={onClickReject}
+        >
+          <BsXCircle /> Reject
+        </button>
+        <button className={"inline" + (props.issue.status === "accepted" ? " primary" : "")} onClick={onClickAccept}>
+          <BsCheck /> Confirm
+        </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function truncate(str: string, maxLength: number) {
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return str.substring(0, maxLength) + "...";
 }
 
 export function Location(props: { location: string }) {
@@ -739,7 +733,7 @@ export function Location(props: { location: string }) {
           className="location"
           onClick={(e) => {
             e.stopPropagation();
-            reveal(location);
+            reveal(location, "annotations");
           }}
         >
           {location}

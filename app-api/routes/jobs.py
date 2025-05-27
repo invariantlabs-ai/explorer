@@ -17,6 +17,7 @@ import asyncio
 import json
 import re
 import uuid
+import fastapi
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -33,6 +34,7 @@ from routes.dataset_metadata import update_dataset_metadata
 from logging_config import get_logger
 
 from routes.trace import replace_annotations
+from util.analysis_api import AnalysisClient
 
 # job logger
 logger = get_logger(__name__)
@@ -54,53 +56,12 @@ def on_job_result(job_type: str):
     return decorator
 
 
-class AnalysisClient:
-    """API client for the analysis model service."""
-
-    def __init__(self, base_url: str, apikey: Optional[str] = None) -> None:
-        headers = {"Authorization": f"Bearer {apikey}"} if apikey else {}
-        self.session = aiohttp.ClientSession(base_url=base_url, headers=headers)
-
-    async def status(self, job_id: str) -> JobResponseUnion:
-        async with self.session.get(f"/api/v1/analysis/job/{job_id}") as resp:
-            resp.raise_for_status()
-            return JobResponseParser.model_validate(await resp.json()).root
-
-    async def cancel(self, job_id: str) -> Optional[Dict[str, Any]]:
-        async with self.session.put(f"/api/v1/analysis/job/{job_id}/cancel") as resp:
-            resp.raise_for_status()
-            return await resp.json() if resp.content_length else None
-
-    async def delete(self, job_id: str) -> Optional[Dict[str, Any]]:
-        async with self.session.delete(f"/api/v1/analysis/job/{job_id}") as resp:
-            resp.raise_for_status()
-            return await resp.json() if resp.content_length else None
-
-    async def queue(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        async with self.session.post("/api/v1/analysis/job", json=payload) as resp:
-            resp.raise_for_status()
-            return await resp.json()
-
-    async def jobs(self) -> List[Dict[str, Any]]:
-        async with self.session.get("/api/v1/analysis/job") as resp:
-            resp.raise_for_status()
-            return await resp.json()
-
-    async def close(self) -> None:
-        await self.session.close()
-
-    async def __aenter__(self) -> "AnalysisClient":
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.close()
-
 
 # last job status check
 last_job_status = datetime.datetime.now()
 
 
-async def check_all_jobs():
+async def check_all_jobs(jwt: Optional[str] = None):
     """
     Checks all pending database jobs with their respective endpoints, and
     processes their result if available.
@@ -118,10 +79,10 @@ async def check_all_jobs():
             logger.info("No jobs to check")
         else:
             logger.info(f"Checking {len(jobs)} pending jobs")
-        await asyncio.gather(*[check_job(session, job) for job in jobs])
+        await asyncio.gather(*[check_job(session, job, jwt=jwt) for job in jobs])
 
 
-async def cancel_job(session: Session, job: DatasetJob):
+async def cancel_job(session: Session, job: DatasetJob, jwt: Optional[str] = None):
     """
     Cancels a job and deletes it from the database.
     """
@@ -130,7 +91,7 @@ async def cancel_job(session: Session, job: DatasetJob):
     apikey = job.secret_metadata.get("apikey")
 
     try:
-        async with AnalysisClient(endpoint, apikey) as client:
+        async with AnalysisClient(endpoint, apikey, jwt=jwt) as client:
             await client.cancel(job_id)
     except Exception as e:
         import traceback
@@ -138,7 +99,7 @@ async def cancel_job(session: Session, job: DatasetJob):
         print("Error cancelling job", job_id, e, traceback.format_exc(), flush=True)
 
 
-async def check_job(session: Session, job: DatasetJob):
+async def check_job(session: Session, job: DatasetJob, jwt: Optional[str] = None):
     """
     Checks the status of all active jobs and updates their status in the database.
 
@@ -157,7 +118,7 @@ async def check_job(session: Session, job: DatasetJob):
         flag_modified(job, "extra_metadata")
 
     try:
-        async with AnalysisClient(endpoint, apikey) as client:
+        async with AnalysisClient(endpoint, apikey, jwt=jwt) as client:
             job_progress = await client.status(job_id)
             print(f"Job {job_id} has status {job_progress.status}", flush=True)
 
