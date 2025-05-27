@@ -237,19 +237,6 @@ class AnalyzerTraceExporter:
             print("Error handling job", e, traceback.format_exc(), flush=True)
         return analyser_input_samples, analyser_context_samples
 
-def deduplicate_annotations(annotations):
-    print(annotations, flush=True)
-    annotation_hash = {}
-    deduplicated = []
-    for annotation in annotations:
-        key = (annotation.content, annotation.location)
-        
-        if key not in annotation_hash:
-            annotation_hash[key] = annotation
-            deduplicated.append(annotation)
-        
-    return deduplicated
-
 class TraceExporter:
     def __init__(self, user_id: str, dataset_id: str, export_config: ExportConfig):
         self.user_id = user_id

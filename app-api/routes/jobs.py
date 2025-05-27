@@ -82,7 +82,7 @@ async def check_all_jobs(jwt: Optional[str] = None):
         await asyncio.gather(*[check_job(session, job, jwt=jwt) for job in jobs])
 
 
-async def cancel_job(session: Session, job: DatasetJob, request: fastapi.Request | None = None):
+async def cancel_job(session: Session, job: DatasetJob, jwt: Optional[str] = None):
     """
     Cancels a job and deletes it from the database.
     """
@@ -91,7 +91,7 @@ async def cancel_job(session: Session, job: DatasetJob, request: fastapi.Request
     apikey = job.secret_metadata.get("apikey")
 
     try:
-        async with AnalysisClient(endpoint, apikey, jwt=request.cookies.get("jwt")) as client:
+        async with AnalysisClient(endpoint, apikey, jwt=jwt) as client:
             await client.cancel(job_id)
     except Exception as e:
         import traceback

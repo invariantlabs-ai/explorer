@@ -354,7 +354,6 @@ async def replace_annotations(
     annotations: List[Dict],
     # whether to exclude annotations which have been marked as 'accepted' or 'rejected' by the user
     exclude_accepted_or_rejected: bool = True,
-    # whether to skip adding new annotations that are already present as 'accepted' or 'rejected' one (avoids duplicates)
 ) -> Dict[str, int]:
     """
     Replaces all annotations of a given source with new ones (except accepted ones).
@@ -373,6 +372,7 @@ async def replace_annotations(
         )
     )
 
+    # keep user-confirmed/rejected annotations, if exclude_accepted_or_rejected is True
     if exclude_accepted_or_rejected:
         query = query.filter(
             or_(
@@ -386,8 +386,6 @@ async def replace_annotations(
     
     # delete all annotations of this source
     num_deleted = query.delete()
-
-    print("deleted", num_deleted, "annotations of source")
 
     # commit the changes
     session.commit()
@@ -530,7 +528,6 @@ async def update_annotation(
         annotation.content = content
         annotation.extra_metadata = updated_metadata
 
-        print("annotation", annotation.extra_metadata)
         session.commit()
         return annotation_to_json(annotation, user)
 

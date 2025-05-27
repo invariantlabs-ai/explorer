@@ -240,7 +240,7 @@ async def cancel_policy_synthesis(
 
         # Try to cancel all pending jobs
         for job in pending_jobs:
-            await cancel_job(session, job, request)
+            await cancel_job(session, job, request.cookies.get('jwt'))
 
         # Wait and check at most 2s
         wait_and_check_timeout = 2

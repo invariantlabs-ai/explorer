@@ -63,7 +63,7 @@ async def cancel_analysis(
 
         # try to cancel all pending jobs
         for job in pending_jobs:
-            await cancel_job(session, job, request)
+            await cancel_job(session, job, request.cookies.get("jwt"))
 
         # wait and check at most 2s
         wait_and_check_timeout = 2
@@ -200,8 +200,6 @@ async def queue_analysis(
 
                 return job.to_dict()
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             raise HTTPException(
                 status_code=500,
                 detail="Failed to reach analysis service: " + str(e),
