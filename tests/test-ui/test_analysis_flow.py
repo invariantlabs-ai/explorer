@@ -6,6 +6,10 @@ async def test_trace_analysis_flow(context, url, screenshot, data_trace_for_anal
     page = await context.new_page()
     await page.goto(url)
 
+    INVARIANT_API_KEY = os.getenv("INVARIANT_API_KEY")
+    if not INVARIANT_API_KEY:
+        raise ValueError("INVARIANT_API_KEY environment variable is not set.")
+
     # set local storage
     # invariant.explorer.disable.guide.home	true
     # invariant.explorer.disable.guide.trace_view	true
@@ -13,6 +17,7 @@ async def test_trace_analysis_flow(context, url, screenshot, data_trace_for_anal
         """() => {
             localStorage.setItem('invariant.explorer.disable.guide.home', 'true');
             localStorage.setItem('invariant.explorer.disable.guide.trace_view', 'true');
+            localStorage.setItem('invariant.explorer.disable.guide.analysis', 'true');
         }"""
     )
     # reload the page to apply local storage changes
@@ -59,6 +64,12 @@ async def test_trace_analysis_flow(context, url, screenshot, data_trace_for_anal
 
     # click aria open-analyzer-button
     await page.click("button.analyzer-button")
+
+    # click the 'data-tooltip-content="Show Settings"' button
+    await page.click("button[aria-label='Toggle Settings']")
+
+    # click on placeholder="only required for private instances"
+    await page.fill("input[placeholder='only required for private instances']", INVARIANT_API_KEY)
 
     # click the 'Analyze' button
     await page.click("button.primary:has-text('Analyze')")

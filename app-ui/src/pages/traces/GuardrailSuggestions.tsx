@@ -15,8 +15,7 @@ import {
 import { Modal } from "../../components/Modal";
 import { JOB_STATUS } from "./Analyzer";
 import "./Guardrails.scss";
-import { alertModelAccess } from "./ModelModal";
-import { AnalysisConfigEditor } from "../../lib/AnalysisAPIAccess";
+import { AnalysisConfigEditor, getAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 // Enable the suggestions section for policy synthesis
 const GUARDRAIL_SUGGESTIONS_ENABLED = true;
@@ -54,37 +53,10 @@ export interface GuardrailSuggestion {
 }
 
 /**
- * Parse the analyzer configuration from localStorage
- */
-function parseAnalyzerConfig(configType: string = "single"): {
-  endpoint: string;
-  apikey: string;
-} {
-  try {
-    const storedConfig =
-      localStorage.getItem("analyzerConfig-" + configType) || "{}";
-    const config = JSON.parse(storedConfig);
-    const endpoint =
-      config.endpoint || "https://preview-explorer.invariantlabs.ai/";
-    const apikey = config.apikey || "";
-    return { endpoint, apikey };
-  } catch (e) {
-    console.error("Failed to parse analyzer config:", e);
-    return {
-      endpoint: "https://preview-explorer.invariantlabs.ai/",
-      apikey: "",
-    };
-  }
-}
-
-/**
  * Content to show in the modal for configuring policy synthesis.
  */
 function PolicySynthesisModalContent(props) {
   // Get the API URL and key from the analyzer config
-  const { endpoint, apikey: apiKey } = parseAnalyzerConfig();
-
-  const [apiUrl, setApiUrl] = React.useState(endpoint);
   const [loading, setLoading] = React.useState(false);
   const [loadingStatus, setLoadingStatus] = React.useState("");
   const [error, setError] = React.useState("");
@@ -111,11 +83,14 @@ function PolicySynthesisModalContent(props) {
         }
       );
 
+      // obtain api url and key from the analyzer config
+      const config = getAnalysisConfig();
+
       // Then, prepare the request payload for new policy synthesis
       setLoadingStatus("Starting policy generation...");
       const payload = {
-        apiurl: apiUrl,
-        apikey: apiKey,
+        apiurl: config.endpoint,
+        apikey: config.apikey
       };
 
       // Make the API request to start policy synthesis
@@ -225,7 +200,7 @@ function PolicySynthesisModalContent(props) {
               ? onGenerateFromAnalysis
               : onGenerateFromTools
           }
-          disabled={loading || !apiUrl}
+          disabled={loading}
         >
           {loading ? loadingStatus || "Generating..." : "Generate Suggestions"}
         </button>
@@ -324,7 +299,10 @@ export function useToolTemplatePolicies(datasetId) {
       setIsLoading(true);
 
       // Get the API URL and key from the analyzer config
-      const { endpoint, apikey } = parseAnalyzerConfig();
+      const config = getAnalysisConfig();
+      const endpoint = config.endpoint;
+      const apikey = config.apikey;
+        
 
       // Prepare the request payload
       const payload = {

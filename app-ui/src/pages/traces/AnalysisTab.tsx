@@ -13,7 +13,7 @@ import {
 
 import "./Analyzer.scss";
 import IssuePieChart from "./Charts";
-import { AnalysisConfigEditor, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
+import { AnalysisConfigEditor, getAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 export function useJSONParse<T>(json: string | null): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -96,10 +96,8 @@ export function AnalysisReport(props: {
     return jobs?.filter((job) => job.extra_metadata?.type === "analysis") || [];
   }, [jobs]);
 
-  const analysisConfig = useAnalysisConfig()[0];
-
   const onStartJob = async () => {
-    const config = analysisConfig;
+    const config = getAnalysisConfig();
     const endpoint = config.endpoint;
     const apikey = config.apikey;
 

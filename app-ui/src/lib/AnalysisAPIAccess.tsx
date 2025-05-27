@@ -116,21 +116,35 @@ export function AnalysisConfigEditor(props: {collapsed?: boolean}) {
                 wordWrap: "on",
                 }}
             /> : <div>
-                <div className="form-group">
+                {/* <div className="form-group">
                     <label>Endpoint</label>
-                    <input type="text" autoComplete="off" value={analysisConfig.endpoint || DEFAULT_ENDPOINT} onChange={(e) => {
-                        const newConfig = { ...analysisConfig, endpoint: e.target.value };
-                        setAnalysisConfig(newConfig);
-                        setAnalysisConfigStringState(JSON.stringify(newConfig, null, 2));
-                    }}/>
-                </div>
+                    <input 
+                        type="text" 
+                        autoComplete="off" 
+                        value={analysisConfig.endpoint || DEFAULT_ENDPOINT}
+                        onChange={(e) => {
+                            const newConfig = { ...analysisConfig, endpoint: e.target.value };
+                            setAnalysisConfig(newConfig);
+                            setAnalysisConfigStringState(JSON.stringify(newConfig, null, 2));
+                        }}
+                    />
+                </div> */}
                 <div className="form-group">
                     <label>API Key</label>
-                    <input placeholder="Only required if using a private endpoint" type="password" autoComplete="off" value={analysisConfig.apikey || ""} onChange={(e) => {
-                        const newConfig = { ...analysisConfig, apikey: e.target.value };
-                        setAnalysisConfig(newConfig);
-                        setAnalysisConfigStringState(JSON.stringify(newConfig, null, 2));
-                    }}/>
+                    <input 
+                        placeholder="only required for private instances" 
+                        type="password" 
+                        autoComplete="off" 
+                        value={analysisConfig.apikey || ""} 
+                        onChange={(e) => {
+                            let newConfig = { ...analysisConfig, ...{apikey: e.target.value }};
+                            // if not specified or empty, remove the apikey
+                            if (!e.target.value && typeof newConfig.apikey !== "undefined") {
+                                delete (newConfig as any).apikey;
+                            }
+                            setAnalysisConfig(newConfig);
+                            setAnalysisConfigStringState(JSON.stringify(newConfig, null, 2));
+                        }}/>
                 </div>
             </div>}
             </>}
@@ -175,7 +189,7 @@ function setAnalysisConfig(config: AnalysisAPIConfig) {
     notifyAnalysisConfigChanged();
 }
 
-function getAnalysisConfig(): AnalysisAPIConfig {
+export function getAnalysisConfig(): AnalysisAPIConfig {
     const stored = JSON.parse(
         localStorage.getItem(ANALYSIS_CONFIG_STORAGE_KEY) ||
         JSON.stringify({})

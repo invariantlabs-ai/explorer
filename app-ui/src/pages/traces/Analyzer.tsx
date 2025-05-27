@@ -18,7 +18,7 @@ import { alertModelAccess } from "./ModelModal";
 
 import { events } from "fetch-event-stream";
 import { useUserInfo } from "../../utils/UserInfo";
-import { AnalysisConfigEditor, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
+import { AnalysisConfigEditor, getAnalysisConfig, useAnalysisConfig } from "../../lib/AnalysisAPIAccess";
 
 // Job status values
 export const JOB_STATUS = {
@@ -392,8 +392,6 @@ export function AnalyzerSidebar(props: {
   const notYetRun =
     storedIsEmpty && outputIsEmpty && !props.running && numIssues === 0;
 
-  const analysisConfig = useAnalysisConfig()[0];
-
   // on unmount, abort the analysis
   useEffect(() => {
     return () => {
@@ -427,6 +425,8 @@ export function AnalyzerSidebar(props: {
       console.error("analyzer: no trace ID provided");
       return;
     }
+
+    const analysisConfig = getAnalysisConfig();
 
     try {
       let ctrl = createAnalysis(
@@ -486,6 +486,7 @@ export function AnalyzerSidebar(props: {
           className="inline icon"
           onClick={() => setSettingsOpen(!settingsOpen)}
           data-tooltip-id="highlight-tooltip"
+          aria-label="Toggle Settings"
           data-tooltip-content={
             settingsOpen ? "Hide Settings" : "Show Settings"
           }
