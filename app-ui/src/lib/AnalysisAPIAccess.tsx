@@ -3,6 +3,7 @@ import Editor from "@monaco-editor/react";
 import { BsTools } from "react-icons/bs";
 import "./AnalysisAPIAccess.scss";
 import { InvariantIcon } from "../components/Icons";
+import { config } from "../utils/Config";
 
 export const DEFAULT_ENDPOINT = "https://preview-explorer.invariantlabs.ai/";
 
@@ -129,7 +130,7 @@ export function AnalysisConfigEditor(props: {collapsed?: boolean}) {
                         }}
                     />
                 </div> */}
-                <div className="form-group">
+                {(config("analysis_requires_api_keys") || false) && <div className="form-group">
                     <label>API Key</label>
                     <input 
                         placeholder="only required for private instances" 
@@ -145,7 +146,7 @@ export function AnalysisConfigEditor(props: {collapsed?: boolean}) {
                             setAnalysisConfig(newConfig);
                             setAnalysisConfigStringState(JSON.stringify(newConfig, null, 2));
                         }}/>
-                </div>
+                </div>}
             </div>}
             </>}
     </div>

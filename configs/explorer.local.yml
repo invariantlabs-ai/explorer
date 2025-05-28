@@ -26,3 +26,6 @@ sharing: false
 
 # whether the NUX should be enabled for this instance
 nux: true
+
+# whether the instance requires API keys for use of the Invariant Analysis APIs (defaults to false if not set)
+analysis_requires_api_keys: false
