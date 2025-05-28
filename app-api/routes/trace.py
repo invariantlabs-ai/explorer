@@ -337,11 +337,18 @@ async def analyze_trace(
                                 session.commit()
                             yield "data: update\n\n"
                     yield chunk
+                yield "data: done\n\n"
         except aiohttp.ClientResponseError as e:
             # emit error as part of stream
             yield "data: " + json.dumps({
                 "error": f"{e.message}",
                 "status": e.status,
+            }) + "\n\n"
+        except Exception as e:
+            # emit error as part of stream
+            yield "data: " + json.dumps({
+                "error": f"An unexpected error occurred: {str(e)}",
+                "status": 500,
             }) + "\n\n"
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
@@ -454,7 +461,7 @@ async def update_annotations(
 
 
 @trace.get("/{id}/annotations")
-def get_annotations(
+async def get_annotations(
     request: Request, id: str, user_id: Annotated[UUID | None, Depends(UserIdentity)]
 ):
     """Get all annotations of a trace."""

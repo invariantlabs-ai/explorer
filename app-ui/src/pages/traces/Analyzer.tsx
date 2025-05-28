@@ -180,9 +180,11 @@ function createAnalysis(
       let event: any = null;
 
       for await (event of stream) {
+        // reload annotations from backend on 'update'
         if (event.data === "update" && onAnnotationChange) {
           onAnnotationChange();
         }
+        // check for error events
         if (event.data) {
           try {
             const chunk_data = JSON.parse(event.data);
@@ -208,6 +210,10 @@ function createAnalysis(
             ]);
           }
         }
+      }
+      // refresh once in the end (e.g. the loop above might not have called, if there are no issues)
+      if (onAnnotationChange) {
+        onAnnotationChange();
       }
       setRunning(false);
       if (!receivedError) setError(null);
@@ -288,12 +294,7 @@ export function AnalyzerPreview(props: {
   } else if (props.running) {
     content = (
       <div className="secondary">
-        <div className="analyzer-loader big" /> Analyzing...
-        {numIssues > 0 && (
-          <span className="num-issues">
-            {"(" + numIssues + " issue" + (numIssues > 1 ? "s" : "") + ")"}
-          </span>
-        )}
+        <div className="analyzer-loader big" /> <span className="effect-shine">Analyzing...</span>
       </div>
     );
   } else if (numIssues === 0) {
@@ -301,7 +302,7 @@ export function AnalyzerPreview(props: {
       <div className="output-empty">
         <BsXCircle />
         <br />
-        No issues found
+        No Issues Detected
         <a className="action" onClick={onAnalyze}>
           Rerun
         </a>
@@ -628,17 +629,31 @@ export function Issues(props: {
     onNextLocation();
   }
   
-  const onClickAccept = (e: React.MouseEvent) => {
+  // loading states for accept/reject buttons
+  const [confirming, setConfirming] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+
+  const onClickAccept = async (e: React.MouseEvent) => {
+    setConfirming(true);
     e.stopPropagation();
     if (props.onAcceptAnalysisResult) {
-      props.onAcceptAnalysisResult(props.issue);
+      try {
+        await props.onAcceptAnalysisResult(props.issue);
+      } finally {
+        setConfirming(false);
+      }
     } 
   }
 
-  const onClickReject = (e: React.MouseEvent) => {
+  const onClickReject = async (e: React.MouseEvent) => {
+    setRejecting(true);
     e.stopPropagation();
     if (props.onRejectAnalysisResult) {
-      props.onRejectAnalysisResult(props.issue);
+      try {
+        await props.onRejectAnalysisResult(props.issue);
+      } finally {
+        setRejecting(false);
+      }
     }
   }
 
@@ -703,10 +718,11 @@ export function Issues(props: {
         <button
           className={"inline reject " + (props.issue.status === "rejected" ? " primary" : "")}
           onClick={onClickReject}
+          disabled={rejecting}
         >
           <BsXCircle /> Reject
         </button>
-        <button className={"inline" + (props.issue.status === "accepted" ? " primary" : "")} onClick={onClickAccept}>
+        <button className={"inline" + (props.issue.status === "accepted" ? " primary" : "")} onClick={onClickAccept} disabled={confirming}>
           <BsCheck /> Confirm
         </button>
         </div>
