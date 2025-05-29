@@ -84,6 +84,10 @@
         overflow: visible;
         white-space: nowrap;
 
+        i {
+          opacity: 0.3;
+        }
+
         b {
           margin-right: 3pt;
         }
@@ -162,6 +166,13 @@
         margin-bottom: -5pt;
 
         resize: vertical;
+        
+        b {
+          background-color: rgba(88, 85, 246, 0.2);
+          padding: 2px 4px;
+          border-radius: 4px;
+          margin-right: 3pt;
+        }
       }
 
       .content {
@@ -213,5 +224,24 @@
         }
       }
     }
+  }
+}
+
+.content-editable-text {
+  border: none !important;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  font-size: 12pt;
+  line-height: 1.4;
+  background-color: white;
+  
+  b {
+    background-color: rgba(88, 85, 246, 0.2);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-right: 3pt;
   }
 }

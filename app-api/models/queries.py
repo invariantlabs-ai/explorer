@@ -73,7 +73,7 @@ class AnalyzerTraceExporter:
 
     @classmethod
     def is_annotation_for_analyzer(cls, content: str) -> bool:
-        return bool(re.search(r"\[.*\]", content))
+        return bool(re.search(r"\[.*\]", content)) or "@Invariant" in content
 
     @classmethod
     def get_content_severity(cls, content: str) -> tuple[str, float]:

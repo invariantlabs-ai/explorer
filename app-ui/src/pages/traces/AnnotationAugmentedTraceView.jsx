@@ -75,10 +75,11 @@ export class Annotations extends RemoteResource {
     }
     let annotations = {};
     data.forEach((annotation) => {
-      if (!(annotation.address in annotations)) {
-        annotations[annotation.address] = [];
+      if (!annotations[annotation.address]) {
+        annotations[annotation.address] = [annotation];
+      } else {
+        annotations[annotation.address].push(annotation);
       }
-      annotations[annotation.address].push(annotation);
     });
     // sort by timestamp
     for (let address in annotations) {
@@ -261,7 +262,7 @@ export function AnnotationAugmentedTraceView(props) {
   // event hooks for the traceview to expand/collapse messages
   const [events, setEvents] = useState({});
   // loads and manages annotations as a remote resource (server CRUD)
-  const [storedAnnotations, annotationStatus, annotationsError, annotator] =
+  const [storedAnnotations, annotationStatus, annotationsError, annotator] = 
     useRemoteResource(Annotations, activeTraceId);
 
   const annotations = props.annotations || (annotationStatus == "ready" ? storedAnnotations : null);
@@ -713,11 +714,14 @@ function safeAnchorId(annotationId) {
 // AnnotationThread renders a thread of annotations for a given address in a trace (shown inline)
 function AnnotationThread(props) {
   // let [annotations, annotationStatus, annotationsError, annotator] = props.annotations
-  const [annotations, annotationStatus, annotationsError, annotator] =
+  const [cachedAnnotations, annotationStatus, annotationsError, annotator] =
     useRemoteResource(Annotations, props.traceId);
-  // filter out analyzer annotations
-  for (let address in annotations) {
-    annotations[address] = annotations[address].filter(
+  
+  // Create a deep copy to avoid mutating the shared cached object
+  const annotations = {};
+  for (let address in cachedAnnotations) {
+    // filter out analyzer annotations without mutating the original
+    annotations[address] = cachedAnnotations[address].filter(
       (a) => a.extra_metadata?.source !== "analyzer-model"
     );
   }
@@ -793,6 +797,7 @@ function Annotation(props) {
   };
 
   const onUpdate = () => {
+    setSubmitting(true);
     annotator
       .update(props.id, { content: comment })
       .then(() => {
@@ -807,7 +812,20 @@ function Annotation(props) {
       });
   };
 
-  let content = props.content;
+  const onKeyDown = (e) => {
+    // on mac cmd+enter, on windows ctrl+enter to save
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      onUpdate();
+    }
+    // escape cancels editing
+    if (e.key === "Escape") {
+      setComment(props.content);
+      setEditing(false);
+    }
+  };
+
+  let content = props.content;  
   if (content == THUMBS_UP) {
     content = (
       <span className="thumbs-up-icon">
@@ -822,6 +840,9 @@ function Annotation(props) {
         Negative Feedback
       </span>
     );
+  } else {
+    // Render @-mentions in bold for non-edit mode
+    content = renderTextWithMentions(content);
   }
 
   const source = readableSourceName(props.extra_metadata?.source);
@@ -867,20 +888,33 @@ function Annotation(props) {
         </header>
         {!editing && <div className="content">{content}</div>}
         {editing && (
-          <textarea
+          <ContentEditableText
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={setComment}
+            onKeyDown={onKeyDown}
+            autoFocus={true}
+            style={{
+              minHeight: "40px",
+              padding: "6px",
+              fontSize: "14px",
+              lineHeight: "1.3"
+            }}
           />
         )}
         {editing && (
           <div className="actions">
-            <button onClick={() => setEditing(!editing)}>Cancel</button>
+            <button onClick={() => {
+              setComment(props.content);
+              setEditing(false);
+            }}>
+              Cancel
+            </button>
             <button
               className="primary"
-              disabled={submitting && comment != ""}
+              disabled={submitting || comment === ""}
               onClick={onUpdate}
             >
-              Save
+              {submitting ? "Saving..." : "Save"}
             </button>
           </div>
         )}
@@ -889,13 +923,292 @@ function Annotation(props) {
   );
 }
 
+// List of highlightable @-mentions
+const HIGHLIGHTABLE_MENTIONS = ["@Invariant"];
+
+// ContentEditableText is a reusable component for text editing with @-mention highlighting
+function ContentEditableText({ 
+  value, 
+  onChange, 
+  onKeyDown, 
+  onSave,
+  placeholder = "",
+  autoFocus = false,
+  className = "",
+  style = {},
+  mentions = HIGHLIGHTABLE_MENTIONS 
+}) {
+  const editorRef = useRef(null);
+
+  // Function to format content with @-mention highlighting
+  const formatContent = (text) => {
+    if (!text) return "";
+    
+    // Create regex pattern for all mentions
+    const mentionPattern = new RegExp(`(${mentions.join('|')})`, 'g');
+    
+    // Replace mentions with bold version, but keep all other text as plain text
+    const parts = text.split(mentionPattern);
+    return parts.map((part, index) => {
+      if (mentions.includes(part)) {
+        return `<b>${part}</b>`;
+      }
+      // Escape HTML for other parts to prevent any other formatting
+      return part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }).join("");
+  };
+
+  // Function to get plain text content from the editor
+  const getTextContent = () => {
+    if (editorRef.current) {
+      return editorRef.current.textContent || "";
+    }
+    return "";
+  };
+
+  // Handle input changes
+  const onInput = () => {
+    if (editorRef.current) {
+      const textContent = getTextContent();
+      onChange(textContent);
+      
+      // Store cursor position relative to text content (not DOM nodes)
+      const selection = window.getSelection();
+      let cursorOffset = 0;
+      
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        // Calculate cursor position in the entire text content
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        cursorOffset = preCaretRange.toString().length;
+      }
+      
+      // Update HTML with formatting
+      const formattedHTML = formatContent(textContent);
+      editorRef.current.innerHTML = formattedHTML;
+      
+      // Restore cursor position
+      try {
+        const newRange = document.createRange();
+        const walker = document.createTreeWalker(
+          editorRef.current,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let currentOffset = 0;
+        let targetNode = null;
+        let targetOffset = cursorOffset;
+        
+        let node;
+        while (node = walker.nextNode()) {
+          const nodeLength = node.textContent.length;
+          if (currentOffset + nodeLength >= cursorOffset) {
+            targetNode = node;
+            targetOffset = cursorOffset - currentOffset;
+            break;
+          }
+          currentOffset += nodeLength;
+        }
+        
+        if (targetNode) {
+          newRange.setStart(targetNode, Math.min(targetOffset, targetNode.textContent.length));
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } else {
+          // If no target node found, place cursor at the end
+          newRange.selectNodeContents(editorRef.current);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      } catch (e) {
+        // If cursor restoration fails, just place it at the end
+        try {
+          const newRange = document.createRange();
+          newRange.selectNodeContents(editorRef.current);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (fallbackError) {
+          // Final fallback - focus the element
+          editorRef.current.focus();
+        }
+      }
+    }
+  };
+
+  // Handle key down events
+  const handleKeyDown = (e) => {
+    // Tab autocompletion for mentions
+    if (e.key === "Tab") {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0 && editorRef.current) {
+        const range = selection.getRangeAt(0);
+        const textContent = getTextContent();
+        
+        // Calculate cursor position in the entire text content
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        const cursorOffset = preCaretRange.toString().length;
+        
+        // Get text before cursor
+        const textBeforeCursor = textContent.slice(0, cursorOffset);
+        
+        // Check if the text before cursor ends with a partial mention (case-insensitive)
+        let bestMatch = null;
+        let matchLength = 0;
+        
+        mentions.forEach(mention => {
+          for (let i = 1; i <= Math.min(mention.length - 1, textBeforeCursor.length); i++) {
+            const partial = mention.slice(0, i);
+            // Case-insensitive comparison
+            if (textBeforeCursor.toLowerCase().endsWith(partial.toLowerCase())) {
+              if (i > matchLength) {
+                bestMatch = mention;
+                matchLength = i;
+              }
+            }
+          }
+        });
+        
+        if (bestMatch && matchLength > 0) {
+          e.preventDefault();
+          
+          // Replace the partial text with the full mention
+          const beforePartial = textBeforeCursor.slice(0, -matchLength);
+          const afterCursor = textContent.slice(cursorOffset);
+          const newText = beforePartial + bestMatch + " " + afterCursor;
+          
+          // Update content
+          onChange(newText);
+          
+          // Update the DOM with formatting
+          const formattedHTML = formatContent(newText);
+          editorRef.current.innerHTML = formattedHTML;
+          
+          // Set cursor position after the completed mention
+          const newCursorPosition = beforePartial.length + bestMatch.length;
+          
+          try {
+            const newRange = document.createRange();
+            const walker = document.createTreeWalker(
+              editorRef.current,
+              NodeFilter.SHOW_TEXT,
+              null,
+              false
+            );
+            
+            let currentOffset = 0;
+            let targetNode = null;
+            let targetOffset = newCursorPosition;
+            
+            let node;
+            while (node = walker.nextNode()) {
+              const nodeLength = node.textContent.length;
+              if (currentOffset + nodeLength >= newCursorPosition) {
+                targetNode = node;
+                targetOffset = newCursorPosition - currentOffset;
+                break;
+              }
+              currentOffset += nodeLength;
+            }
+            
+            if (targetNode) {
+              newRange.setStart(targetNode, Math.min(targetOffset, targetNode.textContent.length));
+              newRange.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+            }
+          } catch (error) {
+            // Fallback: place cursor at the end
+            const newRange = document.createRange();
+            newRange.selectNodeContents(editorRef.current);
+            newRange.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        }
+      }
+    }
+    
+    // Prevent some formatting shortcuts
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'i' || e.key === 'u')) {
+      e.preventDefault();
+    }
+    
+    // Call parent onKeyDown handler
+    if (onKeyDown) {
+      onKeyDown(e);
+    }
+  };
+
+  // Set initial content and focus
+  useEffect(() => {
+    if (editorRef.current) {
+      const formattedHTML = formatContent(value);
+      editorRef.current.innerHTML = formattedHTML;
+      
+      if (autoFocus) {
+        window.setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.focus();
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
+  // Update content when value prop changes
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.textContent !== value) {
+      const formattedHTML = formatContent(value);
+      editorRef.current.innerHTML = formattedHTML;
+    }
+  }, [value]);
+
+  return (
+    <div
+      contentEditable={true}
+      ref={editorRef}
+      onInput={onInput}
+      onKeyDown={handleKeyDown}
+      className={`content-editable-text ${className}`}
+      // style={defaultStyle}
+      suppressContentEditableWarning={true}
+      placeholder={placeholder}
+    />
+  );
+}
+
+// Function to render text with @-mention highlighting (for read-only display)
+function renderTextWithMentions(text, mentions = HIGHLIGHTABLE_MENTIONS) {
+  if (!text) return text;
+  
+  // Create regex pattern for all mentions
+  const mentionPattern = new RegExp(`(${mentions.join('|')})`, 'g');
+  
+  // Split text by mentions and render
+  const parts = text.split(mentionPattern);
+  return parts.map((part, index) => {
+    if (mentions.includes(part)) {
+      return <b key={index}>{part}</b>;
+    }
+    return part;
+  });
+}
+
 // AnnotationEditor renders an inline annotation editor for a given address in a trace (for creating a new annotation).
 function AnnotationEditor(props) {
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [annotations, annotationStatus, annotationsError, annotator] =
     props.annotations;
-  const textareaRef = useRef(null);
   const userInfo = useUserInfo();
 
   const telemetry = useTelemetry();
@@ -905,10 +1218,11 @@ function AnnotationEditor(props) {
       window.location.href = "/login";
     }
 
-    if (content == "") {
+    if (content === "") {
       return;
     }
 
+    setSubmitting(true);
     annotator
       .create({ address: props.address, content: content })
       .then(() => {
@@ -926,24 +1240,10 @@ function AnnotationEditor(props) {
       });
   };
 
-  // on mount grab focus
-  useEffect(() => {
-    // we only auto-focus the textarea if there are less than 3 highlights
-    // otherwise, the assumption is that the user probably clicked to look at the
-    // highlight details, not to add a new annotation
-    // worst case: they have to focus the textarea manually but that should be rare
-    if (props.numHighlights < 3) {
-      window.setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-        }
-      }, 100);
-    }
-  }, [textareaRef]);
-
   const onKeyDown = (e) => {
     // on mac cmd+enter, on windows ctrl+enter to save
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
       onSave();
     }
     // escape closes
@@ -951,6 +1251,7 @@ function AnnotationEditor(props) {
       props.onClose();
     }
   };
+
   return (
     <div className="annotation">
       <div className="user">
@@ -979,11 +1280,12 @@ function AnnotationEditor(props) {
             </pre>
           </div>
         </header>
-        <textarea
+        <ContentEditableText
           value={content}
-          onChange={(e) => setContent(e.target.value)}
-          ref={textareaRef}
+          onChange={setContent}
           onKeyDown={onKeyDown}
+          autoFocus={props.numHighlights < 3}
+          className="annotation-editor"
         />
         <div className="actions">
           <button className="secondary" onClick={props.onClose}>
@@ -991,7 +1293,7 @@ function AnnotationEditor(props) {
           </button>
           <button
             className="primary"
-            disabled={submitting || (content == "" && userInfo?.loggedIn)}
+            disabled={submitting || (content === "" && userInfo?.loggedIn)}
             onClick={onSave}
             aria-label="save-annotation"
           >
