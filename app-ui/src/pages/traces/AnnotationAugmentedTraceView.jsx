@@ -940,22 +940,43 @@ function ContentEditableText({
 }) {
   const editorRef = useRef(null);
 
-  // Function to format content with @-mention highlighting
-  const formatContent = (text) => {
-    if (!text) return "";
+  // Function to safely format content with @-mention highlighting
+  // Returns an array of DOM elements to safely insert into the contentEditable div
+  const formatContentSafely = (text) => {
+    if (!text) return [];
     
     // Create regex pattern for all mentions
     const mentionPattern = new RegExp(`(${mentions.join('|')})`, 'g');
     
-    // Replace mentions with bold version, but keep all other text as plain text
+    // Split text by mentions and create safe DOM elements
     const parts = text.split(mentionPattern);
-    return parts.map((part, index) => {
+    const elements = [];
+    
+    parts.forEach((part, index) => {
       if (mentions.includes(part)) {
-        return `<b>${part}</b>`;
+        // Create bold element for mentions
+        const boldElement = document.createElement('b');
+        boldElement.textContent = part; // textContent automatically escapes
+        elements.push(boldElement);
+      } else if (part) {
+        // Create text node for regular text (automatically safe)
+        elements.push(document.createTextNode(part));
       }
-      // Escape HTML for other parts to prevent any other formatting
-      return part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }).join("");
+    });
+    
+    return elements;
+  };
+
+  // Helper function to safely update the DOM content
+  const updateContentSafely = (container, text) => {
+    // Clear existing content
+    container.innerHTML = '';
+    
+    // Add safe elements
+    const elements = formatContentSafely(text);
+    elements.forEach(element => {
+      container.appendChild(element);
+    });
   };
 
   // Function to get plain text content from the editor
@@ -985,9 +1006,8 @@ function ContentEditableText({
         cursorOffset = preCaretRange.toString().length;
       }
       
-      // Update HTML with formatting
-      const formattedHTML = formatContent(textContent);
-      editorRef.current.innerHTML = formattedHTML;
+      // Update content with safe formatting
+      updateContentSafely(editorRef.current, textContent);
       
       // Restore cursor position
       try {
@@ -1088,9 +1108,8 @@ function ContentEditableText({
           // Update content
           onChange(newText);
           
-          // Update the DOM with formatting
-          const formattedHTML = formatContent(newText);
-          editorRef.current.innerHTML = formattedHTML;
+          // Update the DOM with safe formatting
+          updateContentSafely(editorRef.current, newText);
           
           // Set cursor position after the completed mention
           const newCursorPosition = beforePartial.length + bestMatch.length;
@@ -1151,8 +1170,7 @@ function ContentEditableText({
   // Set initial content and focus
   useEffect(() => {
     if (editorRef.current) {
-      const formattedHTML = formatContent(value);
-      editorRef.current.innerHTML = formattedHTML;
+      updateContentSafely(editorRef.current, value);
       
       if (autoFocus) {
         window.setTimeout(() => {
@@ -1167,8 +1185,7 @@ function ContentEditableText({
   // Update content when value prop changes
   useEffect(() => {
     if (editorRef.current && editorRef.current.textContent !== value) {
-      const formattedHTML = formatContent(value);
-      editorRef.current.innerHTML = formattedHTML;
+      updateContentSafely(editorRef.current, value);
     }
   }, [value]);
 
