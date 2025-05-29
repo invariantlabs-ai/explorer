@@ -207,9 +207,16 @@ function useRemoteResource(
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  
+  const [previousArgs, setPreviousArgs] = useState(null);
 
   useEffect(() => {
-    setStatus("loading");
+    // hash of args as JSON
+    let argsHash = JSON.stringify(args);
+    if (previousArgs != argsHash) {
+      setStatus("loading");
+      setPreviousArgs(argsHash);
+    }
     
     // if args are null
     if (args.some((a) => a === null || a === undefined)) {

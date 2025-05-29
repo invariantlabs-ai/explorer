@@ -860,7 +860,7 @@ function MessageHeaderAnnotationIndicator(props: {
         props.address
       ) || []
     );
-  }, [props.highlightContext]);
+  }, [props.highlightContext?.decorator?.annotationIndicators, props.address]);
 
   return (
     <>
