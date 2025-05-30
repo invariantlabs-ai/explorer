@@ -97,6 +97,7 @@ async def push_trace(
                 if dataset_name is not None:
                     # Utilize Postgres's RETURNING clause to handle race conditions
                     # to handle concurrent dataset creation attempts
+                    creation_time = datetime.now(timezone.utc)
                     dataset_id = session.execute(
                         sa.text("""
                             INSERT INTO datasets (id, user_id, name, is_public, time_created, time_last_pushed, extra_metadata)
@@ -110,8 +111,8 @@ async def push_trace(
                             "user_id": str(user_id),
                             "name": dataset_name,
                             "is_public": False,
-                            "time_created": datetime.now(timezone.utc),
-                            "time_last_pushed": datetime.now(timezone.utc),
+                            "time_created": creation_time,
+                            "time_last_pushed": creation_time,
                             "extra_metadata": json.dumps({}),
                         },
                     ).scalar()
