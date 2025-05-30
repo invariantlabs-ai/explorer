@@ -200,7 +200,11 @@ function createAnalysis(
               receivedError = true;
               if (setError) {
                 setError(chunk_data.error);
-                alert("Analysis Error: " + chunk_data.error);
+                if (chunk_data.status == 403) {
+                  alertModelAccess("You do not have access to this feature.");
+                } else {
+                  alert("Analysis Error: " + chunk_data.error);
+                }
               }
             }
           } catch {

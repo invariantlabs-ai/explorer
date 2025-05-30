@@ -14,6 +14,7 @@ import {
 import "./Analyzer.scss";
 import IssuePieChart from "./Charts";
 import { AnalysisConfigEditor, getAnalysisConfig } from "../../lib/AnalysisAPIAccess";
+import { alertModelAccess } from "./ModelModal";
 
 export function useJSONParse<T>(json: string | null): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -116,7 +117,12 @@ export function AnalysisReport(props: {
     })
       .then((r) => {
         if (!r.ok) {
-          r.text().then((t) => console.error(t));
+          r.text().then((t) => {
+            if (t.includes("403")) {
+              alertModelAccess("You do not have access to this feature.");
+            }
+            console.error(t)
+          });
           throw new Error("Failed to start analysis job");
         }
         return r.json();
