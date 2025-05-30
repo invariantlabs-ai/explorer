@@ -307,6 +307,9 @@ async def analyze_trace(
 
     async def stream_response():
         try:
+            # initial update (so deleted annotations are removed from UI)
+            yield "data: update\n\n"
+
             async with AnalysisClient(
                 analysis_request.apiurl, apikey=analysis_request.apikey, request=request
             ) as client:

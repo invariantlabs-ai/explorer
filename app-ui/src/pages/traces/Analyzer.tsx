@@ -200,7 +200,11 @@ function createAnalysis(
               receivedError = true;
               if (setError) {
                 setError(chunk_data.error);
-                alert("Analysis Error: " + chunk_data.error);
+                if (chunk_data.status == 403) {
+                  alertModelAccess("You do not have access to this feature.");
+                } else {
+                  alert("Analysis Error: " + chunk_data.error);
+                }
               }
             }
           } catch {
@@ -522,8 +526,7 @@ export function AnalyzerSidebar(props: {
       )}
       <div className="status">{props.analyzer.status}</div>
       <div className="issues">
-        {!props.running &&
-          issues.map((output, i) => {
+        {issues.map((output, i) => {
             let header = null as React.ReactNode | null;
             if (output.status === "accepted" && currentGroup !== "accepted") {
               currentGroup = "accepted";

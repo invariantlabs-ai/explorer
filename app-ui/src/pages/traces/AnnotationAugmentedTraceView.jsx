@@ -111,7 +111,8 @@ function useHighlightDecorator(
   highlights,
   filtered_annotations,
   onAnnotationCreate,
-  onAnnotationDelete
+  onAnnotationDelete,
+  onRunAnalyzerEvent = null
 ) {
   // filter to hide analyzer messages in annotation threads
   const noAnalyzerMessages = (a) =>
@@ -133,6 +134,7 @@ function useHighlightDecorator(
                 traceIndex={activeTraceIndex}
                 onAnnotationCreate={onAnnotationCreate}
                 onAnnotationDelete={onAnnotationDelete}
+                onRunAnalyzerEvent={onRunAnalyzerEvent}
                 numHighlights={props.highlights.length}
               />
             }
@@ -362,6 +364,11 @@ export function AnnotationAugmentedTraceView(props) {
     setAnalyzerAnnotations(analyzer_annotations);
   }, [annotations, props.mappings]);
 
+  // event to trigger analysis model run
+  const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
+    new BroadcastEvent()
+  );
+
   // construct decorator for the traceview, to show annotations and annotation thread in the traceview
   const decorator = useHighlightDecorator(
     activeTraceId,
@@ -369,7 +376,8 @@ export function AnnotationAugmentedTraceView(props) {
     highlights,
     filtered_annotations,
     onAnnotationCreate,
-    onAnnotationDelete
+    onAnnotationDelete,
+    onRunAnalyzerEvent
   );
 
   // wait a bit after the last render of the components to enable the guide
@@ -442,10 +450,6 @@ export function AnnotationAugmentedTraceView(props) {
     _setAnalyzerOpen(open);
     localStorage.setItem("analyzerOpen", open);
   };
-
-  const [onRunAnalyzerEvent, _setOnRunAnalyzerEvent] = useState(
-    new BroadcastEvent()
-  );
 
   return (
     <>
@@ -739,6 +743,7 @@ function AnnotationThread(props) {
             key={annotation.id}
             traceIndex={props.traceIndex}
             onAnnotationDelete={onAnnotationDelete}
+            onRunAnalyzerEvent={props.onRunAnalyzerEvent}
           />
         ))}
       <AnnotationEditor
@@ -746,6 +751,7 @@ function AnnotationThread(props) {
         traceId={props.traceId}
         traceIndex={props.traceIndex}
         onClose={props.onClose}
+        onRunAnalyzerEvent={props.onRunAnalyzerEvent}
         annotations={[
           annotations,
           annotationStatus,
@@ -805,6 +811,10 @@ function Annotation(props) {
         telemetry.capture("annotation.updated");
         annotator.refresh();
         setEditing(false);
+        // enable this, if you want to re-run the analysis whenever a new @Invariant annotation appears
+        // if (props.onRunAnalyzerEvent && comment.includes("@Invariant")) {
+        //   props.onRunAnalyzerEvent.fire();
+        // }
       })
       .catch((error) => {
         alert("Failed to save annotation: " + error);
@@ -1111,8 +1121,8 @@ function ContentEditableText({
           // Update the DOM with safe formatting
           updateContentSafely(editorRef.current, newText);
           
-          // Set cursor position after the completed mention
-          const newCursorPosition = beforePartial.length + bestMatch.length;
+          // Set cursor position after the completed mention and space
+          const newCursorPosition = beforePartial.length + bestMatch.length + 1;
           
           try {
             const newRange = document.createRange();
@@ -1250,6 +1260,10 @@ function AnnotationEditor(props) {
         if (props.onAnnotationCreate) {
           props.onAnnotationCreate(props.traceIndex);
         }
+        // enable this, if you want to re-run the analysis whenever a new @Invariant annotation appears
+        // if (props.onRunAnalyzerEvent && content.includes("@Invariant")) {
+        //   props.onRunAnalyzerEvent.fire();
+        // }
       })
       .catch((error) => {
         alert("Failed to save annotation: " + error);
