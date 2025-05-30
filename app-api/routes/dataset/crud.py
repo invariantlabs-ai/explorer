@@ -1,12 +1,20 @@
 """CRUD operations for datasets."""
 
 import asyncio
-import datetime
 import uuid
+from datetime import datetime
 from typing import Annotated, Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from models.datasets_and_traces import (
     Annotation,
     Dataset,
@@ -28,7 +36,7 @@ from routes.dataset_metadata import extract_and_save_batch_tool_calls
 from sqlalchemy import and_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from util.util import delete_images, validate_dataset_name, parse_and_update_messages
+from util.util import delete_images, validate_dataset_name
 
 router = APIRouter()
 
@@ -55,7 +63,7 @@ async def create(
     metadata = data.get("metadata", dict())
     if not isinstance(metadata, dict):
         raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    metadata["created_on"] = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     is_public = data.get("is_public", False)
     if not isinstance(is_public, bool):
@@ -133,7 +141,7 @@ async def upload_file(
                 result_ids,
                 messages,
                 dataset.id,
-                user_id
+                user_id,
             )
 
         return dataset_to_json(dataset)

@@ -6,16 +6,16 @@ import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, List, Dict, Any
+from typing import Annotated
 
 import sqlalchemy as sa
-from fastapi import Depends, FastAPI, Request, BackgroundTasks
+from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
 from logging_config import get_logger
 from models.datasets_and_traces import Annotation, Trace, db
 from routes.apikeys import APIIdentity
-from routes.user import user_by_id
 from routes.dataset_metadata import extract_and_save_batch_tool_calls
+from routes.user import user_by_id
 from sqlalchemy.orm import Session
 from util.util import parse_and_update_messages, validate_dataset_name
 from util.validation import validate_annotation, validate_trace
@@ -32,7 +32,7 @@ Write-only API endpoint to push traces to the server.
 async def push_trace(
     request: Request,
     background_tasks: BackgroundTasks,
-    user_id: Annotated[uuid.UUID, Depends(APIIdentity)]
+    user_id: Annotated[uuid.UUID, Depends(APIIdentity)],
 ):
     # extract payload
     payload = await request.json()
@@ -97,10 +97,11 @@ async def push_trace(
                 if dataset_name is not None:
                     # Utilize Postgres's RETURNING clause to handle race conditions
                     # to handle concurrent dataset creation attempts
+                    creation_time = datetime.now(timezone.utc)
                     dataset_id = session.execute(
                         sa.text("""
-                            INSERT INTO datasets (id, user_id, name, is_public, time_created, extra_metadata)
-                            VALUES (:id, :user_id, :name, :is_public, :time_created, :extra_metadata)
+                            INSERT INTO datasets (id, user_id, name, is_public, time_created, time_last_pushed, extra_metadata)
+                            VALUES (:id, :user_id, :name, :is_public, :time_created, :time_last_pushed, :extra_metadata)
                             ON CONFLICT (user_id, name)
                             DO UPDATE SET id = datasets.id
                             RETURNING id
@@ -110,7 +111,8 @@ async def push_trace(
                             "user_id": str(user_id),
                             "name": dataset_name,
                             "is_public": False,
-                            "time_created": datetime.now(timezone.utc),
+                            "time_created": creation_time,
+                            "time_last_pushed": creation_time,
                             "extra_metadata": json.dumps({}),
                         },
                     ).scalar()
@@ -186,7 +188,7 @@ async def push_trace(
                     result_ids,
                     messages,
                     dataset_id,
-                    user_id
+                    user_id,
                 )
 
                 return {

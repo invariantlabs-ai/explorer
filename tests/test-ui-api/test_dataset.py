@@ -877,6 +877,8 @@ async def test_create_empty_dataset_and_upload_traces(context, url, data_abc):
 
     dataset_json = await response.json()
     assert dataset_json["name"] == dataset_name
+    assert dataset_json["latest_trace_time"] is not None
+    assert dataset_json["time_created"] is not None
 
     response = await context.request.post(
         f"{url}/api/v1/dataset/upload",

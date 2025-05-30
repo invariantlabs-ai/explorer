@@ -176,13 +176,17 @@ class AnalyzerTraceExporter:
                 )
                 if not annotation:
                     continue
-                if (
-                    annotation.extra_metadata
-                    and (annotation.extra_metadata.get("source") == "analyzer-model" or annotation.extra_metadata.get("source") == "accepted-analyzer-model")
+                if annotation.extra_metadata and (
+                    annotation.extra_metadata.get("source") == "analyzer-model"
+                    or annotation.extra_metadata.get("source")
+                    == "accepted-analyzer-model"
                 ):
-                    if annotation.extra_metadata.get("status") != "accepted" and annotation.extra_metadata.get("status") != "rejected":
+                    if (
+                        annotation.extra_metadata.get("status") != "accepted"
+                        and annotation.extra_metadata.get("status") != "rejected"
+                    ):
                         continue
-                
+
                 if not AnalyzerTraceExporter.is_annotation_for_analyzer(
                     annotation.content
                 ):
@@ -191,11 +195,17 @@ class AnalyzerTraceExporter:
                     annotation.content
                 )
                 status = "user-annotated"
-                if annotation.extra_metadata and annotation.extra_metadata.get("status") == "rejected":
+                if (
+                    annotation.extra_metadata
+                    and annotation.extra_metadata.get("status") == "rejected"
+                ):
                     status = "user-rejected"
-                elif annotation.extra_metadata and annotation.extra_metadata.get("status") == "accepted":
+                elif (
+                    annotation.extra_metadata
+                    and annotation.extra_metadata.get("status") == "accepted"
+                ):
                     status = "user-accepted"
-                
+
                 # check for existing duplicates
                 samples_by_id[str(trace.id)].annotations.append(
                     AnalyzerAnnotation(
@@ -226,7 +236,6 @@ class AnalyzerTraceExporter:
                     for sample in samples_by_id.values()
                 ]
 
-
             # only send context with annotated samples
             analyser_context_samples = [
                 sample for sample in samples_by_id.values() if sample.annotations
@@ -236,6 +245,7 @@ class AnalyzerTraceExporter:
 
             print("Error handling job", e, traceback.format_exc(), flush=True)
         return analyser_input_samples, analyser_context_samples
+
 
 class TraceExporter:
     def __init__(self, user_id: str, dataset_id: str, export_config: ExportConfig):
@@ -581,6 +591,7 @@ def trace_to_json(trace, annotations=None, user=None, max_length=None):
         **({"user": user} if user is not None else {}),
         "extra_metadata": trace.extra_metadata,
         "time_created": trace.time_created,
+        "time_last_pushed": trace.time_last_pushed,
     }
     if annotations is not None:
         out["annotations"] = [
@@ -731,7 +742,7 @@ def user_to_json(user: User):
     }
 
 
-def dataset_to_json(dataset, user=None, latest_trace_time=None, include_metadata=True, **kwargs):
+def dataset_to_json(dataset, user=None, include_metadata=True, **kwargs):
     out = {
         "id": dataset.id,
         "name": dataset.name,
@@ -739,9 +750,7 @@ def dataset_to_json(dataset, user=None, latest_trace_time=None, include_metadata
         "is_public": dataset.is_public,
         "user_id": dataset.user_id,
         "time_created": dataset.time_created,
-        "latest_trace_time": latest_trace_time
-        if latest_trace_time is not None
-        else dataset.time_created,
+        "latest_trace_time": dataset.time_last_pushed,
     }
     out = {**out, **kwargs}
     if user:

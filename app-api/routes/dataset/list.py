@@ -6,12 +6,12 @@ from uuid import UUID
 
 from cachetools import TTLCache, cached
 from fastapi import APIRouter, Depends, HTTPException, Request
-from models.datasets_and_traces import Dataset, Trace, User, db
+from models.datasets_and_traces import Dataset, User, db
 from models.queries import dataset_to_json
 from routes.apikeys import UserOrAPIIdentity
 from routes.auth import UserIdentity
 from routes.dataset.utils import homepage_dataset_ids
-from sqlalchemy import and_, exists, func, or_
+from sqlalchemy import and_, exists, or_
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -49,8 +49,9 @@ def list_datasets(
     request: Request,
     user_id: Annotated[UUID | None, Depends(UserOrAPIIdentity)],
     limit: Optional[int] = None,
-    include_metadata: Optional[bool] = True
+    include_metadata: Optional[bool] = True,
 ):
+    """List datasets based on the specified kind and user identity."""
     with Session(db()) as session:
         if kind == DatasetKind.HOMEPAGE:
             # Use cached results for HOMEPAGE datasets
@@ -59,15 +60,8 @@ def list_datasets(
         # check if there is a q=... parameter to match in the name
         q = request.query_params.get("q")
 
-        # Base query joining Dataset with User and getting latest trace time
-        query = (
-            session.query(
-                Dataset, User, func.max(Trace.time_created).label("latest_trace_time")
-            )
-            .join(User, User.id == Dataset.user_id)
-            .outerjoin(Trace, Trace.dataset_id == Dataset.id)
-            .group_by(Dataset.id, User.id)
-        )
+        # Base query joining Dataset with User
+        query = session.query(Dataset, User).join(User, User.id == Dataset.user_id)
 
         if kind == DatasetKind.PRIVATE:
             query = query.filter(Dataset.user_id == user_id)
@@ -82,16 +76,14 @@ def list_datasets(
             query = query.filter(Dataset.name.ilike(q))
 
         # Order by latest trace time if exists, otherwise by dataset creation time
-        datasets = (
-            query.order_by(
-                func.coalesce(func.max(Trace.time_created), Dataset.time_created).desc()
-            )
-            .limit(limit)
-            .all()
-        )
+        datasets = query.order_by(Dataset.time_last_pushed.desc()).limit(limit).all()
         return [
-            dataset_to_json(dataset, user, latest_trace_time=latest_trace_time, include_metadata=include_metadata)
-            for dataset, user, latest_trace_time in datasets
+            dataset_to_json(
+                dataset,
+                user,
+                include_metadata=include_metadata,
+            )
+            for dataset, user in datasets
         ]
 
 
