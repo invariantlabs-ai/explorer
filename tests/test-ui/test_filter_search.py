@@ -121,7 +121,7 @@ async def test_that_is_annotated_filter_works(context, url, data_abc, screenshot
         await (
             page.locator("div.plugin.code-highlighter")
             .nth(1)
-            .locator("textarea")
+            .locator(".content-editable-text")
             .fill("Annotation added here.")
         )
         await screenshot(page)

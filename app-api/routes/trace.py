@@ -441,6 +441,7 @@ async def update_annotations(
     source = payload.get("source")
     annotations = payload.get("annotations")
 
+
     try:
         with Session(db()) as session:
             trace = load_trace(
@@ -530,7 +531,7 @@ async def update_annotation(
         payload = await request.json()
         content = payload.get("content")
         extra_metadata = payload.get("extra_metadata", {})
-        updated_metadata = {**annotation.extra_metadata, **extra_metadata}
+        updated_metadata = {**(annotation.extra_metadata or {}), **extra_metadata}
 
         annotation.content = content
         annotation.extra_metadata = updated_metadata

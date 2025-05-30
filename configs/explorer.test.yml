@@ -26,3 +26,6 @@ sharing: true
 
 # whether the NUX should be enabled for this instance
 nux: false
+
+# whether the instance requires API keys for use of the Invariant Analysis APIs (in testing we use prod services, so we need API keys)
+analysis_requires_api_keys: true
