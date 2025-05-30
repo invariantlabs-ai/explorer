@@ -59,7 +59,6 @@ async def test_upload_traces(url, context, dataset_name, data_webarena_with_meta
     )
     assert "dataset" in push_trace_response
     assert "username" in push_trace_response
-
     # delete dataset via UI-API
     response = await context.request.delete(
         url + "/api/v1/dataset/byid/" + returned_object["id"]
@@ -241,6 +240,8 @@ async def test_push_trace_with_tool_call_arguments_parsed_successfully(
         response = await context.request.get(url + f"/api/v1/trace/{trace_id}")
         await expect(response).to_be_ok()
         trace = await response.json()
+        assert trace["time_created"] is not None
+        assert trace["time_last_pushed"] is not None
         messages_with_tool_calls = [
             msg
             for msg in trace["messages"]

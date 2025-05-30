@@ -77,6 +77,13 @@ async def get_trace_messages(context, url, trace_id):
     return trace.get("messages", [])
 
 
+async def get_trace_last_pushed_time(context, url, trace_id):
+    """Helper function to retrieve time_last_pushed for the trace."""
+    response = await context.request.get(f"{url}/api/v1/trace/{trace_id}")
+    trace = await response.json()
+    return trace.get("time_last_pushed")
+
+
 async def test_append_messages_incorrect_type(url, context):
     """Test that appending messages with incorrect types fails."""
     invalid_inputs = [
@@ -147,6 +154,10 @@ async def test_append_messages_succeeds_on_dataset_trace_with_consecutive_calls(
         traces = await get_traces_for_dataset(context, url, dataset["id"])
         trace_id = traces[0]["id"]
 
+        # Validate that time_last_pushed exists
+        initial_pushed_time = await get_trace_last_pushed_time(context, url, trace_id)
+        assert initial_pushed_time is not None
+
         # Validate initial messages
         initial_messages = await get_trace_messages(context, url, trace_id)
         assert len(initial_messages) == 2
@@ -156,6 +167,13 @@ async def test_append_messages_succeeds_on_dataset_trace_with_consecutive_calls(
             context, url, trace_id, MESSAGES_WITHOUT_TOOL_CALLS
         )
         assert response.status == 200
+
+        # Verify that the time_last_pushed was updated
+        updated_pushed_time_v1 = await get_trace_last_pushed_time(
+            context, url, trace_id
+        )
+        assert updated_pushed_time_v1 is not None
+        assert updated_pushed_time_v1 > initial_pushed_time
 
         # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)
@@ -177,6 +195,13 @@ async def test_append_messages_succeeds_on_dataset_trace_with_consecutive_calls(
             context, url, trace_id, MESSAGES_WITH_TOOL_CALLS
         )
         assert response.status == 200
+
+        # Verify that the time_last_pushed was updated
+        updated_pushed_time_v2 = await get_trace_last_pushed_time(
+            context, url, trace_id
+        )
+        assert updated_pushed_time_v2 is not None
+        assert updated_pushed_time_v2 > updated_pushed_time_v1
 
         # verify that the messages were appended
         updated_trace = await get_trace_messages(context, url, trace_id)

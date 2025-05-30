@@ -2,7 +2,7 @@
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated, Any, Dict
 from uuid import UUID
 
@@ -63,7 +63,7 @@ async def create(
     metadata = data.get("metadata", dict())
     if not isinstance(metadata, dict):
         raise HTTPException(status_code=400, detail="metadata must be a dictionary")
-    metadata["created_on"] = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    metadata["created_on"] = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     is_public = data.get("is_public", False)
     if not isinstance(is_public, bool):
