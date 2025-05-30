@@ -526,8 +526,7 @@ export function AnalyzerSidebar(props: {
       )}
       <div className="status">{props.analyzer.status}</div>
       <div className="issues">
-        {!props.running &&
-          issues.map((output, i) => {
+        {issues.map((output, i) => {
             let header = null as React.ReactNode | null;
             if (output.status === "accepted" && currentGroup !== "accepted") {
               currentGroup = "accepted";
