@@ -49,6 +49,11 @@ class Dataset(Base):
     time_created = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.now()
     )
+    # This is equal to the maximum of all time_last_pushed timestamps of
+    # the associated traces
+    time_last_pushed = mapped_column(
+        DateTime(timezone=True), nullable=False, default=func.now()
+    )
     # JSON object of the metadata parsed at ingestion
     extra_metadata = mapped_column(JSON, nullable=False)
 
@@ -96,6 +101,12 @@ class Trace(Base):
     content = mapped_column(JSON, nullable=False)
     extra_metadata = mapped_column(JSON, nullable=False)
     time_created = mapped_column(
+        DateTime(timezone=True), nullable=False, default=func.now()
+    )
+    # This is updated when new messages are added to the trace via the append_messages API.
+    # This is set to the current time when the trace is created.
+    # Whenever this is updated, the dataset's time_last_pushed is also updated.
+    time_last_pushed = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.now()
     )
 

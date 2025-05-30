@@ -3,14 +3,12 @@
 import json
 import os
 import uuid
-import aiohttp
 from datetime import datetime, timezone
-from typing import Annotated, Dict, List, Any
+from typing import Annotated, Dict, List
 from uuid import UUID
 
-import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request,  BackgroundTasks
-from sqlalchemy import or_
+import aiohttp
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from logging_config import get_logger
 from models.analyzer_model import AnalysisRequest, SingleAnalysisRequest
@@ -35,14 +33,13 @@ from routes.apikeys import (
 )
 from routes.auth import AuthenticatedUserIdentity, UserIdentity
 from routes.dataset_metadata import extract_and_save_batch_tool_calls
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
+from util.analysis_api import AnalysisClient
 from util.util import delete_images, parse_and_update_messages
 from util.validation import validate_annotation
-
-from util.analysis_api import AnalysisClient
 
 trace = FastAPI()
 logger = get_logger(__name__)
@@ -310,12 +307,14 @@ async def analyze_trace(
 
     async def stream_response():
         try:
-            async with AnalysisClient(analysis_request.apiurl, apikey=analysis_request.apikey, request=request) as client:
+            async with AnalysisClient(
+                analysis_request.apiurl, apikey=analysis_request.apikey, request=request
+            ) as client:
                 async for chunk in client.stream(
                     method="POST",
                     url="/api/v1/analysis/stream",
                     json=sar.model_dump(),
-                    timeout=30
+                    timeout=30,
                 ):
                     # TODO: replace with robust chunk parsing
                     # split by lines
@@ -340,16 +339,29 @@ async def analyze_trace(
                 yield "data: done\n\n"
         except aiohttp.ClientResponseError as e:
             # emit error as part of stream
-            yield "data: " + json.dumps({
-                "error": f"{e.message}",
-                "status": e.status,
-            }) + "\n\n"
+            yield (
+                "data: "
+                + json.dumps(
+                    {
+                        "error": f"{e.message}",
+                        "status": e.status,
+                    }
+                )
+                + "\n\n"
+            )
         except Exception as e:
             # emit error as part of stream
-            yield "data: " + json.dumps({
-                "error": f"An unexpected error occurred: {str(e)}",
-                "status": 500,
-            }) + "\n\n"
+            yield (
+                "data: "
+                + json.dumps(
+                    {
+                        "error": f"An unexpected error occurred: {str(e)}",
+                        "status": 500,
+                    }
+                )
+                + "\n\n"
+            )
+
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
@@ -372,11 +384,9 @@ async def replace_annotations(
     if not isinstance(source, str):
         raise ValueError("Source must be a string")
 
-    query = (session.query(Annotation)
-        .filter(
-            Annotation.trace_id == trace_id,
-            Annotation.extra_metadata.op("->>")("source") == source,
-        )
+    query = session.query(Annotation).filter(
+        Annotation.trace_id == trace_id,
+        Annotation.extra_metadata.op("->>")("source") == source,
     )
 
     # keep user-confirmed/rejected annotations, if exclude_accepted_or_rejected is True
@@ -390,7 +400,7 @@ async def replace_annotations(
                 Annotation.extra_metadata.op("->>")("status") == None,
             )
         )
-    
+
     # delete all annotations of this source
     num_deleted = query.delete()
 
@@ -400,13 +410,12 @@ async def replace_annotations(
     # get existing annotations
     with Session(db()) as session:
         existing_annotations: list[Annotation] = load_annotations(session, trace_id)
-    
+
     def already_stored(analyzer_issue: dict) -> bool:
         for annotation, user in existing_annotations:
-            if (
-                annotation.content == analyzer_issue.get("content", "")
-                and annotation.address == analyzer_issue.get("location", "")
-            ):
+            if annotation.content == analyzer_issue.get(
+                "content", ""
+            ) and annotation.address == analyzer_issue.get("location", ""):
                 return True
         return False
 
@@ -415,7 +424,7 @@ async def replace_annotations(
     for annotation in annotations:
         if already_stored(annotation):
             continue
-        
+
         new_annotation = Annotation(
             trace_id=trace_id,
             user_id=user_id,
@@ -440,7 +449,6 @@ async def update_annotations(
     payload = await request.json()
     source = payload.get("source")
     annotations = payload.get("annotations")
-
 
     try:
         with Session(db()) as session:
@@ -711,6 +719,7 @@ async def append_messages(
                 )
 
                 trace_response.content = combined_messages
+                trace_response.time_last_pushed = datetime.now(timezone.utc)
                 flag_modified(trace_response, "content")
 
                 # The annotations may not be for the new messages being appended only
@@ -740,7 +749,7 @@ async def append_messages(
                     trace_id,
                     new_messages,
                     dataset_id,
-                    user_id
+                    user_id,
                 )
 
         return {"success": True}
