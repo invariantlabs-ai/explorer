@@ -16,25 +16,19 @@ app = fastapi.FastAPI()
 # adds /login and /logout endpoints
 install_authorization_endpoints(app)
 
-# serve static files
-static_files_cache = {}
-def is_static_file(path):
-    if path in static_files_cache:
-        return True
-    
-    if not os.path.exists(os.path.join("../dist", path)) or not os.path.isfile(os.path.join("../dist", path)):
-        return False
-    static_files_cache[path] = True
-    
-    return True
+BASE_DIR = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "dist")))
+static_files = StaticFiles(directory=BASE_DIR, html=False, check_dir=True)
 
 # serve static files
 @app.get("/{path:path}")
-async def index(path):
-    if is_static_file(path) and not ".." in path:
-        media_type = "text/html" if path.endswith(".html") else None
-        return FileResponse(os.path.join("../dist", path), media_type=media_type)
-    return FileResponse(os.path.join("../dist", "index.html"))
+async def index(path: str, request: fastapi.Request):
+    # default to index.html
+    if path == "":
+        path = "index.html"
+    response = await static_files.get_response(path, request.scope)
+    if response.status_code != 404:
+        return response
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
