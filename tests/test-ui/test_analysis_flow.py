@@ -1,6 +1,7 @@
 import datetime
 import tempfile
 import os
+import asyncio
 
 async def test_trace_analysis_flow(context, url, screenshot, data_trace_for_analysis):
     page = await context.new_page()
@@ -52,6 +53,10 @@ async def test_trace_analysis_flow(context, url, screenshot, data_trace_for_anal
         await file_chooser.set_files(fn)
         await screenshot(page)
         await page.get_by_label("Create").click()
+
+    # wait for 1s, then refresh
+    await asyncio.sleep(1)
+    await page.reload()
 
     # wait for the dataset to be created
     await page.wait_for_selector(f"text={dataset_name}")
