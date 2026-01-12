@@ -1,6 +1,6 @@
 # Invariant Explorer
 
-> **Note:** The hosted version of Invariant Explorer has been shut down in January 2026. If you're interested Invariant Labs' continued work on AI security, check out [Snyk's AI Security offering](https://evo.ai.snyk.io/). To request your user data, please reach out to office@invariantlabs.ai.
+> **Note:** The hosted version of Invariant Explorer has been shut down in January 2026. If you're interested in Invariant Labs' continued work on AI security, check out [Snyk's AI Security offering](https://evo.ai.snyk.io/).
 
 A tool for visualizing and exploring agent traces.
 
